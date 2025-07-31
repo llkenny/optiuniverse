@@ -16,4 +16,6 @@ extension SIMD3 where Scalar == Float {
     static let saturn = SIMD3<Float>(0.90, 0.85, 0.70)  // Pale gold
     static let uranus = SIMD3<Float>(0.60, 0.80, 0.90)  // Pale blue
     static let neptune = SIMD3<Float>(0.40, 0.50, 0.90)  // Deep blue
+    static let black = SIMD3<Float>(0, 0, 0)  // Black
+    static let white = SIMD3<Float>(1, 1, 1)  // Black
 }
