@@ -59,7 +59,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 //        metalView.depthStencilPixelFormat = .depth32Float
         
         setupPipeline()
-//        setupAxesPipeline()
+        setupAxesPipeline()
         initializeSolarSystem()
     }
     
@@ -93,7 +93,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = library.makeFunction(name: "axes_vertex")
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "axes_fragment")
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
+//        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
         
         // Important for line rendering:
         pipelineDescriptor.vertexDescriptor = {
@@ -185,12 +186,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         
         renderEncoder.setRenderPipelineState(pipelineState)
         
-//        renderAxes(with: renderEncoder)
-        
-//         Update and render planets
+        // Update and render planets
         for planet in planets {
             renderPlanet(planet, with: renderEncoder)
         }
+        
+        // Render axes
+        renderEncoder.setRenderPipelineState(axesPipelineState)
+        renderAxes(with: renderEncoder)
         
         renderEncoder.endEncoding()
         
@@ -221,7 +224,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Create vertex buffer
         let vertexBuffer = device.makeBuffer(bytes: vertices,
                                              length: vertices.count * MemoryLayout<Float>.stride,
-                                             options: [])
+                                             options: [])!
         
         // Set pipeline state for lines (make sure you have one)
         renderEncoder.setRenderPipelineState(axesPipelineState)
@@ -252,35 +255,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var time: Float = 0
     var deltaAngle: Float = .pi / 1800
     private func renderPlanet(_ planet: Planet, with renderEncoder: MTLRenderCommandEncoder) {
-        // Create vertices for a simple triangle (replace with sphere data)
-//        let vertices: [Float] = [
-//            // Position         // Color
-//            -0.5, 0, 0,     planet.color.x, planet.color.y, planet.color.z,
-//            0.5, 0, 0,   planet.color.x, planet.color.y, planet.color.z,
-//            0, 0.5, 0,    planet.color.x, planet.color.y, planet.color.z
-//        ]
-        
-//        let vertices: [Float] = [
-//            // Position
-//            -0.5, // x 1
-//             -0.5, // y 1
-//             0, // z 1
-//             1, // ??
-//             1, // ??
-//             1, // ??
-//             -0.5, // ?? z?
-//             -0.5, // ?? z?
-//             0, 1 // x, y 2
-//        ]
-//        f += delta
-//        
-//        let vertexBuffer = device.makeBuffer(bytes: vertices,
-//                                             length: vertices.count * MemoryLayout<Float>.stride,
-//                                             options: [])
-//        
-//        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-//        
-//        // Simple uniform matrix (replace with proper transformation)
+        // Simple uniform matrix (replace with proper transformation)
         var matrix = matrix_identity_float4x4
         + float4x4(
             [planet.radius * 2, 0, 0, 0],
@@ -304,6 +279,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             [0, 0, 1, 0],
             [rotationByPoint.x, rotationByPoint.y, 0, 1]
         )
+        
         time += 1
         renderEncoder.setVertexBytes(&matrix,
                                length: MemoryLayout<float4x4>.stride,
