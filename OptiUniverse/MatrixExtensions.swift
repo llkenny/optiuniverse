@@ -38,8 +38,8 @@ extension float4x4 {
     
     static func makeRotationZ(_ angle: Float) -> float4x4 {
         .init(
-            [cos(angle), -sin(angle), 0, 0],
-            [sin(angle), cos(angle), 0, 0],
+            [cos(angle), sin(angle), 0, 0],
+            [-sin(angle), cos(angle), 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         )

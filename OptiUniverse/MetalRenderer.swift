@@ -20,7 +20,7 @@ let diameterOfSaturn: Float = 120_536.0
 let diameterOfUranus: Float = 51_118.0
 let diameterOfNeptune: Float = 49_528.0
 
-let diameterFactor: Float = 5e-5
+let diameterFactor: Float = 1e-5
 
 let distanceBetweenSunAndMercury: Float = 5_791_e4
 let distanceBetweenSunAndVenus: Float = 10_820_e4
@@ -31,7 +31,16 @@ let distanceBetweenSunAndSaturn: Float = 142_672_e4
 let distanceBetweenSunAndUranus: Float = 287_099_e4
 let distanceBetweenSunAndNeptune: Float = 449_825_e4
 
-let distanceFactor: Float = 1e-9
+let distanceFactor: Float = 2e-9
+
+let mercuryOrbitSpeed: Float = 88_000.0
+let venusOrbitSpeed: Float = 22_500.0
+let earthOrbitSpeed: Float = 11_180.0
+let marsOrbitSpeed: Float = 5_200.0
+let jupiterOrbitSpeed: Float = 9_900.0
+let saturnOrbitSpeed: Float = 14_300.0
+let uranusOrbitSpeed: Float = 17_200.0
+let neptuneOrbitSpeed: Float = 20_000.0
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
@@ -127,46 +136,55 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let sun = Planet(name: "Sun",
                          radius: diameterOfSun / 2 * diameterFactor,
                          distance: 0,
+                         orbitSpeed: 0,
                          position: .init(x: 0, y: 0, z: 0),
                          color: .white)
         let mercury = Planet(name: "Mercury",
                              radius: diameterOfMercury / 2 * diameterFactor,
                              distance: distanceBetweenSunAndMercury * distanceFactor,
+                             orbitSpeed: mercuryOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .mercury)
         let venus = Planet(name: "Venus",
                            radius: diameterOfVenus / 2 * diameterFactor,
                            distance: distanceBetweenSunAndVenus * distanceFactor,
+                           orbitSpeed: venusOrbitSpeed,
                            position: .init(x: 0, y: 0, z: 0),
                            color: .venus)
         let earth = Planet(name: "Earth",
                            radius: diameterOfEarth / 2 * diameterFactor,
                            distance: distanceBetweenSunAndEarth * distanceFactor,
+                           orbitSpeed: earthOrbitSpeed,
                            position: .init(x: 0.5, y: 0, z: 0),
                            color: .earth)
         let mars = Planet(name: "Mars",
                           radius: diameterOfMars / 2 * diameterFactor,
                           distance: distanceBetweenSunAndMars * distanceFactor,
+                          orbitSpeed: marsOrbitSpeed,
                           position: .init(x: -0.5, y: 0, z: 0),
                           color: .mars)
         let juptier = Planet(name: "Jupiter",
                              radius: diameterOfJupiter / 2 * diameterFactor,
                              distance: distanceBetweenSunAndJupiter * distanceFactor,
+                             orbitSpeed: jupiterOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .jupiter)
         let saturn = Planet(name: "Saturn",
                             radius: diameterOfSaturn / 2 * diameterFactor,
                             distance: distanceBetweenSunAndSaturn * distanceFactor,
+                            orbitSpeed: saturnOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
                             color: .saturn)
         let uranus = Planet(name: "Uranus",
                             radius: diameterOfUranus / 2 * diameterFactor,
                             distance: distanceBetweenSunAndUranus * distanceFactor,
+                            orbitSpeed: uranusOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
                             color: .uranus)
         let neptune = Planet(name: "Neptune",
                              radius: diameterOfNeptune / 2 * diameterFactor,
                              distance: distanceBetweenSunAndNeptune * distanceFactor,
+                             orbitSpeed: neptuneOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .neptune)
         
@@ -185,11 +203,23 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         
         renderEncoder.setRenderPipelineState(pipelineState)
-        
+        // Calculate time (seconds since start)
+        let time = Float(CACurrentMediaTime())
         // Update and render planets
         for planet in planets {
-            renderPlanet(planet, with: renderEncoder)
+            renderPlanet(planet, with: renderEncoder, time: time)
         }
+        
+        // TODO:
+        
+//        // 2. Adding moons with secondary orbits
+//        func renderMoon(planetPosition: SIMD3<Float>, ...) {
+//            // Similar to planets but relative to parent planet
+//        }
+//        
+//        // 3. Tilted orbits (solar system plane)
+//        let tiltMatrix = float4x4.makeRotationX(0.1) // ~5.7° tilt
+//        modelMatrix = tiltMatrix * rotationMatrix * translationMatrix
         
         // Render axes
         renderEncoder.setRenderPipelineState(axesPipelineState)
@@ -244,6 +274,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                      vertexCount: 6) // 2 points per line × 3 axes = 6 vertices
     }
     
+    // TODO: Make orbit radius SIM3
     var delta: Float = 0.01
     var x: Float = 0
     var y: Float = 0
@@ -252,9 +283,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var isDown = true
     var limits: [Float] = [2, 1.5, -2, -2.3]
     var f: Float = -0.5
-    var time: Float = 0
-    var deltaAngle: Float = .pi / 1800
-    private func renderPlanet(_ planet: Planet, with renderEncoder: MTLRenderCommandEncoder) {
+    let deltaAngle: Float = .pi / 1800
+    let orbitSpeedMultiplier: Float = 1e-5
+    private func renderPlanet(_ planet: Planet,
+                              with renderEncoder: MTLRenderCommandEncoder,
+                              time: Float) {
         // Simple uniform matrix (replace with proper transformation)
         var matrix = matrix_identity_float4x4
         + float4x4(
@@ -272,15 +305,29 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Предположим, у нас есть точка A(x, y, z) и мы хотим повернуть её вокруг точки C(cx, cy, cz) на угол θ вокруг оси z.
         // Смещаем точку A: A'(x', y', z') = (x - cx, y - cy, z - cz).
         // Применяем матрицу вращения вокруг оси z:
-        let rotationByPoint = float4x4.makeRotationZ(time * deltaAngle) * SIMD4(x: 0, y: -planet.distance, z: 0, w: 1)
-        matrix += float4x4(
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [rotationByPoint.x, rotationByPoint.y, 0, 1]
-        )
+//        Proper Matrix Multiplication Order:
+//        First translate to orbit distance
+//        Then apply rotation
+//        This creates circular motion around the origin
+        let angle = time * planet.orbitSpeed * orbitSpeedMultiplier
+//        let degree = angle * 180 / .pi
+//        let rotationByPoint = float4x4.makeRotationZ(angle) * SIMD4(x: 0, y: -planet.distance, z: 0, w: 1)
+//        matrix += float4x4(
+//            [1, 0, 0, 0],
+//            [0, 1, 0, 0],
+//            [0, 0, 1, 0],
+//            [rotationByPoint.x, rotationByPoint.y, 0, 1]
+//        )
+        // TODO:
+        // Combine with view and projection matrices
+//        let mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
-        time += 1
+        // TODO:
+        // Elliptical orbit example
+//        let eccentricity: Float = 0.1 // 0 for circular
+//        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
+//
+        matrix = float4x4.makeRotationZ(angle) * matrix
         renderEncoder.setVertexBytes(&matrix,
                                length: MemoryLayout<float4x4>.stride,
                                index: 1)
@@ -304,7 +351,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 struct Planet {
     let name: String
     let radius: Float
-    let distance: Float
+    let distance: Float// Orbital radius
+    let orbitSpeed: Float     // Rotation speed multiplier
     let position: SIMD3<Float>
     let color: SIMD3<Float>
+    let tilt: Float = 0       // Optional axial tilt}
 }
