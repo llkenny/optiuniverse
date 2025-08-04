@@ -12,20 +12,27 @@ using namespace metal;
 
 struct VertexIn {
     float4 position [[attribute(0)]];
-//    float3 color [[attribute(1)]];
+    float3 normal [[attribute(1)]];
+    float2 texCoord [[attribute(2)]];
 };
 
 struct VertexOut {
     float4 position [[position]];
-//    float4 color;
+    float2 texCoord;
+    float3 normal;
+    float3 worldPos;
 };
 
 vertex VertexOut vertex_main(
                              const VertexIn in [[stage_in]],
-                             constant float4x4 &mvpMatrix [[buffer(1)]]
+                             constant float4x4 &mvpMatrix [[buffer(1)]],
+                             constant float4x4 &modelMatrix [[buffer(2)]]
                              ) {
     VertexOut out;
     out.position = mvpMatrix * in.position;
+    out.worldPos = (modelMatrix * in.position).xyz;
+    out.normal = normalize((modelMatrix * float4(in.normal, 0.0)).xyz);
+    out.texCoord = in.texCoord;
     return out;
 ////    out.position = mvpMatrix * float4(in.position, 1.0);
 //    out.position = float4(in.position, 1.0);
@@ -34,8 +41,15 @@ vertex VertexOut vertex_main(
 //    return out;
 }
 
+fragment float4 fragment_main(VertexOut in [[stage_in]],
+                              texture2d<float> planetTexture [[texture(0)]],
+                              sampler textureSampler [[sampler(0)]]) {
+    float4 color = planetTexture.sample(textureSampler, in.texCoord);
+    return color;
+}
+
 //fragment float4 fragment_main(VertexOut in [[stage_in]]) {
-//    return in.color;
+//    return float4(in.texCoord.x, in.texCoord.y, 0.0, 1.0);
 //}
 
 fragment float4 basic_fragment() {

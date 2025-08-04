@@ -31,7 +31,7 @@ let distanceBetweenSunAndSaturn: Double = 1_429_400_028
 let distanceBetweenSunAndUranus: Double = 2_870_989_228
 let distanceBetweenSunAndNeptune: Double = 4_504_299_579
 
-let distanceFactor: Double = 2e-9
+let distanceFactor: Double = 2e-10
 
 //Planet    Orbital velocity
 //Mercury    47.9 km/s (29.8 mi/s)
@@ -59,6 +59,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var pipelineState: MTLRenderPipelineState!
     private var axesPipelineState: MTLRenderPipelineState!
     private var mesh: MTKMesh!
+    private var texture: MTLTexture!
+    private var samplerState: MTLSamplerState!
     
     // Solar system data
     private var planets: [Planet] = []
@@ -84,28 +86,139 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     private func setupPipeline() {
-        let allocator = MTKMeshBufferAllocator(device: device)
-        let mdlMesh = MDLMesh(sphereWithExtent: [0.01, 0.01, 0.01],
-                              segments: [100, 100],
-                              inwardNormals: false,
-                              geometryType: .triangles,
-                              allocator: allocator)
-        mesh = try! MTKMesh(mesh: mdlMesh, device: device)
+//        let allocator = MTKMeshBufferAllocator(device: device)
+//        let mdlMesh = MDLMesh(sphereWithExtent: [0.01, 0.01, 0.01],
+//                              segments: [100, 100],
+//                              inwardNormals: false,
+//                              geometryType: .triangles,
+//                              allocator: allocator)
+//        mesh = try! MTKMesh(mesh: mdlMesh, device: device)
         
         let library = device.makeDefaultLibrary()!
         let vertexFunction = library.makeFunction(name: "vertex_main")
-        let fragmentFunction = library.makeFunction(name: "basic_fragment")
+        let fragmentFunction = library.makeFunction(name: "fragment_main")
         
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
         
-        pipelineDescriptor.vertexDescriptor =
-        MTKMetalVertexDescriptorFromModelIO(mesh.vertexDescriptor)
+        // Vertex descriptor
+        let vertexDescriptor = MTLVertexDescriptor()
         
-        pipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        // Position (attribute 0)
+        vertexDescriptor.attributes[0].format = .float3
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        
+        // Normal (attribute 1)
+        vertexDescriptor.attributes[1].format = .float3
+        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
+        vertexDescriptor.attributes[1].bufferIndex = 0
+        
+        // Texture coordinates (attribute 2)
+        vertexDescriptor.attributes[2].format = .float2
+        vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
+        vertexDescriptor.attributes[2].bufferIndex = 0
+        
+        // Layout
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
+        pipelineDescriptor.vertexDescriptor = vertexDescriptor
+        
+        // Create sampler state
+        let samplerDescriptor = MTLSamplerDescriptor()
+        samplerDescriptor.sAddressMode = .repeat
+        samplerDescriptor.tAddressMode = .repeat
+        samplerDescriptor.minFilter = .linear
+        samplerDescriptor.magFilter = .linear
+        samplerDescriptor.mipFilter = .linear
+        samplerState = device.makeSamplerState(descriptor: samplerDescriptor)
+        
+        do {
+            pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        } catch {
+            fatalError("Failed to create pipeline state: \(error)")
+        }
     }
+    
+    func createTexturedSphere(radius: Float, textureName: String) -> MDLMesh {
+        let allocator = MTKMeshBufferAllocator(device: device)
+        
+        // Create sphere with explicit texture coordinate generation
+        let mdlMesh = MDLMesh(
+            sphereWithExtent: [0.1, 0.1, 0.1], // TODO: radius, radius, radius
+            segments: [100, 100],
+            inwardNormals: false,
+            geometryType: .triangles,
+            allocator: allocator
+        )
+        
+        // Generate texture coordinates - NEW CORRECT APPROACH
+        mdlMesh.addUnwrappedTextureCoordinates(forAttributeNamed: MDLVertexAttributeTextureCoordinate)
+        
+        // TODO: Load texture here for optimization
+        // Load texture
+//        let textureLoader = MTKTextureLoader(device: device)
+//        let textureOptions: [MTKTextureLoader.Option : Any] = [
+//            .textureUsage: MTLTextureUsage.shaderRead.rawValue,
+//            .textureStorageMode: MTLStorageMode.private.rawValue,
+//            .origin: MTKTextureLoader.Origin.bottomLeft.rawValue
+//        ]
+//        
+//        texture = try! textureLoader.newTexture(
+//            name: textureName,
+//            scaleFactor: 1.0,
+//            bundle: nil,
+//            options: textureOptions
+//        )
+        
+        // Create material and assign texture
+        let textureURL = Bundle.main.url(forResource: textureName, withExtension: "png")!
+
+        let material = MDLMaterial()
+        let property = MDLMaterialProperty(
+            name: "baseColor",
+            semantic: .baseColor,
+            url: textureURL
+        )
+        material.setProperty(property)
+        
+        // Assign material to submeshes
+        for submesh in mdlMesh.submeshes! {
+            if let submesh = submesh as? MDLSubmesh {
+                submesh.material = material
+            }
+        }
+        
+        return mdlMesh
+    }
+    
+//    import ModelIO
+//    import MetalKit
+//    
+//    // Assuming you have an MDLMesh loaded, e.g., from an asset file
+//    guard let assetURL = Bundle.main.url(forResource: "myModel", withExtension: "obj") else { return }
+//    let asset = MDLAsset(url: assetURL)
+//    guard let mesh = asset.object(at: 0) as? MDLMesh else { return }
+//    
+//    // 1. Create an MDLMaterialProperty for the base color texture
+//    guard let textureURL = Bundle.main.url(forResource: "myTexture", withExtension: "png") else { return }
+//    let baseColorTextureProperty = MDLMaterialProperty(name: "baseColorTexture", semantic: .baseColor, url: textureURL)
+//    
+//    // 2. Create an MDLMaterial and set the texture property
+//    let material = MDLMaterial(name: "texturedMaterial", scatteringFunction: MDLScatteringFunction())
+//    material.setProperty(baseColorTextureProperty)
+//    
+//    // 3. Apply the material to the submeshes of your MDLMesh
+//    if let submeshes = mesh.submeshes as? [MDLSubmesh] {
+//        for submesh in submeshes {
+//            submesh.material = material
+//        }
+//    }
+//        
+//        // Now, when you render this MDLMesh using Metal, the texture will be applied
+//        // (assuming your Metal rendering pipeline is set up to handle MDLMaterial properties and textures).
+
     
     private func setupAxesPipeline() {
         guard let library = device.makeDefaultLibrary() else { return }
@@ -149,55 +262,64 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                          distance: 0,
                          orbitSpeed: 0,
                          position: .init(x: 0, y: 0, z: 0),
-                         color: .white)
+                         color: .white,
+                         textureName: "sun")
         let mercury = Planet(name: "Mercury",
                              radius: diameterOfMercury / 2 * diameterFactor,
                              distance: Float(distanceBetweenSunAndMercury * distanceFactor),
                              orbitSpeed: mercuryOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
-                             color: .mercury)
+                             color: .mercury,
+                             textureName: "mercury")
         let venus = Planet(name: "Venus",
                            radius: diameterOfVenus / 2 * diameterFactor,
                            distance: Float(distanceBetweenSunAndVenus * distanceFactor),
                            orbitSpeed: venusOrbitSpeed,
                            position: .init(x: 0, y: 0, z: 0),
-                           color: .venus)
+                           color: .venus,
+                           textureName: "venus")
         let earth = Planet(name: "Earth",
                            radius: diameterOfEarth / 2 * diameterFactor,
                            distance: Float(distanceBetweenSunAndEarth * distanceFactor),
                            orbitSpeed: earthOrbitSpeed,
                            position: .init(x: 0.5, y: 0, z: 0),
-                           color: .earth)
+                           color: .earth,
+                           textureName: "earth")
         let mars = Planet(name: "Mars",
                           radius: diameterOfMars / 2 * diameterFactor,
                           distance: Float(distanceBetweenSunAndMars * distanceFactor),
                           orbitSpeed: marsOrbitSpeed,
                           position: .init(x: -0.5, y: 0, z: 0),
-                          color: .mars)
+                          color: .mars,
+                          textureName: "mars")
         let juptier = Planet(name: "Jupiter",
                              radius: diameterOfJupiter / 2 * diameterFactor,
                              distance: Float(distanceBetweenSunAndJupiter * distanceFactor),
                              orbitSpeed: jupiterOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
-                             color: .jupiter)
+                             color: .jupiter,
+                             textureName: "jupiter")
         let saturn = Planet(name: "Saturn",
                             radius: diameterOfSaturn / 2 * diameterFactor,
                             distance: Float(distanceBetweenSunAndSaturn * distanceFactor),
                             orbitSpeed: saturnOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
-                            color: .saturn)
+                            color: .saturn,
+                            textureName: "saturn")
         let uranus = Planet(name: "Uranus",
                             radius: diameterOfUranus / 2 * diameterFactor,
                             distance: Float(distanceBetweenSunAndUranus * distanceFactor),
                             orbitSpeed: uranusOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
-                            color: .uranus)
+                            color: .uranus,
+                            textureName: "uranus")
         let neptune = Planet(name: "Neptune",
                              radius: diameterOfNeptune / 2 * diameterFactor,
                              distance: Float(distanceBetweenSunAndNeptune * distanceFactor),
                              orbitSpeed: neptuneOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
-                             color: .neptune)
+                             color: .neptune,
+                             textureName: "neptune")
         
         planets = [sun, mercury, venus, earth, mars, juptier, saturn, uranus, neptune]
     }
@@ -207,6 +329,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     var time: Float = 0
+
+    
+
     func draw(in view: MTKView) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let renderPassDescriptor = view.currentRenderPassDescriptor,
@@ -285,6 +410,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                      vertexCount: 6) // 2 points per line × 3 axes = 6 vertices
     }
     
+    
     // TODO: Make orbit radius SIM3
     var delta: Float = 0.01
     var x: Float = 0
@@ -295,6 +421,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var limits: [Float] = [2, 1.5, -2, -2.3]
     var f: Float = -0.5
     let deltaAngle: Float = .pi / 1800
+    private var planetMeshes: [String: MDLMesh] = [:]
+    var cachedTextures: [String: Textures] = [:]
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
                               time: Float) {
@@ -338,23 +466,77 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
 //
         matrix = float4x4.makeRotationZ(angle) * matrix
-        renderEncoder.setVertexBytes(&matrix,
-                               length: MemoryLayout<float4x4>.stride,
-                               index: 1)
-//        
-//        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        renderEncoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         
-        guard let submesh = mesh.submeshes.first else {
+        // Get or create mesh
+        if planetMeshes[planet.textureName] == nil {
+            planetMeshes[planet.textureName] = createTexturedSphere(
+                radius: planet.radius,
+                textureName: planet.textureName
+            )
+        }
+        guard let mesh = planetMeshes[planet.textureName] else { return }
+        
+//        // Set texture
+        if cachedTextures[planet.textureName] == nil {
+            let submesh = mesh.submeshes![0] as! MDLSubmesh
+            let material = submesh.material!
+            //        let baseColor = material?.property(with: MDLMaterialSemantic.baseColor)!
+            //        let texture = baseColor!.textureSamplerValue?.texture!
+            //        renderEncoder.setFragmentTexture(texture as! MTLTexture, index: 0)
+            let texture = Textures(material: material, device: device)
+            cachedTextures[planet.textureName] = texture
+        }
+        let texture = cachedTextures[planet.textureName]!
+        
+        let mtkMesh = try! MTKMesh(mesh: mesh, device: device)
+        
+        var mvpMatrix = matrix
+            
+        // TODO:
+//        let angle = time * planet.orbitSpeed
+//        var modelMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+//        modelMatrix = float4x4.makeRotationZ(angle) * modelMatrix
+//        let mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+        
+        // Set buffers
+        
+        renderEncoder.setVertexBytes(&mvpMatrix,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 1)
+        renderEncoder.setVertexBytes(&matrix,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 2)
+        
+        renderEncoder.setVertexBuffer(mtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
+//        renderEncoder.setFragmentTexture(texture, index: 0)
+        renderEncoder.setFragmentTexture(texture.baseColor!, index: 0)
+        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+        
+        guard let submesh = mtkMesh.submeshes.first else {
             fatalError()
         }
         
+        // Draw
         renderEncoder.drawIndexedPrimitives(
             type: .triangle,
             indexCount: submesh.indexCount,
             indexType: submesh.indexType,
             indexBuffer: submesh.indexBuffer.buffer,
-            indexBufferOffset: 0)
+            indexBufferOffset: submesh.indexBuffer.offset
+        )
+        
+//        // Set the planet color
+//        var planetColor = planet.color // SIMD3<Float>
+//        renderEncoder.setFragmentBytes(&planetColor, length: MemoryLayout<SIMD3<Float>>.stride, index: 0)
+        
+
+//        
+//        renderEncoder.drawIndexedPrimitives(
+//            type: .triangle,
+//            indexCount: submesh.indexCount,
+//            indexType: submesh.indexType,
+//            indexBuffer: submesh.indexBuffer.buffer,
+//            indexBufferOffset: 0)
     }
 }
 
@@ -366,4 +548,40 @@ struct Planet {
     let position: SIMD3<Float>
     let color: SIMD3<Float>
     let tilt: Float = 0       // Optional axial tilt}
+    let textureName: String
+    var mesh: MTKMesh?
+}
+
+struct Textures {
+    var baseColor: MTLTexture?
+}
+
+extension Textures {
+    init(material: MDLMaterial?, device: MTLDevice) {
+        func property(with semantic: MDLMaterialSemantic)
+        -> MTLTexture? {
+            guard let property = material?.property(with: semantic),
+                  let fileUrl = property.urlValue,
+                  let texture =
+                    try? loadTexture(url: fileUrl, device: device)
+            else { return nil }
+            return texture
+        }
+        baseColor = property(with: MDLMaterialSemantic.baseColor)
+    }
+    
+    func loadTexture(url: URL, device: MTLDevice) throws -> MTLTexture? {
+        // 1
+        let textureLoader = MTKTextureLoader(device: device)
+        
+        // 2
+        let textureLoaderOptions: [MTKTextureLoader.Option: Any] =
+        [.origin: MTKTextureLoader.Origin.bottomLeft]
+        
+        let texture =
+        try textureLoader.newTexture(URL: url,
+                                     options: textureLoaderOptions)
+        print("loaded texture: \(url.lastPathComponent)")
+        return texture
+    }
 }
