@@ -9,38 +9,49 @@
 // MetalRenderer.swift
 import MetalKit
 
-let diameterOfSun: Float = 696_000.0
-let diameterOfMercury: Float = 4_879.0
-let diameterOfVenus: Float = 12_104.0
-let diameterOfEarth: Float = 12_756.0
+let diameterOfSun: Float = 1_392_700
+let diameterOfMercury: Float = 4_879.4
+let diameterOfVenus: Float = 12_104
+let diameterOfEarth: Float = 12_756
 //let diameterOfMoon: Float = 3_475.0
-let diameterOfMars: Float = 6_792.0
-let diameterOfJupiter: Float = 142_984.0
-let diameterOfSaturn: Float = 120_536.0
-let diameterOfUranus: Float = 51_118.0
-let diameterOfNeptune: Float = 49_528.0
+let diameterOfMars: Float = 6_792
+let diameterOfJupiter: Float = 139_820
+let diameterOfSaturn: Float = 116_460
+let diameterOfUranus: Float = 50_724
+let diameterOfNeptune: Float = 49_244
 
 let diameterFactor: Float = 1e-5
 
-let distanceBetweenSunAndMercury: Float = 5_791_e4
-let distanceBetweenSunAndVenus: Float = 10_820_e4
-let distanceBetweenSunAndEarth: Float = 14_960_e4
-let distanceBetweenSunAndMars: Float = 22_794_e4
-let distanceBetweenSunAndJupiter: Float = 77_833_e4
-let distanceBetweenSunAndSaturn: Float = 142_672_e4
-let distanceBetweenSunAndUranus: Float = 287_099_e4
-let distanceBetweenSunAndNeptune: Float = 449_825_e4
+let distanceBetweenSunAndMercury: Double = 57_910_006
+let distanceBetweenSunAndVenus: Double = 108_199_995
+let distanceBetweenSunAndEarth: Double = 149_599_951
+let distanceBetweenSunAndMars: Double = 227_939_920
+let distanceBetweenSunAndJupiter: Double = 778_330_257
+let distanceBetweenSunAndSaturn: Double = 1_429_400_028
+let distanceBetweenSunAndUranus: Double = 2_870_989_228
+let distanceBetweenSunAndNeptune: Double = 4_504_299_579
 
-let distanceFactor: Float = 2e-9
+let distanceFactor: Double = 2e-9
 
-let mercuryOrbitSpeed: Float = 88_000.0
-let venusOrbitSpeed: Float = 22_500.0
-let earthOrbitSpeed: Float = 11_180.0
-let marsOrbitSpeed: Float = 5_200.0
-let jupiterOrbitSpeed: Float = 9_900.0
-let saturnOrbitSpeed: Float = 14_300.0
-let uranusOrbitSpeed: Float = 17_200.0
-let neptuneOrbitSpeed: Float = 20_000.0
+//Planet    Orbital velocity
+//Mercury    47.9 km/s (29.8 mi/s)
+//Venus    35.0 km/s (21.7 mi/s)
+//Earth    29.8 km/s (18.5 mi/s)
+//Mars    24.1 km/s (15.0 mi/s)
+//Jupiter    13.1 km/s (8.1 mi/s)
+//Saturn    9.7 km/s (6.0 mi/s)
+//Uranus    6.8 km/s (4.2 mi/s)
+//Neptune    5.4 km/s (3.4 mi/s)
+let mercuryOrbitSpeed: Float = 47.9
+let venusOrbitSpeed: Float = 35.0
+let earthOrbitSpeed: Float = 29.8
+let marsOrbitSpeed: Float = 24.1
+let jupiterOrbitSpeed: Float = 13.1
+let saturnOrbitSpeed: Float = 9.7
+let uranusOrbitSpeed: Float = 6.8
+let neptuneOrbitSpeed: Float = 5.4
+
+let orbitSpeedMultiplier: Float = 1e-3
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
@@ -141,49 +152,49 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                          color: .white)
         let mercury = Planet(name: "Mercury",
                              radius: diameterOfMercury / 2 * diameterFactor,
-                             distance: distanceBetweenSunAndMercury * distanceFactor,
+                             distance: Float(distanceBetweenSunAndMercury * distanceFactor),
                              orbitSpeed: mercuryOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .mercury)
         let venus = Planet(name: "Venus",
                            radius: diameterOfVenus / 2 * diameterFactor,
-                           distance: distanceBetweenSunAndVenus * distanceFactor,
+                           distance: Float(distanceBetweenSunAndVenus * distanceFactor),
                            orbitSpeed: venusOrbitSpeed,
                            position: .init(x: 0, y: 0, z: 0),
                            color: .venus)
         let earth = Planet(name: "Earth",
                            radius: diameterOfEarth / 2 * diameterFactor,
-                           distance: distanceBetweenSunAndEarth * distanceFactor,
+                           distance: Float(distanceBetweenSunAndEarth * distanceFactor),
                            orbitSpeed: earthOrbitSpeed,
                            position: .init(x: 0.5, y: 0, z: 0),
                            color: .earth)
         let mars = Planet(name: "Mars",
                           radius: diameterOfMars / 2 * diameterFactor,
-                          distance: distanceBetweenSunAndMars * distanceFactor,
+                          distance: Float(distanceBetweenSunAndMars * distanceFactor),
                           orbitSpeed: marsOrbitSpeed,
                           position: .init(x: -0.5, y: 0, z: 0),
                           color: .mars)
         let juptier = Planet(name: "Jupiter",
                              radius: diameterOfJupiter / 2 * diameterFactor,
-                             distance: distanceBetweenSunAndJupiter * distanceFactor,
+                             distance: Float(distanceBetweenSunAndJupiter * distanceFactor),
                              orbitSpeed: jupiterOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .jupiter)
         let saturn = Planet(name: "Saturn",
                             radius: diameterOfSaturn / 2 * diameterFactor,
-                            distance: distanceBetweenSunAndSaturn * distanceFactor,
+                            distance: Float(distanceBetweenSunAndSaturn * distanceFactor),
                             orbitSpeed: saturnOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
                             color: .saturn)
         let uranus = Planet(name: "Uranus",
                             radius: diameterOfUranus / 2 * diameterFactor,
-                            distance: distanceBetweenSunAndUranus * distanceFactor,
+                            distance: Float(distanceBetweenSunAndUranus * distanceFactor),
                             orbitSpeed: uranusOrbitSpeed,
                             position: .init(x: 0, y: 0, z: 0),
                             color: .uranus)
         let neptune = Planet(name: "Neptune",
                              radius: diameterOfNeptune / 2 * diameterFactor,
-                             distance: distanceBetweenSunAndNeptune * distanceFactor,
+                             distance: Float(distanceBetweenSunAndNeptune * distanceFactor),
                              orbitSpeed: neptuneOrbitSpeed,
                              position: .init(x: 0, y: 0, z: 0),
                              color: .neptune)
@@ -195,6 +206,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Handle view size changes
     }
     
+    var time: Float = 0
     func draw(in view: MTKView) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let renderPassDescriptor = view.currentRenderPassDescriptor,
@@ -203,12 +215,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         
         renderEncoder.setRenderPipelineState(pipelineState)
-        // Calculate time (seconds since start)
-        let time = Float(CACurrentMediaTime())
         // Update and render planets
         for planet in planets {
             renderPlanet(planet, with: renderEncoder, time: time)
         }
+        time += 1
         
         // TODO:
         
@@ -284,7 +295,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var limits: [Float] = [2, 1.5, -2, -2.3]
     var f: Float = -0.5
     let deltaAngle: Float = .pi / 1800
-    let orbitSpeedMultiplier: Float = 1e-5
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
                               time: Float) {
