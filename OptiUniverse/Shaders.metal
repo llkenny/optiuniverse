@@ -48,6 +48,10 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     return color;
 }
 
+fragment float4 fragment_main_debug(VertexOut in [[stage_in]]) {
+    return float4(in.texCoord.x, in.texCoord.y, 0.0, 1.0);
+}
+
 //fragment float4 fragment_main(VertexOut in [[stage_in]]) {
 //    return float4(in.texCoord.x, in.texCoord.y, 0.0, 1.0);
 //}

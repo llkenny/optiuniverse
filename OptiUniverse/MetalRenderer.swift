@@ -426,46 +426,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
                               time: Float) {
-        // Simple uniform matrix (replace with proper transformation)
-        var matrix = matrix_identity_float4x4
-        + float4x4(
-            [planet.radius * 2, 0, 0, 0],
-            [0, planet.radius * 2, 0, 0],
-            [0, 0, planet.radius * 2, 0],
-            [0, 0, 0, 1]
-        )
-        + float4x4(
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, planet.distance, 0, 1]
-        )
-        // Предположим, у нас есть точка A(x, y, z) и мы хотим повернуть её вокруг точки C(cx, cy, cz) на угол θ вокруг оси z.
-        // Смещаем точку A: A'(x', y', z') = (x - cx, y - cy, z - cz).
-        // Применяем матрицу вращения вокруг оси z:
-//        Proper Matrix Multiplication Order:
-//        First translate to orbit distance
-//        Then apply rotation
-//        This creates circular motion around the origin
-        let angle = time * planet.orbitSpeed * orbitSpeedMultiplier
-//        let degree = angle * 180 / .pi
-//        let rotationByPoint = float4x4.makeRotationZ(angle) * SIMD4(x: 0, y: -planet.distance, z: 0, w: 1)
-//        matrix += float4x4(
-//            [1, 0, 0, 0],
-//            [0, 1, 0, 0],
-//            [0, 0, 1, 0],
-//            [rotationByPoint.x, rotationByPoint.y, 0, 1]
-//        )
-        // TODO:
-        // Combine with view and projection matrices
-//        let mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-        
-        // TODO:
-        // Elliptical orbit example
-//        let eccentricity: Float = 0.1 // 0 for circular
-//        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
-//
-        matrix = float4x4.makeRotationZ(angle) * matrix
         
         // Get or create mesh
         if planetMeshes[planet.textureName] == nil {
@@ -475,6 +435,31 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             )
         }
         guard let mesh = planetMeshes[planet.textureName] else { return }
+        
+        // 1. Create scaling matrix
+        let scaleMatrix = float4x4.makeScale([planet.radius, planet.radius, planet.radius])
+        
+        // 2. Create translation to orbit distance
+        var modelMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+        
+        // 3. Apply rotation around sun
+        let angle = time * planet.orbitSpeed * orbitSpeedMultiplier
+        modelMatrix = float4x4.makeRotationZ(angle) * modelMatrix
+        
+        // 4. Combine with scaling (scale first, then rotate, then translate)
+        modelMatrix = modelMatrix * scaleMatrix
+        
+        // TODO:
+        // Combine with view and projection matrices
+//        let mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+        
+        // 5. Create MVP matrix
+        var mvpMatrix = modelMatrix
+        
+        // TODO:
+        // Elliptical orbit example
+//        let eccentricity: Float = 0.1 // 0 for circular
+//        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
 //        // Set texture
         if cachedTextures[planet.textureName] == nil {
@@ -489,8 +474,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let texture = cachedTextures[planet.textureName]!
         
         let mtkMesh = try! MTKMesh(mesh: mesh, device: device)
-        
-        var mvpMatrix = matrix
             
         // TODO:
 //        let angle = time * planet.orbitSpeed
@@ -503,7 +486,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setVertexBytes(&mvpMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 1)
-        renderEncoder.setVertexBytes(&matrix,
+        renderEncoder.setVertexBytes(&modelMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 2)
         
@@ -524,19 +507,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             indexBuffer: submesh.indexBuffer.buffer,
             indexBufferOffset: submesh.indexBuffer.offset
         )
-        
-//        // Set the planet color
-//        var planetColor = planet.color // SIMD3<Float>
-//        renderEncoder.setFragmentBytes(&planetColor, length: MemoryLayout<SIMD3<Float>>.stride, index: 0)
-        
-
-//        
-//        renderEncoder.drawIndexedPrimitives(
-//            type: .triangle,
-//            indexCount: submesh.indexCount,
-//            indexType: submesh.indexType,
-//            indexBuffer: submesh.indexBuffer.buffer,
-//            indexBufferOffset: 0)
     }
 }
 

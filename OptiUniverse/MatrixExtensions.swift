@@ -114,5 +114,14 @@ extension float4x4 {
         columns.2.y = y * z * omc - x * s
         columns.2.z = z * z * omc + c
     }
+    
+    static func makeScale(_ s: SIMD3<Float>) -> float4x4 {
+        float4x4(
+            [s.x, 0,   0,   0],
+            [0,   s.y, 0,   0],
+            [0,   0,   s.z, 0],
+            [0,   0,   0,   1]
+        )
+    }
 }
 
