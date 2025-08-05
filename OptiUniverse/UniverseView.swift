@@ -5,8 +5,6 @@
 //  Created by max on 23.07.2025.
 //
 
-
-// UniverseView.swift
 import SwiftUI
 import MetalKit
 
@@ -26,6 +24,17 @@ struct UniverseView: UIViewRepresentable {
         // Initialize the renderer with the MTKView
         context.coordinator.renderer = MetalRenderer(metalView: mtkView)
         
+        // Add gesture recognizers
+        let panGesture = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan(_:)))
+            mtkView.addGestureRecognizer(panGesture)
+            
+            let pinchGesture = UIPinchGestureRecognizer(
+                target: context.coordinator,
+                action: #selector(Coordinator.handlePinch(_:)))
+                mtkView.addGestureRecognizer(pinchGesture)
+        
         return mtkView
     }
     
@@ -36,4 +45,14 @@ class RendererCoordinator {
     var renderer: MetalRenderer?
     
     init() {}
+    
+    @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+        let translation = gesture.translation(in: gesture.view)
+        renderer?.handlePanGesture(translation: translation)
+        gesture.setTranslation(.zero, in: gesture.view)
+    }
+    
+    @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+        renderer?.handlePinchGesture(scale: gesture.scale)
+    }
 }

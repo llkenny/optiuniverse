@@ -10,7 +10,7 @@ import Foundation
 final class SolarSystemLoader {
     enum Constants {
         static let diameterFactor: Float = 1e-6
-        static let distanceFactor: Double = 2e-10
+        static let distanceFactor: Double = 2e-9
         static let orbitSpeedMultiplier: Float = 1e-3
     }
     

@@ -130,9 +130,15 @@ final class PlanetsRenderer {
         return mdlMesh
     }
     
-    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder) {
+    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
+                       viewMatrix: float4x4,
+                       projectionMatrix: float4x4) {
         for planet in planets {
-            renderPlanet(planet, with: renderEncoder, time: time)
+            renderPlanet(planet,
+                         with: renderEncoder,
+                         time: time,
+                         viewMatrix: viewMatrix,
+                         projectionMatrix: projectionMatrix)
         }
         time += 1
     }
@@ -140,7 +146,9 @@ final class PlanetsRenderer {
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
-                              time: Float) {
+                              time: Float,
+                              viewMatrix: float4x4,
+                              projectionMatrix: float4x4) {
         
         // Get or create mesh
         if planetMeshes[planet.textureName] == nil {
@@ -164,12 +172,8 @@ final class PlanetsRenderer {
         // 4. Combine with scaling (scale first, then rotate, then translate)
         modelMatrix = modelMatrix * scaleMatrix
         
-        // TODO:
-        // Combine with view and projection matrices
-        //        let mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-        
         // 5. Create MVP matrix
-        var mvpMatrix = modelMatrix
+        var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
         // TODO:
         // Elliptical orbit example

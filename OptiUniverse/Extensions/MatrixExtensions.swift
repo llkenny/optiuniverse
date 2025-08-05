@@ -45,20 +45,6 @@ extension float4x4 {
         )
     }
     
-    static func makePerspective(fovY: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
-        let scaleY = 1 / tan(fovY * 0.5)
-        let scaleX = scaleY / aspect
-        let scaleZ = far / (far - near)
-        let scaleW = -far * near / (far - near)
-        
-        return .init(
-            [scaleX, 0, 0, 0],
-            [0, scaleY, 0, 0],
-            [0, 0, scaleZ, 1],
-            [0, 0, scaleW, 0]
-        )
-    }
-    
     /// Creates a rotation matrix around a specified point.
     ///
     /// - Parameters:
@@ -123,5 +109,34 @@ extension float4x4 {
             [0,   0,   0,   1]
         )
     }
+    
+    // Perspective projection
+    static func perspective(fov: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
+        let yScale = 1 / tan(fov * 0.5)
+        let xScale = yScale / aspect
+        let zRange = far - near
+        let zScale = -(far + near) / zRange
+        let wzScale = -2 * far * near / zRange
+        
+        return float4x4(
+            [xScale, 0,      0,       0],
+            [0,      yScale, 0,       0],
+            [0,      0,      zScale, -1],
+            [0,      0,      wzScale, 0]
+        )
+    }
+    
+    // Camera view matrix
+    static func lookAt(eye: SIMD3<Float>, target: SIMD3<Float>, up: SIMD3<Float>) -> float4x4 {
+        let z = normalize(eye - target)
+        let x = normalize(cross(up, z))
+        let y = cross(z, x)
+        
+        return float4x4(
+            [x.x, y.x, z.x, 0],
+            [x.y, y.y, z.y, 0],
+            [x.z, y.z, z.z, 0],
+            [-dot(x, eye), -dot(y, eye), -dot(z, eye), 1]
+        )
+    }
 }
-
