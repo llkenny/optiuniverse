@@ -1,4 +1,3 @@
-- Textures
 - User camera with mouse rotate and zoom in / out
 - GitHub
 - Ask deepseek for refactoring by github url
@@ -9,3 +8,46 @@
 - Add asteroids
 - Add comments
 - Add sun and planet animations
+
+
+
+
+        
+        // TODO:
+        
+//        // 2. Adding moons with secondary orbits
+//        func renderMoon(planetPosition: SIMD3<Float>, ...) {
+//            // Similar to planets but relative to parent planet
+//        }
+//        
+//        // 3. Tilted orbits (solar system plane)
+//        let tiltMatrix = float4x4.makeRotationX(0.1) // ~5.7° tilt
+//        modelMatrix = tiltMatrix * rotationMatrix * translationMatrix
+    
+    
+    Loading Models
+//    import ModelIO
+//    import MetalKit
+//    
+//    // Assuming you have an MDLMesh loaded, e.g., from an asset file
+//    guard let assetURL = Bundle.main.url(forResource: "myModel", withExtension: "obj") else { return }
+//    let asset = MDLAsset(url: assetURL)
+//    guard let mesh = asset.object(at: 0) as? MDLMesh else { return }
+//    
+//    // 1. Create an MDLMaterialProperty for the base color texture
+//    guard let textureURL = Bundle.main.url(forResource: "myTexture", withExtension: "png") else { return }
+//    let baseColorTextureProperty = MDLMaterialProperty(name: "baseColorTexture", semantic: .baseColor, url: textureURL)
+//    
+//    // 2. Create an MDLMaterial and set the texture property
+//    let material = MDLMaterial(name: "texturedMaterial", scatteringFunction: MDLScatteringFunction())
+//    material.setProperty(baseColorTextureProperty)
+//    
+//    // 3. Apply the material to the submeshes of your MDLMesh
+//    if let submeshes = mesh.submeshes as? [MDLSubmesh] {
+//        for submesh in submeshes {
+//            submesh.material = material
+//        }
+//    }
+//        
+//        // Now, when you render this MDLMesh using Metal, the texture will be applied
+//        // (assuming your Metal rendering pipeline is set up to handle MDLMaterial properties and textures).
