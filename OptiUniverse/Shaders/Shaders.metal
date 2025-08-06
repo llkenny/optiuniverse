@@ -34,11 +34,6 @@ vertex VertexOut vertex_main(
     out.normal = normalize((modelMatrix * float4(in.normal, 0.0)).xyz);
     out.texCoord = in.texCoord;
     return out;
-////    out.position = mvpMatrix * float4(in.position, 1.0);
-//    out.position = float4(in.position, 1.0);
-////    out.color = float4(in.color, 1.0);
-////    out.color = float4(0, 1, 0, 1);
-//    return out;
 }
 
 fragment float4 fragment_main(VertexOut in [[stage_in]],

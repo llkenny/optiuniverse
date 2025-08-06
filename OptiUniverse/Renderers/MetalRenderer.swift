@@ -23,8 +23,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var cameraPosition = SIMD3<Float>(0, 0, 2)
     private var cameraTarget = SIMD3<Float>(0, 0, 0)
     private var cameraUp = SIMD3<Float>(0, 1, 0)
+    // Zoom
     private var zoom: Float = 1.0
     private var startScale: CGFloat = 1.0
+    // Rotation
+    private var rotation: Float = 0.0
     
     // Touch state
     var previousPanLocation: CGPoint = .zero
@@ -97,6 +100,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         updateProjectionMatrix()
     }
     
+    func handleRotationGesture(rotation: CGFloat) {
+        self.rotation = Float(-rotation)
+        updateProjectionMatrix()
+    }
+    
     private func updateViewMatrix() {
         viewMatrix = matrix_identity_float4x4
         * float4x4.init(translation: cameraPosition)
@@ -104,6 +112,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     
     private func updateProjectionMatrix() {
         projectionMatrix = matrix_identity_float4x4
+        * float4x4.makeRotationY(rotation)
         * float4x4.makeScale([zoom, zoom, zoom])
     }
 }

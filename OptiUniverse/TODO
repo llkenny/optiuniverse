@@ -60,6 +60,19 @@ Bugs:
         updateProjectionMatrix(size: metalView.bounds.size)
     }
     
+    // TODO:
+    Fix sampler
+    // Create a sampler descriptor
+let samplerDescriptor = MTLSamplerDescriptor()
+samplerDescriptor.minFilter = .linear
+samplerDescriptor.magFilter = .linear
+samplerDescriptor.sAddressMode = .repeat
+samplerDescriptor.tAddressMode = .repeat
+
+// Add to render pipeline
+let samplerState = device.makeSamplerState(descriptor: samplerDescriptor)
+renderEncoder.setFragmentSamplerState(samplerState, index: 0)	
+    
     
     Loading Models
 //    import ModelIO

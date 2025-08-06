@@ -76,7 +76,7 @@ class RendererCoordinator {
     @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
         let rotation = gesture.rotation
         print("Rotation \(rotation)")
-        // TODO: Add rotation
+        renderer?.handleRotationGesture(rotation: rotation)
     }
     
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
