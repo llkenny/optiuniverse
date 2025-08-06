@@ -107,7 +107,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     
     private func updateViewMatrix() {
         viewMatrix = matrix_identity_float4x4
-        * float4x4.init(translation: cameraPosition)
+        * float4x4.makeTranslation(cameraPosition)
     }
     
     private func updateProjectionMatrix() {
