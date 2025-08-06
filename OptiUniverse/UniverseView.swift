@@ -28,12 +28,22 @@ struct UniverseView: UIViewRepresentable {
         let panGesture = UIPanGestureRecognizer(
             target: context.coordinator,
             action: #selector(Coordinator.handlePan(_:)))
-            mtkView.addGestureRecognizer(panGesture)
-            
-            let pinchGesture = UIPinchGestureRecognizer(
-                target: context.coordinator,
-                action: #selector(Coordinator.handlePinch(_:)))
-                mtkView.addGestureRecognizer(pinchGesture)
+        mtkView.addGestureRecognizer(panGesture)
+        
+        let pinchGesture = UIPinchGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePinch(_:)))
+        mtkView.addGestureRecognizer(pinchGesture)
+        
+        let rotationGesture = UIRotationGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleRotation(_:)))
+        mtkView.addGestureRecognizer(rotationGesture)
+        
+        let tapGesture = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap(_:)))
+        mtkView.addGestureRecognizer(tapGesture)
         
         return mtkView
     }
@@ -53,6 +63,25 @@ class RendererCoordinator {
     }
     
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        renderer?.handlePinchGesture(scale: gesture.scale)
+        switch gesture.state {
+            case .began:
+                renderer?.handlePinchGestureStart(scale: gesture.scale)
+            case .changed:
+                renderer?.handlePinchGestureChange(scale: gesture.scale)
+            default:
+                break
+        }
+    }
+    
+    @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
+        let rotation = gesture.rotation
+        print("Rotation \(rotation)")
+        // TODO: Add rotation
+    }
+    
+    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+        let point = gesture.location(ofTouch: 0, in: gesture.view)
+        print("Touch point\(point)")
+        // TODO: Add objects selection
     }
 }

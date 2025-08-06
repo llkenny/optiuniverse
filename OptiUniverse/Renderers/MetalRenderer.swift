@@ -8,6 +8,11 @@
 import MetalKit
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
+    enum Constants {
+        static let translationSensitivity: Float = 0.01
+        static let zoomSensitivity: Float = 0.5
+    }
+    
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let axesRenderer: AxesRenderer
@@ -19,6 +24,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var cameraTarget = SIMD3<Float>(0, 0, 0)
     private var cameraUp = SIMD3<Float>(0, 1, 0)
     private var zoom: Float = 1.0
+    private var startScale: CGFloat = 1.0
     
     // Touch state
     var previousPanLocation: CGPoint = .zero
@@ -77,42 +83,27 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     
     // Gestures
     func handlePanGesture(translation: CGPoint) {
-        let sensitivity: Float = 0.01
-        cameraPosition.x += Float(translation.x) * sensitivity
-        cameraPosition.y -= Float(translation.y) * sensitivity // Y is inverted
+        cameraPosition.x += Float(translation.x) * Constants.translationSensitivity
+        cameraPosition.y -= Float(translation.y) * Constants.translationSensitivity // Y is inverted
         updateViewMatrix()
     }
     
-    func handlePinchGesture(scale: CGFloat) {
-        let zoomSensitivity: Float = 0.5
-        zoom *= Float(scale) * zoomSensitivity
-        zoom = max(0.1, min(zoom, 5.0)) // Clamp zoom
-        updateProjectionMatrix(size: metalView.bounds.size)
+    func handlePinchGestureStart(scale: CGFloat) {
+        startScale = scale
+    }
+    
+    func handlePinchGestureChange(scale: CGFloat) {
+        zoom *= 1 + Float(scale - startScale) * Constants.zoomSensitivity
+        updateProjectionMatrix()
     }
     
     private func updateViewMatrix() {
-        viewMatrix = float4x4.lookAt(
-            eye: cameraPosition,
-            target: cameraTarget,
-            up: cameraUp
-        )
+        viewMatrix = matrix_identity_float4x4
+        * float4x4.init(translation: cameraPosition)
     }
     
-//    func handleRotationGesture(rotation: Float) {
-//        // Rotate camera around target
-//        let rotationMatrix = float4x4.makeRotationY(angle: rotation)
-//        cameraPosition = SIMD3<Float>(rotationMatrix * SIMD4<Float>(cameraPosition, 1)).xyz
-//        cameraUp = SIMD3<Float>(rotationMatrix * SIMD4<Float>(cameraUp, 0)).xyz
-//        updateViewMatrix()
-//    }
-    
-    private func updateProjectionMatrix(size: CGSize) {
-        let aspect = Float(size.width / size.height)
-        projectionMatrix = float4x4.perspective(
-            fov: .pi/3 / zoom,
-            aspect: aspect,
-            near: 0.1,
-            far: 1000
-        )
+    private func updateProjectionMatrix() {
+        projectionMatrix = matrix_identity_float4x4
+        * float4x4.makeScale([zoom, zoom, zoom])
     }
 }
