@@ -96,23 +96,34 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     func handlePinchGestureChange(scale: CGFloat) {
-        zoom *= 1 + Float(scale - startScale) * Constants.zoomSensitivity
+        cameraPosition.z += Float(scale - startScale) * Constants.zoomSensitivity
+        updateViewMatrix()
         updateProjectionMatrix()
     }
     
     func handleRotationGesture(rotation: CGFloat) {
         self.rotation = Float(-rotation)
+        updateViewMatrix()
         updateProjectionMatrix()
     }
     
     private func updateViewMatrix() {
         viewMatrix = matrix_identity_float4x4
         * float4x4.makeTranslation(cameraPosition)
+        * float4x4.makeRotationY(rotation)
     }
     
     private func updateProjectionMatrix() {
-        projectionMatrix = matrix_identity_float4x4
-        * float4x4.makeRotationY(rotation)
-        * float4x4.makeScale([zoom, zoom, zoom])
+        // TODO: If no zoom via fov - move to constant
+        let aspect = Float(metalView.bounds.width/metalView.bounds.height)
+        let near: Float = 0.001  // 1mm
+        let far: Float = 100000.0   // 100km
+        let fov: Float = .pi/3 // div by zoom for scale by fov
+        projectionMatrix = float4x4(
+            [1/(aspect*tan(fov/2)), 0, 0, 0],
+            [0, 1/tan(fov/2), 0, 0],
+            [0, 0, far/(far-near), 1],
+            [0, 0, -far*near/(far-near), 0]  // Note this critical line
+        )
     }
 }

@@ -170,6 +170,7 @@ final class PlanetsRenderer {
         modelMatrix = float4x4.makeRotationZ(angle) * modelMatrix
         
         // 4. Combine with scaling (scale first, then rotate, then translate)
+        // TODO: But it different currently
         modelMatrix = modelMatrix * scaleMatrix
         
         // 5. Create MVP matrix
