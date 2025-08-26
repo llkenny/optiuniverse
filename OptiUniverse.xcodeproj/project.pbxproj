@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WhatToTest.en-GB.txt"; sourceTree = "<group>"; };
 		50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptiUniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -29,9 +30,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		506056262E5E587000536AA8 /* TestFlight */ = {
+			isa = PBXGroup;
+			children = (
+				506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */,
+			);
+			path = TestFlight;
+			sourceTree = "<group>";
+		};
 		50BAAA2D2E30E2A800ECB7DE = {
 			isa = PBXGroup;
 			children = (
+				506056262E5E587000536AA8 /* TestFlight */,
 				50BAAA382E30E2A800ECB7DE /* OptiUniverse */,
 				50BAAA372E30E2A800ECB7DE /* Products */,
 			);
@@ -256,6 +266,7 @@
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -289,6 +300,7 @@
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
