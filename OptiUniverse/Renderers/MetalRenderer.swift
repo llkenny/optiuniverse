@@ -6,12 +6,16 @@
 //
 
 import MetalKit
+import os
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
     enum Constants {
         static let translationSensitivity: Float = 0.01
         static let zoomSensitivity: Float = 0.5
     }
+    
+    private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
+    private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
     
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
@@ -32,8 +36,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     // Touch state
     var previousPanLocation: CGPoint = .zero
     
-    private var viewMatrix: float4x4 = matrix_identity_float4x4
-    private var projectionMatrix: float4x4 = matrix_identity_float4x4
+    private var viewMatrix: float4x4 = matrix_identity_float4x4 {
+        didSet {
+            viewMatrixLogger.logMatricies(matrix1: oldValue,
+                                          matrix2: self.viewMatrix,
+                                          caption: "View Matrix update:",
+                                          level: .debug)
+        }
+    }
+    private var projectionMatrix: float4x4 = matrix_identity_float4x4 {
+        didSet {
+            projectionMatrixLogger.logMatricies(matrix1: oldValue,
+                                                matrix2: self.projectionMatrix,
+                                                caption: "Projection Matrix update:",
+                                                level: .debug)
+        }
+    }
     
     init?(metalView: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -46,6 +64,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.metalView = metalView
         axesRenderer = AxesRenderer(device: device)
         planetsRenderer = PlanetsRenderer(device: device)
+        
+        viewMatrix = matrix_identity_float4x4
+        projectionMatrix = matrix_identity_float4x4
+        
         super.init()
         
         metalView.device = device
