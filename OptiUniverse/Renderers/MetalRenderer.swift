@@ -9,10 +9,6 @@ import MetalKit
 import os
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
-    enum Constants {
-        static let translationSensitivity: Float = 0.01
-        static let zoomSensitivity: Float = 0.5
-    }
     
     private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
     private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
@@ -23,20 +19,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let planetsRenderer: PlanetsRenderer
     private let metalView: MTKView
     
+    // Orbital Camera
     // Camera state
-    private var cameraPosition = SIMD3<Float>(0, 0, 2)
-    private var cameraTarget = SIMD3<Float>(0, 0, 0)
-    private var cameraUp = SIMD3<Float>(0, 1, 0)
-    // Zoom
-    private var zoom: Float = 1.0
-    private var startScale: CGFloat = 1.0
-    // Rotation
-    private var rotation: Float = 0.0
+    var cameraDistance: Float = 3
+    var cameraYaw: Float = 0.0      // Horizontal rotation (radians)
+    var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
+    let cameraTarget = SIMD3<Float>(0, 0, 0)
     
-    // Touch state
-    var previousPanLocation: CGPoint = .zero
-    
-    private var viewMatrix: float4x4 = matrix_identity_float4x4 {
+    private var viewMatrix: float4x4 {
         didSet {
             viewMatrixLogger.logMatricies(matrix1: oldValue,
                                           matrix2: self.viewMatrix,
@@ -44,7 +34,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                           level: .debug)
         }
     }
-    private var projectionMatrix: float4x4 = matrix_identity_float4x4 {
+    private var projectionMatrix: float4x4 {
         didSet {
             projectionMatrixLogger.logMatricies(matrix1: oldValue,
                                                 matrix2: self.projectionMatrix,
@@ -78,6 +68,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // Handle view size changes
+        updateCamera()
     }
     
     func draw(in view: MTKView) {
@@ -106,46 +97,31 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         commandBuffer.commit()
     }
     
-    // Gestures
-    func handlePanGesture(translation: CGPoint) {
-        cameraPosition.x += Float(translation.x) * Constants.translationSensitivity
-        cameraPosition.y -= Float(translation.y) * Constants.translationSensitivity // Y is inverted
-        updateViewMatrix()
-    }
-    
-    func handlePinchGestureStart(scale: CGFloat) {
-        startScale = scale
-    }
-    
-    func handlePinchGestureChange(scale: CGFloat) {
-        cameraPosition.z += Float(scale - startScale) * Constants.zoomSensitivity
-        updateViewMatrix()
-        updateProjectionMatrix()
-    }
-    
-    func handleRotationGesture(rotation: CGFloat) {
-        self.rotation = Float(-rotation)
-        updateViewMatrix()
-        updateProjectionMatrix()
-    }
-    
-    private func updateViewMatrix() {
-        viewMatrix = matrix_identity_float4x4
-        * float4x4.makeTranslation(cameraPosition)
-        * float4x4.makeRotationY(rotation)
-    }
-    
     private func updateProjectionMatrix() {
         // TODO: If no zoom via fov - move to constant
         let aspect = Float(metalView.bounds.width/metalView.bounds.height)
-        let near: Float = 0.001  // 1mm
-        let far: Float = 100000.0   // 100km
-        let fov: Float = .pi/3 // div by zoom for scale by fov
-        projectionMatrix = float4x4(
-            [1/(aspect*tan(fov/2)), 0, 0, 0],
-            [0, 1/tan(fov/2), 0, 0],
-            [0, 0, far/(far-near), 1],
-            [0, 0, -far*near/(far-near), 0]  // Note this critical line
+        projectionMatrix = float4x4.perspective(
+            fov: .pi/3,
+            aspect: aspect,
+            near: 0.1,
+            far: 1000
         )
+    }
+    
+    func updateCamera() {
+        // 1. Calculate orbit position
+        let x = cameraDistance * sin(cameraYaw) * cos(cameraPitch)
+        let y = cameraDistance * sin(cameraPitch)
+        let z = cameraDistance * cos(cameraYaw) * cos(cameraPitch)
+        
+        let cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
+        
+        // 2. Update matrices
+        viewMatrix = float4x4.lookAt(
+            eye: cameraPosition,
+            target: cameraTarget,
+            up: SIMD3<Float>(0, 1, 0)
+        )
+        updateProjectionMatrix()
     }
 }

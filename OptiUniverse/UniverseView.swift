@@ -27,18 +27,12 @@ struct UniverseView: UIViewRepresentable {
         // Add gesture recognizers
         let panGesture = UIPanGestureRecognizer(
             target: context.coordinator,
-            action: #selector(Coordinator.handlePan(_:)))
+            action: #selector(Coordinator.handlePan))
         mtkView.addGestureRecognizer(panGesture)
-        
         let pinchGesture = UIPinchGestureRecognizer(
             target: context.coordinator,
-            action: #selector(Coordinator.handlePinch(_:)))
+            action: #selector(Coordinator.handlePinch))
         mtkView.addGestureRecognizer(pinchGesture)
-        
-        let rotationGesture = UIRotationGestureRecognizer(
-            target: context.coordinator,
-            action: #selector(Coordinator.handleRotation(_:)))
-        mtkView.addGestureRecognizer(rotationGesture)
         
         let tapGesture = UITapGestureRecognizer(
             target: context.coordinator,
@@ -54,29 +48,29 @@ struct UniverseView: UIViewRepresentable {
 class RendererCoordinator {
     var renderer: MetalRenderer?
     
+    // Touch state
+    private var lastPanLocation: CGPoint = .zero
+    
     init() {}
     
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        let translation = gesture.translation(in: gesture.view)
-        renderer?.handlePanGesture(translation: translation)
-        gesture.setTranslation(.zero, in: gesture.view)
+        let location = gesture.translation(in: gesture.view)
+        let sensitivity: Float = 0.01
+        
+        renderer?.cameraYaw -= Float(location.x - lastPanLocation.x) * sensitivity
+        renderer?.cameraPitch -= Float(location.y - lastPanLocation.y) * sensitivity
+        renderer?.cameraPitch = max(0.1, min(renderer?.cameraPitch ?? 0, .pi/2))
+        
+        lastPanLocation = location
+        renderer?.updateCamera()
     }
     
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        switch gesture.state {
-            case .began:
-                renderer?.handlePinchGestureStart(scale: gesture.scale)
-            case .changed:
-                renderer?.handlePinchGestureChange(scale: gesture.scale)
-            default:
-                break
-        }
-    }
-    
-    @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
-        let rotation = gesture.rotation
-        print("Rotation \(rotation)")
-        renderer?.handleRotationGesture(rotation: rotation)
+        let zoomSensitivity: Float = 1 // TODO: Think about its value
+        renderer?.cameraDistance /= Float(gesture.scale) * zoomSensitivity
+        renderer?.cameraDistance = max(0, min(renderer?.cameraDistance ?? 3, 100))
+        gesture.scale = 1.0
+        renderer?.updateCamera()
     }
     
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
