@@ -102,8 +102,8 @@ final class PlanetsRenderer {
     
     private func makeSamplerState() -> MTLSamplerState {
         let samplerDescriptor = MTLSamplerDescriptor()
-        samplerDescriptor.sAddressMode = .repeat
-        samplerDescriptor.tAddressMode = .repeat
+        samplerDescriptor.sAddressMode = .clampToEdge
+        samplerDescriptor.tAddressMode = .clampToEdge
         samplerDescriptor.minFilter = .linear
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
@@ -241,6 +241,11 @@ final class PlanetsRenderer {
         renderEncoder.setVertexBuffer(mtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         renderEncoder.setFragmentTexture(texture.baseColor!, index: 0)
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+
+        var t = time
+        renderEncoder.setFragmentBytes(&t,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 0)
         
         guard let submesh = mtkMesh.submeshes.first else {
             fatalError()
