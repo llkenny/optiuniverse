@@ -17,6 +17,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let commandQueue: MTLCommandQueue
     private let axesRenderer: AxesRenderer
     private let planetsRenderer: PlanetsRenderer
+    private let sunRenderer: SunRenderer
     private let metalView: MTKView
     
     // Orbital Camera
@@ -54,6 +55,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.metalView = metalView
         axesRenderer = AxesRenderer(device: device)
         planetsRenderer = PlanetsRenderer(device: device)
+        guard let renderer = SunRenderer(mtkView: metalView) else {
+            fatalError(#function + ": Failed to initialize SunRenderer")
+        }
+        sunRenderer = renderer
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -87,6 +92,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Render axes
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder)
+        
+        // Render sun
+        sunRenderer.draw(viewMatrix: viewMatrix,
+                         projectionMatrix: projectionMatrix,
+                         renderEncoder: renderEncoder)
         
         renderEncoder.endEncoding()
         
