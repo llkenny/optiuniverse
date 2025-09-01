@@ -55,11 +55,8 @@ final class SunRenderer: NSObject {
         self.queue = queue
         
         let drawableFormat = mtkView.colorPixelFormat           // e.g. .bgra8Unorm_srgb
+        let depthFormat = mtkView.depthStencilPixelFormat
         let hdrFormat: MTLPixelFormat = .rgba16Float            // for offscreen targets
-//        mtkView.depthStencilPixelFormat = .depth32Float
-        
-//        mtkView.depthStencilPixelFormat = .depth32Float
-//        mtkView.colorPixelFormat = .bgra8Unorm_srgb
         
         // Library & pipelines
         let library = try! device.makeDefaultLibrary(bundle: .main)
@@ -122,11 +119,14 @@ final class SunRenderer: NSObject {
         
         super.init()
         
-        func makePP(_ frag: String, format: MTLPixelFormat) throws -> MTLRenderPipelineState {
+        func makePP(_ frag: String,
+                    format: MTLPixelFormat,
+                    depth: MTLPixelFormat = .invalid) throws -> MTLRenderPipelineState {
             let d = MTLRenderPipelineDescriptor()
             d.vertexFunction = library.makeFunction(name: "vs_fullscreen")
             d.fragmentFunction = library.makeFunction(name: frag)
             d.colorAttachments[0].pixelFormat = format
+            d.depthAttachmentPixelFormat = depth
             return try device.makeRenderPipelineState(descriptor: d)
         }
         
@@ -136,7 +136,9 @@ final class SunRenderer: NSObject {
         pipeBlurV  = try! makePP("ps_blur_v",      format: hdrFormat)
         
         // Final composite to the screen (drawable format)
-        pipeComposite = try! makePP("ps_composite", format: drawableFormat)
+        pipeComposite = try! makePP("ps_composite",
+                                   format: drawableFormat,
+                                   depth: depthFormat)
         
         // Ensure targets exist initially
         reshapeTargets(for: mtkView.drawableSize, device: device)

@@ -52,23 +52,27 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         
         self.device = device
         self.commandQueue = commandQueue
+
+        // Configure the view before creating dependent renderers so that they
+        // pick up the correct pixel formats and device.
+        metalView.device = device
+        metalView.colorPixelFormat = .bgra8Unorm_srgb
+        metalView.depthStencilPixelFormat = .depth32Float
         self.metalView = metalView
+
         axesRenderer = AxesRenderer(device: device)
         planetsRenderer = PlanetsRenderer(device: device)
         guard let renderer = SunRenderer(mtkView: metalView) else {
             fatalError(#function + ": Failed to initialize SunRenderer")
         }
         sunRenderer = renderer
-        
+
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
-        
+
         super.init()
-        
-        metalView.device = device
+
         metalView.delegate = self
-        metalView.colorPixelFormat = .bgra8Unorm_srgb
-        metalView.depthStencilPixelFormat = .depth32Float
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
