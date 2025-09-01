@@ -82,34 +82,31 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let renderPassDescriptor = view.currentRenderPassDescriptor,
-              let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return
         }
-        
+
 //        // Render planets
+//        let renderPassDescriptor = view.currentRenderPassDescriptor!
+//        let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
 //        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
 //        planetsRenderer.renderPlanets(with: renderEncoder,
 //                                      viewMatrix: viewMatrix,
 //                                      projectionMatrix: projectionMatrix)
-//        
-//        // Render axes
 //        renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
 //        axesRenderer.renderAxes(with: renderEncoder)
-        
-        renderEncoder.endEncoding()
-        
+//        renderEncoder.endEncoding()
+
         // Render sun
         sunRenderer.draw(view: view,
                          viewMatrix: viewMatrix,
                          projectionMatrix: projectionMatrix,
                          commandBuffer: commandBuffer)
-        
+
         if let drawable = view.currentDrawable {
             commandBuffer.present(drawable)
         }
-        
+
         commandBuffer.commit()
     }
     

@@ -37,6 +37,7 @@ final class SunRenderer: NSObject {
     private var brightTarget: MTLTexture!
     private var blurTemp: MTLTexture!
     private var blurFinal: MTLTexture!
+    private var sceneDepth: MTLTexture!
     
     private var pipeBright: MTLRenderPipelineState!
     private var pipeBlurH: MTLRenderPipelineState!
@@ -182,7 +183,7 @@ final class SunRenderer: NSObject {
         sceneRPD.colorAttachments[0].loadAction = .clear
         sceneRPD.colorAttachments[0].storeAction = .store
         sceneRPD.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1)
-        sceneRPD.depthAttachment.texture = view.depthStencilTexture // or create your own depth
+        sceneRPD.depthAttachment.texture = sceneDepth
         sceneRPD.depthAttachment.loadAction = .clear
         sceneRPD.depthAttachment.storeAction = .dontCare
         sceneRPD.depthAttachment.clearDepth = 1.0
@@ -272,7 +273,12 @@ final class SunRenderer: NSObject {
         brightTarget = makeTex(.rgba16Float)
         blurTemp = makeTex(.rgba16Float)
         blurFinal = makeTex(.rgba16Float)
-        
+
+        let depthDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .depth32Float, width: w, height: h, mipmapped: false)
+        depthDesc.usage = [.renderTarget]
+        depthDesc.storageMode = .private
+        sceneDepth = device.makeTexture(descriptor: depthDesc)!
+
         bloom.texelSize = SIMD2<Float>(1.0/Float(w), 1.0/Float(h))
     }
 }
