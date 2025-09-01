@@ -6,12 +6,28 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		50209F6D2E6629400099E217 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 50BAAA2E2E30E2A800ECB7DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 50BAAA352E30E2A800ECB7DE;
+			remoteInfo = OptiUniverse;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		50209F692E6629400099E217 /* OptiUniverseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OptiUniverseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WhatToTest.en-GB.txt"; sourceTree = "<group>"; };
 		50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptiUniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		50209F6A2E6629400099E217 /* OptiUniverseTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OptiUniverseTests;
+			sourceTree = "<group>";
+		};
 		50BAAA382E30E2A800ECB7DE /* OptiUniverse */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = OptiUniverse;
@@ -20,6 +36,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		50209F662E6629400099E217 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		50BAAA332E30E2A800ECB7DE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -43,6 +66,7 @@
 			children = (
 				506056262E5E587000536AA8 /* TestFlight */,
 				50BAAA382E30E2A800ECB7DE /* OptiUniverse */,
+				50209F6A2E6629400099E217 /* OptiUniverseTests */,
 				50BAAA372E30E2A800ECB7DE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,6 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */,
+				50209F692E6629400099E217 /* OptiUniverseTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -58,6 +83,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		50209F682E6629400099E217 /* OptiUniverseTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 50209F6F2E6629400099E217 /* Build configuration list for PBXNativeTarget "OptiUniverseTests" */;
+			buildPhases = (
+				50209F652E6629400099E217 /* Sources */,
+				50209F662E6629400099E217 /* Frameworks */,
+				50209F672E6629400099E217 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				50209F6E2E6629400099E217 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				50209F6A2E6629400099E217 /* OptiUniverseTests */,
+			);
+			name = OptiUniverseTests;
+			packageProductDependencies = (
+			);
+			productName = OptiUniverseTests;
+			productReference = 50209F692E6629400099E217 /* OptiUniverseTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		50BAAA352E30E2A800ECB7DE /* OptiUniverse */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 50BAAA412E30E2A900ECB7DE /* Build configuration list for PBXNativeTarget "OptiUniverse" */;
@@ -87,9 +135,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					50209F682E6629400099E217 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 50BAAA352E30E2A800ECB7DE;
+					};
 					50BAAA352E30E2A800ECB7DE = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -110,11 +162,19 @@
 			projectRoot = "";
 			targets = (
 				50BAAA352E30E2A800ECB7DE /* OptiUniverse */,
+				50209F682E6629400099E217 /* OptiUniverseTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		50209F672E6629400099E217 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		50BAAA342E30E2A800ECB7DE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -125,6 +185,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		50209F652E6629400099E217 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		50BAAA322E30E2A800ECB7DE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -134,7 +201,53 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		50209F6E2E6629400099E217 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 50BAAA352E30E2A800ECB7DE /* OptiUniverse */;
+			targetProxy = 50209F6D2E6629400099E217 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		50209F702E6629400099E217 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y3DHLE65YM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverseTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptiUniverse.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OptiUniverse";
+			};
+			name = Debug;
+		};
+		50209F712E6629400099E217 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y3DHLE65YM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverseTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptiUniverse.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OptiUniverse";
+			};
+			name = Release;
+		};
 		50BAAA3F2E30E2A900ECB7DE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -327,6 +440,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		50209F6F2E6629400099E217 /* Build configuration list for PBXNativeTarget "OptiUniverseTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				50209F702E6629400099E217 /* Debug */,
+				50209F712E6629400099E217 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		50BAAA312E30E2A800ECB7DE /* Build configuration list for PBXProject "OptiUniverse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
