@@ -31,6 +31,8 @@ struct SunUniforms {
     float    limbU;            // limb darkening coeff, ~0.6
     float    brightness;       // base emissive
     float    coronaStrength;   // 0.0–2.0
+    float    flowStrength;    // 0..1 (0.25 good)
+    float    flowScale;       // 0..1 (0.35 good)
 };
 
 float hash31(float3 p){
@@ -83,6 +85,18 @@ float fbm(float3 p) {
     return f; // ~0..1
 }
 
+// --- add after fbm() ---
+float3 curlNoise(float3 p) {
+    // Finite-diff curl of a 3D fbm field; cheap & good-looking
+    const float e = 0.1;
+    float nY1 = fbm(float3(p.x, p.y + e, p.z));
+    float nY2 = fbm(float3(p.x, p.y - e, p.z));
+    float nZ1 = fbm(float3(p.x, p.y, p.z + e));
+    float nZ2 = fbm(float3(p.x, p.y, p.z - e));
+    float nX1 = fbm(float3(p.x + e, p.y, p.z));
+    float nX2 = fbm(float3(p.x - e, p.y, p.z));
+    return float3(nY1 - nY2, nZ1 - nZ2, nX1 - nX2);
+}
 
 // ACES-ish tonemap for nicer bloom thresholding
 float3 tonemapACES(float3 x) {
@@ -118,26 +132,25 @@ fragment float4 fragment_sun(VSOut in [[stage_in]],
     float mu = saturate(abs(N.z));
     float limb = 1.0 - uni.limbU * (1.0 - mu);
     
-    // Procedural granulation
-    float3 p = N * uni.granulationScale + float3(0,0, uni.time * uni.flow);
-    float g = fbm(p); // 0..1
-    // Push contrast so cells are obvious without blooming to white
+    // Flow field: compute a curl vector over the sphere, animate over time
+    float3 flowDir = curlNoise(N * (uni.granulationScale * uni.flowScale) + float3(0,0,uni.time*uni.flow*0.6));
+    // Project to tangent space to avoid bulging
+    flowDir -= dot(flowDir, N) * N;
+    // Displace sampling point slightly along tangent
+    float3 sampleN = normalize(N + uni.flowStrength * flowDir);
+    
+    float3 p = sampleN * uni.granulationScale + float3(0,0, uni.time * uni.flow);
+    float g = fbm(p);
     float cells = smoothstep(0.35, 0.75, g);
     
-    // Base color (warm)
-    float3 base = sunColor(0.58); // a bit warmer than before
-    
-    // Lower brightness a lot (previous 9.0 was clipping); tweak at runtime if needed
-    float exposure = max(uni.brightness, 0.001); // pass ~2.2 from CPU first
+    float3 base = sunColor(0.58);
+    float exposure = max(uni.brightness, 0.001);
     float3 emissive = base * exposure * limb * (0.9 + 0.6*cells);
-    
-    // Mild center dim so the disk isn't paper-white even at high exposure
     emissive *= (0.98 + 0.02 * mu);
     
     float3 color = tonemapACES(emissive);
     return float4(color, 1.0);
 }
-
 
 // Render on a slightly larger sphere with additive blending
 fragment float4 fragment_corona(VSOut in [[stage_in]],

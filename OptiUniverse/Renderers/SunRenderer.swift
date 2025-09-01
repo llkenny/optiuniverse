@@ -18,6 +18,8 @@ struct SunUniforms {
     var limbU: Float
     var brightness: Float
     var coronaStrength: Float
+    var flowStrength: Float
+    var flowScale: Float
 }
 
 final class SunRenderer: NSObject {
@@ -31,12 +33,30 @@ final class SunRenderer: NSObject {
     private var coronaMesh: MTKMesh
     private var startTime = CACurrentMediaTime()
     
+    private var sceneTarget: MTLTexture!
+    private var brightTarget: MTLTexture!
+    private var blurTemp: MTLTexture!
+    private var blurFinal: MTLTexture!
+    
+    private var pipeBright: MTLRenderPipelineState!
+    private var pipeBlurH: MTLRenderPipelineState!
+    private var pipeBlurV: MTLRenderPipelineState!
+    private var pipeComposite: MTLRenderPipelineState!
+    
+    struct BloomUniforms { var texelSize: SIMD2<Float>; var threshold: Float; var intensity: Float }
+    private var bloom = BloomUniforms(texelSize: .zero, threshold: 1.0, intensity: 0.85)
+
+    
     init?(mtkView: MTKView) {
         guard let device = mtkView.device ?? MTLCreateSystemDefaultDevice(),
               let queue  = device.makeCommandQueue()
         else { return nil }
         self.device = device
         self.queue = queue
+        
+        let drawableFormat = mtkView.colorPixelFormat           // e.g. .bgra8Unorm_srgb
+        let hdrFormat: MTLPixelFormat = .rgba16Float            // for offscreen targets
+//        mtkView.depthStencilPixelFormat = .depth32Float
         
 //        mtkView.depthStencilPixelFormat = .depth32Float
 //        mtkView.colorPixelFormat = .bgra8Unorm_srgb
@@ -46,29 +66,36 @@ final class SunRenderer: NSObject {
         let mdlVertexDesc = makeModelIOVertexDescriptor()
         let mtlVertexDesc = MTKMetalVertexDescriptorFromModelIO(mdlVertexDesc)!
         
-        let sunDesc = MTLRenderPipelineDescriptor()
-        sunDesc.vertexFunction   = library.makeFunction(name: "vertex_sun")
-        sunDesc.fragmentFunction = library.makeFunction(name: "fragment_sun")
-        sunDesc.vertexDescriptor = mtlVertexDesc
-        sunDesc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-        sunDesc.depthAttachmentPixelFormat = mtkView.depthStencilPixelFormat
-        pipelineSun = try! device.makeRenderPipelineState(descriptor: sunDesc)
+        func makeSunPipeline(library: MTLLibrary, format: MTLPixelFormat) throws -> MTLRenderPipelineState {
+            let d = MTLRenderPipelineDescriptor()
+            d.vertexFunction   = library.makeFunction(name: "vertex_sun")
+            d.fragmentFunction = library.makeFunction(name: "fragment_sun")
+            d.vertexDescriptor = mtlVertexDesc // from your MDL→MTL conversion
+            d.colorAttachments[0].pixelFormat = format            // << use hdrFormat here
+            d.depthAttachmentPixelFormat = .depth32Float
+            return try device.makeRenderPipelineState(descriptor: d)
+        }
         
-        let coronaDesc = MTLRenderPipelineDescriptor()
-        coronaDesc.vertexFunction   = library.makeFunction(name: "vertex_sun")
-        coronaDesc.fragmentFunction = library.makeFunction(name: "fragment_corona")
-        coronaDesc.vertexDescriptor = mtlVertexDesc
-        coronaDesc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-        coronaDesc.depthAttachmentPixelFormat = mtkView.depthStencilPixelFormat
-        let ca = coronaDesc.colorAttachments[0]!
-        ca.isBlendingEnabled = true
-        ca.rgbBlendOperation = .add
-        ca.alphaBlendOperation = .add
-        ca.sourceRGBBlendFactor = .one
-        ca.sourceAlphaBlendFactor = .one
-        ca.destinationRGBBlendFactor = .one
-        ca.destinationAlphaBlendFactor = .one
-        pipelineCorona = try! device.makeRenderPipelineState(descriptor: coronaDesc)
+        func makeCoronaPipeline(library: MTLLibrary, format: MTLPixelFormat) throws -> MTLRenderPipelineState {
+            let d = MTLRenderPipelineDescriptor()
+            d.vertexFunction   = library.makeFunction(name: "vertex_sun")
+            d.fragmentFunction = library.makeFunction(name: "fragment_corona")
+            d.vertexDescriptor = mtlVertexDesc
+            d.colorAttachments[0].pixelFormat = format            // << hdrFormat
+            d.depthAttachmentPixelFormat = .depth32Float
+            let ca = d.colorAttachments[0]!
+            ca.isBlendingEnabled = true
+            ca.rgbBlendOperation = .add
+            ca.alphaBlendOperation = .add
+            ca.sourceRGBBlendFactor = .one
+            ca.sourceAlphaBlendFactor = .one
+            ca.destinationRGBBlendFactor = .one
+            ca.destinationAlphaBlendFactor = .one
+            return try device.makeRenderPipelineState(descriptor: d)
+        }
+        
+        pipelineSun    = try! makeSunPipeline(library: library, format: hdrFormat)
+        pipelineCorona = try! makeCoronaPipeline(library: library, format: hdrFormat)
         
         let depthDesc = MTLDepthStencilDescriptor()
         depthDesc.depthCompareFunction = .less
@@ -94,6 +121,25 @@ final class SunRenderer: NSObject {
         coronaMesh = makeSphere(radius: 1.03, device: device)
         
         super.init()
+        
+        func makePP(_ frag: String, format: MTLPixelFormat) throws -> MTLRenderPipelineState {
+            let d = MTLRenderPipelineDescriptor()
+            d.vertexFunction = library.makeFunction(name: "vs_fullscreen")
+            d.fragmentFunction = library.makeFunction(name: frag)
+            d.colorAttachments[0].pixelFormat = format
+            return try device.makeRenderPipelineState(descriptor: d)
+        }
+        
+        // Offscreen passes (HDR)
+        pipeBright = try! makePP("ps_brightpass", format: hdrFormat)
+        pipeBlurH  = try! makePP("ps_blur_h",      format: hdrFormat)
+        pipeBlurV  = try! makePP("ps_blur_v",      format: hdrFormat)
+        
+        // Final composite to the screen (drawable format)
+        pipeComposite = try! makePP("ps_composite", format: drawableFormat)
+        
+        // Ensure targets exist initially
+        reshapeTargets(for: mtkView.drawableSize, device: device)
     }
     
     private func makeMVP(viewMatrix: float4x4, projectionMatrix: float4x4) -> float4x4 {
@@ -101,9 +147,10 @@ final class SunRenderer: NSObject {
         return projectionMatrix * viewMatrix * model
     }
     
-    func draw(viewMatrix: float4x4,
+    func draw(view: MTKView,
+              viewMatrix: float4x4,
               projectionMatrix: float4x4,
-              renderEncoder: MTLRenderCommandEncoder) {
+              commandBuffer: MTLCommandBuffer) {
         
         let t = Float(CACurrentMediaTime() - startTime)
         var uni = SunUniforms(
@@ -114,16 +161,79 @@ final class SunRenderer: NSObject {
             flow: 0.06,
             limbU: 0.6,
             brightness: 1.2,
-            coronaStrength: 1.2
+            coronaStrength: 1.2,
+            flowStrength: 0.7,
+            flowScale: 0.7
         )
+//        
+//        // Sun (photosphere)
+//        renderEncoder.setRenderPipelineState(pipelineSun)
+//        draw(mesh: sunMesh, encoder: renderEncoder, uniforms: &uni)
+//        
+//        // Corona (additive shell)
+//        renderEncoder.setRenderPipelineState(pipelineCorona)
+//        draw(mesh: coronaMesh, encoder: renderEncoder, uniforms: &uni)
         
-        // Sun (photosphere)
-        renderEncoder.setRenderPipelineState(pipelineSun)
-        draw(mesh: sunMesh, encoder: renderEncoder, uniforms: &uni)
+        // Pass 0: scene
+        let sceneRPD = MTLRenderPassDescriptor()
+        sceneRPD.colorAttachments[0].texture = sceneTarget
+        sceneRPD.colorAttachments[0].loadAction = .clear
+        sceneRPD.colorAttachments[0].storeAction = .store
+        sceneRPD.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1)
+        sceneRPD.depthAttachment.texture = view.depthStencilTexture // or create your own depth
+        sceneRPD.depthAttachment.loadAction = .clear
+        sceneRPD.depthAttachment.storeAction = .dontCare
+        sceneRPD.depthAttachment.clearDepth = 1.0
         
-        // Corona (additive shell)
-        renderEncoder.setRenderPipelineState(pipelineCorona)
-        draw(mesh: coronaMesh, encoder: renderEncoder, uniforms: &uni)
+        let enc0 = commandBuffer.makeRenderCommandEncoder(descriptor: sceneRPD)!
+        enc0.setDepthStencilState(depthState)
+        // draw sun
+        enc0.setRenderPipelineState(pipelineSun)
+        draw(mesh: sunMesh, encoder: enc0, uniforms: &uni)
+        enc0.setRenderPipelineState(pipelineCorona)
+        draw(mesh: coronaMesh, encoder: enc0, uniforms: &uni)
+        enc0.endEncoding()
+        
+        func blitPass(dst: MTLTexture, pipeline: MTLRenderPipelineState, set: (MTLRenderCommandEncoder)->Void) {
+            let r = MTLRenderPassDescriptor()
+            r.colorAttachments[0].texture = dst
+            r.colorAttachments[0].loadAction = .clear
+            r.colorAttachments[0].storeAction = .store
+            r.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1)
+            let e = commandBuffer.makeRenderCommandEncoder(descriptor: r)!
+            e.setRenderPipelineState(pipeline)
+            set(e)
+            e.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            e.endEncoding()
+        }
+        
+        blitPass(dst: brightTarget, pipeline: pipeBright) { e in
+            e.setFragmentTexture(sceneTarget, index: 0)
+            var bu = bloom
+            e.setFragmentBytes(&bu, length: MemoryLayout<BloomUniforms>.stride, index: 0)
+        }
+        
+        blitPass(dst: blurTemp, pipeline: pipeBlurH) { e in
+            e.setFragmentTexture(brightTarget, index: 0)
+            var bu = bloom
+            e.setFragmentBytes(&bu, length: MemoryLayout<BloomUniforms>.stride, index: 0)
+        }
+        
+        blitPass(dst: blurFinal, pipeline: pipeBlurV) { e in
+            e.setFragmentTexture(blurTemp, index: 0)
+            var bu = bloom
+            e.setFragmentBytes(&bu, length: MemoryLayout<BloomUniforms>.stride, index: 0)
+        }
+        
+        let finalRPD = view.currentRenderPassDescriptor!
+        let e = commandBuffer.makeRenderCommandEncoder(descriptor: finalRPD)!
+        e.setRenderPipelineState(pipeComposite)
+        e.setFragmentTexture(sceneTarget, index: 0)
+        e.setFragmentTexture(blurFinal, index: 1)
+        var bu = bloom
+        e.setFragmentBytes(&bu, length: MemoryLayout<BloomUniforms>.stride, index: 0)
+        e.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        e.endEncoding()
     }
     
     private func draw(mesh: MTKMesh, encoder enc: MTLRenderCommandEncoder, uniforms: inout SunUniforms) {
@@ -142,7 +252,27 @@ final class SunRenderer: NSObject {
         }
     }
     
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        reshapeTargets(for: view.drawableSize, device: device)
+    }
+    
+    private func reshapeTargets(for size: CGSize, device: MTLDevice) {
+        let w = max(1, Int(size.width))
+        let h = max(1, Int(size.height))
+        func makeTex(_ format: MTLPixelFormat) -> MTLTexture {
+            let desc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: format, width: w, height: h, mipmapped: false)
+            desc.usage = [.renderTarget, .shaderRead, .shaderWrite]
+            desc.storageMode = .private
+            return device.makeTexture(descriptor: desc)!
+        }
+        // Use HDR-ish format to keep highlights
+        sceneTarget = makeTex(.rgba16Float)
+        brightTarget = makeTex(.rgba16Float)
+        blurTemp = makeTex(.rgba16Float)
+        blurFinal = makeTex(.rgba16Float)
+        
+        bloom.texelSize = SIMD2<Float>(1.0/Float(w), 1.0/Float(h))
+    }
 }
 
 private extension float4x4 {

@@ -67,13 +67,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         
         metalView.device = device
         metalView.delegate = self
-//        metalView.colorPixelFormat = .bgra8Unorm_srgb
-//        metalView.depthStencilPixelFormat = .depth32Float
+        metalView.colorPixelFormat = .bgra8Unorm_srgb
+        metalView.depthStencilPixelFormat = .depth32Float
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // Handle view size changes
         updateCamera()
+        sunRenderer.mtkView(view, drawableSizeWillChange: size)
     }
     
     func draw(in view: MTKView) {
@@ -83,22 +84,23 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
         
-        // Render planets
-        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
-        planetsRenderer.renderPlanets(with: renderEncoder,
-                                      viewMatrix: viewMatrix,
-                                      projectionMatrix: projectionMatrix)
-        
-        // Render axes
-        renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
-        axesRenderer.renderAxes(with: renderEncoder)
-        
-        // Render sun
-        sunRenderer.draw(viewMatrix: viewMatrix,
-                         projectionMatrix: projectionMatrix,
-                         renderEncoder: renderEncoder)
+//        // Render planets
+//        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
+//        planetsRenderer.renderPlanets(with: renderEncoder,
+//                                      viewMatrix: viewMatrix,
+//                                      projectionMatrix: projectionMatrix)
+//        
+//        // Render axes
+//        renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
+//        axesRenderer.renderAxes(with: renderEncoder)
         
         renderEncoder.endEncoding()
+        
+        // Render sun
+        sunRenderer.draw(view: view,
+                         viewMatrix: viewMatrix,
+                         projectionMatrix: projectionMatrix,
+                         commandBuffer: commandBuffer)
         
         if let drawable = view.currentDrawable {
             commandBuffer.present(drawable)
