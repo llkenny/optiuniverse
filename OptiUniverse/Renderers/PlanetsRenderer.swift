@@ -10,6 +10,7 @@ import MetalKit
 final class PlanetsRenderer {
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
+    private var sunPipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
     
     private var mesh: MTKMesh!
@@ -25,6 +26,7 @@ final class PlanetsRenderer {
     init(device: MTLDevice) {
         self.device = device
         pipelineState = setupPipeline()
+        sunPipelineState = setupSunPipeline()
         samplerState = makeSamplerState()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
     }
@@ -67,11 +69,41 @@ final class PlanetsRenderer {
             fatalError("Failed to create pipeline state: \(error)")
         }
     }
+
+    private func setupSunPipeline() -> MTLRenderPipelineState {
+        let library = device.makeDefaultLibrary()!
+        let vertexFunction = library.makeFunction(name: "vertex_main")
+        let fragmentFunction = library.makeFunction(name: "fragment_sun")
+
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        descriptor.vertexFunction = vertexFunction
+        descriptor.fragmentFunction = fragmentFunction
+
+        let vertexDescriptor = MTLVertexDescriptor()
+        vertexDescriptor.attributes[0].format = .float3
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        vertexDescriptor.attributes[1].format = .float3
+        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
+        vertexDescriptor.attributes[1].bufferIndex = 0
+        vertexDescriptor.attributes[2].format = .float2
+        vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
+        vertexDescriptor.attributes[2].bufferIndex = 0
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
+        descriptor.vertexDescriptor = vertexDescriptor
+
+        do {
+            return try device.makeRenderPipelineState(descriptor: descriptor)
+        } catch {
+            fatalError("Failed to create sun pipeline state: \(error)")
+        }
+    }
     
     private func makeSamplerState() -> MTLSamplerState {
         let samplerDescriptor = MTLSamplerDescriptor()
-        samplerDescriptor.sAddressMode = .repeat
-        samplerDescriptor.tAddressMode = .repeat
+        samplerDescriptor.sAddressMode = .clampToEdge
+        samplerDescriptor.tAddressMode = .clampToEdge
         samplerDescriptor.minFilter = .linear
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
@@ -134,6 +166,12 @@ final class PlanetsRenderer {
                        viewMatrix: float4x4,
                        projectionMatrix: float4x4) {
         for planet in planets {
+            if planet.name == "Sun" {
+                renderEncoder.setRenderPipelineState(sunPipelineState)
+            } else {
+                renderEncoder.setRenderPipelineState(pipelineState)
+            }
+
             renderPlanet(planet,
                          with: renderEncoder,
                          time: time,
@@ -203,6 +241,11 @@ final class PlanetsRenderer {
         renderEncoder.setVertexBuffer(mtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         renderEncoder.setFragmentTexture(texture.baseColor!, index: 0)
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+
+        var t = time
+        renderEncoder.setFragmentBytes(&t,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 0)
         
         guard let submesh = mtkMesh.submeshes.first else {
             fatalError()
