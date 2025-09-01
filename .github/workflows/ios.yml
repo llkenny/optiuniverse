@@ -30,11 +30,10 @@ jobs:
           platform: ${{ 'iOS Simulator' }}
         run: |
           device=$(xcrun simctl list devices available |
-            awk -F'[()]' '/iPhone/{print $1}' |
-            grep -E 'iPhone [0-9]+' |
-            sed 's/^\s*//;s/\s*$//' |
+            grep -oE 'iPhone [0-9][^()]+' |
             sort -V |
-            tail -1)
+            tail -1 |
+            xargs)
           if [ $scheme = default ]; then scheme=$(cat default); fi
           if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
           file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
@@ -45,11 +44,10 @@ jobs:
           platform: ${{ 'iOS Simulator' }}
         run: |
           device=$(xcrun simctl list devices available |
-            awk -F'[()]' '/iPhone/{print $1}' |
-            grep -E 'iPhone [0-9]+' |
-            sed 's/^\s*//;s/\s*$//' |
+            grep -oE 'iPhone [0-9][^()]+' |
             sort -V |
-            tail -1)
+            tail -1 |
+            xargs)
           if [ $scheme = default ]; then scheme=$(cat default); fi
           if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
           file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
