@@ -43,6 +43,29 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     return color;
 }
 
+// Specialized fragment shader for the Sun. Adds a radial glow to the
+// sampled texture to mimic the burning corona.
+fragment float4 fragment_sun(VertexOut in [[stage_in]],
+                             texture2d<float> planetTexture [[texture(0)]],
+                             sampler textureSampler [[sampler(0)]]) {
+    float4 base = planetTexture.sample(textureSampler, in.texCoord);
+
+    // Normalized texture coordinates centered at (0,0)
+    float2 uv = in.texCoord * 2.0 - 1.0;
+    float r = length(uv);
+
+    // Bright core towards the center
+    float core = pow(max(0.0, 1.0 - r), 3.0);
+    float3 coreColor = float3(1.0, 0.8, 0.3) * core;
+
+    // Intense glow near the edges for corona effect
+    float glow = smoothstep(0.6, 1.0, r);
+    float3 glowColor = float3(1.0, 0.6, 0.0) * glow * 2.0;
+
+    float3 color = base.rgb + coreColor + glowColor;
+    return float4(color, 1.0);
+}
+
 fragment float4 fragment_main_debug(VertexOut in [[stage_in]]) {
     return float4(in.texCoord.x, in.texCoord.y, 0.0, 1.0);
 }
