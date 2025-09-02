@@ -67,6 +67,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
+        metalView.sampleCount = 4
         if #available(iOS 13.0, *) {
             (metalView.layer as? CAMetalLayer)?.colorspace =
                 CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
@@ -90,16 +91,46 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func draw(in view: MTKView) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let hdrTexture = hdrTexture else {
+              let hdrTexture = hdrTexture,
+              let drawable = view.currentDrawable else {
             return
         }
 
-        // First pass: render scene to HDR texture
+        let width = hdrTexture.width
+        let height = hdrTexture.height
+
+        // Create MSAA color and depth textures for scene rendering
+        let msaaColorDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
+                                                                     width: width,
+                                                                     height: height,
+                                                                     mipmapped: false)
+        msaaColorDesc.sampleCount = 4
+        msaaColorDesc.textureType = .type2DMultisample
+        msaaColorDesc.storageMode = .private
+        msaaColorDesc.usage = [.renderTarget]
+        guard let msaaColorTexture = device.makeTexture(descriptor: msaaColorDesc) else { return }
+
+        let depthDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: metalView.depthStencilPixelFormat,
+                                                                 width: width,
+                                                                 height: height,
+                                                                 mipmapped: false)
+        depthDesc.sampleCount = 4
+        depthDesc.textureType = .type2DMultisample
+        depthDesc.storageMode = .private
+        depthDesc.usage = [.renderTarget]
+        guard let depthTexture = device.makeTexture(descriptor: depthDesc) else { return }
+
+        // First pass: render scene to MSAA texture and resolve to HDR texture
         let hdrDescriptor = MTLRenderPassDescriptor()
-        hdrDescriptor.colorAttachments[0].texture = hdrTexture
+        hdrDescriptor.colorAttachments[0].texture = msaaColorTexture
+        hdrDescriptor.colorAttachments[0].resolveTexture = hdrTexture
         hdrDescriptor.colorAttachments[0].loadAction = .clear
-        hdrDescriptor.colorAttachments[0].storeAction = .store
+        hdrDescriptor.colorAttachments[0].storeAction = .multisampleResolve
         hdrDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        hdrDescriptor.depthAttachment.texture = depthTexture
+        hdrDescriptor.depthAttachment.loadAction = .clear
+        hdrDescriptor.depthAttachment.storeAction = .dontCare
+        hdrDescriptor.depthAttachment.clearDepth = 1.0
 
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
             return
@@ -114,19 +145,32 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         axesRenderer.renderAxes(with: renderEncoder)
         renderEncoder.endEncoding()
 
-        // Second pass: tone map to drawable
-        if let drawable = view.currentDrawable,
-           let finalDescriptor = view.currentRenderPassDescriptor {
-            finalDescriptor.depthAttachment = nil
-            if let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
-                quadEncoder.setRenderPipelineState(tonemapPipelineState)
-                quadEncoder.setFragmentTexture(hdrTexture, index: 0)
-                quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-                quadEncoder.endEncoding()
-            }
-            commandBuffer.present(drawable)
+        // Second pass: tone map to drawable using MSAA and resolve to the drawable
+        let tonemapDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: view.colorPixelFormat,
+                                                                   width: width,
+                                                                   height: height,
+                                                                   mipmapped: false)
+        tonemapDesc.sampleCount = 4
+        tonemapDesc.textureType = .type2DMultisample
+        tonemapDesc.storageMode = .private
+        tonemapDesc.usage = [.renderTarget]
+        guard let tonemapMsaaTexture = device.makeTexture(descriptor: tonemapDesc) else { return }
+
+        let finalDescriptor = MTLRenderPassDescriptor()
+        finalDescriptor.colorAttachments[0].texture = tonemapMsaaTexture
+        finalDescriptor.colorAttachments[0].resolveTexture = drawable.texture
+        finalDescriptor.colorAttachments[0].loadAction = .clear
+        finalDescriptor.colorAttachments[0].storeAction = .multisampleResolve
+        finalDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+
+        if let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
+            quadEncoder.setRenderPipelineState(tonemapPipelineState)
+            quadEncoder.setFragmentTexture(hdrTexture, index: 0)
+            quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            quadEncoder.endEncoding()
         }
 
+        commandBuffer.present(drawable)
         commandBuffer.commit()
     }
     
@@ -166,6 +210,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
         descriptor.fragmentFunction = library.makeFunction(name: "tonemap_fragment")
         descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
+        descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = depthPixelFormat
         return try! device.makeRenderPipelineState(descriptor: descriptor)
     }

@@ -25,6 +25,7 @@ final class AxesRenderer {
         pipelineDescriptor.vertexFunction = library.makeFunction(name: "axes_vertex")
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "axes_fragment")
         pipelineDescriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        pipelineDescriptor.sampleCount = 4
         
         // Important for line rendering:
         pipelineDescriptor.vertexDescriptor = {
