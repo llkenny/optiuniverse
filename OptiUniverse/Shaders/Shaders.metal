@@ -44,7 +44,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 }
 
 // Specialized fragment shader for the Sun. Produces an animated
-// procedural surface and bright corona.
+// procedural surface, a dynamic corona and prominences.
 fragment float4 fragment_sun(VertexOut in [[stage_in]],
                              constant float &time [[buffer(0)]],
                              texture2d<float> planetTexture [[texture(0)]],
@@ -52,30 +52,35 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     // Center UV on (0,0)
     float2 uv = in.texCoord * 2.0 - 1.0;
     float r = length(uv);
+    float ang = atan2(uv.y, uv.x);
 
-    // Rotate texture coordinates over time for swirling motion
-    float angle = time * 0.1;
-    float2 rotUV = float2(uv.x * cos(angle) - uv.y * sin(angle),
-                          uv.x * sin(angle) + uv.y * cos(angle));
+    // Slow rotation for smoother blinking
+    float rotation = time * 0.02;
+    float2 rotUV = float2(uv.x * cos(rotation) - uv.y * sin(rotation),
+                          uv.x * sin(rotation) + uv.y * cos(rotation));
 
-    // Simple procedural noise based on sine waves
-    float noise = sin((rotUV.x + time) * 20.0) * sin((rotUV.y - time) * 20.0);
-    noise = noise * 0.5 + 0.5; // Normalize to 0..1
+    // Layered sine noise to avoid blocky artifacts
+    float n1 = sin((rotUV.x + rotUV.y + time * 0.05) * 20.0);
+    float n2 = sin((rotUV.x - rotUV.y - time * 0.05) * 20.0);
+    float noise = n1 * n2 * 0.5 + 0.5; // Normalize to 0..1
 
-    // Base color mixed with sampled texture to keep some variation
+    // Base color mostly procedural to mask texture rectangles
     float3 baseTex = planetTexture.sample(textureSampler, in.texCoord).rgb;
-    float3 base = mix(baseTex, float3(1.0, 0.5, 0.0), 0.8);
+    float3 base = mix(baseTex, float3(1.0, 0.5, 0.0), 0.9);
     float3 surface = base + noise * float3(0.5, 0.3, 0.0);
 
     // Bright core towards the center
     float core = pow(max(0.0, 1.0 - r), 4.0);
     float3 coreColor = float3(1.0, 0.9, 0.6) * core;
 
-    // Intense glow near the edges for corona effect
-    float glow = smoothstep(0.7, 1.0, r);
-    float3 glowColor = float3(1.0, 0.6, 0.1) * glow;
+    // Corona and animated prominences near the edges
+    float corona = smoothstep(0.7, 1.0, r);
+    float prominence = max(0.0, sin(ang * 40.0 + time * 0.5)) *
+                       smoothstep(0.95, 1.2, r);
+    float3 coronaColor = float3(1.0, 0.6, 0.1) * corona;
+    float3 prominenceColor = float3(1.0, 0.4, 0.0) * prominence;
 
-    float3 color = surface + coreColor + glowColor;
+    float3 color = surface + coreColor + coronaColor + prominenceColor;
     return float4(color, 1.0);
 }
 
