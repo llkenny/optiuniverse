@@ -20,7 +20,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let planetsRenderer: PlanetsRenderer
     private let metalView: MTKView
 
-    private var hdrTexture: MTLTexture!
+    private var hdrTexture: MTLTexture?
     private var tonemapPipelineState: MTLRenderPipelineState!
     
     // Orbital Camera
@@ -75,18 +75,21 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
                                                                  pixelFormat: metalView.colorPixelFormat)
-        hdrTexture = MetalRenderer.makeHDRTexture(device: device,
-                                                  size: metalView.drawableSize)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // Handle view size changes
         updateCamera()
-        hdrTexture = MetalRenderer.makeHDRTexture(device: device, size: size)
+        if size.width > 0 && size.height > 0 {
+            hdrTexture = MetalRenderer.makeHDRTexture(device: device, size: size)
+        } else {
+            hdrTexture = nil
+        }
     }
 
     func draw(in view: MTKView) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let hdrTexture = hdrTexture else {
             return
         }
 
@@ -163,9 +166,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private static func makeHDRTexture(device: MTLDevice, size: CGSize) -> MTLTexture {
+        let width = max(Int(size.width), 1)
+        let height = max(Int(size.height), 1)
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
-                                                                  width: Int(size.width),
-                                                                  height: Int(size.height),
+                                                                  width: width,
+                                                                  height: height,
                                                                   mipmapped: false)
         descriptor.usage = [.renderTarget, .shaderRead]
         descriptor.storageMode = .private
