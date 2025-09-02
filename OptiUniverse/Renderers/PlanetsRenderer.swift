@@ -145,14 +145,34 @@ final class PlanetsRenderer {
         return mdlMesh
     }
     
-    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
-                       viewMatrix: float4x4,
-                       projectionMatrix: float4x4,
-                       viewportSize: CGSize) {
+    /// Advances the internal time accumulator and returns the time delta.
+    /// Should be called once per frame before rendering so other systems can
+    /// use the updated time (e.g. camera following).
+    func advanceTime() -> Float {
         let currentTime = CACurrentMediaTime()
         let delta = Float(currentTime - lastUpdateTime)
         lastUpdateTime = currentTime
+        time += delta
+        return delta
+    }
 
+    /// Returns the world-space position of the planet with the given name
+    /// using the current internal time value.
+    func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
+        guard let planet = planets.first(where: { $0.name == name }) else { return nil }
+        let angle = time * planet.orbitSpeed
+        let rotationMatrix = float4x4.makeRotationZ(angle)
+        let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+        let modelMatrix = rotationMatrix * translationMatrix
+        let pos4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        return SIMD3<Float>(pos4.x, pos4.y, pos4.z)
+    }
+
+    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
+                       viewMatrix: float4x4,
+                       projectionMatrix: float4x4,
+                       viewportSize: CGSize,
+                       delta: Float) {
         planetScreenPositions.removeAll()
         planetWorldPositions.removeAll()
 
@@ -171,7 +191,6 @@ final class PlanetsRenderer {
                          projectionMatrix: projectionMatrix,
                          viewportSize: viewportSize)
         }
-        time += delta
     }
 
     // TODO: Make orbit radius SIM3

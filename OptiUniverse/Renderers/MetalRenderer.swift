@@ -128,8 +128,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
+        // Advance simulation time and update camera before rendering so that
+        // the view matches the planets' latest positions within the same frame.
+        let delta = planetsRenderer.advanceTime()
         if let name = followingPlanetName,
-           let position = planetsRenderer.planetWorldPositions[name] {
+           let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
             cameraTarget = position
             updateCamera()
         }
@@ -150,11 +153,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix,
-                                      viewportSize: metalView.bounds.size)
+                                      viewportSize: metalView.bounds.size,
+                                      delta: delta)
 
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder,
@@ -201,7 +204,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// distance is adjusted based on the planet's radius.
     func followPlanet(named name: String) {
         followingPlanetName = name
-        if let position = planetsRenderer.planetWorldPositions[name] {
+        if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
             cameraTarget = position
         }
         if let planet = planetsRenderer.planet(named: name) {
