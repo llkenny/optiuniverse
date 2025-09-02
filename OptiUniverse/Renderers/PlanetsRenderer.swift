@@ -33,12 +33,21 @@ final class PlanetsRenderer {
     /// Keys are planet names, values are pixel coordinates in the viewport.
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
+    /// World-space positions of planet centers, updated each frame.
+    /// Keys are planet names, values are coordinates in the scene space.
+    var planetWorldPositions: [String: SIMD3<Float>] = [:]
+
     init(device: MTLDevice) {
         self.device = device
         pipelineState = makePipelineState(fragmentFunction: "fragment_main")
         sunPipelineState = makePipelineState(fragmentFunction: "fragment_sun")
         samplerState = makeSamplerState()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
+    }
+
+    /// Returns the `Planet` instance for the given name if it exists.
+    func planet(named name: String) -> Planet? {
+        planets.first { $0.name == name }
     }
 
     /// Builds a render pipeline for the given fragment function.
@@ -145,6 +154,7 @@ final class PlanetsRenderer {
         lastUpdateTime = currentTime
 
         planetScreenPositions.removeAll()
+        planetWorldPositions.removeAll()
 
         for planet in planets {
             if planet.name == "Sun" {
@@ -201,8 +211,11 @@ final class PlanetsRenderer {
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
 
         // Compute screen position of the planet's center
-        let worldPosition = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
-        let clipPosition = projectionMatrix * viewMatrix * worldPosition
+        let worldPosition4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        planetWorldPositions[planet.name] = SIMD3<Float>(worldPosition4.x,
+                                                         worldPosition4.y,
+                                                         worldPosition4.z)
+        let clipPosition = projectionMatrix * viewMatrix * worldPosition4
         if clipPosition.w != 0 {
             let ndc = clipPosition / clipPosition.w
             let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
