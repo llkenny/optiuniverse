@@ -8,6 +8,12 @@
 import MetalKit
 import os
 import QuartzCore
+import simd
+
+protocol PlanetLabelDelegate: AnyObject {
+    /// Updates label positions in screen space for each planet.
+    func updatePlanetLabels(_ positions: [String: SIMD2<Float>])
+}
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
     
@@ -19,6 +25,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let axesRenderer: AxesRenderer
     private let planetsRenderer: PlanetsRenderer
     private let metalView: MTKView
+
+    weak var labelDelegate: PlanetLabelDelegate?
 
     private var hdrTexture: MTLTexture?
     private var msaaColorTexture: MTLTexture?
@@ -138,7 +146,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
-                                      projectionMatrix: projectionMatrix)
+                                      projectionMatrix: projectionMatrix,
+                                      viewportSize: metalView.bounds.size)
 
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder,
@@ -146,6 +155,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                 viewMatrix: viewMatrix,
                                 projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()
+
+        // Update any label overlays with the latest planet positions
+        labelDelegate?.updatePlanetLabels(planetsRenderer.planetScreenPositions)
 
         // Second pass: tone map to drawable using MSAA and resolve to the drawable
         let finalDescriptor = MTLRenderPassDescriptor()

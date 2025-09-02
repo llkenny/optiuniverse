@@ -7,6 +7,7 @@
 
 import MetalKit
 import QuartzCore
+import simd
 
 final class PlanetsRenderer {
     private let device: MTLDevice
@@ -27,6 +28,10 @@ final class PlanetsRenderer {
     private var planets: [Planet] = []
     private var planetMeshes: [String: MDLMesh] = [:]
     private var cachedTextures: [String: MTLTexture] = [:]
+
+    /// Screen-space positions of planet centers, updated each frame.
+    /// Keys are planet names, values are pixel coordinates in the viewport.
+    var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
     init(device: MTLDevice) {
         self.device = device
@@ -121,10 +126,13 @@ final class PlanetsRenderer {
     
     func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
                        viewMatrix: float4x4,
-                       projectionMatrix: float4x4) {
+                       projectionMatrix: float4x4,
+                       viewportSize: CGSize) {
         let currentTime = CACurrentMediaTime()
         let delta = Float(currentTime - lastUpdateTime)
         lastUpdateTime = currentTime
+
+        planetScreenPositions.removeAll()
 
         for planet in planets {
             if planet.name == "Sun" {
@@ -138,7 +146,8 @@ final class PlanetsRenderer {
                          time: time,
                          delta: delta,
                          viewMatrix: viewMatrix,
-                         projectionMatrix: projectionMatrix)
+                         projectionMatrix: projectionMatrix,
+                         viewportSize: viewportSize)
         }
         time += delta
     }
@@ -149,7 +158,8 @@ final class PlanetsRenderer {
                               time: Float,
                               delta: Float,
                               viewMatrix: float4x4,
-                              projectionMatrix: float4x4) {
+                              projectionMatrix: float4x4,
+                              viewportSize: CGSize) {
         
         // Get or create mesh
         if planetMeshes[planet.textureName] == nil {
@@ -181,6 +191,16 @@ final class PlanetsRenderer {
         
         // 5. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+
+        // Compute screen position of the planet's center
+        let worldPosition = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        let clipPosition = projectionMatrix * viewMatrix * worldPosition
+        if clipPosition.w != 0 {
+            let ndc = clipPosition / clipPosition.w
+            let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+            let y = (1 - ndc.y) * 0.5 * Float(viewportSize.height)
+            planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
+        }
         
         // TODO:
         // Elliptical orbit example
