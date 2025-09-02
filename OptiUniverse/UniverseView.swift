@@ -77,6 +77,10 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
             label.textColor = .white
             label.font = .systemFont(ofSize: 12)
             label.sizeToFit()
+            label.isUserInteractionEnabled = true
+            let tap = UITapGestureRecognizer(target: self,
+                                             action: #selector(handleLabelTap(_:)))
+            label.addGestureRecognizer(tap)
             view.addSubview(label)
             labels[name] = label
         }
@@ -117,5 +121,11 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
         let point = gesture.location(ofTouch: 0, in: gesture.view)
         print("Touch point\(point)")
         // TODO: Add objects selection
+    }
+
+    @objc func handleLabelTap(_ gesture: UITapGestureRecognizer) {
+        guard let label = gesture.view as? UILabel,
+              let name = label.text else { return }
+        renderer?.followPlanet(named: name)
     }
 }

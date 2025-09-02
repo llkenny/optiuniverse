@@ -39,7 +39,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraDistance: Float = 3
     var cameraYaw: Float = 0.0      // Horizontal rotation (radians)
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
-    let cameraTarget = SIMD3<Float>(0, 0, 0)
+    var cameraTarget = SIMD3<Float>(0, 0, 0)
+    private var followingPlanetName: String?
     
     private var viewMatrix: float4x4 {
         didSet {
@@ -127,6 +128,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
+        // Advance simulation time and update camera before rendering so that
+        // the view matches the planets' latest positions within the same frame.
+        let delta = planetsRenderer.advanceTime()
+        if let name = followingPlanetName,
+           let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
+            cameraTarget = position
+            updateCamera()
+        }
+
         // First pass: render scene to MSAA texture and resolve to HDR texture
         let hdrDescriptor = MTLRenderPassDescriptor()
         hdrDescriptor.colorAttachments[0].texture = msaaColorTexture
@@ -143,11 +153,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix,
-                                      viewportSize: metalView.bounds.size)
+                                      viewportSize: metalView.bounds.size,
+                                      delta: delta)
 
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder,
@@ -187,6 +197,20 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             near: 0.1,
             far: 10000
         )
+    }
+
+    /// Starts following the planet with the given name.
+    /// The camera target is moved to the planet's position and the camera
+    /// distance is adjusted based on the planet's radius.
+    func followPlanet(named name: String) {
+        followingPlanetName = name
+        if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
+            cameraTarget = position
+        }
+        if let planet = planetsRenderer.planet(named: name) {
+            cameraDistance = max(planet.radius * 5, 0.1)
+        }
+        updateCamera()
     }
     
     func updateCamera() {

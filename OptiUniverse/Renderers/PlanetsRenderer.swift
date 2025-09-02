@@ -33,12 +33,21 @@ final class PlanetsRenderer {
     /// Keys are planet names, values are pixel coordinates in the viewport.
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
+    /// World-space positions of planet centers, updated each frame.
+    /// Keys are planet names, values are coordinates in the scene space.
+    var planetWorldPositions: [String: SIMD3<Float>] = [:]
+
     init(device: MTLDevice) {
         self.device = device
         pipelineState = makePipelineState(fragmentFunction: "fragment_main")
         sunPipelineState = makePipelineState(fragmentFunction: "fragment_sun")
         samplerState = makeSamplerState()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
+    }
+
+    /// Returns the `Planet` instance for the given name if it exists.
+    func planet(named name: String) -> Planet? {
+        planets.first { $0.name == name }
     }
 
     /// Builds a render pipeline for the given fragment function.
@@ -136,15 +145,36 @@ final class PlanetsRenderer {
         return mdlMesh
     }
     
-    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
-                       viewMatrix: float4x4,
-                       projectionMatrix: float4x4,
-                       viewportSize: CGSize) {
+    /// Advances the internal time accumulator and returns the time delta.
+    /// Should be called once per frame before rendering so other systems can
+    /// use the updated time (e.g. camera following).
+    func advanceTime() -> Float {
         let currentTime = CACurrentMediaTime()
         let delta = Float(currentTime - lastUpdateTime)
         lastUpdateTime = currentTime
+        time += delta
+        return delta
+    }
 
+    /// Returns the world-space position of the planet with the given name
+    /// using the current internal time value.
+    func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
+        guard let planet = planets.first(where: { $0.name == name }) else { return nil }
+        let angle = time * planet.orbitSpeed
+        let rotationMatrix = float4x4.makeRotationZ(angle)
+        let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+        let modelMatrix = rotationMatrix * translationMatrix
+        let pos4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        return SIMD3<Float>(pos4.x, pos4.y, pos4.z)
+    }
+
+    func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
+                       viewMatrix: float4x4,
+                       projectionMatrix: float4x4,
+                       viewportSize: CGSize,
+                       delta: Float) {
         planetScreenPositions.removeAll()
+        planetWorldPositions.removeAll()
 
         for planet in planets {
             if planet.name == "Sun" {
@@ -161,7 +191,6 @@ final class PlanetsRenderer {
                          projectionMatrix: projectionMatrix,
                          viewportSize: viewportSize)
         }
-        time += delta
     }
 
     // TODO: Make orbit radius SIM3
@@ -201,8 +230,11 @@ final class PlanetsRenderer {
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
 
         // Compute screen position of the planet's center
-        let worldPosition = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
-        let clipPosition = projectionMatrix * viewMatrix * worldPosition
+        let worldPosition4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        planetWorldPositions[planet.name] = SIMD3<Float>(worldPosition4.x,
+                                                         worldPosition4.y,
+                                                         worldPosition4.z)
+        let clipPosition = projectionMatrix * viewMatrix * worldPosition4
         if clipPosition.w != 0 {
             let ndc = clipPosition / clipPosition.w
             let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
