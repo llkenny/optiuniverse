@@ -10,6 +10,23 @@
 #include <metal_stdlib>
 using namespace metal;
 
+// Simple hash-based noise for FBM
+float hash(float3 p) {
+    return fract(sin(dot(p, float3(12.9898, 78.233, 37.719))) * 43758.5453);
+}
+
+// Low-iteration FBM returning a 2D warp vector to keep performance high
+float2 fbm(float3 p) {
+    float2 value = float2(0.0);
+    float amplitude = 0.5;
+    for (int i = 0; i < 3; ++i) {
+        value += amplitude * float2(hash(p), hash(p + 1.0));
+        p *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
 struct VertexIn {
     float4 position [[attribute(0)]];
     float3 normal [[attribute(1)]];
@@ -47,6 +64,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 // procedural surface and bright corona.
 fragment float4 fragment_sun(VertexOut in [[stage_in]],
                              constant float &time [[buffer(0)]],
+                             constant float &exposure [[buffer(1)]],
                              texture2d<float> planetTexture [[texture(0)]],
                              sampler textureSampler [[sampler(0)]]) {
     // Center UV on (0,0)
@@ -57,6 +75,10 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     float angle = time * 0.1;
     float2 rotUV = float2(uv.x * cos(angle) - uv.y * sin(angle),
                           uv.x * sin(angle) + uv.y * cos(angle));
+
+    // Warp UVs using secondary FBM for more turbulent motion
+    float2 warp = fbm(float3(rotUV * 10.0, time * 0.3));
+    rotUV += warp * 0.02;
 
     // Simple procedural noise based on sine waves
     float noise = sin((rotUV.x + time) * 20.0) * sin((rotUV.y - time) * 20.0);
@@ -70,11 +92,20 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     float core = pow(max(0.0, 1.0 - r), 4.0);
       float3 coreColor = float3(30.0, 15.0, 5.0) * core;
 
-    // Intense glow near the edges for corona effect
-    float glow = smoothstep(0.7, 1.0, r);
-      float3 glowColor = float3(10.0, 5.0, 1.0) * glow;
+    // Multi-layer corona with height-based falloff
+    float height = max(0.0, r - 1.0);
+    float density = exp(-height * 8.0);
+    float3 corona = float3(0.0);
+    const float freqs[3] = {1.0, 2.0, 4.0};
+    for (int i = 0; i < 3; ++i) {
+        float f = freqs[i];
+        float layer = sin((rotUV.x + time) * 20.0 * f) * sin((rotUV.y - time) * 20.0 * f);
+        layer = layer * 0.5 + 0.5;
+        corona += float3(10.0, 5.0, 1.0) * (1.0 / (float(i) + 1.0)) * layer;
+    }
+    corona *= density;
 
-    float3 color = surface + coreColor + glowColor;
+    float3 color = (surface + coreColor + corona) * exposure;
     return float4(color, 1.0);
 }
 
