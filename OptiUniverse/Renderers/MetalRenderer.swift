@@ -80,6 +80,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
                                                                  colorPixelFormat: metalView.colorPixelFormat,
                                                                  depthPixelFormat: .invalid)
+
+        // Initialize camera and render targets based on the current view size so the
+        // first frame doesn't start from the origin (inside the Sun).
+        mtkView(metalView, drawableSizeWillChange: metalView.bounds.size)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -135,12 +139,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix)
 
-        renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder,
                                 modelMatrix: planetsRenderer.sunModelMatrix,
                                 viewMatrix: viewMatrix,
