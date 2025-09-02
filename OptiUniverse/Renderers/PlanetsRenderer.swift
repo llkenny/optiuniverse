@@ -241,11 +241,10 @@ final class PlanetsRenderer {
                                                          worldPosition4.y,
                                                          worldPosition4.z)
         let clipPosition = projectionMatrix * viewMatrix * worldPosition4
-        // clip-space w is negative for objects in front of the camera in our
-        // coordinate system. Ignore objects with non‑negative w to avoid
-        // processing planets behind the camera while still guarding against
-        // divide-by-zero.
-        if clipPosition.w < 0 {
+        // clip-space `w` is positive for objects in front of the camera in our
+        // coordinate system. Ignore objects with non-positive `w` values to
+        // skip planets behind the camera while also avoiding divide-by-zero.
+        if clipPosition.w > 0 {
             let ndc = clipPosition / clipPosition.w
             if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
                 let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
