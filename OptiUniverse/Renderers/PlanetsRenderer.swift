@@ -177,7 +177,7 @@ final class PlanetsRenderer {
         let rotationMatrix = float4x4.makeRotationZ(angle)
 
         // 2. Translate to the planet's orbital distance
-        let translationMatrix = float4x4.makeTranslation([Float(planet.distance), 0, 0])
+        let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
 
         // 3. Combine transformations (mesh already scaled to radius)
         var modelMatrix = rotationMatrix * translationMatrix

@@ -11,7 +11,7 @@ struct Planet {
     let name: String
     let radius: Float
     /// Orbital radius
-    let distance: Double
+    let distance: Float
     /// Rotation speed multiplier/
     let orbitSpeed: Float
     let color: SIMD3<Float>
