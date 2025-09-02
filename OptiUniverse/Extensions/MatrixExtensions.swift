@@ -58,14 +58,13 @@ extension float4x4 {
                        up: SIMD3<Float>) -> float4x4 {
         
         // 1. Calculate forward vector (z-axis)
-//        let z = normalize(eye - target)  // Points backward (toward camera)
-        let z = normalize(target - eye) // Working, deepseek was wrong?
-        
+        let z = normalize(target - eye) // Points from eye to target
+
         // 2. Calculate right vector (x-axis)
-        let x = normalize(cross(up, z)) // Perpendicular to up and z
-        
+        let x = normalize(cross(z, up)) // Perpendicular to z and up
+
         // 3. Recalculate true up vector (y-axis)
-        let y = cross(z, x)             // Guaranteed perpendicular
+        let y = cross(x, z)
         
         // 4. Build rotation matrix
         let rotation = float4x4(
@@ -92,9 +91,9 @@ extension float4x4 {
         let z = far / (far - near)
         let w = -far * near / (far - near)
         
-        // Metal's clip space already uses an upward-pointing Y axis; the viewport
-        // transform handles the top-left origin conversion automatically, so we
-        // keep the Y scale positive here.
+        // Metal's clip space uses a right-handed system with Y pointing up.
+        // The viewport transform converts to the top-left origin automatically,
+        // so no Y inversion is necessary in this projection matrix.
         return float4x4(
             [x, 0, 0, 0],
             [0, y, 0, 0],
