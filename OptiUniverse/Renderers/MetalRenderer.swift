@@ -18,6 +18,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let axesRenderer: AxesRenderer
     private let planetsRenderer: PlanetsRenderer
     private let metalView: MTKView
+
+    private var hdrTexture: MTLTexture!
+    private var tonemapPipelineState: MTLRenderPipelineState!
     
     // Orbital Camera
     // Camera state
@@ -59,41 +62,61 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         projectionMatrix = matrix_identity_float4x4
         
         super.init()
-        
+
         metalView.device = device
         metalView.delegate = self
-//        metalView.colorPixelFormat = .bgra8Unorm_srgb
-//        metalView.depthStencilPixelFormat = .depth32Float
+        metalView.colorPixelFormat = .rgba16Float
+        metalView.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+        metalView.depthStencilPixelFormat = .depth32Float
+
+        tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
+                                                                 pixelFormat: metalView.colorPixelFormat)
+        hdrTexture = MetalRenderer.makeHDRTexture(device: device,
+                                                  size: metalView.drawableSize)
     }
-    
+
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // Handle view size changes
         updateCamera()
+        hdrTexture = MetalRenderer.makeHDRTexture(device: device, size: size)
     }
-    
+
     func draw(in view: MTKView) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let renderPassDescriptor = view.currentRenderPassDescriptor,
-              let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return
         }
-        
-        // Render planets
+
+        // First pass: render scene to HDR texture
+        let hdrDescriptor = MTLRenderPassDescriptor()
+        hdrDescriptor.colorAttachments[0].texture = hdrTexture
+        hdrDescriptor.colorAttachments[0].loadAction = .clear
+        hdrDescriptor.colorAttachments[0].storeAction = .store
+        hdrDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+
+        guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
+            return
+        }
+
         renderEncoder.setRenderPipelineState(planetsRenderer.pipelineState)
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix)
-        
-        // Render axes
+
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
         axesRenderer.renderAxes(with: renderEncoder)
-        
         renderEncoder.endEncoding()
-        
-        if let drawable = view.currentDrawable {
+
+        // Second pass: tone map to drawable
+        if let drawable = view.currentDrawable,
+           let finalDescriptor = view.currentRenderPassDescriptor,
+           let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
+            quadEncoder.setRenderPipelineState(tonemapPipelineState)
+            quadEncoder.setFragmentTexture(hdrTexture, index: 0)
+            quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            quadEncoder.endEncoding()
             commandBuffer.present(drawable)
         }
-        
+
         commandBuffer.commit()
     }
     
@@ -123,5 +146,25 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             up: SIMD3<Float>(0, 1, 0)
         )
         updateProjectionMatrix()
+    }
+
+    private static func buildTonemapPipeline(device: MTLDevice,
+                                             pixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
+        let library = device.makeDefaultLibrary()!
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "tonemap_fragment")
+        descriptor.colorAttachments[0].pixelFormat = pixelFormat
+        return try! device.makeRenderPipelineState(descriptor: descriptor)
+    }
+
+    private static func makeHDRTexture(device: MTLDevice, size: CGSize) -> MTLTexture {
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
+                                                                  width: Int(size.width),
+                                                                  height: Int(size.height),
+                                                                  mipmapped: false)
+        descriptor.usage = [.renderTarget, .shaderRead]
+        descriptor.storageMode = .private
+        return device.makeTexture(descriptor: descriptor)!
     }
 }

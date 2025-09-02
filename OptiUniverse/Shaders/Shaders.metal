@@ -64,16 +64,16 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
 
     // Base color mixed with sampled texture to keep some variation
     float3 baseTex = planetTexture.sample(textureSampler, in.texCoord).rgb;
-    float3 base = mix(baseTex, float3(1.0, 0.5, 0.0), 0.8);
-    float3 surface = base + noise * float3(0.5, 0.3, 0.0);
+      float3 base = mix(baseTex, float3(2.0, 1.0, 0.2), 0.8);
+      float3 surface = base + noise * float3(1.0, 0.6, 0.0);
 
     // Bright core towards the center
     float core = pow(max(0.0, 1.0 - r), 4.0);
-    float3 coreColor = float3(1.0, 0.9, 0.6) * core;
+      float3 coreColor = float3(30.0, 15.0, 5.0) * core;
 
     // Intense glow near the edges for corona effect
     float glow = smoothstep(0.7, 1.0, r);
-    float3 glowColor = float3(1.0, 0.6, 0.1) * glow;
+      float3 glowColor = float3(10.0, 5.0, 1.0) * glow;
 
     float3 color = surface + coreColor + glowColor;
     return float4(color, 1.0);
@@ -109,6 +109,31 @@ vertex AxesVertexOut axes_vertex(
     return out;
 }
 
-fragment float4 axes_fragment(AxesVertexOut in [[stage_in]]) {
-    return float4(in.color, 1.0);
-}
+   fragment float4 axes_fragment(AxesVertexOut in [[stage_in]]) {
+        return float4(in.color, 1.0);
+    }
+
+    struct FullscreenOut {
+        float4 position [[position]];
+        float2 uv;
+    };
+
+    vertex FullscreenOut fullscreen_vertex(uint vid [[vertex_id]]) {
+        float2 pos[3] = {
+            float2(-1.0, -1.0),
+            float2( 3.0, -1.0),
+            float2(-1.0,  3.0)
+        };
+        FullscreenOut out;
+        out.position = float4(pos[vid], 0.0, 1.0);
+        out.uv = pos[vid] * 0.5 + 0.5;
+        return out;
+    }
+
+    fragment float4 tonemap_fragment(FullscreenOut in [[stage_in]],
+                                     texture2d<float> hdrTexture [[texture(0)]]) {
+        constexpr sampler s(filter::linear, address::clamp_to_edge);
+        float3 hdr = hdrTexture.sample(s, in.uv).rgb;
+        float3 mapped = hdr / (hdr + 1.0);
+        return float4(mapped, 1.0);
+    }

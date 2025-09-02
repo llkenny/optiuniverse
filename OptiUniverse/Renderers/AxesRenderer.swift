@@ -24,7 +24,7 @@ final class AxesRenderer {
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = library.makeFunction(name: "axes_vertex")
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "axes_fragment")
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .rgba16Float
         
         // Important for line rendering:
         pipelineDescriptor.vertexDescriptor = {
