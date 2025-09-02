@@ -21,6 +21,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let metalView: MTKView
 
     private var hdrTexture: MTLTexture?
+    private var msaaColorTexture: MTLTexture?
+    private var depthTexture: MTLTexture?
+    private var tonemapMsaaTexture: MTLTexture?
     private var tonemapPipelineState: MTLRenderPipelineState!
     
     // Orbital Camera
@@ -82,43 +85,39 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // Handle view size changes
         updateCamera()
-        if size.width > 0 && size.height > 0 {
-            hdrTexture = MetalRenderer.makeHDRTexture(device: device, size: size)
-        } else {
+        guard size.width > 0 && size.height > 0 else {
             hdrTexture = nil
+            msaaColorTexture = nil
+            depthTexture = nil
+            tonemapMsaaTexture = nil
+            return
         }
+
+        hdrTexture = MetalRenderer.makeHDRTexture(device: device, size: size)
+        let sampleCount = metalView.sampleCount
+        msaaColorTexture = MetalRenderer.makeMSAATexture(device: device,
+                                                         size: size,
+                                                         pixelFormat: .rgba16Float,
+                                                         sampleCount: sampleCount)
+        depthTexture = MetalRenderer.makeMSAATexture(device: device,
+                                                     size: size,
+                                                     pixelFormat: metalView.depthStencilPixelFormat,
+                                                     sampleCount: sampleCount)
+        tonemapMsaaTexture = MetalRenderer.makeMSAATexture(device: device,
+                                                           size: size,
+                                                           pixelFormat: view.colorPixelFormat,
+                                                           sampleCount: sampleCount)
     }
 
     func draw(in view: MTKView) {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let hdrTexture = hdrTexture,
+              let msaaColorTexture = msaaColorTexture,
+              let depthTexture = depthTexture,
+              let tonemapMsaaTexture = tonemapMsaaTexture,
               let drawable = view.currentDrawable else {
             return
         }
-
-        let width = hdrTexture.width
-        let height = hdrTexture.height
-
-        // Create MSAA color and depth textures for scene rendering
-        let msaaColorDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
-                                                                     width: width,
-                                                                     height: height,
-                                                                     mipmapped: false)
-        msaaColorDesc.sampleCount = 4
-        msaaColorDesc.textureType = .type2DMultisample
-        msaaColorDesc.storageMode = .private
-        msaaColorDesc.usage = [.renderTarget]
-        guard let msaaColorTexture = device.makeTexture(descriptor: msaaColorDesc) else { return }
-
-        let depthDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: metalView.depthStencilPixelFormat,
-                                                                 width: width,
-                                                                 height: height,
-                                                                 mipmapped: false)
-        depthDesc.sampleCount = 4
-        depthDesc.textureType = .type2DMultisample
-        depthDesc.storageMode = .private
-        depthDesc.usage = [.renderTarget]
-        guard let depthTexture = device.makeTexture(descriptor: depthDesc) else { return }
 
         // First pass: render scene to MSAA texture and resolve to HDR texture
         let hdrDescriptor = MTLRenderPassDescriptor()
@@ -146,16 +145,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.endEncoding()
 
         // Second pass: tone map to drawable using MSAA and resolve to the drawable
-        let tonemapDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: view.colorPixelFormat,
-                                                                   width: width,
-                                                                   height: height,
-                                                                   mipmapped: false)
-        tonemapDesc.sampleCount = 4
-        tonemapDesc.textureType = .type2DMultisample
-        tonemapDesc.storageMode = .private
-        tonemapDesc.usage = [.renderTarget]
-        guard let tonemapMsaaTexture = device.makeTexture(descriptor: tonemapDesc) else { return }
-
         let finalDescriptor = MTLRenderPassDescriptor()
         finalDescriptor.colorAttachments[0].texture = tonemapMsaaTexture
         finalDescriptor.colorAttachments[0].resolveTexture = drawable.texture
@@ -224,6 +213,23 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                                   mipmapped: false)
         descriptor.usage = [.renderTarget, .shaderRead]
         descriptor.storageMode = .private
+        return device.makeTexture(descriptor: descriptor)!
+    }
+
+    private static func makeMSAATexture(device: MTLDevice,
+                                        size: CGSize,
+                                        pixelFormat: MTLPixelFormat,
+                                        sampleCount: Int) -> MTLTexture {
+        let width = max(Int(size.width), 1)
+        let height = max(Int(size.height), 1)
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: pixelFormat,
+                                                                  width: width,
+                                                                  height: height,
+                                                                  mipmapped: false)
+        descriptor.sampleCount = sampleCount
+        descriptor.textureType = .type2DMultisample
+        descriptor.storageMode = .private
+        descriptor.usage = [.renderTarget]
         return device.makeTexture(descriptor: descriptor)!
     }
 }
