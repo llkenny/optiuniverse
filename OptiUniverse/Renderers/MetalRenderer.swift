@@ -141,7 +141,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                       projectionMatrix: projectionMatrix)
 
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
-        axesRenderer.renderAxes(with: renderEncoder)
+        axesRenderer.renderAxes(with: renderEncoder,
+                                modelMatrix: planetsRenderer.sunModelMatrix,
+                                viewMatrix: viewMatrix,
+                                projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()
 
         // Second pass: tone map to drawable using MSAA and resolve to the drawable

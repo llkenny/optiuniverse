@@ -17,6 +17,11 @@ final class PlanetsRenderer {
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
     var exposure: Float = 1.0
+
+    /// Model matrix of the Sun without scaling.
+    /// Updated each frame when the Sun is rendered so other renderers
+    /// (e.g. debug axes) can match its position and rotation.
+    var sunModelMatrix: float4x4 = matrix_identity_float4x4
     
     // Solar system data
     private var planets: [Planet] = []
@@ -161,11 +166,16 @@ final class PlanetsRenderer {
         
         // 2. Create translation to orbit distance
         var modelMatrix = float4x4.makeTranslation([Float(planet.distance), 0, 0])
-        
+
         // 3. Apply rotation around sun
         let angle = time * planet.orbitSpeed
         modelMatrix = float4x4.makeRotationZ(angle) * modelMatrix
-        
+
+        // Store Sun transform (without scaling) for debug axes
+        if planet.name == "Sun" {
+            sunModelMatrix = modelMatrix
+        }
+
         // 4. Combine with scaling (scale first, then rotate, then translate)
         // TODO: But it different currently
         modelMatrix = modelMatrix * scaleMatrix
