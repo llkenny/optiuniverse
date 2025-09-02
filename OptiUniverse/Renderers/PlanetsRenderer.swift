@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import QuartzCore
 
 final class PlanetsRenderer {
     private let device: MTLDevice
@@ -14,6 +15,7 @@ final class PlanetsRenderer {
     private var samplerState: MTLSamplerState!
 
     private var time: Float = 0
+    var lastUpdateTime = CACurrentMediaTime()
     var exposure: Float = 1.0
     
     // Solar system data
@@ -114,6 +116,10 @@ final class PlanetsRenderer {
     func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
                        viewMatrix: float4x4,
                        projectionMatrix: float4x4) {
+        let currentTime = CACurrentMediaTime()
+        let delta = Float(currentTime - lastUpdateTime)
+        lastUpdateTime = currentTime
+
         for planet in planets {
             if planet.name == "Sun" {
                 renderEncoder.setRenderPipelineState(sunPipelineState)
@@ -124,16 +130,18 @@ final class PlanetsRenderer {
             renderPlanet(planet,
                          with: renderEncoder,
                          time: time,
+                         delta: delta,
                          viewMatrix: viewMatrix,
                          projectionMatrix: projectionMatrix)
         }
-        time += 1
+        time += delta
     }
-    
+
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
                               time: Float,
+                              delta: Float,
                               viewMatrix: float4x4,
                               projectionMatrix: float4x4) {
         
@@ -189,10 +197,15 @@ final class PlanetsRenderer {
                                        length: MemoryLayout<Float>.stride,
                                        index: 0)
 
+        var d = delta
+        renderEncoder.setFragmentBytes(&d,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 1)
+
         var e = exposure
         renderEncoder.setFragmentBytes(&e,
                                        length: MemoryLayout<Float>.stride,
-                                       index: 1)
+                                       index: 2)
         
         guard let submesh = mtkMesh.submeshes.first else {
             fatalError()

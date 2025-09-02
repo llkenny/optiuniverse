@@ -64,7 +64,8 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 // procedural surface and bright corona.
 fragment float4 fragment_sun(VertexOut in [[stage_in]],
                              constant float &time [[buffer(0)]],
-                             constant float &exposure [[buffer(1)]],
+                             constant float &delta [[buffer(1)]],
+                             constant float &exposure [[buffer(2)]],
                              texture2d<float> planetTexture [[texture(0)]],
                              sampler textureSampler [[sampler(0)]]) {
     // Center UV on (0,0)
@@ -72,16 +73,16 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     float r = length(uv);
 
     // Rotate texture coordinates over time for swirling motion
-    float angle = time * 0.1;
+    float angle = time * 0.1 * delta;
     float2 rotUV = float2(uv.x * cos(angle) - uv.y * sin(angle),
                           uv.x * sin(angle) + uv.y * cos(angle));
 
     // Warp UVs using secondary FBM for more turbulent motion
-    float2 warp = fbm(float3(rotUV * 10.0, time * 0.3));
+    float2 warp = fbm(float3(rotUV * 10.0, time * 0.3 * delta));
     rotUV += warp * 0.02;
 
     // Simple procedural noise based on sine waves
-    float noise = sin((rotUV.x + time) * 20.0) * sin((rotUV.y - time) * 20.0);
+    float noise = sin((rotUV.x + time) * 20.0 * delta) * sin((rotUV.y - time) * 20.0 * delta);
     noise = noise * 0.5 + 0.5; // Normalize to 0..1
 
     // Base color mixed with sampled texture to keep some variation
@@ -99,7 +100,7 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     const float freqs[3] = {1.0, 2.0, 4.0};
     for (int i = 0; i < 3; ++i) {
         float f = freqs[i];
-        float layer = sin((rotUV.x + time) * 20.0 * f) * sin((rotUV.y - time) * 20.0 * f);
+        float layer = sin((rotUV.x + time) * 20.0 * f * delta) * sin((rotUV.y - time) * 20.0 * f * delta);
         layer = layer * 0.5 + 0.5;
         corona += float3(10.0, 5.0, 1.0) * (1.0 / (float(i) + 1.0)) * layer;
     }
