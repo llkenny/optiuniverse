@@ -10,10 +10,12 @@ import MetalKit
 final class AxesRenderer {
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
-    
+    private let vertexBuffer: MTLBuffer
+
     init(device: MTLDevice) {
         self.device = device
         pipelineState = setupAxesPipeline()
+        vertexBuffer = AxesRenderer.makeVertexBuffer(device: device)
     }
     
     private func setupAxesPipeline() -> MTLRenderPipelineState {
@@ -57,31 +59,10 @@ final class AxesRenderer {
                     modelMatrix: float4x4,
                     viewMatrix: float4x4,
                     projectionMatrix: float4x4) {
-        // Define axis vertices (position + color)
-        // Format: [x, y, z, r, g, b]
-        let vertices: [Float] = [
-            // X axis (red)
-            0, 0, 0,   1, 0, 0,  // Start point
-            10, 0, 0,  1, 0, 0,  // End point
-
-            // Y axis (green)
-            0, 0, 0,   0, 1, 0,  // Start point
-            0, 10, 0,  0, 1, 0,  // End point
-
-            // Z axis (blue)
-            0, 0, 0,   0, 0, 1,  // Start point
-            0, 0, 10,  0, 0, 1   // End point
-        ]
-
-        // Create vertex buffer
-        let vertexBuffer = device.makeBuffer(bytes: vertices,
-                                             length: vertices.count * MemoryLayout<Float>.stride,
-                                             options: [])!
-
-        // Set pipeline state for lines (make sure you have one)
+        // Set pipeline state for lines
         renderEncoder.setRenderPipelineState(pipelineState)
 
-        // Set vertex buffer
+        // Set prebuilt vertex buffer
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
 
         // Set transformation matrix (MVP)
@@ -94,6 +75,29 @@ final class AxesRenderer {
         renderEncoder.drawPrimitives(type: .line,
                                      vertexStart: 0,
                                      vertexCount: 6) // 2 points per line × 3 axes = 6 vertices
+    }
+
+    private static func makeVertexBuffer(device: MTLDevice) -> MTLBuffer {
+        // Define axis vertices (position + color)
+        // Format: [x, y, z, r, g, b]
+        let axisLength: Float = 10
+        let vertices: [Float] = [
+            // X axis (red)
+            0, 0, 0,   1, 0, 0,
+            axisLength, 0, 0,  1, 0, 0,
+
+            // Y axis (green)
+            0, 0, 0,   0, 1, 0,
+            0, axisLength, 0,  0, 1, 0,
+
+            // Z axis (blue)
+            0, 0, 0,   0, 0, 1,
+            0, 0, axisLength,  0, 0, 1
+        ]
+
+        return device.makeBuffer(bytes: vertices,
+                                  length: vertices.count * MemoryLayout<Float>.stride,
+                                  options: [])!
     }
 }
 

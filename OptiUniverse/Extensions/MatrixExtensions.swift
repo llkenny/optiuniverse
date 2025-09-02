@@ -58,13 +58,16 @@ extension float4x4 {
                        up: SIMD3<Float>) -> float4x4 {
         
         // 1. Calculate forward vector (z-axis)
-        let z = normalize(target - eye) // Points from eye to target
+        // In a right-handed system the camera looks down the negative Z axis,
+        // so the forward vector points from the target back toward the eye.
+        let z = normalize(eye - target)
 
         // 2. Calculate right vector (x-axis)
-        let x = normalize(cross(z, up)) // Perpendicular to z and up
+        // Use the global up direction to get a perpendicular right vector.
+        let x = normalize(cross(up, z))
 
-        // 3. Recalculate true up vector (y-axis)
-        let y = cross(x, z)
+        // 3. Recalculate the true up vector (y-axis)
+        let y = cross(z, x)
         
         // 4. Build rotation matrix
         let rotation = float4x4(
