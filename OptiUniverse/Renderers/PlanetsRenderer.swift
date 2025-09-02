@@ -241,11 +241,19 @@ final class PlanetsRenderer {
                                                          worldPosition4.y,
                                                          worldPosition4.z)
         let clipPosition = projectionMatrix * viewMatrix * worldPosition4
-        if clipPosition.w != 0 {
+        // clip-space `w` is positive for objects in front of the camera in our
+        // coordinate system. Ignore objects with non-positive `w` values to
+        // skip planets behind the camera while also avoiding divide-by-zero.
+        if clipPosition.w > 0 {
             let ndc = clipPosition / clipPosition.w
-            let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
-            let y = (1 - ndc.y) * 0.5 * Float(viewportSize.height)
-            planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
+            if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
+                let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+                // Metal's projection matrix already flips the Y axis, so
+                // screen-space Y grows downward. Use `ndc.y + 1` instead of
+                // `1 - ndc.y` to avoid mirroring label positions vertically.
+                let y = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
+                planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
+            }
         }
         
         // TODO:
