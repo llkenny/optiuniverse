@@ -88,10 +88,13 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
 
     func updatePlanetLabels(_ positions: [String : SIMD2<Float>]) {
         DispatchQueue.main.async {
-            for (name, position) in positions {
-                if let label = self.labels[name] {
+            for (name, label) in self.labels {
+                if let position = positions[name] {
                     label.center = CGPoint(x: CGFloat(position.x),
                                             y: CGFloat(position.y))
+                    label.isHidden = false
+                } else {
+                    label.isHidden = true
                 }
             }
         }

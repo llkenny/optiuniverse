@@ -241,11 +241,13 @@ final class PlanetsRenderer {
                                                          worldPosition4.y,
                                                          worldPosition4.z)
         let clipPosition = projectionMatrix * viewMatrix * worldPosition4
-        if clipPosition.w != 0 {
+        if clipPosition.w > 0 {
             let ndc = clipPosition / clipPosition.w
-            let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
-            let y = (1 - ndc.y) * 0.5 * Float(viewportSize.height)
-            planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
+            if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
+                let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+                let y = (1 - ndc.y) * 0.5 * Float(viewportSize.height)
+                planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
+            }
         }
         
         // TODO:
