@@ -63,13 +63,13 @@ extension float4x4 {
         // Recomputed up vector to ensure orthogonality
         let u = cross(s, f)
 
-        // Build a column-major view matrix. The translation components live in the
-        // final column so vertices are correctly transformed relative to the
-        // camera position.
+        // Build a column-major view matrix. Each `SIMD4` represents one column.
+        // The translation components live in the final column so vertices are
+        // correctly transformed relative to the camera position.
         return float4x4(
-            SIMD4<Float>(s.x, u.x, -f.x, 0),
-            SIMD4<Float>(s.y, u.y, -f.y, 0),
-            SIMD4<Float>(s.z, u.z, -f.z, 0),
+            SIMD4<Float>(s.x, s.y, s.z, 0),
+            SIMD4<Float>(u.x, u.y, u.z, 0),
+            SIMD4<Float>(-f.x, -f.y, -f.z, 0),
             SIMD4<Float>(-dot(s, eye), -dot(u, eye), dot(f, eye), 1)
         )
     }
