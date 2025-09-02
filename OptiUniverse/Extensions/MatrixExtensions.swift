@@ -92,9 +92,13 @@ extension float4x4 {
         let z = far / (far - near)
         let w = -far * near / (far - near)
         
+        // Metal's clip space uses a top-left origin in screen space, which makes
+        // the Y axis appear inverted compared to the typical mathematical
+        // coordinate system. Negate the Y component so that positive Y points
+        // upward on screen.
         return float4x4(
             [x,  0,  0,  0],
-            [0,  y,  0,  0],
+            [0, -y,  0,  0],
             [0,  0,  z,  1],  // ← Should be 1 in 4th column
             [0,  0,  w,  0]   // ← Should be 0 in 4th column
         )

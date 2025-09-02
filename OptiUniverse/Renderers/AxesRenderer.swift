@@ -53,40 +53,43 @@ final class AxesRenderer {
         }
     }
     
-    func renderAxes(with renderEncoder: MTLRenderCommandEncoder) {
+    func renderAxes(with renderEncoder: MTLRenderCommandEncoder,
+                    modelMatrix: float4x4,
+                    viewMatrix: float4x4,
+                    projectionMatrix: float4x4) {
         // Define axis vertices (position + color)
         // Format: [x, y, z, r, g, b]
         let vertices: [Float] = [
             // X axis (red)
             0, 0, 0,   1, 0, 0,  // Start point
             10, 0, 0,  1, 0, 0,  // End point
-            
+
             // Y axis (green)
             0, 0, 0,   0, 1, 0,  // Start point
             0, 10, 0,  0, 1, 0,  // End point
-            
+
             // Z axis (blue)
             0, 0, 0,   0, 0, 1,  // Start point
             0, 0, 10,  0, 0, 1   // End point
         ]
-        
+
         // Create vertex buffer
         let vertexBuffer = device.makeBuffer(bytes: vertices,
                                              length: vertices.count * MemoryLayout<Float>.stride,
                                              options: [])!
-        
+
         // Set pipeline state for lines (make sure you have one)
         renderEncoder.setRenderPipelineState(pipelineState)
-        
+
         // Set vertex buffer
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        
-        // Set transformation matrix
-        var matrix = matrix_identity_float4x4
-        renderEncoder.setVertexBytes(&matrix,
+
+        // Set transformation matrix (MVP)
+        var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+        renderEncoder.setVertexBytes(&mvpMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 1)
-        
+
         // Draw as lines (not triangles)
         renderEncoder.drawPrimitives(type: .line,
                                      vertexStart: 0,
