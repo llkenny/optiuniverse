@@ -9,52 +9,52 @@ import MetalKit
 
 final class AxesRenderer {
     private let device: MTLDevice
-    var pipelineState: MTLRenderPipelineState!
+    private let pipelineState: MTLRenderPipelineState
     private let vertexBuffer: MTLBuffer
 
     init(device: MTLDevice) {
         self.device = device
-        pipelineState = setupAxesPipeline()
-        vertexBuffer = AxesRenderer.makeVertexBuffer(device: device)
+        self.pipelineState = AxesRenderer.makePipelineState(device: device)
+        self.vertexBuffer = AxesRenderer.makeVertexBuffer(device: device)
     }
-    
-    private func setupAxesPipeline() -> MTLRenderPipelineState {
+
+    private static func makePipelineState(device: MTLDevice) -> MTLRenderPipelineState {
         guard let library = device.makeDefaultLibrary() else {
             fatalError("Failed to makeDefaultLibrary")
         }
-        
+
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = library.makeFunction(name: "axes_vertex")
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "axes_fragment")
         pipelineDescriptor.colorAttachments[0].pixelFormat = .rgba16Float
         pipelineDescriptor.sampleCount = 4
         pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
-        
+
         // Important for line rendering:
         pipelineDescriptor.vertexDescriptor = {
             let descriptor = MTLVertexDescriptor()
-            
+
             // Position (x,y,z)
             descriptor.attributes[0].format = .float3
             descriptor.attributes[0].offset = 0
             descriptor.attributes[0].bufferIndex = 0
-            
+
             // Color (r,g,b)
             descriptor.attributes[1].format = .float3
             descriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
             descriptor.attributes[1].bufferIndex = 0
-            
+
             descriptor.layouts[0].stride = MemoryLayout<Float>.stride * 6
             return descriptor
         }()
-        
+
         do {
             return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         } catch {
             fatalError("Failed to create axes pipeline state: \(error)")
         }
     }
-    
+
     func renderAxes(with renderEncoder: MTLRenderCommandEncoder,
                     modelMatrix: float4x4,
                     viewMatrix: float4x4,
@@ -100,4 +100,3 @@ final class AxesRenderer {
                                   options: [])!
     }
 }
-
