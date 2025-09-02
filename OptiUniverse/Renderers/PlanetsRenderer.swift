@@ -95,7 +95,9 @@ final class PlanetsRenderer {
     private func createTexturedSphere(radius: Float, textureName: String) -> MDLMesh {
         let allocator = MTKMeshBufferAllocator(device: device)
 
-        // Create sphere with explicit texture coordinate generation
+        // Create sphere. Model I/O generates proper spherical texture
+        // coordinates by default, so we don't need to manually unwrap each
+        // face (which caused the texture to appear as repeated rectangles).
         let mdlMesh = MDLMesh(
             sphereWithExtent: [1, 1, 1], // TODO: radius, radius, radius
             segments: [20, 20],
@@ -103,9 +105,6 @@ final class PlanetsRenderer {
             geometryType: .triangles,
             allocator: allocator
         )
-
-        // Generate texture coordinates
-        mdlMesh.addUnwrappedTextureCoordinates(forAttributeNamed: MDLVertexAttributeTextureCoordinate)
 
         // Load texture with top-left origin and mipmaps to avoid seams
         let textureLoader = MTKTextureLoader(device: device)
