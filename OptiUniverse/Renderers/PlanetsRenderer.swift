@@ -106,6 +106,14 @@ final class PlanetsRenderer {
             allocator: allocator
         )
 
+        // Match vertex layout with our Metal pipeline and generate UVs
+        let vertexDescriptor = MTKModelIOVertexDescriptorFromMetal(makeVertexDescriptor())
+        (vertexDescriptor.attributes[0] as! MDLVertexAttribute).name = MDLVertexAttributePosition
+        (vertexDescriptor.attributes[1] as! MDLVertexAttribute).name = MDLVertexAttributeNormal
+        (vertexDescriptor.attributes[2] as! MDLVertexAttribute).name = MDLVertexAttributeTextureCoordinate
+        mdlMesh.vertexDescriptor = vertexDescriptor
+        mdlMesh.addUnwrappedTextureCoordinates(forAttributeNamed: MDLVertexAttributeTextureCoordinate)
+
         // Load texture with top-left origin and mipmaps to avoid seams
         let textureLoader = MTKTextureLoader(device: device)
         let options: [MTKTextureLoader.Option : Any] = [
