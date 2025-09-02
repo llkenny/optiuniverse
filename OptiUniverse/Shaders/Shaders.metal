@@ -63,9 +63,8 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     noise = noise * 0.5 + 0.5; // Normalize to 0..1
 
     // Base color mixed with sampled texture to keep some variation
-    float3 baseTex = planetTexture.sample(textureSampler, in.texCoord).rgb;
-      float3 base = mix(baseTex, float3(2.0, 1.0, 0.2), 0.8);
-      float3 surface = base + noise * float3(1.0, 0.6, 0.0);
+    float3 base = planetTexture.sample(textureSampler, in.texCoord).rgb;
+    float3 surface = base + noise * float3(1.0, 0.6, 0.0);
 
     // Bright core towards the center
     float core = pow(max(0.0, 1.0 - r), 4.0);

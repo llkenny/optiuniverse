@@ -13,15 +13,12 @@ final class PlanetsRenderer {
     private var sunPipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
     
-    private var mesh: MTKMesh!
-    private var texture: MTLTexture!
-    
     private var time: Float = 0
     
     // Solar system data
     private var planets: [Planet] = []
     private var planetMeshes: [String: MDLMesh] = [:]
-    private var cachedTextures: [String: Textures] = [:]
+    private var cachedTextures: [String: MTLTexture] = [:]
 
     init(device: MTLDevice) {
         self.device = device
@@ -87,7 +84,7 @@ final class PlanetsRenderer {
     
     private func createTexturedSphere(radius: Float, textureName: String) -> MDLMesh {
         let allocator = MTKMeshBufferAllocator(device: device)
-        
+
         // Create sphere with explicit texture coordinate generation
         let mdlMesh = MDLMesh(
             sphereWithExtent: [1, 1, 1], // TODO: radius, radius, radius
@@ -96,44 +93,20 @@ final class PlanetsRenderer {
             geometryType: .triangles,
             allocator: allocator
         )
-        
+
         // Generate texture coordinates
         mdlMesh.addUnwrappedTextureCoordinates(forAttributeNamed: MDLVertexAttributeTextureCoordinate)
-        
-        // TODO: Load texture here for optimization
-        // Load texture
-        //        let textureLoader = MTKTextureLoader(device: device)
-        //        let textureOptions: [MTKTextureLoader.Option : Any] = [
-        //            .textureUsage: MTLTextureUsage.shaderRead.rawValue,
-        //            .textureStorageMode: MTLStorageMode.private.rawValue,
-        //            .origin: MTKTextureLoader.Origin.bottomLeft.rawValue
-        //        ]
-        //
-        //        texture = try! textureLoader.newTexture(
-        //            name: textureName,
-        //            scaleFactor: 1.0,
-        //            bundle: nil,
-        //            options: textureOptions
-        //        )
-        
-        // Create material and assign texture
+
+        // Load texture with top-left origin and mipmaps to avoid seams
+        let textureLoader = MTKTextureLoader(device: device)
+        let options: [MTKTextureLoader.Option : Any] = [
+            .origin: MTKTextureLoader.Origin.topLeft.rawValue,
+            .generateMipmaps: NSNumber(booleanLiteral: true)
+        ]
         let textureURL = Bundle.main.url(forResource: textureName, withExtension: "png")!
-        
-        let material = MDLMaterial()
-        let property = MDLMaterialProperty(
-            name: "baseColor",
-            semantic: .baseColor,
-            url: textureURL
-        )
-        material.setProperty(property)
-        
-        // Assign material to submeshes
-        for submesh in mdlMesh.submeshes! {
-            if let submesh = submesh as? MDLSubmesh {
-                submesh.material = material
-            }
-        }
-        
+        let texture = try! textureLoader.newTexture(URL: textureURL, options: options)
+        cachedTextures[textureName] = texture
+
         return mdlMesh
     }
     
@@ -194,15 +167,8 @@ final class PlanetsRenderer {
         //        let eccentricity: Float = 0.1 // 0 for circular
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
-        //        // Set texture
-        if cachedTextures[planet.textureName] == nil {
-            let submesh = mesh.submeshes![0] as! MDLSubmesh
-            let material = submesh.material!
-            let texture = Textures(material: material, device: device)
-            cachedTextures[planet.textureName] = texture
-        }
+        // Retrieve cached mesh and texture
         let texture = cachedTextures[planet.textureName]!
-        
         let mtkMesh = try! MTKMesh(mesh: mesh, device: device)
         
         // Set buffers
@@ -214,7 +180,7 @@ final class PlanetsRenderer {
                                      index: 2)
         
         renderEncoder.setVertexBuffer(mtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
-        renderEncoder.setFragmentTexture(texture.baseColor!, index: 0)
+        renderEncoder.setFragmentTexture(texture, index: 0)
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
 
         var t = time
