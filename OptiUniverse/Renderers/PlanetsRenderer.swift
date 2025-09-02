@@ -12,8 +12,9 @@ final class PlanetsRenderer {
     var pipelineState: MTLRenderPipelineState!
     private var sunPipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
-    
+
     private var time: Float = 0
+    var exposure: Float = 1.0
     
     // Solar system data
     private var planets: [Planet] = []
@@ -187,6 +188,11 @@ final class PlanetsRenderer {
         renderEncoder.setFragmentBytes(&t,
                                        length: MemoryLayout<Float>.stride,
                                        index: 0)
+
+        var e = exposure
+        renderEncoder.setFragmentBytes(&e,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 1)
         
         guard let submesh = mtkMesh.submeshes.first else {
             fatalError()
