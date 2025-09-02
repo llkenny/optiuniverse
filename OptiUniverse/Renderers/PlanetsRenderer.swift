@@ -40,6 +40,8 @@ final class PlanetsRenderer {
 
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        descriptor.sampleCount = 4
+        descriptor.depthAttachmentPixelFormat = .depth32Float
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
         descriptor.vertexDescriptor = makeVertexDescriptor()
