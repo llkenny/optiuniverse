@@ -56,36 +56,19 @@ extension float4x4 {
     static func lookAt(eye: SIMD3<Float>,
                        target: SIMD3<Float>,
                        up: SIMD3<Float>) -> float4x4 {
-        
-        // 1. Calculate forward vector (z-axis)
-        // In a right-handed system the camera looks down the negative Z axis,
-        // so the forward vector points from the target back toward the eye.
-        let z = normalize(eye - target)
+        // Forward vector from the eye to the target
+        let f = normalize(target - eye)
+        // Right vector orthogonal to the forward direction
+        let s = normalize(cross(f, up))
+        // Recomputed up vector to ensure orthogonality
+        let u = cross(s, f)
 
-        // 2. Calculate right vector (x-axis)
-        // Use the global up direction to get a perpendicular right vector.
-        let x = normalize(cross(up, z))
-
-        // 3. Recalculate the true up vector (y-axis)
-        let y = cross(z, x)
-        
-        // 4. Build rotation matrix
-        let rotation = float4x4(
-            [x.x, y.x, z.x, 0],
-            [x.y, y.y, z.y, 0],
-            [x.z, y.z, z.z, 0],
-            [0,   0,   0,   1]
+        return float4x4(
+            [ s.x,  s.y,  s.z, -dot(s, eye) ],
+            [ u.x,  u.y,  u.z, -dot(u, eye) ],
+            [ -f.x, -f.y, -f.z,  dot(f, eye) ],
+            [ 0,    0,    0,     1 ]
         )
-        
-        // 5. Add translation
-        let translation = float4x4(
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [-eye.x, -eye.y, -eye.z, 1]
-        )
-        
-        return rotation * translation
     }
     
     static func perspective(fov: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
