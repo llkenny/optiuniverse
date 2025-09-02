@@ -99,7 +99,7 @@ final class PlanetsRenderer {
         // coordinates by default, so we don't need to manually unwrap each
         // face (which caused the texture to appear as repeated rectangles).
         let mdlMesh = MDLMesh(
-            sphereWithExtent: [1, 1, 1], // TODO: radius, radius, radius
+            sphereWithExtent: [radius * 2, radius * 2, radius * 2],
             segments: [20, 20],
             inwardNormals: false,
             geometryType: .triangles,
@@ -151,7 +151,7 @@ final class PlanetsRenderer {
                               viewMatrix: float4x4,
                               projectionMatrix: float4x4) {
         
-        // Get or create mesh
+        // Get or create mesh with correct radius
         if planetMeshes[planet.textureName] == nil {
             planetMeshes[planet.textureName] = createTexturedSphere(
                 radius: planet.radius,
@@ -159,27 +159,23 @@ final class PlanetsRenderer {
             )
         }
         guard let mesh = planetMeshes[planet.textureName] else { return }
-        
-        // 1. Create scaling matrix
-        let scaleMatrix = float4x4.makeScale([planet.radius, planet.radius, planet.radius])
-        
-        // 2. Create translation to orbit distance
-        var modelMatrix = float4x4.makeTranslation([Float(planet.distance), 0, 0])
 
-        // 3. Apply rotation around sun
+        // 1. Calculate rotation for current orbit position
         let angle = time * planet.orbitSpeed
-        modelMatrix = float4x4.makeRotationZ(angle) * modelMatrix
+        let rotationMatrix = float4x4.makeRotationZ(angle)
 
-        // Store Sun transform (without scaling) for debug axes
+        // 2. Translate to the planet's orbital distance
+        let translationMatrix = float4x4.makeTranslation([Float(planet.distance), 0, 0])
+
+        // 3. Combine transformations (mesh already scaled to radius)
+        var modelMatrix = rotationMatrix * translationMatrix
+
+        // Store Sun transform for debug axes
         if planet.name == "Sun" {
             sunModelMatrix = modelMatrix
         }
 
-        // 4. Combine with scaling (scale first, then rotate, then translate)
-        // TODO: But it different currently
-        modelMatrix = modelMatrix * scaleMatrix
-        
-        // 5. Create MVP matrix
+        // 4. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
         // TODO:
