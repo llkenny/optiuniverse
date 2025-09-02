@@ -39,7 +39,7 @@ final class PlanetsRenderer {
         let library = device.makeDefaultLibrary()!
 
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        descriptor.colorAttachments[0].pixelFormat = .bgra10_xr
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
         descriptor.vertexDescriptor = makeVertexDescriptor()

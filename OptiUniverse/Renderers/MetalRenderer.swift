@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import CoreGraphics
 import os
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
@@ -59,11 +60,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         projectionMatrix = matrix_identity_float4x4
         
         super.init()
-        
+
         metalView.device = device
         metalView.delegate = self
-//        metalView.colorPixelFormat = .bgra8Unorm_srgb
-//        metalView.depthStencilPixelFormat = .depth32Float
+        metalView.colorPixelFormat = .bgra10_xr
+        if let colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB) {
+            metalView.colorspace = colorSpace
+        }
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
