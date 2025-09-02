@@ -74,7 +74,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.depthStencilPixelFormat = .depth32Float
 
         tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
-                                                                 pixelFormat: metalView.colorPixelFormat)
+                                                                 colorPixelFormat: metalView.colorPixelFormat,
+                                                                 depthPixelFormat: metalView.depthStencilPixelFormat)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -115,12 +116,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         // Second pass: tone map to drawable
         if let drawable = view.currentDrawable,
-           let finalDescriptor = view.currentRenderPassDescriptor,
-           let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
-            quadEncoder.setRenderPipelineState(tonemapPipelineState)
-            quadEncoder.setFragmentTexture(hdrTexture, index: 0)
-            quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-            quadEncoder.endEncoding()
+           let finalDescriptor = view.currentRenderPassDescriptor {
+            finalDescriptor.depthAttachment = nil
+            if let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
+                quadEncoder.setRenderPipelineState(tonemapPipelineState)
+                quadEncoder.setFragmentTexture(hdrTexture, index: 0)
+                quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+                quadEncoder.endEncoding()
+            }
             commandBuffer.present(drawable)
         }
 
@@ -156,12 +159,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private static func buildTonemapPipeline(device: MTLDevice,
-                                             pixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
+                                             colorPixelFormat: MTLPixelFormat,
+                                             depthPixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
         descriptor.fragmentFunction = library.makeFunction(name: "tonemap_fragment")
-        descriptor.colorAttachments[0].pixelFormat = pixelFormat
+        descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
+        descriptor.depthAttachmentPixelFormat = depthPixelFormat
         return try! device.makeRenderPipelineState(descriptor: descriptor)
     }
 
