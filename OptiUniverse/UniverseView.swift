@@ -104,12 +104,26 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
         let location = gesture.translation(in: gesture.view)
         let sensitivity: Float = 0.01
 
-        renderer?.cameraYaw -= Float(location.x - lastPanLocation.x) * sensitivity
-        renderer?.cameraPitch -= Float(location.y - lastPanLocation.y) * sensitivity
-        renderer?.cameraPitch = max(0.1, min(renderer?.cameraPitch ?? 0, .pi/2))
+        switch gesture.state {
+        case .began:
+            // Store the initial touch location so the first update doesn't jump
+            lastPanLocation = location
 
-        lastPanLocation = location
-        renderer?.updateCamera()
+        case .changed:
+            renderer?.cameraYaw -= Float(location.x - lastPanLocation.x) * sensitivity
+            renderer?.cameraPitch -= Float(location.y - lastPanLocation.y) * sensitivity
+            renderer?.cameraPitch = max(0.1, min(renderer?.cameraPitch ?? 0, .pi/2))
+
+            lastPanLocation = location
+            renderer?.updateCamera()
+
+        case .ended, .cancelled:
+            // Reset tracking when the gesture finishes
+            lastPanLocation = .zero
+
+        default:
+            break
+        }
     }
 
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
