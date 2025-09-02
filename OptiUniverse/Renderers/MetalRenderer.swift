@@ -173,7 +173,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             fov: .pi/3,
             aspect: aspect,
             near: 0.1,
-            far: 1000
+            far: 10000
         )
     }
     

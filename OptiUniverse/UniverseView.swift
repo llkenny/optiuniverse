@@ -68,7 +68,7 @@ class RendererCoordinator {
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         let zoomSensitivity: Float = 1 // TODO: Think about its value
         renderer?.cameraDistance /= Float(gesture.scale) * zoomSensitivity
-        renderer?.cameraDistance = max(0, min(renderer?.cameraDistance ?? 3, 100))
+        renderer?.cameraDistance = max(0, min(renderer?.cameraDistance ?? 3, 10000))
         gesture.scale = 1.0
         renderer?.updateCamera()
     }
