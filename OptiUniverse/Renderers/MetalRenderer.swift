@@ -160,8 +160,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                       delta: delta)
 
         renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
+        let axesModelMatrix: float4x4
+        if let name = followingPlanetName,
+           let modelMatrix = planetsRenderer.modelMatrix(ofPlanetNamed: name) {
+            axesModelMatrix = modelMatrix
+        } else {
+            axesModelMatrix = planetsRenderer.sunModelMatrix
+        }
         axesRenderer.renderAxes(with: renderEncoder,
-                                modelMatrix: planetsRenderer.sunModelMatrix,
+                                modelMatrix: axesModelMatrix,
                                 viewMatrix: viewMatrix,
                                 projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()

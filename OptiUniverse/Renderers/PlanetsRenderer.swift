@@ -156,14 +156,20 @@ final class PlanetsRenderer {
         return delta
     }
 
-    /// Returns the world-space position of the planet with the given name
-    /// using the current internal time value.
-    func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
+    /// Returns the model matrix (without scaling) for the planet with the given
+    /// name using the current internal time value.
+    func modelMatrix(ofPlanetNamed name: String) -> float4x4? {
         guard let planet = planets.first(where: { $0.name == name }) else { return nil }
         let angle = time * planet.orbitSpeed
         let rotationMatrix = float4x4.makeRotationZ(angle)
         let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
-        let modelMatrix = rotationMatrix * translationMatrix
+        return rotationMatrix * translationMatrix
+    }
+
+    /// Returns the world-space position of the planet with the given name
+    /// using the current internal time value.
+    func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
+        guard let modelMatrix = modelMatrix(ofPlanetNamed: name) else { return nil }
         let pos4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
         return SIMD3<Float>(pos4.x, pos4.y, pos4.z)
     }
