@@ -7,6 +7,7 @@
 
 import MetalKit
 import os
+import QuartzCore
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
     
@@ -66,7 +67,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
-        metalView.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+        if #available(iOS 13.0, *) {
+            (metalView.layer as? CAMetalLayer)?.colorspace =
+                CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+        }
         metalView.depthStencilPixelFormat = .depth32Float
 
         tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
