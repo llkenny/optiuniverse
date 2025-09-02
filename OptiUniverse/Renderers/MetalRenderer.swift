@@ -75,7 +75,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
                                                                  colorPixelFormat: metalView.colorPixelFormat,
-                                                                 depthPixelFormat: metalView.depthStencilPixelFormat)
+                                                                 depthPixelFormat: .invalid)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
