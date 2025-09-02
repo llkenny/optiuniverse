@@ -245,7 +245,10 @@ final class PlanetsRenderer {
             let ndc = clipPosition / clipPosition.w
             if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
                 let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
-                let y = (1 - ndc.y) * 0.5 * Float(viewportSize.height)
+                // Metal's projection matrix already flips the Y axis, so
+                // screen-space Y grows downward. Use `ndc.y + 1` instead of
+                // `1 - ndc.y` to avoid mirroring label positions vertically.
+                let y = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
                 planetScreenPositions[planet.name] = SIMD2<Float>(x, y)
             }
         }
