@@ -22,82 +22,57 @@ final class PlanetsRenderer {
     private var planets: [Planet] = []
     private var planetMeshes: [String: MDLMesh] = [:]
     private var cachedTextures: [String: Textures] = [:]
-    
+
     init(device: MTLDevice) {
         self.device = device
-        pipelineState = setupPipeline()
-        sunPipelineState = setupSunPipeline()
+        pipelineState = makePipelineState(fragmentFunction: "fragment_main")
+        sunPipelineState = makePipelineState(fragmentFunction: "fragment_sun")
         samplerState = makeSamplerState()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
     }
-    
-    private func setupPipeline() -> MTLRenderPipelineState {
+
+    /// Builds a render pipeline for the given fragment function.
+    ///
+    /// - Parameter fragmentFunction: The name of the fragment shader function.
+    /// - Returns: A configured `MTLRenderPipelineState`.
+    private func makePipelineState(fragmentFunction: String) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
-        let vertexFunction = library.makeFunction(name: "vertex_main")
-        let fragmentFunction = library.makeFunction(name: "fragment_main")
-        
-        let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        pipelineDescriptor.vertexFunction = vertexFunction
-        pipelineDescriptor.fragmentFunction = fragmentFunction
-        
-        // Vertex descriptor
-        let vertexDescriptor = MTLVertexDescriptor()
-        
-        // Position (attribute 0)
-        vertexDescriptor.attributes[0].format = .float3
-        vertexDescriptor.attributes[0].offset = 0
-        vertexDescriptor.attributes[0].bufferIndex = 0
-        
-        // Normal (attribute 1)
-        vertexDescriptor.attributes[1].format = .float3
-        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
-        vertexDescriptor.attributes[1].bufferIndex = 0
-        
-        // Texture coordinates (attribute 2)
-        vertexDescriptor.attributes[2].format = .float2
-        vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
-        vertexDescriptor.attributes[2].bufferIndex = 0
-        
-        // Layout
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
-        pipelineDescriptor.vertexDescriptor = vertexDescriptor
-        
+
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
+        descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
+        descriptor.vertexDescriptor = makeVertexDescriptor()
+
         do {
-            return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+            return try device.makeRenderPipelineState(descriptor: descriptor)
         } catch {
             fatalError("Failed to create pipeline state: \(error)")
         }
     }
 
-    private func setupSunPipeline() -> MTLRenderPipelineState {
-        let library = device.makeDefaultLibrary()!
-        let vertexFunction = library.makeFunction(name: "vertex_main")
-        let fragmentFunction = library.makeFunction(name: "fragment_sun")
-
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        descriptor.vertexFunction = vertexFunction
-        descriptor.fragmentFunction = fragmentFunction
-
+    /// Creates the shared vertex descriptor for planet rendering.
+    private func makeVertexDescriptor() -> MTLVertexDescriptor {
         let vertexDescriptor = MTLVertexDescriptor()
+
+        // Position (attribute 0)
         vertexDescriptor.attributes[0].format = .float3
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
+
+        // Normal (attribute 1)
         vertexDescriptor.attributes[1].format = .float3
         vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
         vertexDescriptor.attributes[1].bufferIndex = 0
+
+        // Texture coordinates (attribute 2)
         vertexDescriptor.attributes[2].format = .float2
         vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
         vertexDescriptor.attributes[2].bufferIndex = 0
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
-        descriptor.vertexDescriptor = vertexDescriptor
 
-        do {
-            return try device.makeRenderPipelineState(descriptor: descriptor)
-        } catch {
-            fatalError("Failed to create sun pipeline state: \(error)")
-        }
+        // Layout
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
+        return vertexDescriptor
     }
     
     private func makeSamplerState() -> MTLSamplerState {
