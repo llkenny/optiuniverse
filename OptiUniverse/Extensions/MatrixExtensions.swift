@@ -56,18 +56,21 @@ extension float4x4 {
     static func lookAt(eye: SIMD3<Float>,
                        target: SIMD3<Float>,
                        up: SIMD3<Float>) -> float4x4 {
-        // Forward vector from the eye to the target
+        // Forward vector from the eye toward the target
         let f = normalize(target - eye)
         // Right vector orthogonal to the forward direction
         let s = normalize(cross(f, up))
         // Recomputed up vector to ensure orthogonality
         let u = cross(s, f)
 
+        // Build a column-major view matrix. The translation components live in the
+        // final column so vertices are correctly transformed relative to the
+        // camera position.
         return float4x4(
-            [ s.x,  s.y,  s.z, -dot(s, eye) ],
-            [ u.x,  u.y,  u.z, -dot(u, eye) ],
-            [ -f.x, -f.y, -f.z,  dot(f, eye) ],
-            [ 0,    0,    0,     1 ]
+            SIMD4<Float>(s.x, u.x, -f.x, 0),
+            SIMD4<Float>(s.y, u.y, -f.y, 0),
+            SIMD4<Float>(s.z, u.z, -f.z, 0),
+            SIMD4<Float>(-dot(s, eye), -dot(u, eye), dot(f, eye), 1)
         )
     }
     
