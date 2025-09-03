@@ -10,6 +10,12 @@ import MetalKit
 import UIKit
 
 struct UniverseView: UIViewRepresentable {
+    @Binding var selectedPlanet: String?
+
+    init(selectedPlanet: Binding<String?> = .constant(nil)) {
+        _selectedPlanet = selectedPlanet
+    }
+
     func makeCoordinator() -> RendererCoordinator {
         RendererCoordinator()
     }
@@ -58,12 +64,20 @@ struct UniverseView: UIViewRepresentable {
         return container
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        if context.coordinator.currentSelectedPlanet != selectedPlanet {
+            context.coordinator.currentSelectedPlanet = selectedPlanet
+            if let name = selectedPlanet {
+                context.coordinator.renderer?.followPlanet(named: name)
+            }
+        }
+    }
 }
 
 class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
     private var labels: [String: UILabel] = [:]
+    var currentSelectedPlanet: String?
 
     // Touch state
     private var lastPanLocation: CGPoint = .zero
