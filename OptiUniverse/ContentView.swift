@@ -8,13 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedPlanet: String?
+    private let planetNames = SolarSystemLoader.loadPlanets(from: "planets").map { $0.name }
+
     var body: some View {
         NavigationView {
-            UniverseView()
+            UniverseView(selectedPlanet: $selectedPlanet)
                 .navigationTitle("Solar System")
                 .toolbar {
-                    Button("Settings") {
-                        // Open settings
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        Menu("Objects") {
+                            ForEach(planetNames, id: \.self) { name in
+                                Button(name) { selectedPlanet = name }
+                            }
+                        }
+                        Button("Settings") {
+                            // Open settings
+                        }
                     }
                 }
         }
