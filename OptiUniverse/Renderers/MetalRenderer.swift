@@ -41,6 +41,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private var followingPlanetName: String?
+
+    // Camera animation state
+    private var startCameraTarget: SIMD3<Float>?
+    private var endCameraTarget: SIMD3<Float>?
+    private var startCameraDistance: Float?
+    private var endCameraDistance: Float?
+    private var cameraAnimationProgress: Float = 1
+    private let cameraAnimationDuration: Float = 1.0
     
     private var viewMatrix: float4x4 {
         didSet {
@@ -131,8 +139,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
         let delta = planetsRenderer.advanceTime()
-        if let name = followingPlanetName,
-           let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
+        if cameraAnimationProgress < 1 {
+            updateCameraAnimation(delta: delta)
+        } else if let name = followingPlanetName,
+                  let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
             cameraTarget = position
             updateCamera()
         }
@@ -207,17 +217,42 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     /// Starts following the planet with the given name.
-    /// The camera target is moved to the planet's position and the camera
-    /// distance is adjusted based on the planet's radius.
+    /// The camera moves smoothly to the planet's position and adjusts
+    /// distance based on the planet's radius.
     func followPlanet(named name: String) {
         followingPlanetName = name
+
         if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
-            cameraTarget = position
+            startCameraTarget = cameraTarget
+            endCameraTarget = position
         }
         if let planet = planetsRenderer.planet(named: name) {
-            cameraDistance = max(planet.radius * 5, 0.1)
+            startCameraDistance = cameraDistance
+            endCameraDistance = max(planet.radius * 5, 0.1)
         }
+        cameraAnimationProgress = 0
+    }
+
+    private func updateCameraAnimation(delta: Float) {
+        guard cameraAnimationProgress < 1,
+              let startTarget = startCameraTarget,
+              let endTarget = endCameraTarget,
+              let startDistance = startCameraDistance,
+              let endDistance = endCameraDistance else { return }
+
+        cameraAnimationProgress = min(cameraAnimationProgress + delta / cameraAnimationDuration, 1)
+        let t = cameraAnimationProgress
+
+        cameraTarget = startTarget + (endTarget - startTarget) * t
+        cameraDistance = startDistance + (endDistance - startDistance) * t
         updateCamera()
+
+        if cameraAnimationProgress >= 1 {
+            startCameraTarget = nil
+            endCameraTarget = nil
+            startCameraDistance = nil
+            endCameraDistance = nil
+        }
     }
     
     func updateCamera() {
