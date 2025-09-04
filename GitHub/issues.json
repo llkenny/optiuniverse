@@ -1,0 +1,120 @@
+[
+    {
+        "title": "EPIC: QA Framework & Hooks",
+        "body": "Parent label for all QA framework tasks.\n\n**Scope**: QA mode, metrics, GPU timings, accessibility IDs.\n\nLink child issues via checklist in this epic after creation.",
+        "labels": ["epic", "QA"]
+    },
+    {
+        "title": "Add QA Mode & Metrics Hooks",
+        "body": "Implement `QAHooks.swift` to collect FPS, GPU timings, and memory usage in QA mode.\n\n**Checklist**\n- [ ] Add `QALaunch`, `QAMetrics`, `QAMemory` structures\n- [ ] Integrate into render loop (`tick(commandBuffer:)`)\n- [ ] Export JSON metrics via `Export_QA` button\n- [ ] JSON contains `fps`, `gpu_ms_p50/p95`, `mem_samples`\n\n**DoD**: Launch with `-QA`, export file appears in tmp with required fields.",
+        "labels": ["QA", "autotests", "performance", "EPIC: QA Framework & Hooks"]
+    },
+    {
+        "title": "Add Accessibility Identifiers for QA UI",
+        "body": "Set `accessibilityIdentifier` for UI elements used by XCUITests.\n\n**IDs**: `Settings`, `Preset_Low/Medium/High/Cinematic`, `Distance_Near/Far`, `Export_QA`, `QA_SampleMemory`, `QA_ExportStability`.\n\n**DoD**: XCUITests can tap each element reliably.",
+        "labels": ["QA", "autotests", "EPIC: QA Framework & Hooks"]
+    },
+    {
+        "title": "Separate Command Buffers per Pass (GPU timings)",
+        "body": "Ensure GPU timings are valid by isolating render passes or marking boundaries.\n\n**Checklist**\n- [ ] One `MTLCommandBuffer` per pass OR clear boundaries\n- [ ] Collect timings via `addCompletedHandler`\n- [ ] p50/p95 GPU timings vary with preset\n\n**DoD**: Stable, reproducible per-pass timings.",
+        "labels": ["QA", "performance", "Metal", "EPIC: QA Framework & Hooks"]
+    },
+    
+    { "title": "EPIC: Visual Validation", "body": "Parent label for visual validation tasks.", "labels": ["epic", "QA"] },
+    
+    {
+        "title": "Create QA Repo Structure",
+        "body": "Prepare folders for QA artifacts.\n\n**Checklist**\n- [ ] `QA/refs/`, `QA/reports/visual/`, `QA/tools/`\n- [ ] Add `.gitkeep`\n\n**DoD**: Folders exist and are tracked.",
+        "labels": ["QA", "repo-structure", "EPIC: Visual Validation"]
+    },
+    {
+        "title": "Collect Reference Images",
+        "body": "Capture baseline PNGs for Low/Medium/High/Cinematic × Near/Far.\n\n**Checklist**\n- [ ] 8 screenshots saved as `Preset_Distance.png` in `QA/refs/`\n- [ ] Manual sanity check\n\n**DoD**: References ready and committed.",
+        "labels": ["QA", "visual", "EPIC: Visual Validation"]
+    },
+    {
+        "title": "Implement ImageComparator Utility",
+        "body": "Add `QA/tools/ImageComparator.swift` to compare screenshots.\n\n**Outputs**: `diff.png`, `annotated.png`, `visual_report.json`.\n\n**Metrics**: brightness delta, corona radial profile, granulation.\n\n**DoD**: Running comparator yields artifacts and metrics.",
+        "labels": ["QA", "visual", "autotests", "EPIC: Visual Validation"]
+    },
+    {
+        "title": "Add VisualValidationTests (XCUITest)",
+        "body": "Automate capture & comparison vs references for Near/Far.\n\n**Checklist**\n- [ ] Launch with `-QA`\n- [ ] Set preset/distance, screenshot\n- [ ] Compare via `ImageComparator`\n- [ ] Attach diffs to test report\n\n**DoD**: Test fails when delta exceeds threshold.",
+        "labels": ["QA", "autotests", "visual", "EPIC: Visual Validation"]
+    },
+    
+    { "title": "EPIC: Performance Matrix", "body": "Parent label for performance matrix tasks.", "labels": ["epic", "QA", "performance"] },
+    
+    {
+        "title": "Implement Export Metrics Button",
+        "body": "Add `Export_QA` button to dump `qa_metrics.json` to tmp.\n\n**Fields**: `fps`, `gpu_ms_p50`, `gpu_ms_p95`, `mem_samples`.\n\n**DoD**: File appears and validates JSON schema.",
+        "labels": ["QA", "performance", "EPIC: Performance Matrix"]
+    },
+    {
+        "title": "Add PerformanceMatrixTests (XCUITest)",
+        "body": "Benchmark FPS/GPU across Preset×Distance and aggregate CSV.\n\n**Checklist**\n- [ ] Iterate Low/Medium/High/Cinematic × Near/Far\n- [ ] Wait for stabilization\n- [ ] Trigger `Export_QA`\n- [ ] Build `PerfMatrix.csv` under `QA/reports/perf/`\n\n**DoD**: CSV attached as test artifact.",
+        "labels": ["QA", "autotests", "performance", "EPIC: Performance Matrix"]
+    },
+    {
+        "title": "Implement Perf Plot Tool",
+        "body": "Script `QA/tools/plot_perf.py` to render graphs from `PerfMatrix.csv`.\n\n**Output**: PNG graphs (FPS vs Preset).\n\n**DoD**: PNG plots generated and uploaded as CI artifacts.",
+        "labels": ["QA", "performance", "tooling", "EPIC: Performance Matrix"]
+    },
+    
+    { "title": "EPIC: Stability & Stress", "body": "Parent label for long-run stability tasks.", "labels": ["epic", "QA"] },
+    
+    {
+        "title": "Add Memory Sampling Hook",
+        "body": "Wire `QA_SampleMemory` to `QAMetrics.sampleMemory()` and export via `QA_ExportStability`.\n\n**DoD**: Memory timeline exported (JSON/CSV).",
+        "labels": ["QA", "stability", "EPIC: Stability & Stress"]
+    },
+    {
+        "title": "Add StabilityStressTests (30-min)",
+        "body": "Automate 30-min run with rapid preset/distance switches and memory sampling.\n\n**Checklist**\n- [ ] Loop 30 min switching presets\n- [ ] Sample memory every ~10s\n- [ ] Export stability report at end\n\n**DoD**: 0 crashes; artifacts exported.",
+        "labels": ["QA", "autotests", "stability", "EPIC: Stability & Stress"]
+    },
+    
+    { "title": "EPIC: Device Coverage & CI", "body": "Parent label for device/CI tasks.", "labels": ["epic", "QA", "ci"] },
+    
+    {
+        "title": "Add Device Info in Metrics",
+        "body": "Include `device_model` and `os_version` in exported JSON/CSV.\n\n**DoD**: Present in `PerfMatrix.csv` and QA JSON.",
+        "labels": ["QA", "ci", "EPIC: Device Coverage & CI"]
+    },
+    {
+        "title": "Setup CI Jobs for QA Tests",
+        "body": "Configure `xcodebuild` runs on devices; collect artifacts.\n\n**Checklist**\n- [ ] Run Visual/Perf/Stability suites\n- [ ] Upload CSV/JSON/PNGs as artifacts\n- [ ] Fail build if QA tests fail\n\n**DoD**: Stable CI pipeline with artifacts.",
+        "labels": ["QA", "ci", "autotests", "EPIC: Device Coverage & CI"]
+    },
+    {
+        "title": "Aggregate Multi-Device CSV",
+        "body": "Merge per-device CSVs into a single `PerfMatrix.csv` adding device columns.\n\n**DoD**: Unified CSV produced and archived.",
+        "labels": ["QA", "ci", "tooling", "EPIC: Device Coverage & CI"]
+    },
+    
+    { "title": "EPIC: Thresholds & Docs", "body": "Parent label for thresholds and documentation.", "labels": ["epic", "QA"] },
+    
+    {
+        "title": "Add QA Thresholds Config",
+        "body": "Create `QA/qa_thresholds.json` (visual, FPS, GPU p95, memory drift). Code reads at runtime.\n\n**DoD**: Changing thresholds doesn’t require rebuild.",
+        "labels": ["QA", "config", "EPIC: Thresholds & Docs"]
+    },
+    {
+        "title": "Add QA README",
+        "body": "Document QA setup, commands, artifacts, and metrics.\n\n**DoD**: New contributor can run all QA flows via README.",
+        "labels": ["QA", "documentation", "EPIC: Thresholds & Docs"]
+    },
+    
+    { "title": "EPIC: Polishing", "body": "Parent label for stability/quality improvements.", "labels": ["epic", "QA"] },
+    
+    {
+        "title": "Add Flaky-Guard for Visual Tests",
+        "body": "Reduce flakiness by waiting FPS stabilization and using deterministic seeds in QA mode.\n\n**DoD**: Re-runs produce stable diffs.",
+        "labels": ["QA", "stability", "visual", "EPIC: Polishing"]
+    },
+    {
+        "title": "Add Error Budget Alerts",
+        "body": "Fail early on large regressions (fps drop %, visual delta %). Add detailed metrics to failure message.\n\n**DoD**: Regression caught in same pipeline.",
+        "labels": ["QA", "autotests", "performance", "EPIC: Polishing"]
+    }
+]

@@ -1,0 +1,94 @@
+[
+    {
+        "title": "VFX-01: Color Grading & LUT Creation",
+        "body": "**ID:** VFX-01\n\n### Goal\nAchieve the cinematic, fiery look of the Sun (reference) through filmic color correction.\n\n### Workflow\n- Analyze reference palette (dominant hues, saturation, contrast).\n- Build 3D LUT for ACES-like tonemapping/final grading.\n- Tune exposure/contrast to preserve highlight detail in emissive areas.\n\n### Deliverables\n- `Assets/LUT/sun_lut.cube` (size: 16×16×16 or 32×32×32).\n- Before/after preview PNGs.\n- Integration notes: suggested exposure/gamma/threshold values for the PostFX pass.\n\n### Acceptance\n- Visual match within tolerance to reference; no clipping/banding.\n- Developer can plug the `.cube` into PostFX and see identical result.\n\n### Checklist\n- [ ] Palette analysis doc\n- [ ] LUT exported\n- [ ] Integration notes written",
+        "labels": ["area:vfx", "type:task", "priority:P2"]
+    },
+    {
+        "title": "VFX-02: Noise & Flow Maps for Surface",
+        "body": "**ID:** VFX-02\n\n### Goal\nProvide procedural textures for solar granulation and boiling motion via UV advection.\n\n### Workflow\n- Author seamless 3D noise (Perlin/Worley/FBM).\n- Prepare 2D flow map for advection (RG = xy velocity).\n- Two frequency bands: Low-frequency (large convection cells) and High-frequency (fine turbulence).\n\n### Deliverables\n- `Assets/Noise/noise_low_3d.exr` (128³ or 256³)\n- `Assets/Noise/noise_high_3d.exr` (128³ or 256³)\n- `Assets/Flow/flow_map.png` (RGBA 512²; RG = velocity; BA reserved)\n- Parameter sheet: `granulationScale`, `flowSpeed`, `mixLowHigh`\n\n### Acceptance\n- Tiling/seamless; no visible repetition at typical FOVs.\n- Developer can animate scrolling/advection smoothly at 60 FPS (High preset).\n\n### Checklist\n- [ ] 3D noises exported\n- [ ] Flow map authored\n- [ ] Param sheet attached",
+        "labels": ["area:vfx", "type:task", "priority:P1"]
+    },
+    {
+        "title": "VFX-03: Sunspot & Penumbra Masks",
+        "body": "**ID:** VFX-03\n\n### Goal\nBreak surface uniformity with believable sunspots (umbra/penumbra) varying in size and density.\n\n### Workflow\n- Generate grayscale mask with soft falloff.\n- Ensure tileable pattern with randomizable offsets.\n- Provide density/threshold recommendations.\n\n### Deliverables\n- `Assets/Masks/sunspot_mask_1024.png` (tileable)\n- Notes: `spotThreshold`, `spotDensity`, recommended contrast curve\n\n### Acceptance\n- Spots integrate naturally under emissive grading; no harsh edges.\n\n### Checklist\n- [ ] Mask exported\n- [ ] Notes included",
+        "labels": ["area:vfx", "type:task", "priority:P2"]
+    },
+    {
+        "title": "VFX-04: Prominence / Flare Flipbooks (Cinematic)",
+        "body": "**ID:** VFX-04\n\n### Goal\nAnimated solar prominences placed along the limb for cinematic mode.\n\n### Workflow\n- Paint/simulate wispy plasma shapes.\n- Export flipbook atlas with alpha, 8–16 frames.\n- Balance emissive intensity vs bloom.\n\n### Deliverables\n- `Assets/Flipbooks/prominence_flipbook.png` (e.g., 512×8192, 16 frames)\n- Timing guide: 12–15 FPS\n- UV indexing notes for shader\n\n### Acceptance\n- Looping without popping; matches corona color.\n\n### Checklist\n- [ ] Atlas exported\n- [ ] Timing guide attached\n- [ ] UV notes documented",
+        "labels": ["area:vfx", "type:task", "priority:P3", "mode:cinematic"]
+    },
+    {
+        "title": "VFX-05: Lens Dirt & Bloom Mask",
+        "body": "**ID:** VFX-05\n\n### Goal\nSubtle lens imperfections visible only in strong bloom regions.\n\n### Workflow\n- Create a high-res dirt texture simulating camera lens dust/smudges.\n- Calibrate intensity for 0.1–0.2 opacity range.\n\n### Deliverables\n- `Assets/PostFX/lens_dirt_1024.png` (grayscale)\n- Blend mode recommendation (multiply in bloom pass)\n- Preview before/after PNGs\n\n### Acceptance\n- Adds realism without distracting patterns.\n\n### Checklist\n- [ ] Dirt map exported\n- [ ] Blend/opacity notes\n- [ ] Previews attached",
+        "labels": ["area:vfx", "type:task", "priority:P3"]
+    },
+    {
+        "title": "VFX-06: Corona / Rim Glow Textures",
+        "body": "**ID:** VFX-06\n\n### Goal\nTextures to boost corona billboards/raymarch with gradients and directional noise.\n\n### Workflow\n- Author radial gradient textures for emissive rim.\n- Provide tileable directional noise for dynamic flickering.\n\n### Deliverables\n- `Assets/Corona/corona_gradient_1024.png`\n- `Assets/Corona/corona_noise_512.png`\n- Suggested shader params: `coronaIntensity`, `coronaScale`, `flickerSpeed`\n\n### Acceptance\n- No banding at 16F pipeline; consistent rim behavior.\n\n### Checklist\n- [ ] Gradient ready\n- [ ] Noise ready\n- [ ] Params documented",
+        "labels": ["area:vfx", "type:task", "priority:P1"]
+    },
+    {
+        "title": "VFX-07: VFX Documentation & Visual Targets",
+        "body": "**ID:** VFX-07\n\n### Goal\nSingle source of truth for developers integrating assets.\n\n### Workflow\n- Collect previews of each texture (thumbnail PNGs).\n- Document parameter ranges, blend modes, shader integration.\n- Provide mockups for final composite.\n\n### Deliverables\n- `Docs/VFX_Documentation.pdf`\n- `Docs/preview_gallery/*` (raw vs expected)\n- Master parameter table (CSV/MD)\n\n### Acceptance\n- Dev can integrate assets without sync meetings.\n\n### Checklist\n- [ ] PDF complete\n- [ ] Gallery exported\n- [ ] Param table added",
+        "labels": ["area:vfx", "type:doc", "priority:P1"]
+    },
+    
+    {
+        "title": "REN-01: Photosphere Shader (Surface Layer)",
+        "body": "**ID:** REN-01\n\n### Goal\nGranulating emissive surface with limb darkening and sunspots.\n\n### Workflow\n- Sphere mesh render.\n- Limb darkening: `I(μ)=I0*(a+bμ+cμ²)`.\n- FBM granulation mixed low/high noise; UV advection via flow map.\n- Sunspot mask with soft penumbra.\n\n### Deliverables\n- `Shaders/Photosphere.metal` (VS+PS)\n- Params: `granulationScale`, `flowSpeed`, `limbCoeffs`, `spotThreshold`\n- Test scene screenshot (animated)\n\n### Acceptance\n- Stable animation; no banding (RGBA16F). Target cost <0.5ms.\n\n### Checklist\n- [ ] Shader compiled\n- [ ] Params exposed\n- [ ] Perf measured",
+        "labels": ["area:rendering", "type:task", "priority:P1"]
+    },
+    {
+        "title": "REN-02: Chromosphere Shell (Thin Rim)",
+        "body": "**ID:** REN-02\n\n### Goal\nThin emissive shell enhancing limb glow.\n\n### Workflow\n- Offset sphere (R+ε) with rim function by view angle.\n- Noise-based flicker modulation.\n\n### Deliverables\n- `Shaders/Chromosphere.metal`\n- Params: `rimIntensity`, `rimFalloff`, `flickerSpeed`\n- Visibility test near limb\n\n### Acceptance\n- Clean rim without halo artifacts.\n\n### Checklist\n- [ ] Shader compiled\n- [ ] Rim tuned\n- [ ] Flicker validated",
+        "labels": ["area:rendering", "type:task", "priority:P1"]
+    },
+    {
+        "title": "REN-03: Corona — Billboards (Default)",
+        "body": "**ID:** REN-03\n\n### Goal\nLightweight corona using depth-sorted billboards/shells.\n\n### Workflow\n- 4–6 translucent shells; flow noise distortion.\n- Additive blending; correct sort order.\n\n### Deliverables\n- `Shaders/CoronaBillboard.metal`\n- Params: `coronaIntensity`, `coronaScale`\n- Perf: <1.2ms/frame; screenshot\n\n### Acceptance\n- No z-fighting; smooth parallax with camera.\n\n### Checklist\n- [ ] Shader compiled\n- [ ] Sorting verified\n- [ ] Perf logged",
+        "labels": ["area:rendering", "type:task", "priority:P1"]
+    },
+    {
+        "title": "REN-04: Corona — Raymarching (Cinematic)",
+        "body": "**ID:** REN-04\n\n### Goal\nHigh-quality volumetric corona with thin-shell raymarch.\n\n### Workflow\n- 8–24 steps; temporal jitter + blue-noise dither.\n- Early exit; adjustable step count via presets.\n\n### Deliverables\n- `Shaders/CoronaRaymarch.metal`\n- Quality presets: Low/Med/High\n- Visual tests: no banding/flicker\n\n### Acceptance\n- ≥24 FPS in Cinematic Near; stable glow.\n\n### Checklist\n- [ ] Raymarch implemented\n- [ ] Dither/jitter added\n- [ ] Presets wired",
+        "labels": ["area:rendering", "type:task", "priority:P2", "mode:cinematic"]
+    },
+    {
+        "title": "REN-05: Prominences Particles (GPU)",
+        "body": "**ID:** REN-05\n\n### Goal\nCompute-driven particles following magnetic arcs along the limb.\n\n### Workflow\n- Compute update (curl-noise/arc paths).\n- Additive render; life/size over time.\n\n### Deliverables\n- `Shaders/Prominences.compute.metal`\n- `Shaders/Prominences.render.metal`\n- Params: `particleCount`, `arcHeight`, `lifetime`\n- Demo: 10–20k particles <1.0ms\n\n### Acceptance\n- No stalls; consistent emission at limb.\n\n### Checklist\n- [ ] Compute pass OK\n- [ ] Render pass OK\n- [ ] Perf OK",
+        "labels": ["area:rendering", "type:task", "priority:P2"]
+    },
+    {
+        "title": "REN-06: Post-Processing (Bloom, ACES, Vignette, Lens Dirt)",
+        "body": "**ID:** REN-06\n\n### Goal\nCinematic compositing for emissive source.\n\n### Workflow\n- HDR bloom (threshold, mip chain).\n- ACES tonemap.\n- Optional lens dirt multiply in bloom.\n- Subtle vignette.\n\n### Deliverables\n- `Shaders/PostFX.metal`\n- Params: `bloomThreshold`, `bloomRadius`, `lensDirtOpacity`\n- Before/after screenshots\n\n### Acceptance\n- No color clipping; smooth highlights.\n\n### Checklist\n- [ ] Bloom OK\n- [ ] Tonemap OK\n- [ ] Lens dirt optional",
+        "labels": ["area:rendering", "type:task", "priority:P1"]
+    },
+    {
+        "title": "REN-07: Quality Presets & LOD Manager",
+        "body": "**ID:** REN-07\n\n### Goal\nRuntime scaling: Low/Med/High/Cinematic.\n\n### Workflow\n- Centralize params: ray steps, particle count, corona mode.\n- Hot-switch without pipeline rebuild.\n\n### Deliverables\n- `Engine/QualityManager.swift`\n- Preset config (JSON/enum)\n- Demo video switching presets without hitch (>50ms forbidden)\n\n### Acceptance\n- Stable frame time during switches.\n\n### Checklist\n- [ ] Presets defined\n- [ ] API exposed\n- [ ] Hitch tested",
+        "labels": ["area:rendering", "type:task", "priority:P1"]
+    },
+    
+    {
+        "title": "APP-01: Gesture Controls (Orbit/Zoom/Pan)",
+        "body": "**ID:** APP-01\n\n### Goal\nNatural camera interaction around the Sun.\n\n### Workflow\n- Pinch = zoom, Pan = orbit, Rotate = roll (optional).\n- Inertia/smoothing; clamp distances.\n\n### Deliverables\n- `App/CameraController.swift`\n- Tunable params: `orbitSpeed`, `zoomSpeed`, `min/maxDistance`\n- Screen recording demo\n\n### Acceptance\n- No gimbal lock; smooth interaction at 60 FPS.\n\n### Checklist\n- [ ] Gestures wired\n- [ ] Inertia tuned\n- [ ] Demo recorded",
+        "labels": ["area:app", "type:task", "priority:P1"]
+    },
+    {
+        "title": "APP-02: Debug / Developer Panel (SwiftUI)",
+        "body": "**ID:** APP-02\n\n### Goal\nRuntime control of VFX/Render params and presets.\n\n### Workflow\n- SwiftUI panel with sliders/toggles.\n- Bind to QualityManager + shader uniforms.\n\n### Deliverables\n- `App/DebugPanelView.swift`\n- Parameter list with ranges (MD)\n- Video toggling presets live\n\n### Acceptance\n- Changes apply without frame spikes.\n\n### Checklist\n- [ ] UI built\n- [ ] Bindings complete\n- [ ] Video attached",
+        "labels": ["area:app", "type:task", "priority:P1"]
+    },
+    {
+        "title": "APP-03: Scene Integration (MetalView + SunRenderer)",
+        "body": "**ID:** APP-03\n\n### Goal\nIntegrate the Sun renderer into the app’s Solar System scene.\n\n### Workflow\n- MetalView wrapper for SwiftUI.\n- Initialize pipelines; hook to presets.\n- Sync transforms, scale, exposure.\n\n### Deliverables\n- `Rendering/SunRenderer.swift`\n- Working screen in app with Sun visible\n- Notes for integration with existing scene graph\n\n### Acceptance\n- Renders alongside existing objects; no Z/order issues.\n\n### Checklist\n- [ ] MetalView integrated\n- [ ] Renderer init OK\n- [ ] Scene verified",
+        "labels": ["area:app", "type:task", "priority:P1"]
+    },
+    {
+        "title": "APP-04: Telemetry & Profiling Overlay",
+        "body": "**ID:** APP-04\n\n### Goal\nExpose FPS and per-pass timings for profiling.\n\n### Workflow\n- Collect frame time, GPU pass timings, particle counts.\n- On-screen overlay + CSV export (optional).\n\n### Deliverables\n- `App/Telemetry.swift`\n- Overlay toggle (debug)\n- Example CSV/console log\n\n### Acceptance\n- Metrics stable and match Xcode GPU report trends.\n\n### Checklist\n- [ ] Overlay added\n- [ ] CSV/log export\n- [ ] Cross-checked with Instruments",
+        "labels": ["area:app", "type:task", "priority:P2"]
+    }
+]
