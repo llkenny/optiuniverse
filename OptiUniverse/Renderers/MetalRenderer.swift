@@ -201,6 +201,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             quadEncoder.endEncoding()
         }
 
+        // Collect QA metrics before submitting the command buffer
+        QAHooks.tick(commandBuffer: commandBuffer)
+
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
