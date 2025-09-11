@@ -1,0 +1,13 @@
+{
+  "depth": 128,
+  "tile_grid": 12,
+  "slice_size": [
+    128,
+    128
+  ],
+  "atlas_size": [
+    1536,
+    1536
+  ],
+  "layout": "row-major tiles (z increases along x first, then y)"
+}
