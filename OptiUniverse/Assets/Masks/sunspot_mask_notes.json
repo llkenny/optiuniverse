@@ -1,0 +1,17 @@
+{
+  "spotThreshold": 0.65,
+  "spotDensity": 0.00012,
+  "recommendedContrastCurve": "out = 1 - k * pow(1 - mask, gamma);  (suggest k=0.9..1.2, gamma=1.6..2.2)",
+  "mixing": "emissive *= clamp(out, 0, 1); preserves white core if graded after LUT.",
+  "randomize": "For variation per-level, offset UV by a random vec2 and wrap (tileable).",
+  "tileable": true,
+  "size": [
+    1024,
+    1024
+  ],
+  "umbraPenumbra": {
+    "umbraRatio": 0.45,
+    "avgOuterRadiusPx": 32,
+    "radiusJitter": 0.6
+  }
+}
