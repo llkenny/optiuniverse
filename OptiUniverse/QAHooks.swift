@@ -35,25 +35,26 @@ final class QAMemory {
 /// Gathers frame, GPU and memory metrics during rendering.
 final class QAMetrics {
     private var frameTimes: [Double] = []
-    private var gpuTimes: [Double] = []
+    private var gpuTimes: [String: [Double]] = [:]
     private var lastFrameTimestamp: CFTimeInterval?
     private let memory = QAMemory()
 
-    /// Should be called once per frame with the active command buffer.
-    func tick(commandBuffer: MTLCommandBuffer) {
+    /// Tracks a render pass' GPU time and optionally frame timing.
+    func tick(commandBuffer: MTLCommandBuffer, pass: String, recordFrame: Bool = false) {
         let now = CACurrentMediaTime()
-        if let last = lastFrameTimestamp {
-            frameTimes.append(now - last)
+        if recordFrame {
+            if let last = lastFrameTimestamp {
+                frameTimes.append(now - last)
+            }
+            lastFrameTimestamp = now
+            memory.sample()
         }
-        lastFrameTimestamp = now
-
-        memory.sample()
 
         let start = now
         commandBuffer.addCompletedHandler { [weak self] _ in
             let end = CACurrentMediaTime()
             let ms = (end - start) * 1000
-            self?.gpuTimes.append(ms)
+            self?.gpuTimes[pass, default: []].append(ms)
         }
     }
 
@@ -71,16 +72,25 @@ final class QAMetrics {
             let avg = frameTimes.reduce(0, +) / Double(frameTimes.count)
             fps = avg > 0 ? 1.0 / avg : 0
         }
-        let sortedGPU = gpuTimes.sorted()
-        func percentile(_ p: Double) -> Double {
-            guard !sortedGPU.isEmpty else { return 0 }
-            let pos = (Double(sortedGPU.count - 1)) * p
-            return sortedGPU[Int(pos.rounded(.towardZero))]
+
+        func percentile(_ sorted: [Double], _ p: Double) -> Double {
+            guard !sorted.isEmpty else { return 0 }
+            let pos = (Double(sorted.count - 1)) * p
+            return sorted[Int(pos.rounded(.towardZero))]
         }
+
+        var gpuStats: [String: [String: Double]] = [:]
+        for (pass, times) in gpuTimes {
+            let sorted = times.sorted()
+            gpuStats[pass] = [
+                "p50": percentile(sorted, 0.50),
+                "p95": percentile(sorted, 0.95)
+            ]
+        }
+
         return [
             "fps": fps,
-            "gpu_ms_p50": percentile(0.50),
-            "gpu_ms_p95": percentile(0.95),
+            "gpu_ms": gpuStats,
             "mem_samples": memory.samples
         ]
     }
@@ -90,10 +100,15 @@ final class QAMetrics {
 enum QAHooks {
     private static let metrics = QAMetrics()
 
-    /// Called from the render loop every frame to gather metrics.
-    static func tick(commandBuffer: MTLCommandBuffer) {
+    /// Called from the render loop to gather per-pass metrics.
+    static func tick(commandBuffer: MTLCommandBuffer, pass: String, recordFrame: Bool = false) {
         guard QALaunch.enabled else { return }
-        metrics.tick(commandBuffer: commandBuffer)
+        metrics.tick(commandBuffer: commandBuffer, pass: pass, recordFrame: recordFrame)
+    }
+
+    /// Backwards-compatible tick for whole-frame measurements.
+    static func tick(commandBuffer: MTLCommandBuffer) {
+        tick(commandBuffer: commandBuffer, pass: "frame", recordFrame: true)
     }
 
     /// Records a manual memory sample.

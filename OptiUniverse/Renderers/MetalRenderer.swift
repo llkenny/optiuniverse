@@ -127,14 +127,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func draw(in view: MTKView) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let hdrTexture = hdrTexture,
+        guard let hdrTexture = hdrTexture,
               let msaaColorTexture = msaaColorTexture,
               let depthTexture = depthTexture,
               let tonemapMsaaTexture = tonemapMsaaTexture,
               let drawable = view.currentDrawable else {
-            return
-        }
+              return
+          }
 
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
@@ -148,6 +147,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         // First pass: render scene to MSAA texture and resolve to HDR texture
+        guard let geometryCommandBuffer = commandQueue.makeCommandBuffer() else { return }
         let hdrDescriptor = MTLRenderPassDescriptor()
         hdrDescriptor.colorAttachments[0].texture = msaaColorTexture
         hdrDescriptor.colorAttachments[0].resolveTexture = hdrTexture
@@ -159,7 +159,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         hdrDescriptor.depthAttachment.storeAction = .dontCare
         hdrDescriptor.depthAttachment.clearDepth = 1.0
 
-        guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
+        guard let renderEncoder = geometryCommandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
             return
         }
 
@@ -183,10 +183,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                 projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()
 
+        // Collect QA metrics and submit first pass
+        QAHooks.tick(commandBuffer: geometryCommandBuffer, pass: "geometry", recordFrame: true)
+        geometryCommandBuffer.commit()
+
         // Update any label overlays with the latest planet positions
         labelDelegate?.updatePlanetLabels(planetsRenderer.planetScreenPositions)
 
         // Second pass: tone map to drawable using MSAA and resolve to the drawable
+        guard let tonemapCommandBuffer = commandQueue.makeCommandBuffer() else { return }
         let finalDescriptor = MTLRenderPassDescriptor()
         finalDescriptor.colorAttachments[0].texture = tonemapMsaaTexture
         finalDescriptor.colorAttachments[0].resolveTexture = drawable.texture
@@ -194,18 +199,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         finalDescriptor.colorAttachments[0].storeAction = .multisampleResolve
         finalDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
-        if let quadEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
+        if let quadEncoder = tonemapCommandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
             quadEncoder.setRenderPipelineState(tonemapPipelineState)
             quadEncoder.setFragmentTexture(hdrTexture, index: 0)
             quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
             quadEncoder.endEncoding()
         }
 
-        // Collect QA metrics before submitting the command buffer
-        QAHooks.tick(commandBuffer: commandBuffer)
+        QAHooks.tick(commandBuffer: tonemapCommandBuffer, pass: "tonemap")
 
-        commandBuffer.present(drawable)
-        commandBuffer.commit()
+        tonemapCommandBuffer.present(drawable)
+        tonemapCommandBuffer.commit()
     }
     
     private func updateProjectionMatrix() {
