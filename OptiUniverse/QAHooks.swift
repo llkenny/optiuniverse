@@ -57,6 +57,11 @@ final class QAMetrics {
         }
     }
 
+    /// Records a standalone memory sample.
+    func sampleMemory() {
+        memory.sample()
+    }
+
     /// Creates a dictionary suitable for JSON serialization of collected metrics.
     func exportJSON() -> [String: Any] {
         let fps: Double
@@ -91,6 +96,12 @@ enum QAHooks {
         metrics.tick(commandBuffer: commandBuffer)
     }
 
+    /// Records a manual memory sample.
+    static func sampleMemory() {
+        guard QALaunch.enabled else { return }
+        metrics.sampleMemory()
+    }
+
     /// Writes collected metrics to a JSON file in the temporary directory.
     static func export() {
         guard QALaunch.enabled else { return }
@@ -102,6 +113,20 @@ enum QAHooks {
             print("QA metrics exported to \(url.path)")
         } catch {
             print("Failed to export QA metrics: \(error)")
+        }
+    }
+
+    /// Exports stability metrics to a separate JSON file.
+    static func exportStability() {
+        guard QALaunch.enabled else { return }
+        let json = metrics.exportJSON()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("qa_stability.json")
+        do {
+            let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted])
+            try data.write(to: url)
+            print("QA stability exported to \(url.path)")
+        } catch {
+            print("Failed to export QA stability: \(error)")
         }
     }
 }
