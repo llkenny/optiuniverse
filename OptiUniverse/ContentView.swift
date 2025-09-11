@@ -16,20 +16,25 @@ struct ContentView: View {
             UniverseView(selectedPlanet: $selectedPlanet)
                 .navigationTitle("Solar System")
                 .toolbar {
-                    ToolbarItemGroup(placement: .navigationBarTrailing) {
-                        Menu("Objects") {
-                            ForEach(planetNames, id: \.self) { name in
-                                Button(name) { selectedPlanet = name }
-                            }
-                        }
-                        Button("Settings") {
-                            // Open settings
-                        }
-                    }
-                }
-        }
-    }
-}
+                      ToolbarItemGroup(placement: .navigationBarTrailing) {
+                          Menu("Objects") {
+                              ForEach(planetNames, id: \.self) { name in
+                                  Button(name) { selectedPlanet = name }
+                              }
+                          }
+                          Button("Settings") {
+                              // Open settings
+                          }
+                          if QALaunch.enabled {
+                              Button("Export_QA") {
+                                  QAHooks.export()
+                              }
+                          }
+                      }
+                  }
+          }
+      }
+  }
 
 #Preview {
     ContentView()
