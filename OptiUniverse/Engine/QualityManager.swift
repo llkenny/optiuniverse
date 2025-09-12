@@ -63,11 +63,14 @@ final class QualityManager: ObservableObject {
                 .cinematic: .init(coronaSteps: 32, particleCount: 4_000, coronaMode: .detailed)
             ]
         }
-        currentPreset = .high
-        coronaSteps = configs[currentPreset]!.coronaSteps
-        particleCount = configs[currentPreset]!.particleCount
-        coronaMode = configs[currentPreset]!.coronaMode
+
+        let initialPreset: QualityPreset = .high
+        let initialConfig = configs[initialPreset]!
+        coronaSteps = initialConfig.coronaSteps
+        particleCount = initialConfig.particleCount
+        coronaMode = initialConfig.coronaMode
         exposure = 1.0
+        currentPreset = initialPreset
     }
 
     /// Switches to a new quality preset without rebuilding render pipelines.

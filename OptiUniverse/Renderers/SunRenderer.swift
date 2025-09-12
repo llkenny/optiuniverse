@@ -18,6 +18,8 @@ final class SunRenderer {
     private let samplerState: MTLSamplerState
     private var mesh: MDLMesh
     private var texture: MTLTexture
+    private var coronaGradient: MTLTexture
+    private var coronaNoise: MTLTexture
 
     /// Model matrix without scaling. Updated every frame after calling
     /// `renderSun` so that other renderers can query the Sun's transform.
@@ -46,6 +48,10 @@ final class SunRenderer {
                                                      textureName: sun.textureName)
         self.texture = SunRenderer.loadTexture(device: device,
                                                name: sun.textureName)
+        self.coronaGradient = SunRenderer.loadTexture(device: device,
+                                                      name: "corona_gradient_1024")
+        self.coronaNoise = SunRenderer.loadTexture(device: device,
+                                                   name: "corona_noise_512")
     }
 
     /// Renders the Sun using the provided encoder.
@@ -98,6 +104,8 @@ final class SunRenderer {
                                       index: 0)
 
         renderEncoder.setFragmentTexture(texture, index: 0)
+        renderEncoder.setFragmentTexture(coronaGradient, index: 1)
+        renderEncoder.setFragmentTexture(coronaNoise, index: 2)
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
 
         var t = time

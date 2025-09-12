@@ -67,6 +67,8 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
                              constant float &delta [[buffer(1)]],
                              constant float &exposure [[buffer(2)]],
                              texture2d<float> planetTexture [[texture(0)]],
+                             texture2d<float> coronaGradient [[texture(1)]],
+                             texture2d<float> coronaNoise [[texture(2)]],
                              sampler textureSampler [[sampler(0)]]) {
     // Center UV on (0,0)
     float2 uv = in.texCoord * 2.0 - 1.0;
@@ -81,9 +83,11 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     float2 warp = fbm(float3(rotUV * 10.0, time * 0.3 * delta));
     rotUV += warp * 0.02;
 
-    // Simple procedural noise based on sine waves
+    // Simple procedural noise modulated by provided noise texture
     float noise = sin((rotUV.x + time) * 20.0 * delta) * sin((rotUV.y - time) * 20.0 * delta);
     noise = noise * 0.5 + 0.5; // Normalize to 0..1
+    float noiseTex = coronaNoise.sample(textureSampler, rotUV * 4.0).r;
+    noise *= noiseTex;
 
     // Base color mixed with sampled texture to keep some variation
     float3 base = planetTexture.sample(textureSampler, in.texCoord).rgb;
@@ -93,18 +97,19 @@ fragment float4 fragment_sun(VertexOut in [[stage_in]],
     float core = pow(max(0.0, 1.0 - r), 4.0);
       float3 coreColor = float3(30.0, 15.0, 5.0) * core;
 
-    // Multi-layer corona with height-based falloff
+    // Multi-layer corona with height-based falloff and gradient colouring
     float height = max(0.0, r - 1.0);
     float density = exp(-height * 8.0);
+    float3 coronaColor = coronaGradient.sample(textureSampler, float2(min(r, 1.0), 0.5)).rgb;
     float3 corona = float3(0.0);
     const float freqs[3] = {1.0, 2.0, 4.0};
     for (int i = 0; i < 3; ++i) {
         float f = freqs[i];
         float layer = sin((rotUV.x + time) * 20.0 * f * delta) * sin((rotUV.y - time) * 20.0 * f * delta);
         layer = layer * 0.5 + 0.5;
-        corona += float3(10.0, 5.0, 1.0) * (1.0 / (float(i) + 1.0)) * layer;
+        corona += coronaColor * (1.0 / (float(i) + 1.0)) * layer;
     }
-    corona *= density;
+    corona *= density * noiseTex;
 
     float3 color = (surface + coreColor + corona) * exposure;
     return float4(color, 1.0);
