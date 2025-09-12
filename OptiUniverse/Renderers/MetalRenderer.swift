@@ -29,6 +29,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
+    private let sunRenderer: SunRenderer
     private let metalView: MTKView
 
     weak var labelDelegate: PlanetLabelDelegate?
@@ -84,6 +85,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.commandQueue = commandQueue
         self.metalView = metalView
         planetsRenderer = PlanetsRenderer(device: device)
+        sunRenderer = SunRenderer(device: device)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -150,6 +152,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
         let delta = planetsRenderer.advanceTime()
+        let time = planetsRenderer.currentTime
         if cameraAnimationProgress < 1 {
             updateCameraAnimation(delta: delta)
         } else if let name = followingPlanetName,
@@ -175,6 +178,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
+        // Render the Sun first so depth testing handles planet occlusion.
+        sunRenderer.renderSun(with: renderEncoder,
+                              time: time,
+                              delta: delta,
+                              viewMatrix: viewMatrix,
+                              projectionMatrix: projectionMatrix,
+                              viewportSize: metalView.bounds.size)
+
+        // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix,
@@ -192,7 +204,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         geometryCommandBuffer.commit()
 
         // Update any label overlays with the latest planet positions
-        labelDelegate?.updatePlanetLabels(planetsRenderer.planetScreenPositions)
+        var positions = planetsRenderer.planetScreenPositions
+        if let sunPos = sunRenderer.screenPosition {
+            positions[sunRenderer.name] = sunPos
+        }
+        if let sunWorld = sunRenderer.worldPosition {
+            planetsRenderer.planetWorldPositions[sunRenderer.name] = sunWorld
+        }
+        labelDelegate?.updatePlanetLabels(positions)
 
         // Second pass: post-process to drawable using MSAA and resolve to the drawable
         guard let postfxCommandBuffer = commandQueue.makeCommandBuffer() else { return }
@@ -234,6 +253,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// distance based on the planet's radius.
     func followPlanet(named name: String) {
         followingPlanetName = name
+        if name == sunRenderer.name {
+            startCameraTarget = cameraTarget
+            endCameraTarget = sunRenderer.worldPosition ?? SIMD3<Float>(0, 0, 0)
+            startCameraDistance = cameraDistance
+            endCameraDistance = max(sunRenderer.radius * 5, 0.1)
+            cameraAnimationProgress = 0
+            return
+        }
 
         if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
             startCameraTarget = cameraTarget
