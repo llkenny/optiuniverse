@@ -50,7 +50,7 @@ fragment float4 chromosphere_fragment(VertexOut in [[stage_in]],
     float rim = pow(max(0.0, 1.0 - mu), rimFalloff);
     if (rim <= 0.001) discard_fragment();
 
-    float flicker = fbm(float3(in.worldPos * 10.0, time * flickerSpeed));
+    float flicker = fbm(in.worldPos * 10.0 + float3(0.0, 0.0, time * flickerSpeed));
     flicker = 0.8 + 0.2 * flicker;
 
     float intensity = rimIntensity * rim * flicker;
