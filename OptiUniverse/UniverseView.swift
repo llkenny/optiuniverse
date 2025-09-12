@@ -47,15 +47,23 @@ struct UniverseView: UIViewRepresentable {
         let planets = SolarSystemLoader.loadPlanets(from: "planets")
         context.coordinator.setupLabels(in: container, planetNames: planets.map { $0.name })
 
+        // Camera controller
+        let cameraController = CameraController(renderer: renderer)
+        context.coordinator.cameraController = cameraController
+
         // Add gesture recognizers to the Metal view
         let panGesture = UIPanGestureRecognizer(
-            target: context.coordinator,
-            action: #selector(Coordinator.handlePan))
+            target: cameraController,
+            action: #selector(CameraController.handlePan(_:)))
         mtkView.addGestureRecognizer(panGesture)
         let pinchGesture = UIPinchGestureRecognizer(
-            target: context.coordinator,
-            action: #selector(Coordinator.handlePinch))
+            target: cameraController,
+            action: #selector(CameraController.handlePinch(_:)))
         mtkView.addGestureRecognizer(pinchGesture)
+        let rotationGesture = UIRotationGestureRecognizer(
+            target: cameraController,
+            action: #selector(CameraController.handleRotation(_:)))
+        mtkView.addGestureRecognizer(rotationGesture)
         let tapGesture = UITapGestureRecognizer(
             target: context.coordinator,
             action: #selector(Coordinator.handleTap(_:)))
@@ -78,9 +86,7 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
     private var labels: [String: UILabel] = [:]
     var currentSelectedPlanet: String?
-
-    // Touch state
-    private var lastPanLocation: CGPoint = .zero
+    var cameraController: CameraController?
 
     override init() {}
 
@@ -112,40 +118,6 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
                 }
             }
         }
-    }
-
-    @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        let location = gesture.translation(in: gesture.view)
-        let sensitivity: Float = 0.01
-
-        switch gesture.state {
-        case .began:
-            // Store the initial touch location so the first update doesn't jump
-            lastPanLocation = location
-
-        case .changed:
-            renderer?.cameraYaw -= Float(location.x - lastPanLocation.x) * sensitivity
-            renderer?.cameraPitch -= Float(location.y - lastPanLocation.y) * sensitivity
-            renderer?.cameraPitch = max(0.1, min(renderer?.cameraPitch ?? 0, .pi/2))
-
-            lastPanLocation = location
-            renderer?.updateCamera()
-
-        case .ended, .cancelled:
-            // Reset tracking when the gesture finishes
-            lastPanLocation = .zero
-
-        default:
-            break
-        }
-    }
-
-    @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        let zoomSensitivity: Float = 1 // TODO: Think about its value
-        renderer?.cameraDistance /= Float(gesture.scale) * zoomSensitivity
-        renderer?.cameraDistance = max(0, min(renderer?.cameraDistance ?? 3, 10000))
-        gesture.scale = 1.0
-        renderer?.updateCamera()
     }
 
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
