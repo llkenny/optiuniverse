@@ -28,7 +28,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
-    private let axesRenderer: AxesRenderer
     private let planetsRenderer: PlanetsRenderer
     private let metalView: MTKView
 
@@ -84,7 +83,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.device = device
         self.commandQueue = commandQueue
         self.metalView = metalView
-        axesRenderer = AxesRenderer(device: device)
         planetsRenderer = PlanetsRenderer(device: device)
         
         viewMatrix = matrix_identity_float4x4
@@ -182,19 +180,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                       projectionMatrix: projectionMatrix,
                                       viewportSize: metalView.bounds.size,
                                       delta: delta)
-
-        renderEncoder.setRenderPipelineState(axesRenderer.pipelineState)
-        let axesModelMatrix: float4x4
-        if let name = followingPlanetName,
-           let modelMatrix = planetsRenderer.modelMatrix(ofPlanetNamed: name) {
-            axesModelMatrix = modelMatrix
-        } else {
-            axesModelMatrix = planetsRenderer.sunModelMatrix
-        }
-        axesRenderer.renderAxes(with: renderEncoder,
-                                modelMatrix: axesModelMatrix,
-                                viewMatrix: viewMatrix,
-                                projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()
 
         if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
