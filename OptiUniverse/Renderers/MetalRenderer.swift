@@ -15,6 +15,12 @@ protocol PlanetLabelDelegate: AnyObject {
     func updatePlanetLabels(_ positions: [String: SIMD2<Float>])
 }
 
+struct PostFXParams {
+    var bloomThreshold: Float
+    var bloomRadius: Float
+    var lensDirtOpacity: Float
+}
+
 final class MetalRenderer: NSObject, MTKViewDelegate {
     
     private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
@@ -31,8 +37,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var hdrTexture: MTLTexture?
     private var msaaColorTexture: MTLTexture?
     private var depthTexture: MTLTexture?
-    private var tonemapMsaaTexture: MTLTexture?
-    private var tonemapPipelineState: MTLRenderPipelineState!
+    private var postfxMsaaTexture: MTLTexture?
+    private var postfxPipelineState: MTLRenderPipelineState!
+    private var lensDirtTexture: MTLTexture?
+    private var postFXParams = PostFXParams(bloomThreshold: 1.0, bloomRadius: 1.0, lensDirtOpacity: 0.0)
     
     // Orbital Camera
     // Camera state
@@ -94,9 +102,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         metalView.depthStencilPixelFormat = .depth32Float
 
-        tonemapPipelineState = MetalRenderer.buildTonemapPipeline(device: device,
-                                                                 colorPixelFormat: metalView.colorPixelFormat,
-                                                                 depthPixelFormat: .invalid)
+        postfxPipelineState = MetalRenderer.buildPostFXPipeline(device: device,
+                                                                colorPixelFormat: metalView.colorPixelFormat,
+                                                                depthPixelFormat: .invalid)
+
+        let textureLoader = MTKTextureLoader(device: device)
+        if let url = Bundle.main.url(forResource: "lens_dirt_1024", withExtension: "png") {
+            lensDirtTexture = try? textureLoader.newTexture(URL: url,
+                                                            options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
+        }
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -106,7 +120,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             hdrTexture = nil
             msaaColorTexture = nil
             depthTexture = nil
-            tonemapMsaaTexture = nil
+            postfxMsaaTexture = nil
             return
         }
 
@@ -120,17 +134,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                      size: size,
                                                      pixelFormat: metalView.depthStencilPixelFormat,
                                                      sampleCount: sampleCount)
-        tonemapMsaaTexture = MetalRenderer.makeMSAATexture(device: device,
-                                                           size: size,
-                                                           pixelFormat: view.colorPixelFormat,
-                                                           sampleCount: sampleCount)
+        postfxMsaaTexture = MetalRenderer.makeMSAATexture(device: device,
+                                                          size: size,
+                                                          pixelFormat: view.colorPixelFormat,
+                                                          sampleCount: sampleCount)
     }
 
     func draw(in view: MTKView) {
         guard let hdrTexture = hdrTexture,
               let msaaColorTexture = msaaColorTexture,
               let depthTexture = depthTexture,
-              let tonemapMsaaTexture = tonemapMsaaTexture,
+              let postfxMsaaTexture = postfxMsaaTexture,
               let drawable = view.currentDrawable else {
               return
           }
@@ -183,6 +197,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                 projectionMatrix: projectionMatrix)
         renderEncoder.endEncoding()
 
+        if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
+            blit.generateMipmaps(for: hdrTexture)
+            blit.endEncoding()
+        }
+
         // Collect QA metrics and submit first pass
         QAHooks.tick(commandBuffer: geometryCommandBuffer, pass: "geometry", recordFrame: true)
         geometryCommandBuffer.commit()
@@ -190,26 +209,28 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Update any label overlays with the latest planet positions
         labelDelegate?.updatePlanetLabels(planetsRenderer.planetScreenPositions)
 
-        // Second pass: tone map to drawable using MSAA and resolve to the drawable
-        guard let tonemapCommandBuffer = commandQueue.makeCommandBuffer() else { return }
+        // Second pass: post-process to drawable using MSAA and resolve to the drawable
+        guard let postfxCommandBuffer = commandQueue.makeCommandBuffer() else { return }
         let finalDescriptor = MTLRenderPassDescriptor()
-        finalDescriptor.colorAttachments[0].texture = tonemapMsaaTexture
+        finalDescriptor.colorAttachments[0].texture = postfxMsaaTexture
         finalDescriptor.colorAttachments[0].resolveTexture = drawable.texture
         finalDescriptor.colorAttachments[0].loadAction = .clear
         finalDescriptor.colorAttachments[0].storeAction = .multisampleResolve
         finalDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
-        if let quadEncoder = tonemapCommandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
-            quadEncoder.setRenderPipelineState(tonemapPipelineState)
+        if let quadEncoder = postfxCommandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
+            quadEncoder.setRenderPipelineState(postfxPipelineState)
             quadEncoder.setFragmentTexture(hdrTexture, index: 0)
+            quadEncoder.setFragmentTexture(lensDirtTexture, index: 1)
+            quadEncoder.setFragmentBytes(&postFXParams, length: MemoryLayout<PostFXParams>.stride, index: 0)
             quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
             quadEncoder.endEncoding()
         }
 
-        QAHooks.tick(commandBuffer: tonemapCommandBuffer, pass: "tonemap")
+        QAHooks.tick(commandBuffer: postfxCommandBuffer, pass: "postfx")
 
-        tonemapCommandBuffer.present(drawable)
-        tonemapCommandBuffer.commit()
+        postfxCommandBuffer.present(drawable)
+        postfxCommandBuffer.commit()
     }
     
     private func updateProjectionMatrix() {
@@ -279,13 +300,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         updateProjectionMatrix()
     }
 
-    private static func buildTonemapPipeline(device: MTLDevice,
-                                             colorPixelFormat: MTLPixelFormat,
-                                             depthPixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
+    private static func buildPostFXPipeline(device: MTLDevice,
+                                            colorPixelFormat: MTLPixelFormat,
+                                            depthPixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "tonemap_fragment")
+        descriptor.fragmentFunction = library.makeFunction(name: "postfx_fragment")
         descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
         descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = depthPixelFormat
@@ -298,8 +319,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
                                                                   width: width,
                                                                   height: height,
-                                                                  mipmapped: false)
-        descriptor.usage = [.renderTarget, .shaderRead]
+                                                                  mipmapped: true)
+        descriptor.usage = [.renderTarget, .shaderRead, .shaderWrite]
         descriptor.storageMode = .private
         return device.makeTexture(descriptor: descriptor)!
     }
