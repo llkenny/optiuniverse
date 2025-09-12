@@ -12,16 +12,10 @@ import simd
 final class PlanetsRenderer {
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
-    private var sunPipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
 
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
-
-    /// Model matrix of the Sun without scaling.
-    /// Updated each frame when the Sun is rendered so other renderers
-    /// (e.g. debug axes) can match its position and rotation.
-    var sunModelMatrix: float4x4 = matrix_identity_float4x4
     
     // Solar system data
     private var planets: [Planet] = []
@@ -39,15 +33,18 @@ final class PlanetsRenderer {
     init(device: MTLDevice) {
         self.device = device
         pipelineState = makePipelineState(fragmentFunction: "fragment_main")
-        sunPipelineState = makePipelineState(fragmentFunction: "fragment_sun")
         samplerState = makeSamplerState()
-        planets = SolarSystemLoader.loadPlanets(from: "planets")
+        // Exclude the Sun; it's rendered separately by `SunRenderer`.
+        planets = SolarSystemLoader.loadPlanets(from: "planets").filter { $0.name != "Sun" }
     }
 
     /// Returns the `Planet` instance for the given name if it exists.
     func planet(named name: String) -> Planet? {
         planets.first { $0.name == name }
     }
+
+    /// Current simulation time used for planet animations.
+    var currentTime: Float { time }
 
     /// Builds a render pipeline for the given fragment function.
     ///
@@ -182,12 +179,7 @@ final class PlanetsRenderer {
         planetWorldPositions.removeAll()
 
         for planet in planets {
-            if planet.name == "Sun" {
-                renderEncoder.setRenderPipelineState(sunPipelineState)
-            } else {
-                renderEncoder.setRenderPipelineState(pipelineState)
-            }
-
+            renderEncoder.setRenderPipelineState(pipelineState)
             renderPlanet(planet,
                          with: renderEncoder,
                          time: time,
@@ -225,11 +217,6 @@ final class PlanetsRenderer {
 
         // 3. Combine transformations (mesh already scaled to radius)
         var modelMatrix = rotationMatrix * translationMatrix
-
-        // Store Sun transform for debug axes
-        if planet.name == "Sun" {
-            sunModelMatrix = modelMatrix
-        }
 
         // 4. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
