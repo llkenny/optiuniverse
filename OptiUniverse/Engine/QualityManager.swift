@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// Represents predefined engine quality presets.
 enum QualityPreset: String, CaseIterable, Codable {
@@ -26,7 +27,7 @@ struct QualityConfiguration: Codable {
 }
 
 /// Central manager responsible for runtime quality scaling.
-final class QualityManager {
+final class QualityManager: ObservableObject {
     /// Shared singleton instance.
     static let shared = QualityManager()
 
@@ -34,7 +35,18 @@ final class QualityManager {
     private let configs: [QualityPreset: QualityConfiguration]
 
     /// Currently active preset.
-    private(set) var currentPreset: QualityPreset
+    @Published var currentPreset: QualityPreset {
+        didSet { updateConfiguration() }
+    }
+
+    /// Current number of corona ray-march steps.
+    @Published var coronaSteps: UInt
+    /// Current particle emission count.
+    @Published var particleCount: Int
+    /// Currently selected corona rendering mode.
+    @Published var coronaMode: CoronaMode
+    /// Exposure multiplier passed to shaders.
+    @Published var exposure: Float
 
     private init(bundle: Bundle = .main) {
         if
@@ -52,21 +64,26 @@ final class QualityManager {
             ]
         }
         currentPreset = .high
+        coronaSteps = configs[currentPreset]!.coronaSteps
+        particleCount = configs[currentPreset]!.particleCount
+        coronaMode = configs[currentPreset]!.coronaMode
+        exposure = 1.0
     }
 
     /// Switches to a new quality preset without rebuilding render pipelines.
     func apply(preset: QualityPreset) {
         guard currentPreset != preset else { return }
         currentPreset = preset
-        NotificationCenter.default.post(name: .qualityPresetChanged, object: self)
     }
 
-    /// Current number of corona ray-march steps.
-    var coronaSteps: UInt { configs[currentPreset]?.coronaSteps ?? 0 }
-    /// Current particle emission count.
-    var particleCount: Int { configs[currentPreset]?.particleCount ?? 0 }
-    /// Currently selected corona rendering mode.
-    var coronaMode: CoronaMode { configs[currentPreset]?.coronaMode ?? .off }
+    private func updateConfiguration() {
+        if let config = configs[currentPreset] {
+            coronaSteps = config.coronaSteps
+            particleCount = config.particleCount
+            coronaMode = config.coronaMode
+        }
+        NotificationCenter.default.post(name: .qualityPresetChanged, object: self)
+    }
 }
 
 extension Notification.Name {

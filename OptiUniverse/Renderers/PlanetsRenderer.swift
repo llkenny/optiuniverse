@@ -17,7 +17,6 @@ final class PlanetsRenderer {
 
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
-    var exposure: Float = 1.0
 
     /// Model matrix of the Sun without scaling.
     /// Updated each frame when the Sun is rendered so other renderers
@@ -287,7 +286,7 @@ final class PlanetsRenderer {
                                        length: MemoryLayout<Float>.stride,
                                        index: 1)
 
-        var e = exposure
+        var e = QualityManager.shared.exposure
         renderEncoder.setFragmentBytes(&e,
                                        length: MemoryLayout<Float>.stride,
                                        index: 2)
