@@ -30,6 +30,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
     private let sunRenderer: SunRenderer
+    private let coronaRenderer: CoronaRenderer
     private let metalView: MTKView
 
     weak var labelDelegate: PlanetLabelDelegate?
@@ -86,6 +87,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.metalView = metalView
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
+        coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -184,6 +186,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                               viewMatrix: viewMatrix,
                               projectionMatrix: projectionMatrix,
                               viewportSize: metalView.bounds.size)
+
+        coronaRenderer.render(with: renderEncoder,
+                               time: time,
+                               viewMatrix: viewMatrix,
+                               projectionMatrix: projectionMatrix,
+                               modelMatrix: sunRenderer.modelMatrix)
 
         // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
