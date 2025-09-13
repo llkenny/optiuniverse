@@ -182,9 +182,11 @@ final class SunRenderer {
             let clipEdge = projectionMatrix * viewMatrix * edgeWorld
             let ndcCenter = clipCenter / clipCenter.w
             let ndcEdge = clipEdge / clipEdge.w
-            let uvCenter = (ndcCenter.xy + SIMD2<Float>(1, 1)) * 0.5
-            let uvEdge = (ndcEdge.xy + SIMD2<Float>(1, 1)) * 0.5
-            let radius = length(uvEdge - uvCenter)
+            let ndcCenterXY = SIMD2<Float>(ndcCenter.x, ndcCenter.y)
+            let ndcEdgeXY = SIMD2<Float>(ndcEdge.x, ndcEdge.y)
+            let uvCenter = (ndcCenterXY + SIMD2<Float>(1, 1)) * 0.5
+            let uvEdge = (ndcEdgeXY + SIMD2<Float>(1, 1)) * 0.5
+            let radius = simd_distance(uvEdge, uvCenter)
 
             var params = CoronaParams(screenCenterUV: uvCenter,
                                       radius: radius,
