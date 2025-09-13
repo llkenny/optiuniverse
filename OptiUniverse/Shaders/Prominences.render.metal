@@ -12,11 +12,11 @@ struct ProminenceParams {
 };
 
 struct VSIn {
-    float3 worldPos;
-    float2 corner;
-    float  scale;
-    float  startPhase;
-    float  fpsMul;
+    float3 worldPos [[attribute(0)]];
+    float2 corner    [[attribute(1)]];
+    float  scale     [[attribute(2)]];
+    float  startPhase[[attribute(3)]];
+    float  fpsMul    [[attribute(4)]];
 };
 
 struct VSOut {
