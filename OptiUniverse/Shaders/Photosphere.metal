@@ -44,7 +44,6 @@ vertex VertexOut photosphere_vertex(
 
 fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
                                      constant SunParams &params [[buffer(0)]],
-                                     constant float &deltaTime [[buffer(1)]],
                                      texture3d<float> noiseLow3D [[texture(0)]],
                                      texture3d<float> noiseHigh3D [[texture(1)]],
                                      texture2d<float> flowMap [[texture(2)]],
@@ -53,20 +52,18 @@ fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
     float2 uv = in.texCoord;
 
     float2 flow = decodeFlow(flowMap.sample(sampLinearWrap, uv * params.flowScale).rg);
-    float2 advUV = fract(uv + flow * params.flowSpeed * deltaTime);
+    float2 advUV = fract(uv + flow * params.flowSpeed * params.time);
 
-    float3 gUVW = float3(advUV, params.time * 0.03) * (1.0 / max(params.granulationScale, 1e-6));
-    float low  = sample3D(noiseLow3D,  sampLinearWrap, gUVW);
-    float high = sample3D(noiseHigh3D, sampLinearWrap, gUVW);
+    float3 uvw = float3(advUV, params.time * 0.03);
+    float low  = sample3D(noiseLow3D,  sampLinearWrap, uvw);
+    float high = sample3D(noiseHigh3D, sampLinearWrap, uvw);
     float gran = mix(low, high, params.mixLowHigh);
 
     float m = sunspotMask.sample(sampLinearWrap, uv).r;
     float outMask = 1.0 - params.k * pow(saturate(1.0 - m), params.gamma);
 
-    float emissive = saturate(0.4 + 0.6 * gran);
-    emissive *= saturate(outMask);
+    float emissive = gran * outMask;
 
-    float3 color = float3(1.0, 0.7, 0.5) * emissive;
-    return float4(color, 1.0);
+    return float4(float3(emissive), 1.0);
 }
 

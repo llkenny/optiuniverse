@@ -70,12 +70,10 @@ final class SunRenderer {
     /// - Parameters:
     ///   - renderEncoder: Encoder from the main render pass.
     ///   - time: Global simulation time used for animation.
-    ///   - delta: Time since last frame.
     ///   - viewMatrix: View matrix.
     ///   - projectionMatrix: Projection matrix.
     func renderSun(with renderEncoder: MTLRenderCommandEncoder,
                    time: Float,
-                   delta: Float,
                    viewMatrix: float4x4,
                    projectionMatrix: float4x4,
                    viewportSize: CGSize) {
@@ -123,7 +121,7 @@ final class SunRenderer {
 
         var params = SunParams(time: time,
                                flowScale: SIMD2<Float>(1, 1),
-                               flowSpeed: 1.2,
+                               flowSpeed: 0.012,
                                mixLowHigh: 0.65,
                                granulationScale: 0.002,
                                k: 1.0,
@@ -131,10 +129,6 @@ final class SunRenderer {
         renderEncoder.setFragmentBytes(&params,
                                        length: MemoryLayout<SunParams>.stride,
                                        index: 0)
-        var d = delta
-        renderEncoder.setFragmentBytes(&d,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 1)
 
         guard let submesh = mtkMesh.submeshes.first else { return }
         renderEncoder.drawIndexedPrimitives(type: .triangle,

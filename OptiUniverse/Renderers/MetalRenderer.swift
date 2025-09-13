@@ -181,7 +181,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Render the Sun first so depth testing handles planet occlusion.
         sunRenderer.renderSun(with: renderEncoder,
                               time: time,
-                              delta: delta,
                               viewMatrix: viewMatrix,
                               projectionMatrix: projectionMatrix,
                               viewportSize: metalView.bounds.size)
