@@ -44,7 +44,6 @@ vertex VertexOut photosphere_vertex(
 
 fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
                                      constant SunParams &params [[buffer(0)]],
-                                     constant float &deltaTime [[buffer(1)]],
                                      texture3d<float> noiseLow3D [[texture(0)]],
                                      texture3d<float> noiseHigh3D [[texture(1)]],
                                      texture2d<float> flowMap [[texture(2)]],
@@ -53,7 +52,7 @@ fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
     float2 uv = in.texCoord;
 
     float2 flow = decodeFlow(flowMap.sample(sampLinearWrap, uv * params.flowScale).rg);
-    float2 advUV = fract(uv + flow * params.flowSpeed * deltaTime);
+    float2 advUV = fract(uv + flow * params.flowSpeed * params.time);
 
     float3 uvw = float3(advUV, params.time * 0.03);
     float low  = sample3D(noiseLow3D,  sampLinearWrap, uvw);
