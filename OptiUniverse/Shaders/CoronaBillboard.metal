@@ -29,10 +29,17 @@ fragment float4 corona_fragment(VertexOut in              [[stage_in]],
                                 texture2d<float> coronaGradient [[texture(0)]],
                                 texture2d<float> coronaNoise [[texture(1)]],
                                 sampler samp [[sampler(0)]]) {
-    float grad = coronaGradient.sample(samp, in.uv).r;
-    float flicker = coronaNoise.sample(samp, in.uv * coronaScale + float2(time * flickerSpeed)).r;
+    // Compute radial distance from the quad center to ensure a circular
+    // falloff instead of sampling the gradient's square UV directly.
+    float2 d = in.uv - float2(0.5, 0.5);
+    float r = min(length(d), 1.0);
+    float grad = coronaGradient.sample(samp, float2(r, 0.5)).r;
+
+    // Noise introduces subtle flicker but is masked by the radial gradient.
+    float flicker = coronaNoise.sample(samp,
+                                      in.uv * coronaScale + float2(time * flickerSpeed)).r;
     float corona = grad * (0.8 + 0.2 * flicker);
     float3 color = float3(1.0, 0.8, 0.3) * corona * coronaIntensity;
-    return float4(color, 1.0);
+    return float4(color, grad);
 }
 
