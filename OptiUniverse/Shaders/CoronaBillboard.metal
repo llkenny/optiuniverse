@@ -29,10 +29,11 @@ fragment float4 corona_fragment(VertexOut in              [[stage_in]],
                                 texture2d<float> coronaGradient [[texture(0)]],
                                 texture2d<float> coronaNoise [[texture(1)]],
                                 sampler samp [[sampler(0)]]) {
-    // Compute radial distance from the quad center to ensure a circular
-    // falloff instead of sampling the gradient's square UV directly.
-    float2 d = in.uv - float2(0.5, 0.5);
-    float r = min(length(d), 1.0);
+    // Compute radial distance from the quad centre. `in.uv` ranges from
+    // 0..1 so distances are in 0..0.707; scale by 2 so the gradient hits
+    // zero at the edges of the quad, preventing a square-shaped corona.
+    float2 d = in.uv - float2(0.5);
+    float r = min(length(d) * 2.0, 1.0);
     float grad = coronaGradient.sample(samp, float2(r, 0.5)).r;
 
     // Noise introduces subtle flicker but is masked by the radial gradient.
