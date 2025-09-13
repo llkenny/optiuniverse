@@ -238,6 +238,7 @@ final class SunRenderer {
                                    size: .init(width: width, height: height, depth: depth))
             texture.replace(region: region,
                             mipmapLevel: 0,
+                            slice: 0,
                             withBytes: ptr.baseAddress!,
                             bytesPerRow: bytesPerRow,
                             bytesPerImage: bytesPerImage)
