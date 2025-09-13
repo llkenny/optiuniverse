@@ -29,10 +29,10 @@ fragment float4 corona_fragment(VertexOut in              [[stage_in]],
                                 texture2d<float> coronaGradient [[texture(0)]],
                                 texture2d<float> coronaNoise [[texture(1)]],
                                 sampler samp [[sampler(0)]]) {
-    // Compute radial distance from the quad center to ensure a circular
-    // falloff instead of sampling the gradient's square UV directly.
+    // Compute radial distance from the quad center. The `coronaScale` parameter
+    // allows the gradient to extend past the sun's surface for a larger halo.
     float2 d = (in.uv - float2(0.5, 0.5)) * 2.0;
-    float r = min(length(d), 1.0);
+    float r = min(length(d) / coronaScale, 1.0);
     float grad = coronaGradient.sample(samp, float2(r, 0.5)).r;
 
     // Noise introduces subtle flicker but is masked by the radial gradient.
