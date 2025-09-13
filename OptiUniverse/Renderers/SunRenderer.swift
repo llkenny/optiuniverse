@@ -157,31 +157,12 @@ final class SunRenderer {
         // --- Corona billboard pass ---
         renderEncoder.setRenderPipelineState(coronaPipelineState)
         var translationMatrix = float4x4.makeTranslation([sun.distance, 0, 0])
-        // Extract camera axes from the view matrix rows to construct a
-        // rotation that always faces the camera. This ensures the corona
-        // billboard remains circular from any angle.
-        let right = SIMD3<Float>(viewMatrix.columns.0.x,
-                                 viewMatrix.columns.1.x,
-                                 viewMatrix.columns.2.x)
-        let up = SIMD3<Float>(viewMatrix.columns.0.y,
-                              viewMatrix.columns.1.y,
-                              viewMatrix.columns.2.y)
-        let forward = SIMD3<Float>(viewMatrix.columns.0.z,
-                                   viewMatrix.columns.1.z,
-                                   viewMatrix.columns.2.z)
-        var billboardRotation = float4x4(
-            [right.x,   right.y,   right.z,   0],
-            [up.x,      up.y,      up.z,      0],
-            [forward.x, forward.y, forward.z, 0],
-            [0,         0,         0,         1]
-        )
-        var coronaModelMatrix = translationMatrix * billboardRotation
-        var coronaMVP = projectionMatrix * viewMatrix * coronaModelMatrix
+        var coronaMVP = projectionMatrix * viewMatrix * translationMatrix
         renderEncoder.setVertexBuffer(coronaVertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBytes(&coronaMVP,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 1)
-        renderEncoder.setVertexBytes(&coronaModelMatrix,
+        renderEncoder.setVertexBytes(&translationMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 2)
         var billboardScale = sun.radius * 1.2
