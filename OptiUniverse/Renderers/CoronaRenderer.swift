@@ -68,7 +68,7 @@ final class CoronaRenderer {
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
         descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = .depth32Float
-        descriptor.vertexFunction = library.makeFunction(name: "corona_vertex")
+        descriptor.vertexFunction = library.makeFunction(name: "corona_sphere_vertex")
         descriptor.fragmentFunction = library.makeFunction(name: "corona_sphere_fragment")
         descriptor.vertexDescriptor = makeVertexDescriptor()
         let blend = descriptor.colorAttachments[0]

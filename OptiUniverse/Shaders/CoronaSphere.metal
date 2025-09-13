@@ -2,7 +2,7 @@
 using namespace metal;
 
 struct VertexIn {
-    float4 position [[attribute(0)]];
+    float3 position [[attribute(0)]];
     float3 normal   [[attribute(1)]];
     float2 texCoord [[attribute(2)]];
 };
@@ -12,12 +12,13 @@ struct VertexOut {
     float3 worldPos;
 };
 
-vertex VertexOut corona_vertex(const VertexIn in [[stage_in]],
-                               constant float4x4 &mvpMatrix [[buffer(1)]],
-                               constant float4x4 &modelMatrix [[buffer(2)]]) {
+vertex VertexOut corona_sphere_vertex(const VertexIn in [[stage_in]],
+                                      constant float4x4 &mvpMatrix [[buffer(1)]],
+                                      constant float4x4 &modelMatrix [[buffer(2)]]) {
     VertexOut out;
-    out.position = mvpMatrix * in.position;
-    out.worldPos = (modelMatrix * in.position).xyz;
+    float4 pos = float4(in.position, 1.0);
+    out.position = mvpMatrix * pos;
+    out.worldPos = (modelMatrix * pos).xyz;
     return out;
 }
 
