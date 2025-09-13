@@ -28,11 +28,15 @@ final class SunRenderer {
     private let device: MTLDevice
     private let pipelineState: MTLRenderPipelineState
     private let samplerState: MTLSamplerState
+    private let coronaPipelineState: MTLRenderPipelineState
     private var mesh: MDLMesh
     private var noiseLow3D: MTLTexture
     private var noiseHigh3D: MTLTexture
     private var flowMap: MTLTexture
     private var sunspotMask: MTLTexture
+    private var coronaGradient: MTLTexture
+    private var coronaNoise: MTLTexture
+    private let coronaVertexBuffer: MTLBuffer
 
     /// Model matrix without scaling. Updated every frame after calling
     /// `renderSun` so that other renderers can query the Sun's transform.
@@ -53,6 +57,7 @@ final class SunRenderer {
     init(device: MTLDevice) {
         self.device = device
         self.pipelineState = SunRenderer.makePipelineState(device: device)
+        self.coronaPipelineState = SunRenderer.makeCoronaPipelineState(device: device)
         self.samplerState = SunRenderer.makeSamplerState(device: device)
         self.sun = SolarSystemLoader.loadPlanets(from: "sun").first!
         self.mesh = SunRenderer.createTexturedSphere(device: device,
@@ -64,6 +69,18 @@ final class SunRenderer {
                                                      name: "noise_high_128x128x128_f16")
         self.flowMap = SunRenderer.loadTexture(device: device, name: "flow_map")
         self.sunspotMask = SunRenderer.loadTexture(device: device, name: "sunspot_mask_1024")
+        self.coronaGradient = SunRenderer.loadTexture(device: device, name: "corona_gradient_1024")
+        self.coronaNoise = SunRenderer.loadTexture(device: device, name: "corona_noise_512")
+
+        let quadVertices: [SIMD2<Float>] = [
+            SIMD2(-1, -1),
+            SIMD2( 1, -1),
+            SIMD2(-1,  1),
+            SIMD2( 1,  1)
+        ]
+        self.coronaVertexBuffer = device.makeBuffer(bytes: quadVertices,
+                                                    length: MemoryLayout<SIMD2<Float>>.stride * quadVertices.count,
+                                                    options: [])!
     }
 
     /// Renders the Sun using the provided encoder.
@@ -136,6 +153,45 @@ final class SunRenderer {
                                             indexType: submesh.indexType,
                                             indexBuffer: submesh.indexBuffer.buffer,
                                             indexBufferOffset: submesh.indexBuffer.offset)
+
+        // --- Corona billboard pass ---
+        renderEncoder.setRenderPipelineState(coronaPipelineState)
+        var translationMatrix = float4x4.makeTranslation([sun.distance, 0, 0])
+        var coronaMVP = projectionMatrix * viewMatrix * translationMatrix
+        renderEncoder.setVertexBuffer(coronaVertexBuffer, offset: 0, index: 0)
+        renderEncoder.setVertexBytes(&coronaMVP,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 1)
+        renderEncoder.setVertexBytes(&translationMatrix,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 2)
+        var billboardScale = sun.radius * 1.2
+        renderEncoder.setVertexBytes(&billboardScale,
+                                     length: MemoryLayout<Float>.stride,
+                                     index: 3)
+
+        var t = time
+        var intensity: Float = 1.0
+        var cScale: Float = 0.6
+        var flicker: Float = 1.2
+        renderEncoder.setFragmentBytes(&t,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 0)
+        renderEncoder.setFragmentBytes(&intensity,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 1)
+        renderEncoder.setFragmentBytes(&cScale,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 2)
+        renderEncoder.setFragmentBytes(&flicker,
+                                       length: MemoryLayout<Float>.stride,
+                                       index: 3)
+        renderEncoder.setFragmentTexture(coronaGradient, index: 0)
+        renderEncoder.setFragmentTexture(coronaNoise, index: 1)
+        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+        renderEncoder.drawPrimitives(type: .triangleStrip,
+                                     vertexStart: 0,
+                                     vertexCount: 4)
     }
 
     // MARK: - Helpers
@@ -175,6 +231,24 @@ final class SunRenderer {
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
         return device.makeSamplerState(descriptor: samplerDescriptor)!
+    }
+
+    private static func makeCoronaPipelineState(device: MTLDevice) -> MTLRenderPipelineState {
+        let library = device.makeDefaultLibrary()!
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        descriptor.sampleCount = 4
+        descriptor.depthAttachmentPixelFormat = .depth32Float
+        descriptor.vertexFunction = library.makeFunction(name: "corona_vertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "corona_fragment")
+        descriptor.colorAttachments[0].isBlendingEnabled = true
+        descriptor.colorAttachments[0].rgbBlendOperation = .add
+        descriptor.colorAttachments[0].alphaBlendOperation = .add
+        descriptor.colorAttachments[0].sourceRGBBlendFactor = .one
+        descriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
+        descriptor.colorAttachments[0].destinationRGBBlendFactor = .one
+        descriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
+        return try! device.makeRenderPipelineState(descriptor: descriptor)
     }
 
     private static func createTexturedSphere(device: MTLDevice,
