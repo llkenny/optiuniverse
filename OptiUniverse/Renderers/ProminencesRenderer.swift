@@ -102,9 +102,17 @@ final class ProminencesRenderer {
         encoder.setBytes(&t, length: MemoryLayout<Float>.stride, index: 4)
         var d = delta
         encoder.setBytes(&d, length: MemoryLayout<Float>.stride, index: 5)
-        let threads = MTLSize(width: particleCount, height: 1, depth: 1)
-        let threadgroupSize = MTLSize(width: min(computePipeline.maxTotalThreadsPerThreadgroup, particleCount), height: 1, depth: 1)
-        encoder.dispatchThreads(threads, threadsPerThreadgroup: threadgroupSize)
+        // Some devices do not support non-uniform threadgroup sizes when using
+        // `dispatchThreads`, which was triggering validation errors on the
+        // simulator. To ensure wide compatibility we round the total particle
+        // count up to whole threadgroups and use `dispatchThreadgroups`
+        // instead.
+        let threadsPerGroupWidth = min(computePipeline.maxTotalThreadsPerThreadgroup, particleCount)
+        let threadsPerThreadgroup = MTLSize(width: threadsPerGroupWidth, height: 1, depth: 1)
+        let threadgroups = MTLSize(width: (particleCount + threadsPerGroupWidth - 1) / threadsPerGroupWidth,
+                                   height: 1,
+                                   depth: 1)
+        encoder.dispatchThreadgroups(threadgroups, threadsPerThreadgroup: threadsPerThreadgroup)
         encoder.endEncoding()
     }
 
