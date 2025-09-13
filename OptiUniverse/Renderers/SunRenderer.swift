@@ -89,9 +89,9 @@ final class SunRenderer {
                                                            radius: sun.radius * 1.05,
                                                            textureName: sun.textureName)
         self.coronaGradient = SunRenderer.loadTexture(device: device,
-                                                      name: "Corona/corona_gradient_1024")
+                                                      name: "corona_gradient_1024")
         self.coronaNoise = SunRenderer.loadTexture(device: device,
-                                                   name: "Corona/corona_noise_512")
+                                                   name: "corona_noise_512")
     }
 
     /// Renders the Sun using the provided encoder.
