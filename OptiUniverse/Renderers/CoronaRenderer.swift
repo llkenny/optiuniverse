@@ -35,6 +35,7 @@ final class CoronaRenderer {
                 modelMatrix: float4x4,
                 sunWorldPosition: SIMD3<Float>,
                 cameraPosition: SIMD3<Float>) {
+        var modelMatrix = modelMatrix
         var mvp = projectionMatrix * viewMatrix * modelMatrix
         let mtkMesh = try! MTKMesh(mesh: mesh, device: device)
         renderEncoder.setRenderPipelineState(pipelineState)
