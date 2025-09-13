@@ -1,38 +1,69 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct ProminenceParticle {
-    float3 position;
-    float  angle;
-    float  life;
+struct VSIn {
+    float3 worldPos [[attribute(0)]];
+    float2 corner [[attribute(1)]];
+    float  scale [[attribute(2)]];
+    float  startPhase [[attribute(3)]];
+    float  fpsMul [[attribute(4)]];
 };
 
-struct VertexOut {
-    float4 position [[position]];
-    float  life;
-    float  pointSize [[point_size]];
+struct VSOut {
+    float4 pos [[position]];
+    float2 uv;
+    float  framePhase;
 };
 
-vertex VertexOut prominence_vertex(
-    const device ProminenceParticle *particles [[buffer(0)]],
-    constant float4x4 &mvpMatrix [[buffer(1)]],
-    constant float    &lifetime  [[buffer(2)]],
-    uint id [[vertex_id]]) {
+struct Camera {
+    float4x4 viewProj;
+    float3   camRight;
+    float3   camUp;
+};
 
-    ProminenceParticle p = particles[id];
-    VertexOut out;
-    out.position = mvpMatrix * float4(p.position, 1.0);
-    out.life = p.life;
-    float age = 1.0 - p.life / lifetime;
-    out.pointSize = 1.0 + (1.0 - age) * 2.0;
-    return out;
+struct ProminenceParams {
+    float  time;
+    float  flipFps;
+    int    cols;
+    int    rows;
+    float  intensity;
+    float  hueShift;
+    float2 noiseUV;
+};
+
+vertex VSOut prominence_vertex(VSIn in [[stage_in]],
+                              constant Camera& cam [[buffer(1)]],
+                              constant ProminenceParams& P [[buffer(2)]],
+                              constant float4x4& model [[buffer(3)]]) {
+    VSOut o;
+    float4 center = model * float4(in.worldPos, 1.0);
+    float3 right = normalize(cam.camRight);
+    float3 up = normalize(cam.camUp);
+    float2 size = in.corner * in.scale;
+    float3 pos = center.xyz + right * size.x + up * size.y;
+    o.pos = cam.viewProj * float4(pos, 1.0);
+    o.uv = in.corner * float2(1.0, -1.0) + 0.5;
+    o.framePhase = in.startPhase + (P.time * P.flipFps * in.fpsMul);
+    return o;
 }
 
-fragment float4 prominence_fragment(VertexOut in [[stage_in]],
-                                    constant float &lifetime [[buffer(0)]]) {
-    float age = 1.0 - in.life / lifetime;
-    float alpha = (1.0 - age) * (1.0 - age);
-    float3 color = float3(1.0, 0.5, 0.2) * alpha;
-    return float4(color, alpha); // Additive blending expected
+fragment float4 prominence_fragment(VSOut in [[stage_in]],
+                                    texture2d<float> flipbook [[texture(0)]],
+                                    texture2d<float> noiseTex [[texture(1)]],
+                                    sampler sLin [[sampler(0)]],
+                                    constant ProminenceParams& P [[buffer(0)]]) {
+    int total = P.cols * P.rows;
+    float f = floor(fract(in.framePhase) * float(total));
+    int idx = int(f) % total;
+    int cx = idx % P.cols;
+    int cy = idx / P.cols;
+    float2 cellSize = 1.0 / float2(P.cols, P.rows);
+    float2 base = float2(cx, cy) * cellSize;
+    float2 uv = base + in.uv * cellSize;
+    float4 s = flipbook.sample(sLin, uv);
+    float n = noiseTex.sample(sLin, in.uv * P.noiseUV).r;
+    float intensity = P.intensity * (0.9 + 0.2 * n);
+    float3 col = s.rgb * intensity;
+    return float4(col, s.a * intensity);
 }
 
