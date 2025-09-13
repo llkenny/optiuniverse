@@ -20,6 +20,21 @@ struct SunParams {
     var padding: Float = 0
 }
 
+/// Parameters passed to the corona shader.
+struct CoronaParams {
+    var screenCenterUV: SIMD2<Float>
+    var radius: Float
+    var width: Float
+    var noiseAmt: Float
+    var time: Float
+}
+
+/// Simple quad vertex used for fullscreen corona rendering.
+private struct CoronaVertex {
+    var position: SIMD2<Float>
+    var uv: SIMD2<Float>
+}
+
 /// Dedicated renderer for the Sun. Generates a procedural photosphere
 /// using the `sun_surface_fragment` shader. The renderer exposes the
 /// latest model matrix so other systems can align with the Sun in the
@@ -72,14 +87,14 @@ final class SunRenderer {
         self.coronaGradient = SunRenderer.loadTexture(device: device, name: "corona_gradient_1024")
         self.coronaNoise = SunRenderer.loadTexture(device: device, name: "corona_noise_512")
 
-        let quadVertices: [SIMD2<Float>] = [
-            SIMD2(-1, -1),
-            SIMD2( 1, -1),
-            SIMD2(-1,  1),
-            SIMD2( 1,  1)
+        let quadVertices: [CoronaVertex] = [
+            CoronaVertex(position: SIMD2(-1, -1), uv: SIMD2(0, 0)),
+            CoronaVertex(position: SIMD2( 1, -1), uv: SIMD2(1, 0)),
+            CoronaVertex(position: SIMD2(-1,  1), uv: SIMD2(0, 1)),
+            CoronaVertex(position: SIMD2( 1,  1), uv: SIMD2(1, 1))
         ]
         self.coronaVertexBuffer = device.makeBuffer(bytes: quadVertices,
-                                                    length: MemoryLayout<SIMD2<Float>>.stride * quadVertices.count,
+                                                    length: MemoryLayout<CoronaVertex>.stride * quadVertices.count,
                                                     options: [])!
     }
 
@@ -154,63 +169,38 @@ final class SunRenderer {
                                             indexBuffer: submesh.indexBuffer.buffer,
                                             indexBufferOffset: submesh.indexBuffer.offset)
 
-        // --- Corona billboard pass ---
-        renderEncoder.setRenderPipelineState(coronaPipelineState)
-        var translationMatrix = float4x4.makeTranslation([sun.distance, 0, 0])
-        // Extract camera axes from the view matrix rows to construct a
-        // rotation that always faces the camera. This ensures the corona
-        // billboard remains circular from any angle.
-        let right = SIMD3<Float>(viewMatrix.columns.0.x,
-                                 viewMatrix.columns.1.x,
-                                 viewMatrix.columns.2.x)
-        let up = SIMD3<Float>(viewMatrix.columns.0.y,
-                              viewMatrix.columns.1.y,
-                              viewMatrix.columns.2.y)
-        let forward = SIMD3<Float>(viewMatrix.columns.0.z,
-                                   viewMatrix.columns.1.z,
-                                   viewMatrix.columns.2.z)
-        var billboardRotation = float4x4(
-            [right.x,   right.y,   right.z,   0],
-            [up.x,      up.y,      up.z,      0],
-            [forward.x, forward.y, forward.z, 0],
-            [0,         0,         0,         1]
-        )
-        var coronaModelMatrix = translationMatrix * billboardRotation
-        var coronaMVP = projectionMatrix * viewMatrix * coronaModelMatrix
-        renderEncoder.setVertexBuffer(coronaVertexBuffer, offset: 0, index: 0)
-        renderEncoder.setVertexBytes(&coronaMVP,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 1)
-        renderEncoder.setVertexBytes(&coronaModelMatrix,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 2)
-        var billboardScale = sun.radius * 1.2
-        renderEncoder.setVertexBytes(&billboardScale,
-                                     length: MemoryLayout<Float>.stride,
-                                     index: 3)
+        // --- Corona fullscreen pass ---
+        if screenPosition != nil {
+            renderEncoder.setRenderPipelineState(coronaPipelineState)
+            renderEncoder.setVertexBuffer(coronaVertexBuffer, offset: 0, index: 0)
 
-        var t = time
-        var intensity: Float = 1.0
-        var cScale: Float = 0.6
-        var flicker: Float = 1.2
-        renderEncoder.setFragmentBytes(&t,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 0)
-        renderEncoder.setFragmentBytes(&intensity,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 1)
-        renderEncoder.setFragmentBytes(&cScale,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 2)
-        renderEncoder.setFragmentBytes(&flicker,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 3)
-        renderEncoder.setFragmentTexture(coronaGradient, index: 0)
-        renderEncoder.setFragmentTexture(coronaNoise, index: 1)
-        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
-        renderEncoder.drawPrimitives(type: .triangleStrip,
-                                     vertexStart: 0,
-                                     vertexCount: 4)
+            // Compute screen-space UV coordinates for the Sun's center
+            // and radius for the corona shader.
+            let centerWorld = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+            let edgeWorld = modelMatrix * SIMD4<Float>(sun.radius, 0, 0, 1)
+            let clipCenter = projectionMatrix * viewMatrix * centerWorld
+            let clipEdge = projectionMatrix * viewMatrix * edgeWorld
+            let ndcCenter = clipCenter / clipCenter.w
+            let ndcEdge = clipEdge / clipEdge.w
+            let uvCenter = (ndcCenter.xy + SIMD2<Float>(1, 1)) * 0.5
+            let uvEdge = (ndcEdge.xy + SIMD2<Float>(1, 1)) * 0.5
+            let radius = length(uvEdge - uvCenter)
+
+            var params = CoronaParams(screenCenterUV: uvCenter,
+                                      radius: radius,
+                                      width: radius * 0.6,
+                                      noiseAmt: 1.0,
+                                      time: time)
+            renderEncoder.setFragmentBytes(&params,
+                                           length: MemoryLayout<CoronaParams>.stride,
+                                           index: 0)
+            renderEncoder.setFragmentTexture(coronaGradient, index: 0)
+            renderEncoder.setFragmentTexture(coronaNoise, index: 1)
+            renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+            renderEncoder.drawPrimitives(type: .triangleStrip,
+                                         vertexStart: 0,
+                                         vertexCount: 4)
+        }
     }
 
     // MARK: - Helpers
@@ -258,8 +248,8 @@ final class SunRenderer {
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
         descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = .depth32Float
-        descriptor.vertexFunction = library.makeFunction(name: "corona_vertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "corona_fragment")
+        descriptor.vertexFunction = library.makeFunction(name: "coronaVS")
+        descriptor.fragmentFunction = library.makeFunction(name: "coronaFS")
         descriptor.colorAttachments[0].isBlendingEnabled = true
         descriptor.colorAttachments[0].rgbBlendOperation = .add
         descriptor.colorAttachments[0].alphaBlendOperation = .add
@@ -267,14 +257,14 @@ final class SunRenderer {
         descriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .one
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
-        // The corona billboard vertex shader reads a single float2 position
-        // attribute. Without an explicit vertex descriptor the pipeline
-        // creation will fail at runtime with a "no vertex descriptor" error.
         let vertexDescriptor = MTLVertexDescriptor()
         vertexDescriptor.attributes[0].format = .float2
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-        vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD2<Float>>.stride
+        vertexDescriptor.attributes[1].format = .float2
+        vertexDescriptor.attributes[1].offset = MemoryLayout<SIMD2<Float>>.stride
+        vertexDescriptor.attributes[1].bufferIndex = 0
+        vertexDescriptor.layouts[0].stride = MemoryLayout<CoronaVertex>.stride
         descriptor.vertexDescriptor = vertexDescriptor
 
         return try! device.makeRenderPipelineState(descriptor: descriptor)
