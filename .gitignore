@@ -1,2 +1,5 @@
 xcuserdata
 build
+
+# Noise volumes
+OptiUniverse/Assets/Noise/*.raw
