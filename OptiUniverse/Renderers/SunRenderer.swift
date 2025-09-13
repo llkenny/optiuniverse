@@ -218,16 +218,17 @@ final class SunRenderer {
                                       depth: Int = 128) -> MTLTexture {
         let url = Bundle.main.url(forResource: name, withExtension: "raw")!
         let data = try! Data(contentsOf: url)
-        let bytesPerElement = 2 // float16
+        let bytesPerElement = MemoryLayout<UInt16>.size // float16
         let bytesPerRow = width * bytesPerElement
         let bytesPerImage = bytesPerRow * height
         precondition(data.count == bytesPerImage * depth, "Unexpected RAW size")
 
-        let desc = MTLTextureDescriptor.texture3DDescriptor(pixelFormat: .r16Float,
-                                                            width: width,
-                                                            height: height,
-                                                            depth: depth,
-                                                            mipmapped: false)
+        let desc = MTLTextureDescriptor()
+        desc.textureType = .type3D
+        desc.pixelFormat = .r16Float
+        desc.width = width
+        desc.height = height
+        desc.depth = depth
         desc.storageMode = .private
         desc.usage = [.shaderRead]
         let texture = device.makeTexture(descriptor: desc)!
@@ -237,7 +238,6 @@ final class SunRenderer {
                                    size: .init(width: width, height: height, depth: depth))
             texture.replace(region: region,
                             mipmapLevel: 0,
-                            slice: 0,
                             withBytes: ptr.baseAddress!,
                             bytesPerRow: bytesPerRow,
                             bytesPerImage: bytesPerImage)
