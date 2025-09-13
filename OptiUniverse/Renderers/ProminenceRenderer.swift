@@ -113,8 +113,8 @@ final class ProminenceRenderer {
         for (i, e) in entries.enumerated() {
             let angle = e.angle * .pi / 180
             let radius = sunRadius * e.radiusMul
-            let dir = SIMD3<Float>(cos(angle), 0, sin(angle))
-            let base = dir * radius + SIMD3<Float>(0, e.lift * sunRadius, 0)
+            let dir = SIMD3<Float>(cos(angle), sin(angle), 0)
+            let base = dir * radius + SIMD3<Float>(0, 0, e.lift * sunRadius)
             let scale = sunRadius * e.scale
             let corners = [SIMD2<Float>(-0.5, -0.5), SIMD2<Float>(0.5, -0.5), SIMD2<Float>(-0.5, 0.5), SIMD2<Float>(0.5, 0.5)]
             for c in corners {
