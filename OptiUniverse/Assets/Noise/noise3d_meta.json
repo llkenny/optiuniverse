@@ -1,0 +1,15 @@
+{
+  "format": "r16Float (little-endian, 1 channel)",
+  "dimensions": [
+    128,
+    128,
+    128
+  ],
+  "channelCount": 1,
+  "byteOrder": "little-endian",
+  "rowMajor": true,
+  "bytesPerElement": 2,
+  "wrapMode": "repeat",
+  "minMagFilter": "linear",
+  "notes": "Upload with MTLTextureType3D; use replaceRegion for each slice or full volume with bytesPerImage = width*height*2"
+}
