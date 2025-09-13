@@ -213,11 +213,12 @@ final class SunRenderer {
         let loader = MTKTextureLoader(device: device)
         let options: [MTKTextureLoader.Option: Any] = [
             .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-            .textureType: NSNumber(value: MTLTextureType.type3D.rawValue)
+            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue)
         ]
         let url = Bundle.main.url(forResource: name, withExtension: "exr")!
-        return try! loader.newTexture(URL: url, options: options)
+        let texture = try! loader.newTexture(URL: url, options: options)
+        precondition(texture.textureType == .type3D, "Expected 3D texture for \(name)")
+        return texture
     }
 }
 

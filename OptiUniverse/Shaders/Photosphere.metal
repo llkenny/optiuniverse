@@ -51,7 +51,6 @@ fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
                                      texture2d<float> sunspotMask [[texture(3)]],
                                      sampler sampLinearWrap [[sampler(0)]]) {
     float2 uv = in.texCoord;
-    float3 uvw = float3(uv, params.time * 0.03);
 
     float2 flow = decodeFlow(flowMap.sample(sampLinearWrap, uv * params.flowScale).rg);
     float2 advUV = fract(uv + flow * params.flowSpeed * deltaTime);
