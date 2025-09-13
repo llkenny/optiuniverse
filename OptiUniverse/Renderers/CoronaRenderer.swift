@@ -131,7 +131,7 @@ final class CoronaRenderer {
         ]
         let url = Bundle.main.url(forResource: name,
                                    withExtension: "png",
-                                   subdirectory: "Corona")!
+                                   subdirectory: nil)!
         return try! loader.newTexture(URL: url, options: options)
     }
 }
