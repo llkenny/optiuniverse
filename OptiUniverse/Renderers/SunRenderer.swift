@@ -5,6 +5,7 @@
 //  Created for APP-03.
 //
 
+import Foundation
 import MetalKit
 import simd
 
@@ -57,8 +58,10 @@ final class SunRenderer {
         self.mesh = SunRenderer.createTexturedSphere(device: device,
                                                      radius: sun.radius,
                                                      textureName: sun.textureName)
-        self.noiseLow3D = SunRenderer.load3DTexture(device: device, name: "noise_low_3d")
-        self.noiseHigh3D = SunRenderer.load3DTexture(device: device, name: "noise_high_3d")
+        self.noiseLow3D = SunRenderer.load3DTexture(device: device,
+                                                    name: "noise_low_128x128x128_f16")
+        self.noiseHigh3D = SunRenderer.load3DTexture(device: device,
+                                                     name: "noise_high_128x128x128_f16")
         self.flowMap = SunRenderer.loadTexture(device: device, name: "flow_map")
         self.sunspotMask = SunRenderer.loadTexture(device: device, name: "sunspot_mask_1024")
     }
@@ -209,15 +212,37 @@ final class SunRenderer {
         return try! loader.newTexture(URL: url, options: options)
     }
 
-    private static func load3DTexture(device: MTLDevice, name: String) -> MTLTexture {
-        let loader = MTKTextureLoader(device: device)
-        let options: [MTKTextureLoader.Option: Any] = [
-            .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue)
-        ]
-        let url = Bundle.main.url(forResource: name, withExtension: "exr")!
-        let texture = try! loader.newTexture(URL: url, options: options)
-        precondition(texture.textureType == .type3D, "Expected 3D texture for \(name)")
+    private static func load3DTexture(device: MTLDevice, name: String,
+                                      width: Int = 128,
+                                      height: Int = 128,
+                                      depth: Int = 128) -> MTLTexture {
+        let url = Bundle.main.url(forResource: name, withExtension: "raw")!
+        let data = try! Data(contentsOf: url)
+        let bytesPerElement = MemoryLayout<UInt16>.size // float16
+        let bytesPerRow = width * bytesPerElement
+        let bytesPerImage = bytesPerRow * height
+        precondition(data.count == bytesPerImage * depth, "Unexpected RAW size")
+
+        let desc = MTLTextureDescriptor()
+        desc.textureType = .type3D
+        desc.pixelFormat = .r16Float
+        desc.width = width
+        desc.height = height
+        desc.depth = depth
+        desc.storageMode = .private
+        desc.usage = [.shaderRead]
+        let texture = device.makeTexture(descriptor: desc)!
+
+        data.withUnsafeBytes { ptr in
+            let region = MTLRegion(origin: .init(x: 0, y: 0, z: 0),
+                                   size: .init(width: width, height: height, depth: depth))
+            texture.replace(region: region,
+                            mipmapLevel: 0,
+                            slice: 0,
+                            withBytes: ptr.baseAddress!,
+                            bytesPerRow: bytesPerRow,
+                            bytesPerImage: bytesPerImage)
+        }
         return texture
     }
 }
