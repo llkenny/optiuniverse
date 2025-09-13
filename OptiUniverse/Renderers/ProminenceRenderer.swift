@@ -65,6 +65,27 @@ final class ProminenceRenderer {
         blend?.destinationRGBBlendFactor = .one
         blend?.sourceAlphaBlendFactor = .one
         blend?.destinationAlphaBlendFactor = .one
+
+        let vertexDescriptor = MTLVertexDescriptor()
+        vertexDescriptor.attributes[0].format = .float3
+        vertexDescriptor.attributes[0].offset = MemoryLayout<ProminenceVertex>.offset(of: \ProminenceVertex.worldPos) ?? 0
+        vertexDescriptor.attributes[0].bufferIndex = 2
+        vertexDescriptor.attributes[1].format = .float2
+        vertexDescriptor.attributes[1].offset = MemoryLayout<ProminenceVertex>.offset(of: \ProminenceVertex.corner) ?? 0
+        vertexDescriptor.attributes[1].bufferIndex = 2
+        vertexDescriptor.attributes[2].format = .float
+        vertexDescriptor.attributes[2].offset = MemoryLayout<ProminenceVertex>.offset(of: \ProminenceVertex.scale) ?? 0
+        vertexDescriptor.attributes[2].bufferIndex = 2
+        vertexDescriptor.attributes[3].format = .float
+        vertexDescriptor.attributes[3].offset = MemoryLayout<ProminenceVertex>.offset(of: \ProminenceVertex.startPhase) ?? 0
+        vertexDescriptor.attributes[3].bufferIndex = 2
+        vertexDescriptor.attributes[4].format = .float
+        vertexDescriptor.attributes[4].offset = MemoryLayout<ProminenceVertex>.offset(of: \ProminenceVertex.fpsMul) ?? 0
+        vertexDescriptor.attributes[4].bufferIndex = 2
+        vertexDescriptor.layouts[2].stride = MemoryLayout<ProminenceVertex>.stride
+        vertexDescriptor.layouts[2].stepFunction = .perVertex
+        descriptor.vertexDescriptor = vertexDescriptor
+
         pipelineState = try! device.makeRenderPipelineState(descriptor: descriptor)
 
         let samplerDesc = MTLSamplerDescriptor()
@@ -130,9 +151,9 @@ final class ProminenceRenderer {
         p.time = time
 
         encoder.setRenderPipelineState(pipelineState)
-        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         encoder.setVertexBytes(&camera, length: MemoryLayout<ProminenceCamera>.stride, index: 0)
         encoder.setVertexBytes(&p, length: MemoryLayout<ProminenceParams>.stride, index: 1)
+        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 2)
         encoder.setFragmentBytes(&p, length: MemoryLayout<ProminenceParams>.stride, index: 1)
         encoder.setFragmentTexture(flipbook, index: 0)
         encoder.setFragmentTexture(noise, index: 1)
