@@ -5,6 +5,7 @@ struct ProminenceParticle {
     float3 position;
     float  angle;   // angle around the sun's limb
     float  life;    // remaining life time
+    float  pad;     // padding for 16-byte alignment
 };
 
 // Simple deterministic pseudo-random generator

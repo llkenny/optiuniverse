@@ -5,6 +5,7 @@ struct ProminenceParticle {
     float3 position;
     float  angle;
     float  life;
+    float  pad;  // padding for 16-byte alignment
 };
 
 struct VertexOut {
@@ -29,10 +30,19 @@ vertex VertexOut prominence_vertex(
 }
 
 fragment float4 prominence_fragment(VertexOut in [[stage_in]],
-                                    constant float &lifetime [[buffer(0)]]) {
+                                    float2 pointCoord [[point_coord]],
+                                    constant float &lifetime [[buffer(0)]],
+                                    constant float &time [[buffer(1)]],
+                                    texture2d<float> flipbook [[texture(0)]],
+                                    sampler samp [[sampler(0)]]) {
+    constexpr int N = 16;
+    constexpr float fps = 13.5;
+    float frame = floor(fmod(time * fps, float(N)));
+    float vStep = 1.0 / float(N);
+    float2 uv = float2(pointCoord.x, pointCoord.y / float(N) + frame * vStep);
+    float4 tex = flipbook.sample(samp, uv);
     float age = 1.0 - in.life / lifetime;
-    float alpha = (1.0 - age) * (1.0 - age);
-    float3 color = float3(1.0, 0.5, 0.2) * alpha;
-    return float4(color, alpha); // Additive blending expected
+    float alpha = tex.a * (1.0 - age);
+    return float4(tex.rgb * alpha, alpha); // Additive blending expected
 }
 
