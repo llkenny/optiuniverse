@@ -248,6 +248,16 @@ final class SunRenderer {
         descriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .one
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
+        // The corona billboard vertex shader reads a single float2 position
+        // attribute. Without an explicit vertex descriptor the pipeline
+        // creation will fail at runtime with a "no vertex descriptor" error.
+        let vertexDescriptor = MTLVertexDescriptor()
+        vertexDescriptor.attributes[0].format = .float2
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD2<Float>>.stride
+        descriptor.vertexDescriptor = vertexDescriptor
+
         return try! device.makeRenderPipelineState(descriptor: descriptor)
     }
 
