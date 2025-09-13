@@ -29,10 +29,21 @@ vertex VertexOut prominence_vertex(
 }
 
 fragment float4 prominence_fragment(VertexOut in [[stage_in]],
-                                    constant float &lifetime [[buffer(0)]]) {
+                                    float2 pointCoord [[point_coord]],
+                                    constant float &lifetime [[buffer(0)]],
+                                    constant float &time [[buffer(1)]],
+                                    texture2d<float> flipbook [[texture(0)]],
+                                    sampler samplerState [[sampler(0)]]) {
     float age = 1.0 - in.life / lifetime;
     float alpha = (1.0 - age) * (1.0 - age);
-    float3 color = float3(1.0, 0.5, 0.2) * alpha;
-    return float4(color, alpha); // Additive blending expected
+
+    const int frameCount = 16;
+    const float fps = 13.5;
+    float frame = floor(fmod(time * fps, float(frameCount)));
+    float vStep = 1.0 / float(frameCount);
+    float2 uv = float2(pointCoord.x,
+                       pointCoord.y / float(frameCount) + frame * vStep);
+    float4 tex = flipbook.sample(samplerState, uv);
+    return tex * alpha; // Additive blending expected
 }
 
