@@ -31,6 +31,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let planetsRenderer: PlanetsRenderer
     private let sunRenderer: SunRenderer
     private let coronaRenderer: CoronaRenderer
+    private let prominenceRenderer: ProminenceRenderer
     private let metalView: MTKView
 
     weak var labelDelegate: PlanetLabelDelegate?
@@ -89,6 +90,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
         coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
+        prominenceRenderer = ProminenceRenderer(device: device, sunRadius: sunRenderer.radius)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -166,6 +168,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         // First pass: render scene to MSAA texture and resolve to HDR texture
         guard let geometryCommandBuffer = commandQueue.makeCommandBuffer() else { return }
+        prominenceRenderer.update(commandBuffer: geometryCommandBuffer, delta: delta, time: time)
         let hdrDescriptor = MTLRenderPassDescriptor()
         hdrDescriptor.colorAttachments[0].texture = msaaColorTexture
         hdrDescriptor.colorAttachments[0].resolveTexture = hdrTexture
@@ -196,6 +199,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                   modelMatrix: sunRenderer.modelMatrix,
                                   sunWorldPosition: sunWorld,
                                   cameraPosition: cameraPosition)
+
+            prominenceRenderer.render(with: renderEncoder,
+                                      viewMatrix: viewMatrix,
+                                      projectionMatrix: projectionMatrix,
+                                      sunModelMatrix: sunRenderer.modelMatrix,
+                                      time: time)
         }
 
         // Render the remaining planets.
