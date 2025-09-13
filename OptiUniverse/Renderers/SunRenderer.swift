@@ -121,7 +121,7 @@ final class SunRenderer {
 
         var params = SunParams(time: time,
                                flowScale: SIMD2<Float>(1, 1),
-                               flowSpeed: 1.2,
+                               flowSpeed: 0.012,
                                mixLowHigh: 0.65,
                                granulationScale: 0.002,
                                k: 1.0,
