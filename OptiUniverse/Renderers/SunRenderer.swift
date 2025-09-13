@@ -229,7 +229,12 @@ final class SunRenderer {
         desc.width = width
         desc.height = height
         desc.depth = depth
-        desc.storageMode = .private
+        // The texture data is uploaded from the CPU, therefore the storage
+        // mode must allow CPU access. Using `.private` causes a runtime crash
+        // when calling `replaceRegion` (CPU access is disallowed). `.shared`
+        // lets us populate the texture once on load while still keeping it
+        // GPU-accessible.
+        desc.storageMode = .shared
         desc.usage = [.shaderRead]
         let texture = device.makeTexture(descriptor: desc)!
 
