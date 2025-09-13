@@ -8,8 +8,19 @@
 import MetalKit
 import simd
 
+struct SunParams {
+    var time: Float
+    var flowScale: SIMD2<Float>
+    var flowSpeed: Float
+    var mixLowHigh: Float
+    var granulationScale: Float
+    var k: Float
+    var gamma: Float
+    var padding: Float = 0
+}
+
 /// Dedicated renderer for the Sun. Generates a procedural photosphere
-/// and corona using the `fragment_sun` shader. The renderer exposes the
+/// using the `sun_surface_fragment` shader. The renderer exposes the
 /// latest model matrix so other systems can align with the Sun in the
 /// scene graph.
 final class SunRenderer {
@@ -17,9 +28,10 @@ final class SunRenderer {
     private let pipelineState: MTLRenderPipelineState
     private let samplerState: MTLSamplerState
     private var mesh: MDLMesh
-    private var texture: MTLTexture
-    private var coronaGradient: MTLTexture
-    private var coronaNoise: MTLTexture
+    private var noiseLow3D: MTLTexture
+    private var noiseHigh3D: MTLTexture
+    private var flowMap: MTLTexture
+    private var sunspotMask: MTLTexture
 
     /// Model matrix without scaling. Updated every frame after calling
     /// `renderSun` so that other renderers can query the Sun's transform.
@@ -42,16 +54,13 @@ final class SunRenderer {
         self.pipelineState = SunRenderer.makePipelineState(device: device)
         self.samplerState = SunRenderer.makeSamplerState(device: device)
         self.sun = SolarSystemLoader.loadPlanets(from: "sun").first!
-        // Pre-build mesh and texture since the Sun's size does not change.
         self.mesh = SunRenderer.createTexturedSphere(device: device,
                                                      radius: sun.radius,
                                                      textureName: sun.textureName)
-        self.texture = SunRenderer.loadTexture(device: device,
-                                               name: sun.textureName)
-        self.coronaGradient = SunRenderer.loadTexture(device: device,
-                                                      name: "corona_gradient_1024")
-        self.coronaNoise = SunRenderer.loadTexture(device: device,
-                                                   name: "corona_noise_512")
+        self.noiseLow3D = SunRenderer.load3DTexture(device: device, name: "noise_low_3d")
+        self.noiseHigh3D = SunRenderer.load3DTexture(device: device, name: "noise_high_3d")
+        self.flowMap = SunRenderer.loadTexture(device: device, name: "flow_map")
+        self.sunspotMask = SunRenderer.loadTexture(device: device, name: "sunspot_mask_1024")
     }
 
     /// Renders the Sun using the provided encoder.
@@ -103,23 +112,26 @@ final class SunRenderer {
                                       offset: 0,
                                       index: 0)
 
-        renderEncoder.setFragmentTexture(texture, index: 0)
-        renderEncoder.setFragmentTexture(coronaGradient, index: 1)
-        renderEncoder.setFragmentTexture(coronaNoise, index: 2)
+        renderEncoder.setFragmentTexture(noiseLow3D, index: 0)
+        renderEncoder.setFragmentTexture(noiseHigh3D, index: 1)
+        renderEncoder.setFragmentTexture(flowMap, index: 2)
+        renderEncoder.setFragmentTexture(sunspotMask, index: 3)
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
 
-        var t = time
-        renderEncoder.setFragmentBytes(&t,
-                                       length: MemoryLayout<Float>.stride,
+        var params = SunParams(time: time,
+                               flowScale: SIMD2<Float>(1, 1),
+                               flowSpeed: 1.2,
+                               mixLowHigh: 0.65,
+                               granulationScale: 0.002,
+                               k: 1.0,
+                               gamma: 1.8)
+        renderEncoder.setFragmentBytes(&params,
+                                       length: MemoryLayout<SunParams>.stride,
                                        index: 0)
         var d = delta
         renderEncoder.setFragmentBytes(&d,
                                        length: MemoryLayout<Float>.stride,
                                        index: 1)
-        var e = QualityManager.shared.exposure
-        renderEncoder.setFragmentBytes(&e,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 2)
 
         guard let submesh = mtkMesh.submeshes.first else { return }
         renderEncoder.drawIndexedPrimitives(type: .triangle,
@@ -137,8 +149,8 @@ final class SunRenderer {
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
         descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = .depth32Float
-        descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
-        descriptor.fragmentFunction = library.makeFunction(name: "fragment_sun")
+        descriptor.vertexFunction = library.makeFunction(name: "photosphere_vertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "sun_surface_fragment")
         descriptor.vertexDescriptor = makeVertexDescriptor()
         return try! device.makeRenderPipelineState(descriptor: descriptor)
     }
@@ -160,8 +172,8 @@ final class SunRenderer {
 
     private static func makeSamplerState(device: MTLDevice) -> MTLSamplerState {
         let samplerDescriptor = MTLSamplerDescriptor()
-        samplerDescriptor.sAddressMode = .clampToEdge
-        samplerDescriptor.tAddressMode = .clampToEdge
+        samplerDescriptor.sAddressMode = .repeat
+        samplerDescriptor.tAddressMode = .repeat
         samplerDescriptor.minFilter = .linear
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
@@ -195,6 +207,18 @@ final class SunRenderer {
         ]
         let url = Bundle.main.url(forResource: name, withExtension: "png")!
         return try! loader.newTexture(URL: url, options: options)
+    }
+
+    private static func load3DTexture(device: MTLDevice, name: String) -> MTLTexture {
+        let loader = MTKTextureLoader(device: device)
+        let options: [MTKTextureLoader.Option: Any] = [
+            .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
+            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue)
+        ]
+        let url = Bundle.main.url(forResource: name, withExtension: "exr")!
+        let texture = try! loader.newTexture(URL: url, options: options)
+        precondition(texture.textureType == .type3D, "Expected 3D texture for \(name)")
+        return texture
     }
 }
 

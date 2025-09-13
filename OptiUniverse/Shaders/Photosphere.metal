@@ -1,26 +1,6 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// Simple hash and FBM helpers
-static float hash(float3 p) {
-    return fract(sin(dot(p, float3(12.9898,78.233,37.719))) * 43758.5453);
-}
-
-static float fbm(float3 p) {
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 4; ++i) {
-        value += amplitude * hash(p);
-        p *= 2.0;
-        amplitude *= 0.5;
-    }
-    return value;
-}
-
-static float2 fbm2(float3 p) {
-    return float2(fbm(p), fbm(p + 31.416));
-}
-
 struct VertexIn {
     float4 position [[attribute(0)]];
     float3 normal   [[attribute(1)]];
@@ -34,6 +14,22 @@ struct VertexOut {
     float3 worldPos;
 };
 
+struct SunParams {
+    float time;
+    float2 flowScale;
+    float flowSpeed;
+    float mixLowHigh;
+    float granulationScale;
+    float k;
+    float gamma;
+};
+
+inline float2 decodeFlow(float2 rg01) { return rg01 * 2.0 - 1.0; }
+
+inline float sample3D(texture3d<float, access::sample> vol, sampler s, float3 uvw) {
+    return vol.sample(s, fract(uvw)).r;
+}
+
 vertex VertexOut photosphere_vertex(
                                     const VertexIn in [[stage_in]],
                                     constant float4x4 &mvpMatrix [[buffer(1)]],
@@ -46,34 +42,31 @@ vertex VertexOut photosphere_vertex(
     return out;
 }
 
-fragment float4 photosphere_fragment(VertexOut in [[stage_in]],
-                                     constant float &time [[buffer(0)]],
-                                     constant float &granulationScale [[buffer(1)]],
-                                     constant float &flowSpeed [[buffer(2)]],
-                                     constant float3 &limbCoeffs [[buffer(3)]],
-                                     constant float &spotThreshold [[buffer(4)]]) {
-    // Centered UV for noise sampling
-    float2 uv = in.texCoord * 2.0 - 1.0;
+fragment float4 sun_surface_fragment(VertexOut in [[stage_in]],
+                                     constant SunParams &params [[buffer(0)]],
+                                     constant float &deltaTime [[buffer(1)]],
+                                     texture3d<float> noiseLow3D [[texture(0)]],
+                                     texture3d<float> noiseHigh3D [[texture(1)]],
+                                     texture2d<float> flowMap [[texture(2)]],
+                                     texture2d<float> sunspotMask [[texture(3)]],
+                                     sampler sampLinearWrap [[sampler(0)]]) {
+    float2 uv = in.texCoord;
 
-    // Advect UVs using a flow map generated from FBM
-    float2 flow = fbm2(float3(uv * granulationScale, time * flowSpeed));
-    uv += flow * 0.05;
+    float2 flow = decodeFlow(flowMap.sample(sampLinearWrap, uv * params.flowScale).rg);
+    float2 advUV = fract(uv + flow * params.flowSpeed * deltaTime);
 
-    // Granulation using mixed low and high frequency noise
-    float gLow = fbm(float3(uv * granulationScale, time * flowSpeed));
-    float gHigh = fbm(float3(uv * granulationScale * 5.0, time * flowSpeed * 2.0));
-    float granulation = gLow * 0.7 + gHigh * 0.3;
+    float3 gUVW = float3(advUV, params.time * 0.03) * (1.0 / max(params.granulationScale, 1e-6));
+    float low  = sample3D(noiseLow3D,  sampLinearWrap, gUVW);
+    float high = sample3D(noiseHigh3D, sampLinearWrap, gUVW);
+    float gran = mix(low, high, params.mixLowHigh);
 
-    // Sunspot mask with soft penumbra
-    float spotNoise = fbm(float3(uv * granulationScale * 0.5, time * flowSpeed * 0.2));
-    float spotMask = smoothstep(spotThreshold, spotThreshold + 0.05, spotNoise);
+    float m = sunspotMask.sample(sampLinearWrap, uv).r;
+    float outMask = 1.0 - params.k * pow(saturate(1.0 - m), params.gamma);
 
-    // Limb darkening based on view angle
-    float3 viewDir = normalize(-in.worldPos);
-    float mu = saturate(dot(normalize(in.normal), viewDir));
-    float intensity = limbCoeffs.x + limbCoeffs.y * mu + limbCoeffs.z * mu * mu;
+    float emissive = saturate(0.4 + 0.6 * gran);
+    emissive *= saturate(outMask);
 
-    float3 baseColor = float3(1.0, 0.9, 0.6);
-    float3 color = baseColor * (1.0 + granulation) * intensity * spotMask;
+    float3 color = float3(1.0, 0.7, 0.5) * emissive;
     return float4(color, 1.0);
 }
+
