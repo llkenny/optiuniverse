@@ -48,6 +48,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraYaw: Float = 0.0      // Horizontal rotation (radians)
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
+    private var cameraPosition = SIMD3<Float>(0, 0, 0)
     private var followingPlanetName: String?
 
     // Camera animation state
@@ -183,7 +184,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                               time: time,
                               viewMatrix: viewMatrix,
                               projectionMatrix: projectionMatrix,
-                              viewportSize: metalView.bounds.size)
+                              viewportSize: metalView.bounds.size,
+                              cameraPosition: cameraPosition)
 
         // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
@@ -301,7 +303,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let z = cameraDistance * cos(cameraYaw) * cos(cameraPitch)
         
         let cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
-        
+        self.cameraPosition = cameraPosition
+
         // 2. Update matrices
         viewMatrix = float4x4.lookAt(
             eye: cameraPosition,

@@ -20,6 +20,17 @@ struct SunParams {
     var padding: Float = 0
 }
 
+struct CoronaUniforms {
+    var cameraPos: SIMD3<Float>
+    var sunPos: SIMD3<Float>
+    var outerRadius: Float
+    var time: Float
+    var intensity: Float
+    var noiseScale: Float
+    var flickerSpeed: Float
+    var padding: Float = 0
+}
+
 /// Dedicated renderer for the Sun. Generates a procedural photosphere
 /// using the `sun_surface_fragment` shader. The renderer exposes the
 /// latest model matrix so other systems can align with the Sun in the
@@ -33,6 +44,13 @@ final class SunRenderer {
     private var noiseHigh3D: MTLTexture
     private var flowMap: MTLTexture
     private var sunspotMask: MTLTexture
+
+    // Corona rendering
+    private let coronaPipelineState: MTLRenderPipelineState
+    private let coronaDepthState: MTLDepthStencilState
+    private var coronaMesh: MDLMesh
+    private var coronaGradient: MTLTexture
+    private var coronaNoise: MTLTexture
 
     /// Model matrix without scaling. Updated every frame after calling
     /// `renderSun` so that other renderers can query the Sun's transform.
@@ -64,6 +82,16 @@ final class SunRenderer {
                                                      name: "noise_high_128x128x128_f16")
         self.flowMap = SunRenderer.loadTexture(device: device, name: "flow_map")
         self.sunspotMask = SunRenderer.loadTexture(device: device, name: "sunspot_mask_1024")
+
+        self.coronaPipelineState = SunRenderer.makeCoronaPipelineState(device: device)
+        self.coronaDepthState = SunRenderer.makeCoronaDepthState(device: device)
+        self.coronaMesh = SunRenderer.createTexturedSphere(device: device,
+                                                           radius: sun.radius * 1.05,
+                                                           textureName: sun.textureName)
+        self.coronaGradient = SunRenderer.loadTexture(device: device,
+                                                      name: "Corona/corona_gradient_1024")
+        self.coronaNoise = SunRenderer.loadTexture(device: device,
+                                                   name: "Corona/corona_noise_512")
     }
 
     /// Renders the Sun using the provided encoder.
@@ -76,7 +104,8 @@ final class SunRenderer {
                    time: Float,
                    viewMatrix: float4x4,
                    projectionMatrix: float4x4,
-                   viewportSize: CGSize) {
+                   viewportSize: CGSize,
+                   cameraPosition: SIMD3<Float>) {
         // The Sun is placed at the origin but we keep transformation logic to
         // stay consistent with planets and allow future movement if needed.
         let rotation = float4x4.makeRotationZ(time * sun.orbitSpeed)
@@ -136,6 +165,40 @@ final class SunRenderer {
                                             indexType: submesh.indexType,
                                             indexBuffer: submesh.indexBuffer.buffer,
                                             indexBufferOffset: submesh.indexBuffer.offset)
+
+        // Render additive corona shell
+        let coronaMtkMesh = try! MTKMesh(mesh: coronaMesh, device: device)
+        renderEncoder.setRenderPipelineState(coronaPipelineState)
+        renderEncoder.setDepthStencilState(coronaDepthState)
+        renderEncoder.setVertexBuffer(coronaMtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
+        renderEncoder.setFragmentTexture(coronaGradient, index: 0)
+        renderEncoder.setFragmentTexture(coronaNoise, index: 1)
+        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+        var coronaUniforms = CoronaUniforms(cameraPos: cameraPosition,
+                                            sunPos: worldPosition ?? SIMD3<Float>(0,0,0),
+                                            outerRadius: sun.radius * 1.05,
+                                            time: time,
+                                            intensity: 1.0,
+                                            noiseScale: 0.6,
+                                            flickerSpeed: 0.2,
+                                            padding: 0)
+        renderEncoder.setFragmentBytes(&coronaUniforms,
+                                       length: MemoryLayout<CoronaUniforms>.stride,
+                                       index: 0)
+        var coronaMVP = projectionMatrix * viewMatrix * modelMatrix
+        renderEncoder.setVertexBytes(&coronaMVP,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 1)
+        renderEncoder.setVertexBytes(&modelMatrix,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 2)
+        if let coronaSub = coronaMtkMesh.submeshes.first {
+            renderEncoder.drawIndexedPrimitives(type: .triangle,
+                                                indexCount: coronaSub.indexCount,
+                                                indexType: coronaSub.indexType,
+                                                indexBuffer: coronaSub.indexBuffer.buffer,
+                                                indexBufferOffset: coronaSub.indexBuffer.offset)
+        }
     }
 
     // MARK: - Helpers
@@ -150,6 +213,33 @@ final class SunRenderer {
         descriptor.fragmentFunction = library.makeFunction(name: "sun_surface_fragment")
         descriptor.vertexDescriptor = makeVertexDescriptor()
         return try! device.makeRenderPipelineState(descriptor: descriptor)
+    }
+
+    private static func makeCoronaPipelineState(device: MTLDevice) -> MTLRenderPipelineState {
+        let library = device.makeDefaultLibrary()!
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        descriptor.sampleCount = 4
+        descriptor.depthAttachmentPixelFormat = .depth32Float
+        descriptor.vertexFunction = library.makeFunction(name: "photosphere_vertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "corona_sphere_fragment")
+        descriptor.vertexDescriptor = makeVertexDescriptor()
+        let attachment = descriptor.colorAttachments[0]!
+        attachment.isBlendingEnabled = true
+        attachment.rgbBlendOperation = .add
+        attachment.alphaBlendOperation = .add
+        attachment.sourceRGBBlendFactor = .one
+        attachment.sourceAlphaBlendFactor = .one
+        attachment.destinationRGBBlendFactor = .one
+        attachment.destinationAlphaBlendFactor = .one
+        return try! device.makeRenderPipelineState(descriptor: descriptor)
+    }
+
+    private static func makeCoronaDepthState(device: MTLDevice) -> MTLDepthStencilState {
+        let desc = MTLDepthStencilDescriptor()
+        desc.depthCompareFunction = .lessEqual
+        desc.isDepthWriteEnabled = false
+        return device.makeDepthStencilState(descriptor: desc)!
     }
 
     private static func makeVertexDescriptor() -> MTLVertexDescriptor {
