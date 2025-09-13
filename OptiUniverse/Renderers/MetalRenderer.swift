@@ -30,6 +30,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
     private let sunRenderer: SunRenderer
+    private let coronaRenderer: CoronaRenderer
     private let metalView: MTKView
 
     weak var labelDelegate: PlanetLabelDelegate?
@@ -48,6 +49,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraYaw: Float = 0.0      // Horizontal rotation (radians)
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
+    private var cameraPosition = SIMD3<Float>(0, 0, 0)
     private var followingPlanetName: String?
 
     // Camera animation state
@@ -86,6 +88,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.metalView = metalView
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
+        coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -184,6 +187,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                               viewMatrix: viewMatrix,
                               projectionMatrix: projectionMatrix,
                               viewportSize: metalView.bounds.size)
+
+        if QualityManager.shared.coronaMode != .off {
+            coronaRenderer.render(with: renderEncoder,
+                                  time: time,
+                                  modelMatrix: sunRenderer.modelMatrix,
+                                  viewMatrix: viewMatrix,
+                                  projectionMatrix: projectionMatrix,
+                                  cameraPosition: cameraPosition)
+        }
 
         // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
@@ -300,8 +312,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let y = cameraDistance * sin(cameraPitch)
         let z = cameraDistance * cos(cameraYaw) * cos(cameraPitch)
         
-        let cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
-        
+        cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
+
         // 2. Update matrices
         viewMatrix = float4x4.lookAt(
             eye: cameraPosition,
