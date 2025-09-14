@@ -1,16 +1,15 @@
-Prominence Flipbook Timing Guide
-
-Frames: 16
-Resolution per frame: 512x512
-Atlas layout: vertical strip (512 x 8192)
-Playback: 12-15 FPS
-Cycle length: ~1.19 seconds
-
-UV indexing (GLSL-like pseudocode):
------------------------------------
-int N = 16;
-float fps = 13.5;
-float frame = floor(mod(time * fps, float(N)));
-float vStep = 1.0 / float(N);
-vec2 uvAtlas = vec2(uv.x, uv.y / float(N) + frame * vStep);
-vec4 tex = texture(flipbookTex, uvAtlas);
+# frameCount cols rows fps baseIntensity variance seed
+64 8 8 16 1.0 0.25 1337
+# entries: angleDeg radiusMul lift scale fpsMul startPhase
+0   1.05 0.02 0.07 1.0 0.00
+30  1.06 0.03 0.08 0.9  0.20
+60  1.04 0.025 0.06 1.1 0.40
+90  1.07 0.035 0.09 1.0 0.60
+120 1.05 0.03 0.07 0.95 0.80
+150 1.08 0.04 0.10 1.05 0.10
+180 1.04 0.02 0.06 1.0 0.30
+210 1.06 0.03 0.08 0.9  0.50
+240 1.07 0.035 0.09 1.1 0.70
+270 1.05 0.025 0.07 1.0 0.90
+300 1.08 0.04 0.10 0.95 0.15
+330 1.06 0.03 0.08 1.05 0.45
