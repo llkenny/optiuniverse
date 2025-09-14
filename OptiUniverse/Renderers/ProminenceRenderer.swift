@@ -31,6 +31,7 @@ struct ProminenceVertex {
 
 struct ProminenceCamera {
     var viewProj: float4x4
+    var model: float4x4
     var camRight: SIMD3<Float>
     var camUp: SIMD3<Float>
 }
@@ -144,7 +145,8 @@ final class ProminenceRenderer {
         var invView = viewMatrix.inverse
         let camRight = SIMD3<Float>(invView.columns.0.x, invView.columns.0.y, invView.columns.0.z)
         let camUp = SIMD3<Float>(invView.columns.1.x, invView.columns.1.y, invView.columns.1.z)
-        var camera = ProminenceCamera(viewProj: projectionMatrix * viewMatrix * modelMatrix,
+        var camera = ProminenceCamera(viewProj: projectionMatrix * viewMatrix,
+                                      model: modelMatrix,
                                       camRight: camRight,
                                       camUp: camUp)
         var p = params
@@ -158,6 +160,7 @@ final class ProminenceRenderer {
         encoder.setFragmentTexture(flipbook, index: 0)
         encoder.setFragmentTexture(noise, index: 1)
         encoder.setFragmentSamplerState(samplerState, index: 0)
+        encoder.setCullMode(.none)
         encoder.drawIndexedPrimitives(type: .triangle,
                                       indexCount: indexBuffer.length / MemoryLayout<UInt16>.stride,
                                       indexType: .uint16,

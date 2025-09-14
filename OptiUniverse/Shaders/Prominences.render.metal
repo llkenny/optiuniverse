@@ -28,6 +28,7 @@ struct VSOut {
 
 struct Camera {
     float4x4 viewProj;
+    float4x4 model;
     float3 camRight;
     float3 camUp;
 };
@@ -39,7 +40,8 @@ vertex VSOut promVS(VSIn in [[stage_in]],
     float3 right = normalize(cam.camRight);
     float3 up = normalize(cam.camUp);
     float2 size = in.corner * in.scale;
-    float3 pos = in.worldPos + right * size.x + up * size.y;
+    float4 worldCenter = cam.model * float4(in.worldPos, 1.0);
+    float3 pos = worldCenter.xyz + right * size.x + up * size.y;
     o.pos = cam.viewProj * float4(pos, 1.0);
     o.uv = in.corner * float2(1, -1) + 0.5;
     o.framePhase = in.startPhase + (P.time * P.flipFps * in.fpsMul);
