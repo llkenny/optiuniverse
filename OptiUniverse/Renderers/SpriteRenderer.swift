@@ -11,13 +11,15 @@ struct SceneSprite {
 
 final class SpriteRenderer {
     private let device: MTLDevice
+    private let sampleCount: Int
     private var sprites: [SceneSprite] = []
     private var pipelineState: MTLRenderPipelineState?
     private var vertexBuffer: MTLBuffer?
     private var samplerState: MTLSamplerState?
 
-    init(device: MTLDevice) {
+    init(device: MTLDevice, sampleCount: Int) {
         self.device = device
+        self.sampleCount = sampleCount
         buildResources()
     }
 
@@ -53,6 +55,7 @@ final class SpriteRenderer {
             desc.fragmentFunction = fFunc
             desc.vertexDescriptor = vertexDescriptor
             desc.colorAttachments[0].pixelFormat = .rgba16Float
+            desc.sampleCount = sampleCount
             desc.colorAttachments[0].isBlendingEnabled = true
             desc.colorAttachments[0].rgbBlendOperation = .add
             desc.colorAttachments[0].alphaBlendOperation = .add

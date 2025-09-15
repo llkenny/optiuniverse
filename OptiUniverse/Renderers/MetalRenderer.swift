@@ -90,10 +90,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.device = device
         self.commandQueue = commandQueue
         self.metalView = metalView
+        metalView.sampleCount = 4
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
         coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
-        spriteRenderer = SpriteRenderer(device: device)
+        spriteRenderer = SpriteRenderer(device: device, sampleCount: metalView.sampleCount)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -103,7 +104,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
-        metalView.sampleCount = 4
         if #available(iOS 13.0, *) {
             (metalView.layer as? CAMetalLayer)?.colorspace =
                 CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
