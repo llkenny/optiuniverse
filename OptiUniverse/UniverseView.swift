@@ -123,7 +123,7 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
         let point = gesture.location(ofTouch: 0, in: gesture.view)
         print("Touch point\(point)")
-        // TODO: Add objects selection
+        renderer?.triggerExplosion()
     }
 
     @objc func handleLabelTap(_ gesture: UITapGestureRecognizer) {
