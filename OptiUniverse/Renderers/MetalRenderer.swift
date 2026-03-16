@@ -31,6 +31,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let planetsRenderer: PlanetsRenderer
     private let sunRenderer: SunRenderer
     private let coronaRenderer: CoronaRenderer
+    private let spriteRenderer: SpriteRenderer
     private let metalView: MTKView
 
     weak var labelDelegate: PlanetLabelDelegate?
@@ -41,6 +42,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var postfxMsaaTexture: MTLTexture?
     private var postfxPipelineState: MTLRenderPipelineState!
     private var lensDirtTexture: MTLTexture?
+    private var explosionTexture: MTLTexture?
     private var postFXParams = PostFXParams(bloomThreshold: 1.0, bloomRadius: 1.0, lensDirtOpacity: 0.0)
     
     // Orbital Camera
@@ -59,6 +61,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var endCameraDistance: Float?
     private var cameraAnimationProgress: Float = 1
     private let cameraAnimationDuration: Float = 1.0
+
+    var cameraTargetPosition: SIMD3<Float> { cameraTarget }
     
     private var viewMatrix: float4x4 {
         didSet {
@@ -86,9 +90,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.device = device
         self.commandQueue = commandQueue
         self.metalView = metalView
+        metalView.sampleCount = 4
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
         coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
+        spriteRenderer = SpriteRenderer(device: device, sampleCount: metalView.sampleCount)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -98,7 +104,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
-        metalView.sampleCount = 4
         if #available(iOS 13.0, *) {
             (metalView.layer as? CAMetalLayer)?.colorspace =
                 CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
@@ -113,6 +118,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if let url = Bundle.main.url(forResource: "lens_dirt_1024", withExtension: "png") {
             lensDirtTexture = try? textureLoader.newTexture(URL: url,
                                                             options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
+        }
+        if let url = Bundle.main.url(forResource: "explosion", withExtension: "png") {
+            explosionTexture = try? textureLoader.newTexture(URL: url,
+                                                            options: [.origin: MTKTextureLoader.Origin.bottomLeft.rawValue])
         }
     }
 
@@ -204,6 +213,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                       projectionMatrix: projectionMatrix,
                                       viewportSize: metalView.bounds.size,
                                       delta: delta)
+        spriteRenderer.update(time: time)
+        spriteRenderer.render(with: renderEncoder,
+                              viewMatrix: viewMatrix,
+                              projectionMatrix: projectionMatrix,
+                              currentTime: time)
         renderEncoder.endEncoding()
 
         if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
@@ -247,6 +261,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         postfxCommandBuffer.present(drawable)
         postfxCommandBuffer.commit()
+    }
+
+    func triggerExplosion(at position: SIMD3<Float>? = nil) {
+        guard let texture = explosionTexture else { return }
+        let pos = position ?? cameraTarget
+        spriteRenderer.addSprite(texture: texture,
+                                 position: pos,
+                                 size: 0.5,
+                                 startTime: planetsRenderer.currentTime)
     }
     
     private func updateProjectionMatrix() {

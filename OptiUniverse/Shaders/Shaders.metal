@@ -173,3 +173,29 @@ vertex AxesVertexOut axes_vertex(
         float3 mapped = hdr / (hdr + 1.0);
         return float4(mapped, 1.0);
     }
+
+struct SpriteIn {
+    float2 position [[attribute(0)]];
+    float2 uv [[attribute(1)]];
+};
+
+struct SpriteOut {
+    float4 position [[position]];
+    float2 uv;
+};
+
+vertex SpriteOut sprite_vertex(const device SpriteIn *vertices [[buffer(0)]],
+                               constant float4x4 &mvp [[buffer(1)]],
+                               uint vid [[vertex_id]]) {
+    SpriteOut out;
+    SpriteIn v = vertices[vid];
+    out.position = mvp * float4(v.position, 0.0, 1.0);
+    out.uv = v.uv;
+    return out;
+}
+
+fragment float4 sprite_fragment(SpriteOut in [[stage_in]],
+                                texture2d<float> tex [[texture(0)]],
+                                sampler s [[sampler(0)]]) {
+    return tex.sample(s, in.uv);
+}
