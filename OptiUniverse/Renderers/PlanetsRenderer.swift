@@ -10,135 +10,116 @@ import QuartzCore
 import simd
 
 final class PlanetsRenderer {
+    private static let planetBodyRotation = matrix_identity_float4x4
+
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
-
+    private let modelLoader: ModelLoader
+    
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
     
     // Solar system data
     private var planets: [Planet] = []
-    private var planetMeshes: [String: MDLMesh] = [:]
-    private var cachedTextures: [String: MTLTexture] = [:]
-
+    private var planetMeshes: [String: [LoadedMesh]] = [:]
+    
     /// Screen-space positions of planet centers, updated each frame.
     /// Keys are planet names, values are pixel coordinates in the viewport.
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
-
+    
     /// World-space positions of planet centers, updated each frame.
     /// Keys are planet names, values are coordinates in the scene space.
     var planetWorldPositions: [String: SIMD3<Float>] = [:]
-
+    
     init(device: MTLDevice) {
         self.device = device
+        self.modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
+        // FIXME: No loading indicator, meshes can not be ready while be asking
+        modelLoader.loadMeshes(device: device)
         pipelineState = makePipelineState(fragmentFunction: "fragment_main")
         samplerState = makeSamplerState()
         // Exclude the Sun; it's rendered separately by `SunRenderer`.
         planets = SolarSystemLoader.loadPlanets(from: "planets").filter { $0.name != "Sun" }
     }
-
+    
     /// Returns the `Planet` instance for the given name if it exists.
     func planet(named name: String) -> Planet? {
         planets.first { $0.name == name }
     }
-
+    
     /// Current simulation time used for planet animations.
     var currentTime: Float { time }
-
+    
     /// Builds a render pipeline for the given fragment function.
     ///
     /// - Parameter fragmentFunction: The name of the fragment shader function.
     /// - Returns: A configured `MTLRenderPipelineState`.
     private func makePipelineState(fragmentFunction: String) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
-
+        
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        descriptor.colorAttachments[0].isBlendingEnabled = true
+        descriptor.colorAttachments[0].rgbBlendOperation = .add
+        descriptor.colorAttachments[0].alphaBlendOperation = .add
+        descriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        descriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
+        descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
         descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = .depth32Float
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
-        descriptor.vertexDescriptor = makeVertexDescriptor()
-
+        descriptor.vertexDescriptor = Self.makeVertexDescriptor()
+        
         do {
             return try device.makeRenderPipelineState(descriptor: descriptor)
         } catch {
             fatalError("Failed to create pipeline state: \(error)")
         }
     }
-
+    
     /// Creates the shared vertex descriptor for planet rendering.
-    private func makeVertexDescriptor() -> MTLVertexDescriptor {
+    private static func makeVertexDescriptor() -> MTLVertexDescriptor {
         let vertexDescriptor = MTLVertexDescriptor()
-
+        
         // Position (attribute 0)
         vertexDescriptor.attributes[0].format = .float3
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-
+        
         // Normal (attribute 1)
         vertexDescriptor.attributes[1].format = .float3
-        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
-        vertexDescriptor.attributes[1].bufferIndex = 0
-
+        vertexDescriptor.attributes[1].offset = 0
+        vertexDescriptor.attributes[1].bufferIndex = 1
+        
         // Texture coordinates (attribute 2)
         vertexDescriptor.attributes[2].format = .float2
-        vertexDescriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
-        vertexDescriptor.attributes[2].bufferIndex = 0
+        vertexDescriptor.attributes[2].offset = 0
+        vertexDescriptor.attributes[2].bufferIndex = 2
 
+        // Tangent (attribute 3)
+        vertexDescriptor.attributes[3].format = .float4
+        vertexDescriptor.attributes[3].offset = 0
+        vertexDescriptor.attributes[3].bufferIndex = 3
+        
         // Layout
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 8
+        vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD3<Float>>.stride
+        vertexDescriptor.layouts[1].stride = MemoryLayout<SIMD3<Float>>.stride
+        vertexDescriptor.layouts[2].stride = MemoryLayout<SIMD2<Float>>.stride
+        vertexDescriptor.layouts[3].stride = MemoryLayout<SIMD4<Float>>.stride
         return vertexDescriptor
     }
     
     private func makeSamplerState() -> MTLSamplerState {
         let samplerDescriptor = MTLSamplerDescriptor()
-        samplerDescriptor.sAddressMode = .clampToEdge
+        samplerDescriptor.sAddressMode = .repeat
         samplerDescriptor.tAddressMode = .clampToEdge
         samplerDescriptor.minFilter = .linear
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
         return device.makeSamplerState(descriptor: samplerDescriptor)!
-    }
-    
-    private func createTexturedSphere(radius: Float, textureName: String) -> MDLMesh {
-        let allocator = MTKMeshBufferAllocator(device: device)
-
-        // Create sphere. Model I/O generates proper spherical texture
-        // coordinates by default, so we don't need to manually unwrap each
-        // face (which caused the texture to appear as repeated rectangles).
-        let mdlMesh = MDLMesh(
-            sphereWithExtent: [radius * 2, radius * 2, radius * 2],
-            segments: [20, 20],
-            inwardNormals: false,
-            geometryType: .triangles,
-            allocator: allocator
-        )
-
-        // Match vertex layout with our Metal pipeline.
-        let vertexDescriptor = MTKModelIOVertexDescriptorFromMetal(makeVertexDescriptor())
-        (vertexDescriptor.attributes[0] as! MDLVertexAttribute).name = MDLVertexAttributePosition
-        (vertexDescriptor.attributes[1] as! MDLVertexAttribute).name = MDLVertexAttributeNormal
-        (vertexDescriptor.attributes[2] as! MDLVertexAttribute).name = MDLVertexAttributeTextureCoordinate
-        mdlMesh.vertexDescriptor = vertexDescriptor
-
-        // Primitive spheres generated by ModelIO already include valid UVs.
-        // Attempting to regenerate them caused runtime crashes, so we rely on
-        // the provided texture coordinates instead of calling
-        // `addUnwrappedTextureCoordinates` again.
-
-        // Load texture with top-left origin and mipmaps to avoid seams
-        let textureLoader = MTKTextureLoader(device: device)
-        let options: [MTKTextureLoader.Option : Any] = [
-            .origin: MTKTextureLoader.Origin.topLeft.rawValue,
-            .generateMipmaps: NSNumber(booleanLiteral: true)
-        ]
-        let textureURL = Bundle.main.url(forResource: textureName, withExtension: "png")!
-        let texture = try! textureLoader.newTexture(URL: textureURL, options: options)
-        cachedTextures[textureName] = texture
-
-        return mdlMesh
     }
     
     /// Advances the internal time accumulator and returns the time delta.
@@ -151,7 +132,7 @@ final class PlanetsRenderer {
         time += delta
         return delta
     }
-
+    
     /// Returns the model matrix (without scaling) for the planet with the given
     /// name using the current internal time value.
     func modelMatrix(ofPlanetNamed name: String) -> float4x4? {
@@ -161,7 +142,7 @@ final class PlanetsRenderer {
         let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
         return rotationMatrix * translationMatrix
     }
-
+    
     /// Returns the world-space position of the planet with the given name
     /// using the current internal time value.
     func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
@@ -169,19 +150,21 @@ final class PlanetsRenderer {
         let pos4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
         return SIMD3<Float>(pos4.x, pos4.y, pos4.z)
     }
-
+    
     func renderPlanets(with renderEncoder: MTLRenderCommandEncoder,
                        viewMatrix: float4x4,
                        projectionMatrix: float4x4,
+                       cameraPosition: SIMD3<Float>,
                        viewportSize: CGSize,
                        delta: Float) {
         planetScreenPositions.removeAll()
         planetWorldPositions.removeAll()
-
+        
         for planet in planets {
             renderEncoder.setRenderPipelineState(pipelineState)
             renderPlanet(planet,
                          with: renderEncoder,
+                         cameraPosition: cameraPosition,
                          time: time,
                          delta: delta,
                          viewMatrix: viewMatrix,
@@ -189,38 +172,43 @@ final class PlanetsRenderer {
                          viewportSize: viewportSize)
         }
     }
-
+    
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: Planet,
                               with renderEncoder: MTLRenderCommandEncoder,
+                              cameraPosition: SIMD3<Float>,
                               time: Float,
                               delta: Float,
                               viewMatrix: float4x4,
                               projectionMatrix: float4x4,
                               viewportSize: CGSize) {
-        
-        // Get or create mesh with correct radius
-        if planetMeshes[planet.textureName] == nil {
-            planetMeshes[planet.textureName] = createTexturedSphere(
-                radius: planet.radius,
-                textureName: planet.textureName
-            )
+        let meshes: [LoadedMesh]
+        if let cachedMeshes = planetMeshes[planet.name] {
+            meshes = cachedMeshes
+        } else {
+            let loadedMeshes = modelLoader.getMeshes(for: planet.name,
+                                                     primaryMeshName: planet.meshName)
+            meshes = loadedMeshes
+            planetMeshes[planet.name] = loadedMeshes
         }
-        guard let mesh = planetMeshes[planet.textureName] else { return }
-
+        
         // 1. Calculate rotation for current orbit position
         let angle = time * planet.orbitSpeed
         let rotationMatrix = float4x4.makeRotationZ(angle)
-
+        
         // 2. Translate to the planet's orbital distance
         let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+        let scaleMatrix = float4x4.makeScale(SIMD3<Float>(repeating: planet.radius))
 
-        // 3. Combine transformations (mesh already scaled to radius)
-        var modelMatrix = rotationMatrix * translationMatrix
-
+        // 3. Combine transformations
+        var modelMatrix = rotationMatrix
+            * translationMatrix
+            * Self.planetBodyRotation
+            * scaleMatrix
+        
         // 4. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-
+        
         // Compute screen position of the planet's center
         let worldPosition4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
         planetWorldPositions[planet.name] = SIMD3<Float>(worldPosition4.x,
@@ -247,48 +235,51 @@ final class PlanetsRenderer {
         //        let eccentricity: Float = 0.1 // 0 for circular
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
-        // Retrieve cached mesh and texture
-        let texture = cachedTextures[planet.textureName]!
-        let mtkMesh = try! MTKMesh(mesh: mesh, device: device)
+        //         Retrieve cached mesh and texture
+        //        let texture = cachedTextures[planet.textureName]!
         
         // Set buffers
         renderEncoder.setVertexBytes(&mvpMatrix,
                                      length: MemoryLayout<float4x4>.stride,
-                                     index: 1)
+                                     index: 5)
         renderEncoder.setVertexBytes(&modelMatrix,
                                      length: MemoryLayout<float4x4>.stride,
-                                     index: 2)
-        
-        renderEncoder.setVertexBuffer(mtkMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
-        renderEncoder.setFragmentTexture(texture, index: 0)
-        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+                                     index: 6)
 
-        var t = time
-        renderEncoder.setFragmentBytes(&t,
-                                       length: MemoryLayout<Float>.stride,
+        renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+        var fragmentCameraPosition = cameraPosition
+        renderEncoder.setFragmentBytes(&fragmentCameraPosition,
+                                       length: MemoryLayout<SIMD3<Float>>.stride,
                                        index: 0)
 
-        var d = delta
-        renderEncoder.setFragmentBytes(&d,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 1)
+        for loadedMesh in meshes {
+            let mesh = loadedMesh.mesh
+            for (bufferIndex, vertexBuffer) in mesh.vertexBuffers.enumerated() {
+                renderEncoder.setVertexBuffer(vertexBuffer.buffer,
+                                              offset: vertexBuffer.offset,
+                                              index: bufferIndex)
+            }
 
-        var e = QualityManager.shared.exposure
-        renderEncoder.setFragmentBytes(&e,
-                                       length: MemoryLayout<Float>.stride,
-                                       index: 2)
-        
-        guard let submesh = mtkMesh.submeshes.first else {
-            fatalError()
+            for (index, submesh) in mesh.submeshes.enumerated() {
+                let textures = loadedMesh.textures[safe: index]
+                renderEncoder.setFragmentTexture(textures?.baseColor, index: 0)
+                renderEncoder.setFragmentTexture(textures?.normal, index: 1)
+                renderEncoder.setFragmentTexture(textures?.emissive, index: 2)
+                renderEncoder.drawIndexedPrimitives(
+                    type: .triangle,
+                    indexCount: submesh.indexCount,
+                    indexType: submesh.indexType,
+                    indexBuffer: submesh.indexBuffer.buffer,
+                    indexBufferOffset: submesh.indexBuffer.offset
+                )
+            }
         }
-        
-        // Draw
-        renderEncoder.drawIndexedPrimitives(
-            type: .triangle,
-            indexCount: submesh.indexCount,
-            indexType: submesh.indexType,
-            indexBuffer: submesh.indexBuffer.buffer,
-            indexBufferOffset: submesh.indexBuffer.offset
-        )
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        guard indices.contains(index) else { return nil }
+        return self[index]
     }
 }
