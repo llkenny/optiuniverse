@@ -32,6 +32,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let sunRenderer: SunRenderer
     private let coronaRenderer: CoronaRenderer
     private let metalView: MTKView
+    private let depthStencilState: MTLDepthStencilState
 
     weak var labelDelegate: PlanetLabelDelegate?
 
@@ -86,6 +87,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.device = device
         self.commandQueue = commandQueue
         self.metalView = metalView
+        let depthStencilDescriptor = MTLDepthStencilDescriptor()
+        depthStencilDescriptor.depthCompareFunction = .less
+        depthStencilDescriptor.isDepthWriteEnabled = true
+        guard let depthStencilState = device.makeDepthStencilState(descriptor: depthStencilDescriptor) else {
+            return nil
+        }
+        self.depthStencilState = depthStencilState
         planetsRenderer = PlanetsRenderer(device: device)
         sunRenderer = SunRenderer(device: device)
         coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
@@ -180,6 +188,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         guard let renderEncoder = geometryCommandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
             return
         }
+        renderEncoder.setDepthStencilState(depthStencilState)
+        renderEncoder.setCullMode(.none)
 
         // Render the Sun first so depth testing handles planet occlusion.
         sunRenderer.renderSun(with: renderEncoder,
@@ -202,6 +212,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
                                       projectionMatrix: projectionMatrix,
+                                      cameraPosition: cameraPosition,
                                       viewportSize: metalView.bounds.size,
                                       delta: delta)
         renderEncoder.endEncoding()
