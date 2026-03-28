@@ -12,9 +12,9 @@ This repository hosts **OptiUniverse**, an iOS 3D universe navigator focused on 
 
 ## Testing
 - Ensure the project builds before committing:
-  `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 16' build CODE_SIGNING_ALLOWED=NO`
+  `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build CODE_SIGNING_ALLOWED=NO`
 - Run unit tests when available:
-  `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 16' test CODE_SIGNING_ALLOWED=NO`
+  `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test CODE_SIGNING_ALLOWED=NO`
 
 ## Release Hygiene
 - Check the repository for credentials or private material before publishing.

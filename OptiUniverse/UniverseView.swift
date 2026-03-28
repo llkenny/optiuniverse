@@ -43,10 +43,6 @@ struct UniverseView: UIViewRepresentable {
         context.coordinator.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
-        // Create static labels for planets
-        let planets = SolarSystemLoader.loadPlanets(from: "planets")
-        context.coordinator.setupLabels(in: container, planetNames: planets.map { $0.name })
-
         // Camera controller
         let cameraController = CameraController(renderer: renderer)
         context.coordinator.cameraController = cameraController

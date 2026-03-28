@@ -31,6 +31,7 @@ struct VertexIn {
     float4 position [[attribute(0)]];
     float3 normal [[attribute(1)]];
     float2 texCoord [[attribute(2)]];
+    float4 tangent [[attribute(3)]];
 };
 
 struct VertexOut {
@@ -38,26 +39,63 @@ struct VertexOut {
     float2 texCoord;
     float3 normal;
     float3 worldPos;
+    float3 worldTangent;
+    float3 worldBitangent;
 };
 
 vertex VertexOut vertex_main(
                              const VertexIn in [[stage_in]],
-                             constant float4x4 &mvpMatrix [[buffer(1)]],
-                             constant float4x4 &modelMatrix [[buffer(2)]]
+                             constant float4x4 &mvpMatrix [[buffer(5)]],
+                             constant float4x4 &modelMatrix [[buffer(6)]]
                              ) {
     VertexOut out;
     out.position = mvpMatrix * in.position;
     out.worldPos = (modelMatrix * in.position).xyz;
     out.normal = normalize((modelMatrix * float4(in.normal, 0.0)).xyz);
+    out.worldTangent = normalize((modelMatrix * float4(in.tangent.xyz, 0.0)).xyz);
+    out.worldBitangent = normalize(cross(out.normal, out.worldTangent) * in.tangent.w);
     out.texCoord = in.texCoord;
     return out;
 }
 
 fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> planetTexture [[texture(0)]],
+                              texture2d<float> normalTexture [[texture(1)]],
+                              texture2d<float> emissiveTexture [[texture(2)]],
+                              constant float3 &cameraPosition [[buffer(0)]],
                               sampler textureSampler [[sampler(0)]]) {
-    float4 color = planetTexture.sample(textureSampler, in.texCoord);
-    return color;
+    // USD textures arrive with top-left image origin, so flip V before sampling.
+    float2 uv = float2(in.texCoord.x, 1.0 - in.texCoord.y);
+    float4 color = planetTexture.sample(textureSampler, uv);
+    float3 albedo = color.rgb;
+    float alpha = color.a;
+
+    float3 normal = normalize(in.normal);
+    if (normalTexture.get_width() > 0) {
+        float3 normalSample = normalTexture.sample(textureSampler, uv).xyz * 2.0 - 1.0;
+        float3x3 tbn = float3x3(normalize(in.worldTangent),
+                                normalize(in.worldBitangent),
+                                normal);
+        normal = normalize(tbn * normalSample);
+    }
+
+    float3 lightDir = normalize(-in.worldPos);
+    float3 viewDir = normalize(cameraPosition - in.worldPos);
+    float3 halfVector = normalize(lightDir + viewDir);
+
+    float nDotL = saturate(dot(normal, lightDir));
+    float nDotH = saturate(dot(normal, halfVector));
+    float ambient = 0.22;
+    float diffuse = ambient + nDotL * 0.78;
+    float specular = pow(nDotH, 32.0) * 0.12 * step(0.0, nDotL);
+
+    float3 emissive = float3(0.0);
+    if (emissiveTexture.get_width() > 0) {
+        emissive = emissiveTexture.sample(textureSampler, uv).rgb;
+    }
+
+    float3 litColor = albedo * diffuse + specular + emissive;
+    return float4(litColor, alpha);
 }
 
 // Specialized fragment shader for the Sun. Produces an animated
