@@ -64,7 +64,8 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> emissiveTexture [[texture(2)]],
                               constant float3 &cameraPosition [[buffer(0)]],
                               sampler textureSampler [[sampler(0)]]) {
-    float2 uv = in.texCoord;
+    // USD textures arrive with top-left image origin, so flip V before sampling.
+    float2 uv = float2(in.texCoord.x, 1.0 - in.texCoord.y);
     float4 color = planetTexture.sample(textureSampler, uv);
     float3 albedo = color.rgb;
     float alpha = color.a;
