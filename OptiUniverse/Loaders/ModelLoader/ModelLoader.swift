@@ -12,6 +12,7 @@ import MetalKit
 struct LoadedMesh {
     let mesh: MTKMesh
     let textures: [Textures]
+    let boundsRadius: Float
 }
 
 actor ModelLoader {
@@ -29,7 +30,6 @@ actor ModelLoader {
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
         self.bakedTextureNamesByMeshName = Dictionary(uniqueKeysWithValues: SolarSystemLoader
             .loadPlanetConfigs(from: "planets")
-            .filter { $0.name != "Sun" }
             .map { ($0.meshName, $0.textureName) })
     }
 
@@ -53,7 +53,8 @@ actor ModelLoader {
                         Textures(material: $0.material, device: device)
                     } ?? []
                 return LoadedMesh(mesh: try! MTKMesh(mesh: mdlMesh, device: device),
-                                  textures: textures)
+                                  textures: textures,
+                                  boundsRadius: boundingRadius(of: mdlMesh))
             }
 
         meshes = Dictionary(uniqueKeysWithValues: loadedMeshes.map { ($0.mesh.name, $0) })
@@ -75,6 +76,25 @@ actor ModelLoader {
 
         return primary + extras
     }
+}
+
+private func boundingRadius(of mesh: MDLMesh) -> Float {
+    let bounds = mesh.boundingBox
+    let min = bounds.minBounds
+    let max = bounds.maxBounds
+
+    let corners: [SIMD3<Float>] = [
+        [min.x, min.y, min.z],
+        [min.x, min.y, max.z],
+        [min.x, max.y, min.z],
+        [min.x, max.y, max.z],
+        [max.x, min.y, min.z],
+        [max.x, min.y, max.z],
+        [max.x, max.y, min.z],
+        [max.x, max.y, max.z]
+    ]
+
+    return corners.map(simd_length).max() ?? 1
 }
 
 private func rewriteTextureCoordinatesForRuntimePlanet(on mesh: MDLMesh) {

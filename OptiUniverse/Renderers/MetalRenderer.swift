@@ -29,8 +29,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
-    private let sunRenderer: SunRenderer
-    private let coronaRenderer: CoronaRenderer
     private let metalView: MTKView
     private let depthStencilState: MTLDepthStencilState
 
@@ -95,8 +93,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         self.depthStencilState = depthStencilState
         planetsRenderer = PlanetsRenderer(device: device)
-        sunRenderer = SunRenderer(device: device)
-        coronaRenderer = CoronaRenderer(device: device, sunRadius: sunRenderer.radius)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -191,23 +187,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setCullMode(.none)
 
-        // Render the Sun first so depth testing handles planet occlusion.
-        sunRenderer.renderSun(with: renderEncoder,
-                              time: time,
-                              viewMatrix: viewMatrix,
-                              projectionMatrix: projectionMatrix,
-                              viewportSize: metalView.bounds.size)
-
-        if let sunWorld = sunRenderer.worldPosition {
-            coronaRenderer.render(with: renderEncoder,
-                                  time: time,
-                                  viewMatrix: viewMatrix,
-                                  projectionMatrix: projectionMatrix,
-                                  modelMatrix: sunRenderer.modelMatrix,
-                                  sunWorldPosition: sunWorld,
-                                  cameraPosition: cameraPosition)
-        }
-
         // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
                                       viewMatrix: viewMatrix,
@@ -221,19 +200,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             blit.generateMipmaps(for: hdrTexture)
             blit.endEncoding()
         }
-
-        // Collect QA metrics and submit first pass
-        QAHooks.tick(commandBuffer: geometryCommandBuffer, pass: "geometry", recordFrame: true)
+        
         geometryCommandBuffer.commit()
 
         // Update any label overlays with the latest planet positions
-        var positions = planetsRenderer.planetScreenPositions
-        if let sunPos = sunRenderer.screenPosition {
-            positions[sunRenderer.name] = sunPos
-        }
-        if let sunWorld = sunRenderer.worldPosition {
-            planetsRenderer.planetWorldPositions[sunRenderer.name] = sunWorld
-        }
+        let positions = planetsRenderer.planetScreenPositions
         labelDelegate?.updatePlanetLabels(positions)
 
         // Second pass: post-process to drawable using MSAA and resolve to the drawable
@@ -253,8 +224,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
             quadEncoder.endEncoding()
         }
-
-        QAHooks.tick(commandBuffer: postfxCommandBuffer, pass: "postfx")
 
         postfxCommandBuffer.present(drawable)
         postfxCommandBuffer.commit()
@@ -276,14 +245,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// distance based on the planet's radius.
     func followPlanet(named name: String) {
         followingPlanetName = name
-        if name == sunRenderer.name {
-            startCameraTarget = cameraTarget
-            endCameraTarget = sunRenderer.worldPosition ?? SIMD3<Float>(0, 0, 0)
-            startCameraDistance = cameraDistance
-            endCameraDistance = max(sunRenderer.radius * 5, 0.1)
-            cameraAnimationProgress = 0
-            return
-        }
 
         if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
             startCameraTarget = cameraTarget

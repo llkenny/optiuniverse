@@ -2,7 +2,7 @@
     {
         "name": "Sun",
         "meshName": "SunLow_Sun_0",
-        "diameterKm": 1392700,
+        "diameterKm": 1392000,
         "distanceFromSunKm": 0,
         "orbitSpeed": 0,
         "textureName": "sun_8k",
@@ -15,9 +15,9 @@
     {
         "name": "Mercury",
         "meshName": "MercuryLow_Mercury_0",
-        "diameterKm": 4879.4,
-        "distanceFromSunKm": 57910006,
-        "orbitSpeed": 47.9,
+        "diameterKm": 4879,
+        "distanceFromSunKm": 57909000,
+        "orbitSpeed": 47.36,
         "textureName": "mercury",
         "color": {
             "r": 0.75,
@@ -29,8 +29,8 @@
         "name": "Venus",
         "meshName": "VenusLow_venus_0",
         "diameterKm": 12104,
-        "distanceFromSunKm": 108199995,
-        "orbitSpeed": 35.0,
+        "distanceFromSunKm": 108210000,
+        "orbitSpeed": 35.02,
         "textureName": "venus",
         "color": {
             "r": 0.90,
@@ -42,8 +42,8 @@
         "name": "Earth",
         "meshName": "EarthLow_Earth_0",
         "diameterKm": 12756,
-        "distanceFromSunKm": 149599951,
-        "orbitSpeed": 29.8,
+        "distanceFromSunKm": 149598000,
+        "orbitSpeed": 29.78,
         "textureName": "earth",
         "color": {
             "r": 0.20,
@@ -55,8 +55,8 @@
         "name": "Mars",
         "meshName": "MarsLow_Mars_0",
         "diameterKm": 6792,
-        "distanceFromSunKm": 227939920,
-        "orbitSpeed": 24.1,
+        "distanceFromSunKm": 227956000,
+        "orbitSpeed": 24.07,
         "textureName": "mars",
         "color": {
             "r": 0.80,
@@ -67,9 +67,9 @@
     {
         "name": "Jupiter",
         "meshName": "JupiterLow_Jupiter_0",
-        "diameterKm": 139820,
-        "distanceFromSunKm": 778330257,
-        "orbitSpeed": 13.1,
+        "diameterKm": 142984,
+        "distanceFromSunKm": 778479000,
+        "orbitSpeed": 13.06,
         "textureName": "jupiter",
         "color": {
             "r": 0.80,
@@ -80,9 +80,9 @@
     {
         "name": "Saturn",
         "meshName": "SaturnLow_Saturn_0",
-        "diameterKm": 116460,
-        "distanceFromSunKm": 1429400028,
-        "orbitSpeed": 9.7,
+        "diameterKm": 120536,
+        "distanceFromSunKm": 1432041000,
+        "orbitSpeed": 9.68,
         "textureName": "saturn",
         "color": {
             "r": 0.90,
@@ -93,9 +93,9 @@
     {
         "name": "Uranus",
         "meshName": "UranusLow_Uranus_0",
-        "diameterKm": 50724,
-        "distanceFromSunKm": 2870989228,
-        "orbitSpeed": 6.8,
+        "diameterKm": 51118,
+        "distanceFromSunKm": 2867043000,
+        "orbitSpeed": 6.80,
         "textureName": "uranus",
         "color": {
             "r": 0.60,
@@ -106,9 +106,9 @@
     {
         "name": "Neptune",
         "meshName": "NeptuneLow_Neptune_0",
-        "diameterKm": 49244,
-        "distanceFromSunKm": 4504299579,
-        "orbitSpeed": 5.4,
+        "diameterKm": 49528,
+        "distanceFromSunKm": 4514953000,
+        "orbitSpeed": 5.43,
         "textureName": "neptune",
         "color": {
             "r": 0.40,

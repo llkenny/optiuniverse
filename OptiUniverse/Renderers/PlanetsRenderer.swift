@@ -40,7 +40,7 @@ final class PlanetsRenderer {
         pipelineState = makePipelineState(fragmentFunction: "fragment_main")
         samplerState = makeSamplerState()
         // Exclude the Sun; it's rendered separately by `SunRenderer`.
-        planets = SolarSystemLoader.loadPlanets(from: "planets").filter { $0.name != "Sun" }
+        planets = SolarSystemLoader.loadPlanets(from: "planets")
     }
     
     /// Returns the `Planet` instance for the given name if it exists.
@@ -198,7 +198,9 @@ final class PlanetsRenderer {
         
         // 2. Translate to the planet's orbital distance
         let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
-        let scaleMatrix = float4x4.makeScale(SIMD3<Float>(repeating: planet.radius))
+        let baseMeshRadius = meshes.first?.boundsRadius ?? 1
+        let normalizedScale = baseMeshRadius > 0 ? planet.radius / baseMeshRadius : planet.radius
+        let scaleMatrix = float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
 
         // 3. Combine transformations
         var modelMatrix = rotationMatrix
