@@ -47,6 +47,21 @@ final class PlanetsRenderer {
     func planet(named name: String) -> Planet? {
         planets.first { $0.name == name }
     }
+
+    /// Returns the world-space radius needed to frame the rendered planet,
+    /// including any extra meshes such as atmospheres.
+    func framingRadius(ofPlanetNamed name: String) -> Float? {
+        guard let planet = planet(named: name) else { return nil }
+        let meshes = loadedMeshes(for: planet)
+        guard let primaryMeshRadius = meshes.first?.boundsRadius,
+              primaryMeshRadius > 0 else {
+            return planet.radius
+        }
+
+        let normalizedScale = planet.radius / primaryMeshRadius
+        let maxMeshRadius = meshes.map(\.boundsRadius).max() ?? primaryMeshRadius
+        return maxMeshRadius * normalizedScale
+    }
     
     /// Current simulation time used for planet animations.
     var currentTime: Float { time }
@@ -155,6 +170,7 @@ final class PlanetsRenderer {
                        viewMatrix: float4x4,
                        projectionMatrix: float4x4,
                        cameraPosition: SIMD3<Float>,
+                       sceneOrigin: SIMD3<Float>,
                        viewportSize: CGSize,
                        delta: Float) {
         planetScreenPositions.removeAll()
@@ -169,6 +185,7 @@ final class PlanetsRenderer {
                          delta: delta,
                          viewMatrix: viewMatrix,
                          projectionMatrix: projectionMatrix,
+                         sceneOrigin: sceneOrigin,
                          viewportSize: viewportSize)
         }
     }
@@ -181,16 +198,9 @@ final class PlanetsRenderer {
                               delta: Float,
                               viewMatrix: float4x4,
                               projectionMatrix: float4x4,
+                              sceneOrigin: SIMD3<Float>,
                               viewportSize: CGSize) {
-        let meshes: [LoadedMesh]
-        if let cachedMeshes = planetMeshes[planet.name] {
-            meshes = cachedMeshes
-        } else {
-            let loadedMeshes = modelLoader.getMeshes(for: planet.name,
-                                                     primaryMeshName: planet.meshName)
-            meshes = loadedMeshes
-            planetMeshes[planet.name] = loadedMeshes
-        }
+        let meshes = loadedMeshes(for: planet)
         
         // 1. Calculate rotation for current orbit position
         let angle = time * planet.orbitSpeed
@@ -203,20 +213,23 @@ final class PlanetsRenderer {
         let scaleMatrix = float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
 
         // 3. Combine transformations
-        var modelMatrix = rotationMatrix
+        let worldModelMatrix = rotationMatrix
             * translationMatrix
             * Self.planetBodyRotation
             * scaleMatrix
+        let sceneOffsetMatrix = float4x4.makeTranslation(-sceneOrigin)
+        var modelMatrix = sceneOffsetMatrix * worldModelMatrix
         
         // 4. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
         // Compute screen position of the planet's center
-        let worldPosition4 = modelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        let worldPosition4 = worldModelMatrix * SIMD4<Float>(0, 0, 0, 1)
         planetWorldPositions[planet.name] = SIMD3<Float>(worldPosition4.x,
                                                          worldPosition4.y,
                                                          worldPosition4.z)
-        let clipPosition = projectionMatrix * viewMatrix * worldPosition4
+        let localPosition4 = sceneOffsetMatrix * worldPosition4
+        let clipPosition = projectionMatrix * viewMatrix * localPosition4
         // clip-space `w` is positive for objects in front of the camera in our
         // coordinate system. Ignore objects with non-positive `w` values to
         // skip planets behind the camera while also avoiding divide-by-zero.
@@ -247,6 +260,10 @@ final class PlanetsRenderer {
         renderEncoder.setVertexBytes(&modelMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 6)
+        var worldModelMatrixForShader = worldModelMatrix
+        renderEncoder.setVertexBytes(&worldModelMatrixForShader,
+                                     length: MemoryLayout<float4x4>.stride,
+                                     index: 7)
 
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentCameraPosition = cameraPosition
@@ -276,6 +293,17 @@ final class PlanetsRenderer {
                 )
             }
         }
+    }
+
+    private func loadedMeshes(for planet: Planet) -> [LoadedMesh] {
+        if let cachedMeshes = planetMeshes[planet.name] {
+            return cachedMeshes
+        }
+
+        let loadedMeshes = modelLoader.getMeshes(for: planet.name,
+                                                 primaryMeshName: planet.meshName)
+        planetMeshes[planet.name] = loadedMeshes
+        return loadedMeshes
     }
 }
 

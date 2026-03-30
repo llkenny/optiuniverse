@@ -22,6 +22,12 @@ struct PostFXParams {
 }
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
+    private enum CameraFit {
+        static let verticalFieldOfView: Float = .pi / 3
+        static let viewportFill: Float = 0.84
+        static let defaultNearPlane: Float = 0.1
+        static let minimumNearPlane: Float = 0.0005
+    }
     
     private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
     private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
@@ -159,7 +165,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
         let delta = planetsRenderer.advanceTime()
-        let time = planetsRenderer.currentTime
         if cameraAnimationProgress < 1 {
             updateCameraAnimation(delta: delta)
         } else if let name = followingPlanetName,
@@ -187,11 +192,20 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setCullMode(.none)
 
+        let renderOrigin = cameraTarget
+        let renderCameraPosition = cameraPosition - renderOrigin
+        let renderViewMatrix = float4x4.lookAt(
+            eye: renderCameraPosition,
+            target: .zero,
+            up: SIMD3<Float>(0, 1, 0)
+        )
+
         // Render the remaining planets.
         planetsRenderer.renderPlanets(with: renderEncoder,
-                                      viewMatrix: viewMatrix,
+                                      viewMatrix: renderViewMatrix,
                                       projectionMatrix: projectionMatrix,
                                       cameraPosition: cameraPosition,
+                                      sceneOrigin: renderOrigin,
                                       viewportSize: metalView.bounds.size,
                                       delta: delta)
         renderEncoder.endEncoding()
@@ -230,12 +244,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     private func updateProjectionMatrix() {
-        // TODO: If no zoom via fov - move to constant
-        let aspect = Float(metalView.bounds.width/metalView.bounds.height)
+        let aspect = Float(metalView.bounds.width / metalView.bounds.height)
         projectionMatrix = float4x4.perspective(
-            fov: .pi/3,
+            fov: CameraFit.verticalFieldOfView,
             aspect: aspect,
-            near: 0.1,
+            near: nearPlaneDistance(),
             far: 10000
         )
     }
@@ -250,9 +263,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             startCameraTarget = cameraTarget
             endCameraTarget = position
         }
-        if let planet = planetsRenderer.planet(named: name) {
+        if let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: name) {
             startCameraDistance = cameraDistance
-            endCameraDistance = max(planet.radius * 5, 0.1)
+            endCameraDistance = distanceToFitPlanet(radius: framingRadius)
         }
         cameraAnimationProgress = 0
     }
@@ -295,6 +308,31 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             up: SIMD3<Float>(0, 1, 0)
         )
         updateProjectionMatrix()
+    }
+
+    private func distanceToFitPlanet(radius: Float) -> Float {
+        guard radius > 0 else { return max(cameraDistance, CameraFit.defaultNearPlane) }
+
+        let width = max(Float(metalView.bounds.width), 1)
+        let height = max(Float(metalView.bounds.height), 1)
+        let aspect = width / height
+        let horizontalFieldOfView = 2 * atan(tan(CameraFit.verticalFieldOfView / 2) * aspect)
+        let limitingHalfFOV = min(CameraFit.verticalFieldOfView, horizontalFieldOfView) / 2
+        let targetHalfAngle = atan(CameraFit.viewportFill * tan(limitingHalfFOV))
+        let fittedDistance = radius / max(sin(targetHalfAngle), 0.001)
+
+        return max(fittedDistance, radius * 1.05)
+    }
+
+    private func nearPlaneDistance() -> Float {
+        guard let followingPlanetName,
+              let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: followingPlanetName) else {
+            return CameraFit.defaultNearPlane
+        }
+
+        let frontClearance = max(cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
+        return min(CameraFit.defaultNearPlane,
+                   max(CameraFit.minimumNearPlane, frontClearance * 0.5))
     }
 
     private static func buildPostFXPipeline(device: MTLDevice,

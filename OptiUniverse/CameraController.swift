@@ -20,7 +20,7 @@ final class CameraController: NSObject {
     init(renderer: MetalRenderer?,
          orbitSpeed: Float = 0.01,
          zoomSpeed: Float = 1.0,
-         minDistance: Float = 0.5,
+         minDistance: Float = 0.001,
          maxDistance: Float = 10000.0) {
         self.renderer = renderer
         self.orbitSpeed = orbitSpeed

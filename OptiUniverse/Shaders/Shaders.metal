@@ -46,11 +46,12 @@ struct VertexOut {
 vertex VertexOut vertex_main(
                              const VertexIn in [[stage_in]],
                              constant float4x4 &mvpMatrix [[buffer(5)]],
-                             constant float4x4 &modelMatrix [[buffer(6)]]
+                             constant float4x4 &modelMatrix [[buffer(6)]],
+                             constant float4x4 &worldMatrix [[buffer(7)]]
                              ) {
     VertexOut out;
     out.position = mvpMatrix * in.position;
-    out.worldPos = (modelMatrix * in.position).xyz;
+    out.worldPos = (worldMatrix * in.position).xyz;
     out.normal = normalize((modelMatrix * float4(in.normal, 0.0)).xyz);
     out.worldTangent = normalize((modelMatrix * float4(in.tangent.xyz, 0.0)).xyz);
     out.worldBitangent = normalize(cross(out.normal, out.worldTangent) * in.tangent.w);
