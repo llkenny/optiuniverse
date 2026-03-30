@@ -1,6 +1,0 @@
-{
-  "low":    { "coronaSteps": 8,  "particleCount": 500,  "coronaMode": "off" },
-  "medium": { "coronaSteps": 16, "particleCount": 1000, "coronaMode": "simple" },
-  "high":   { "coronaSteps": 24, "particleCount": 2000, "coronaMode": "detailed" },
-  "cinematic": { "coronaSteps": 32, "particleCount": 4000, "coronaMode": "detailed" }
-}
