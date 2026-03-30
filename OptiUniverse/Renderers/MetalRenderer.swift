@@ -270,6 +270,27 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         cameraAnimationProgress = 0
     }
 
+    /// Stops any active camera interpolation so direct gestures manipulate
+    /// distance/orbit immediately without being overridden on the next frame.
+    func beginManualCameraControl() {
+        cameraAnimationProgress = 1
+        startCameraTarget = nil
+        endCameraTarget = nil
+        startCameraDistance = nil
+        endCameraDistance = nil
+    }
+
+    func minimumAllowedCameraDistance(baseMinimum: Float) -> Float {
+        guard let followingPlanetName,
+              let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: followingPlanetName) else {
+            return baseMinimum
+        }
+
+        // Keep zoom outside the followed planet so pinch changes camera
+        // distance instead of effectively clipping through the geometry.
+        return max(baseMinimum, framingRadius * 1.05)
+    }
+
     private func updateCameraAnimation(delta: Float) {
         guard cameraAnimationProgress < 1,
               let startTarget = startCameraTarget,

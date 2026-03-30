@@ -71,6 +71,7 @@ final class CameraController: NSObject {
     // MARK: - Gesture handling
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let renderer = renderer else { return }
+        renderer.beginManualCameraControl()
         let translation = gesture.translation(in: gesture.view)
         renderer.cameraYaw -= Float(translation.x) * orbitSpeed
         renderer.cameraPitch -= Float(translation.y) * orbitSpeed
@@ -87,15 +88,24 @@ final class CameraController: NSObject {
 
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         guard let renderer = renderer else { return }
-        let change = Float(gesture.scale - 1) * zoomSpeed
-        var distance = renderer.cameraDistance - renderer.cameraDistance * change
-        distance = max(minDistance, min(distance, maxDistance))
-        renderer.cameraDistance = distance
+        renderer.beginManualCameraControl()
+
+        if gesture.state == .began {
+            zoomVelocity = 0
+        }
+
+        let gestureScale = max(Float(gesture.scale), 0.01)
+        let zoomFactor = pow(gestureScale, zoomSpeed)
+        let minimumDistance = renderer.minimumAllowedCameraDistance(baseMinimum: minDistance)
+        let distance = renderer.cameraDistance / zoomFactor
+        renderer.cameraDistance = max(minimumDistance, min(distance, maxDistance))
         gesture.scale = 1.0
         renderer.updateCamera()
 
         if gesture.state == .ended {
-            zoomVelocity = -Float(gesture.velocity) * zoomSpeed
+            zoomVelocity = -Float(gesture.velocity) * max(renderer.cameraDistance, minimumDistance) * 0.15
+        } else if gesture.state == .cancelled || gesture.state == .failed {
+            zoomVelocity = 0
         }
     }
 
