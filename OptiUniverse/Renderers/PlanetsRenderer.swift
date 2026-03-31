@@ -11,6 +11,8 @@ import simd
 
 final class PlanetsRenderer {
     private static let planetBodyRotation = matrix_identity_float4x4
+    private static let colorPixelFormat: MTLPixelFormat = .rgba16Float
+    private static let depthPixelFormat: MTLPixelFormat = .depth32Float
 
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
@@ -32,12 +34,13 @@ final class PlanetsRenderer {
     /// Keys are planet names, values are coordinates in the scene space.
     var planetWorldPositions: [String: SIMD3<Float>] = [:]
     
-    init(device: MTLDevice) {
+    init(device: MTLDevice, sampleCount: Int) {
         self.device = device
         self.modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
         // FIXME: No loading indicator, meshes can not be ready while be asking
         modelLoader.loadMeshes(device: device)
-        pipelineState = makePipelineState(fragmentFunction: "fragment_main")
+        pipelineState = makePipelineState(fragmentFunction: "fragment_main",
+                                          sampleCount: sampleCount)
         samplerState = makeSamplerState()
         // Exclude the Sun; it's rendered separately by `SunRenderer`.
         planets = SolarSystemLoader.loadPlanets(from: "planets")
@@ -70,13 +73,13 @@ final class PlanetsRenderer {
     ///
     /// - Parameter fragmentFunction: The name of the fragment shader function.
     /// - Returns: A configured `MTLRenderPipelineState`.
-    private func makePipelineState(fragmentFunction: String) -> MTLRenderPipelineState {
+    private func makePipelineState(fragmentFunction: String,
+                                   sampleCount: Int) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
         
         let descriptor = MTLRenderPipelineDescriptor()
-        // Multisampling is configured at the render pass / view level.
-        // Avoid setting descriptor.sampleCount here (deprecated on iOS 16+).
-        descriptor.colorAttachments[0].pixelFormat = .rgba16Float
+        descriptor.rasterSampleCount = sampleCount
+        descriptor.colorAttachments[0].pixelFormat = Self.colorPixelFormat
         descriptor.colorAttachments[0].isBlendingEnabled = true
         descriptor.colorAttachments[0].rgbBlendOperation = .add
         descriptor.colorAttachments[0].alphaBlendOperation = .add
@@ -84,7 +87,7 @@ final class PlanetsRenderer {
         descriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        descriptor.depthAttachmentPixelFormat = .depth32Float
+        descriptor.depthAttachmentPixelFormat = Self.depthPixelFormat
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
         descriptor.vertexDescriptor = Self.makeVertexDescriptor()

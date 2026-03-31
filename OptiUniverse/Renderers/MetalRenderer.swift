@@ -115,7 +115,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return nil
         }
         self.depthStencilState = depthStencilState
-        planetsRenderer = PlanetsRenderer(device: device)
+        let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
+        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -125,7 +126,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
-        metalView.sampleCount = 4
+        metalView.sampleCount = viewSampleCount
         if #available(iOS 13.0, *) {
             (metalView.layer as? CAMetalLayer)?.colorspace =
                 CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
