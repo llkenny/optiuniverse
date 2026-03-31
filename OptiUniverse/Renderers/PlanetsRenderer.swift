@@ -281,9 +281,16 @@ final class PlanetsRenderer {
 
             for (index, submesh) in mesh.submeshes.enumerated() {
                 let textures = loadedMesh.textures[safe: index]
+                var materialUniforms = textures?.materialUniforms ?? MaterialUniforms()
                 renderEncoder.setFragmentTexture(textures?.baseColor, index: 0)
                 renderEncoder.setFragmentTexture(textures?.normal, index: 1)
                 renderEncoder.setFragmentTexture(textures?.emissive, index: 2)
+                renderEncoder.setFragmentTexture(textures?.roughness, index: 3)
+                renderEncoder.setFragmentTexture(textures?.metallic, index: 4)
+                renderEncoder.setFragmentTexture(textures?.ambientOcclusion, index: 5)
+                renderEncoder.setFragmentBytes(&materialUniforms,
+                                               length: MemoryLayout<MaterialUniforms>.stride,
+                                               index: 1)
                 renderEncoder.drawIndexedPrimitives(
                     type: .triangle,
                     indexCount: submesh.indexCount,

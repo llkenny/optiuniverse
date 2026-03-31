@@ -43,6 +43,39 @@ struct VertexOut {
     float3 worldBitangent;
 };
 
+struct MaterialUniforms {
+    float roughnessFactor;
+    float metallicFactor;
+    float ambientOcclusionFactor;
+    float padding;
+};
+
+float distributionGGX(float3 normal, float3 halfVector, float roughness) {
+    float alpha = roughness * roughness;
+    float alphaSquared = alpha * alpha;
+    float nDotH = saturate(dot(normal, halfVector));
+    float nDotHSquared = nDotH * nDotH;
+    float denominator = nDotHSquared * (alphaSquared - 1.0) + 1.0;
+    return alphaSquared / max(3.14159265 * denominator * denominator, 1e-4);
+}
+
+float geometrySchlickGGX(float nDotV, float roughness) {
+    float k = pow(roughness + 1.0, 2.0) / 8.0;
+    return nDotV / max(nDotV * (1.0 - k) + k, 1e-4);
+}
+
+float geometrySmith(float3 normal, float3 viewDir, float3 lightDir, float roughness) {
+    float nDotV = saturate(dot(normal, viewDir));
+    float nDotL = saturate(dot(normal, lightDir));
+    float ggxView = geometrySchlickGGX(nDotV, roughness);
+    float ggxLight = geometrySchlickGGX(nDotL, roughness);
+    return ggxView * ggxLight;
+}
+
+float3 fresnelSchlick(float cosTheta, float3 f0) {
+    return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 vertex VertexOut vertex_main(
                              const VertexIn in [[stage_in]],
                              constant float4x4 &mvpMatrix [[buffer(5)]],
@@ -63,7 +96,11 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> planetTexture [[texture(0)]],
                               texture2d<float> normalTexture [[texture(1)]],
                               texture2d<float> emissiveTexture [[texture(2)]],
+                              texture2d<float> roughnessTexture [[texture(3)]],
+                              texture2d<float> metallicTexture [[texture(4)]],
+                              texture2d<float> ambientOcclusionTexture [[texture(5)]],
                               constant float3 &cameraPosition [[buffer(0)]],
+                              constant MaterialUniforms &materialUniforms [[buffer(1)]],
                               sampler textureSampler [[sampler(0)]]) {
     // USD textures arrive with top-left image origin, so flip V before sampling.
     float2 uv = float2(in.texCoord.x, 1.0 - in.texCoord.y);
@@ -83,19 +120,46 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     float3 lightDir = normalize(-in.worldPos);
     float3 viewDir = normalize(cameraPosition - in.worldPos);
     float3 halfVector = normalize(lightDir + viewDir);
-
     float nDotL = saturate(dot(normal, lightDir));
-    float nDotH = saturate(dot(normal, halfVector));
-    float ambient = 0.22;
-    float diffuse = ambient + nDotL * 0.78;
-    float specular = pow(nDotH, 32.0) * 0.12 * step(0.0, nDotL);
+    float nDotV = saturate(dot(normal, viewDir));
+
+    float roughness = clamp(materialUniforms.roughnessFactor, 0.04, 1.0);
+    if (roughnessTexture.get_width() > 0) {
+        roughness *= roughnessTexture.sample(textureSampler, uv).r;
+    }
+    roughness = clamp(roughness, 0.04, 1.0);
+
+    float metallic = clamp(materialUniforms.metallicFactor, 0.0, 1.0);
+    if (metallicTexture.get_width() > 0) {
+        metallic *= metallicTexture.sample(textureSampler, uv).r;
+    }
+    metallic = clamp(metallic, 0.0, 1.0);
+
+    float ambientOcclusion = clamp(materialUniforms.ambientOcclusionFactor, 0.0, 1.0);
+    if (ambientOcclusionTexture.get_width() > 0) {
+        ambientOcclusion *= ambientOcclusionTexture.sample(textureSampler, uv).r;
+    }
+    ambientOcclusion = clamp(ambientOcclusion, 0.0, 1.0);
+
+    float3 f0 = mix(float3(0.04), albedo, metallic);
+    float3 fresnel = fresnelSchlick(saturate(dot(halfVector, viewDir)), f0);
+    float distribution = distributionGGX(normal, halfVector, roughness);
+    float geometry = geometrySmith(normal, viewDir, lightDir, roughness);
+    float denominator = max(4.0 * nDotV * nDotL, 1e-4);
+    float3 specular = (distribution * geometry * fresnel) / denominator;
+
+    float3 kS = fresnel;
+    float3 kD = (1.0 - kS) * (1.0 - metallic);
+    float3 diffuse = kD * albedo / 3.14159265;
+    float3 directLight = (diffuse + specular) * nDotL * 2.0;
+    float3 ambient = albedo * 0.05 * ambientOcclusion;
 
     float3 emissive = float3(0.0);
     if (emissiveTexture.get_width() > 0) {
         emissive = emissiveTexture.sample(textureSampler, uv).rgb;
     }
 
-    float3 litColor = albedo * diffuse + specular + emissive;
+    float3 litColor = ambient + directLight + emissive;
     return float4(litColor, alpha);
 }
 
