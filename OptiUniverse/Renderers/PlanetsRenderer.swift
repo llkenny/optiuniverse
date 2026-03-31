@@ -10,7 +10,6 @@ import QuartzCore
 import simd
 
 final class PlanetsRenderer {
-    private static let planetBodyRotation = matrix_identity_float4x4
     private static let colorPixelFormat: MTLPixelFormat = .rgba16Float
     private static let depthPixelFormat: MTLPixelFormat = .depth32Float
 
@@ -156,10 +155,7 @@ final class PlanetsRenderer {
     /// name using the current internal time value.
     func modelMatrix(ofPlanetNamed name: String) -> float4x4? {
         guard let planet = planets.first(where: { $0.name == name }) else { return nil }
-        let angle = time * planet.orbitSpeed
-        let rotationMatrix = float4x4.makeRotationZ(angle)
-        let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
-        return rotationMatrix * translationMatrix
+        return modelMatrix(for: planet)
     }
     
     /// Returns the world-space position of the planet with the given name
@@ -205,30 +201,20 @@ final class PlanetsRenderer {
                               sceneOrigin: SIMD3<Float>,
                               viewportSize: CGSize) {
         let meshes = loadedMeshes(for: planet)
-        
-        // 1. Calculate rotation for current orbit position
-        let angle = time * planet.orbitSpeed
-        let rotationMatrix = float4x4.makeRotationZ(angle)
-        
-        // 2. Translate to the planet's orbital distance
-        let translationMatrix = float4x4.makeTranslation([planet.distance, 0, 0])
+
+        let baseModelMatrix = modelMatrix(for: planet)
         let baseMeshRadius = meshes.first?.boundsRadius ?? 1
         let normalizedScale = baseMeshRadius > 0 ? planet.radius / baseMeshRadius : planet.radius
         let scaleMatrix = float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
 
-        // 3. Combine transformations
-        let worldModelMatrix = rotationMatrix
-            * translationMatrix
-            * Self.planetBodyRotation
-            * scaleMatrix
+        let worldModelMatrix = baseModelMatrix * scaleMatrix
         let sceneOffsetMatrix = float4x4.makeTranslation(-sceneOrigin)
         var modelMatrix = sceneOffsetMatrix * worldModelMatrix
         
-        // 4. Create MVP matrix
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
         // Compute screen position of the planet's center
-        let worldPosition4 = worldModelMatrix * SIMD4<Float>(0, 0, 0, 1)
+        let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
         planetWorldPositions[planet.name] = SIMD3<Float>(worldPosition4.x,
                                                          worldPosition4.y,
                                                          worldPosition4.z)
@@ -312,6 +298,16 @@ final class PlanetsRenderer {
                                                  primaryMeshName: planet.meshName)
         planetMeshes[planet.name] = loadedMeshes
         return loadedMeshes
+    }
+
+    private func modelMatrix(for planet: Planet) -> float4x4 {
+        let orbitAngle = time * planet.orbitSpeed
+        let orbitRotation = float4x4.makeRotationZ(orbitAngle)
+        let orbitalTranslation = float4x4.makeTranslation([planet.distance, 0, 0])
+        let selfSpin = float4x4.makeRotationZ(time * planet.rotationSpeedKmSec)
+
+        // Transformations are applied right to left.
+        return orbitRotation * orbitalTranslation * selfSpin
     }
 }
 

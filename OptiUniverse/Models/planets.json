@@ -4,62 +4,71 @@
         "meshName": "SunLow_Sun_0",
         "diameterKm": 1392000,
         "distanceFromSunKm": 0,
-        "orbitSpeed": 0
+        "orbitSpeed": 0,
+        "rotationSpeedKmSec": 1.997
     },
     {
         "name": "Mercury",
         "meshName": "MercuryLow_Mercury_0",
         "diameterKm": 4879,
         "distanceFromSunKm": 57909000,
-        "orbitSpeed": 47.36
+        "orbitSpeed": 47.36,
+        "rotationSpeedKmSec": 0.003026
     },
     {
         "name": "Venus",
         "meshName": "VenusLow_venus_0",
         "diameterKm": 12104,
         "distanceFromSunKm": 108210000,
-        "orbitSpeed": 35.02
+        "orbitSpeed": 35.02,
+        "rotationSpeedKmSec": -0.001811
     },
     {
         "name": "Earth",
         "meshName": "EarthLow_Earth_0",
         "diameterKm": 12756,
         "distanceFromSunKm": 149598000,
-        "orbitSpeed": 29.78
+        "orbitSpeed": 29.78,
+        "rotationSpeedKmSec": 0.465101
     },
     {
         "name": "Mars",
         "meshName": "MarsLow_Mars_0",
         "diameterKm": 6792,
         "distanceFromSunKm": 227956000,
-        "orbitSpeed": 24.07
+        "orbitSpeed": 24.07,
+        "rotationSpeedKmSec": 0.240729
     },
     {
         "name": "Jupiter",
         "meshName": "JupiterLow_Jupiter_0",
         "diameterKm": 142984,
         "distanceFromSunKm": 778479000,
-        "orbitSpeed": 13.06
+        "orbitSpeed": 13.06,
+        "rotationSpeedKmSec": 12.572049
     },
     {
         "name": "Saturn",
         "meshName": "SaturnLow_Saturn_0",
         "diameterKm": 120536,
         "distanceFromSunKm": 1432041000,
-        "orbitSpeed": 9.68
+        "orbitSpeed": 9.68,
+        "rotationSpeedKmSec": 9.870977
     },
     {
         "name": "Uranus",
         "meshName": "UranusLow_Uranus_0",
         "diameterKm": 51118,
         "distanceFromSunKm": 2867043000,
-        "orbitSpeed": 6.80
+        "orbitSpeed": 6.80,
+        "rotationSpeedKmSec": -2.587533
     },
     {
         "name": "Neptune",
         "meshName": "NeptuneLow_Neptune_0",
         "diameterKm": 49528,
         "distanceFromSunKm": 4514953000,
-        "orbitSpeed": 5.43
+        "orbitSpeed": 5.43,
+        "rotationSpeedKmSec": 2.682888
     }
 ]

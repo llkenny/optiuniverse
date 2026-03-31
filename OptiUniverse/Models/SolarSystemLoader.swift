@@ -12,6 +12,7 @@ final class SolarSystemLoader {
         static let diameterFactor: Float = 1e-6
         static let distanceFactor: Float = 1e-6
         static let orbitSpeedMultiplier: Float = 1e-3
+        static let rotationSpeedKmSecMultiplier: Float = 1e-3
     }
     
     static func loadPlanetConfigs(from filename: String) -> [PlanetConfig] {
@@ -32,7 +33,8 @@ final class SolarSystemLoader {
                 meshName: config.meshName,
                 radius: (config.diameterKm / 2) * Constants.diameterFactor,
                 distance: Float(config.distanceFromSunKm) * Constants.distanceFactor,
-                orbitSpeed: config.orbitSpeed * Constants.orbitSpeedMultiplier
+                orbitSpeed: config.orbitSpeed * Constants.orbitSpeedMultiplier,
+                rotationSpeedKmSec: config.rotationSpeedKmSec * Constants.rotationSpeedKmSecMultiplier
             )
         }
     }
