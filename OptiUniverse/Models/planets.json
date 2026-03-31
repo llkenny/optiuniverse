@@ -5,7 +5,6 @@
         "diameterKm": 1392000,
         "distanceFromSunKm": 0,
         "orbitSpeed": 0,
-        "textureName": "sun_8k",
         "color": {
             "r": 1.00,
             "g": 0.98,
@@ -18,7 +17,6 @@
         "diameterKm": 4879,
         "distanceFromSunKm": 57909000,
         "orbitSpeed": 47.36,
-        "textureName": "mercury",
         "color": {
             "r": 0.75,
             "g": 0.75,
@@ -31,7 +29,6 @@
         "diameterKm": 12104,
         "distanceFromSunKm": 108210000,
         "orbitSpeed": 35.02,
-        "textureName": "venus",
         "color": {
             "r": 0.90,
             "g": 0.80,
@@ -44,7 +41,6 @@
         "diameterKm": 12756,
         "distanceFromSunKm": 149598000,
         "orbitSpeed": 29.78,
-        "textureName": "earth",
         "color": {
             "r": 0.20,
             "g": 0.50,
@@ -57,7 +53,6 @@
         "diameterKm": 6792,
         "distanceFromSunKm": 227956000,
         "orbitSpeed": 24.07,
-        "textureName": "mars",
         "color": {
             "r": 0.80,
             "g": 0.40,
@@ -70,7 +65,6 @@
         "diameterKm": 142984,
         "distanceFromSunKm": 778479000,
         "orbitSpeed": 13.06,
-        "textureName": "jupiter",
         "color": {
             "r": 0.80,
             "g": 0.70,
@@ -83,7 +77,6 @@
         "diameterKm": 120536,
         "distanceFromSunKm": 1432041000,
         "orbitSpeed": 9.68,
-        "textureName": "saturn",
         "color": {
             "r": 0.90,
             "g": 0.85,
@@ -96,7 +89,6 @@
         "diameterKm": 51118,
         "distanceFromSunKm": 2867043000,
         "orbitSpeed": 6.80,
-        "textureName": "uranus",
         "color": {
             "r": 0.60,
             "g": 0.80,
@@ -109,7 +101,6 @@
         "diameterKm": 49528,
         "distanceFromSunKm": 4514953000,
         "orbitSpeed": 5.43,
-        "textureName": "neptune",
         "color": {
             "r": 0.40,
             "g": 0.50,

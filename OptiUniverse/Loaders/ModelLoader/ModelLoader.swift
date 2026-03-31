@@ -19,7 +19,6 @@ actor ModelLoader {
     
     private let resourceName: String
     private let vertexDescriptor: MDLVertexDescriptor
-    private let bakedTextureNamesByMeshName: [String: String]
 
     var meshes: [String: LoadedMesh] = [:]
     // TODO: Add missing:
@@ -28,9 +27,6 @@ actor ModelLoader {
     init(resourceName: String) {
         self.resourceName = resourceName
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
-        self.bakedTextureNamesByMeshName = Dictionary(uniqueKeysWithValues: SolarSystemLoader
-            .loadPlanetConfigs(from: "planets")
-            .map { ($0.meshName, $0.textureName) })
     }
 
     func loadMeshes(device: MTLDevice) {

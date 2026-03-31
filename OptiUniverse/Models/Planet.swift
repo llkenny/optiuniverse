@@ -19,6 +19,4 @@ struct Planet {
     let color: SIMD3<Float>
     /// Optional axial tilt
     let tilt: Float = 0
-    // TODO: Remove?
-    let textureName: String
 }

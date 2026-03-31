@@ -250,9 +250,6 @@ final class PlanetsRenderer {
         //        let eccentricity: Float = 0.1 // 0 for circular
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
-        //         Retrieve cached mesh and texture
-        //        let texture = cachedTextures[planet.textureName]!
-        
         // Set buffers
         renderEncoder.setVertexBytes(&mvpMatrix,
                                      length: MemoryLayout<float4x4>.stride,
