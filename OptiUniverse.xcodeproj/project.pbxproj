@@ -17,6 +17,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		500657802F7B642000DA651B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		500657812F7B643C00DA651B /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		500657822F7B646400DA651B /* LINKS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LINKS.md; sourceTree = "<group>"; };
 		50209F692E6629400099E217 /* OptiUniverseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OptiUniverseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WhatToTest.en-GB.txt"; sourceTree = "<group>"; };
 		50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptiUniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -64,10 +67,13 @@
 		50BAAA2D2E30E2A800ECB7DE = {
 			isa = PBXGroup;
 			children = (
+				500657822F7B646400DA651B /* LINKS.md */,
+				500657802F7B642000DA651B /* README.md */,
 				506056262E5E587000536AA8 /* TestFlight */,
 				50BAAA382E30E2A800ECB7DE /* OptiUniverse */,
 				50209F6A2E6629400099E217 /* OptiUniverseTests */,
 				50BAAA372E30E2A800ECB7DE /* Products */,
+				500657812F7B643C00DA651B /* AGENTS.md */,
 			);
 			sourceTree = "<group>";
 		};
