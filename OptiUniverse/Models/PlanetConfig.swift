@@ -11,4 +11,5 @@ struct PlanetConfig: Decodable {
     let diameterKm: Float
     let distanceFromSunKm: Double
     let orbitSpeed: Float
+    let rotationSpeedKmSec: Float
 }

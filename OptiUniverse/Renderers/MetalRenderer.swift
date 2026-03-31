@@ -72,7 +72,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
-    private var followingPlanetName: String?
+    private var followingPlanetName: String? = "Sun"
 
     // Camera animation state
     private var startCameraTarget: SIMD3<Float>?

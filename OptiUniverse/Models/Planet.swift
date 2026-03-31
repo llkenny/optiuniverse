@@ -17,4 +17,5 @@ struct Planet {
     let orbitSpeed: Float
     /// Optional axial tilt
     let tilt: Float = 0
+    let rotationSpeedKmSec: Float
 }
