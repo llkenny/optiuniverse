@@ -134,7 +134,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         postfxPipelineState = MetalRenderer.buildPostFXPipeline(device: device,
                                                                 colorPixelFormat: metalView.colorPixelFormat,
-                                                                depthPixelFormat: .invalid)
+                                                                depthPixelFormat: .invalid,
+                                                                sampleCount: metalView.sampleCount)
 
         let textureLoader = MTKTextureLoader(device: device)
         if let url = Bundle.main.url(forResource: "lens_dirt_1024", withExtension: "png") {
@@ -401,13 +402,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private static func buildPostFXPipeline(device: MTLDevice,
                                             colorPixelFormat: MTLPixelFormat,
-                                            depthPixelFormat: MTLPixelFormat) -> MTLRenderPipelineState {
+                                            depthPixelFormat: MTLPixelFormat,
+                                            sampleCount: Int) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
         descriptor.fragmentFunction = library.makeFunction(name: "postfx_fragment")
         descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
-        descriptor.sampleCount = 4
+        descriptor.rasterSampleCount = sampleCount
         descriptor.depthAttachmentPixelFormat = depthPixelFormat
         return try! device.makeRenderPipelineState(descriptor: descriptor)
     }

@@ -74,6 +74,8 @@ final class PlanetsRenderer {
         let library = device.makeDefaultLibrary()!
         
         let descriptor = MTLRenderPipelineDescriptor()
+        // Multisampling is configured at the render pass / view level.
+        // Avoid setting descriptor.sampleCount here (deprecated on iOS 16+).
         descriptor.colorAttachments[0].pixelFormat = .rgba16Float
         descriptor.colorAttachments[0].isBlendingEnabled = true
         descriptor.colorAttachments[0].rgbBlendOperation = .add
@@ -82,7 +84,6 @@ final class PlanetsRenderer {
         descriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        descriptor.sampleCount = 4
         descriptor.depthAttachmentPixelFormat = .depth32Float
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
