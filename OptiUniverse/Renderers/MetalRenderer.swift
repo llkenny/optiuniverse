@@ -19,9 +19,19 @@ struct PostFXParams {
     var bloomThreshold: Float
     var bloomRadius: Float
     var lensDirtOpacity: Float
+    var style: UInt32
+    var dreamyIntensity: Float
+    var softFocusRadius: Float
+    var hazeStrength: Float
+    var saturationBoost: Float
 }
 
 final class MetalRenderer: NSObject, MTKViewDelegate {
+    enum PostFXStyle: UInt32 {
+        case standard = 0
+        case dreamy = 1
+    }
+
     private enum CameraFit {
         static let verticalFieldOfView: Float = .pi / 3
         static let viewportFill: Float = 0.84
@@ -46,7 +56,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var postfxMsaaTexture: MTLTexture?
     private var postfxPipelineState: MTLRenderPipelineState!
     private var lensDirtTexture: MTLTexture?
-    private var postFXParams = PostFXParams(bloomThreshold: 1.0, bloomRadius: 1.0, lensDirtOpacity: 0.0)
+    private var postFXParams = PostFXParams(bloomThreshold: 0.55,
+                                            bloomRadius: 1.35,
+                                            lensDirtOpacity: 0.2,
+                                            style: PostFXStyle.dreamy.rawValue,
+                                            dreamyIntensity: 0.5,
+                                            softFocusRadius: 1.9,
+                                            hazeStrength: 0.3,
+                                            saturationBoost: 1.08)
     
     // Orbital Camera
     // Camera state
@@ -124,6 +141,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             lensDirtTexture = try? textureLoader.newTexture(URL: url,
                                                             options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
         }
+
+        applyPostFXStyle(.dreamy)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -354,6 +373,30 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let frontClearance = max(cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
         return min(CameraFit.defaultNearPlane,
                    max(CameraFit.minimumNearPlane, frontClearance * 0.5))
+    }
+
+    func applyPostFXStyle(_ style: PostFXStyle) {
+        postFXParams.style = style.rawValue
+        
+        switch style {
+            case .standard:
+                postFXParams.bloomThreshold = 1.0
+                postFXParams.bloomRadius = 1.0
+                postFXParams.lensDirtOpacity = 0.0
+                postFXParams.dreamyIntensity = 0.0
+                postFXParams.softFocusRadius = 0.75
+                postFXParams.hazeStrength = 0.0
+                postFXParams.saturationBoost = 1.0
+                
+            case .dreamy:
+                postFXParams.bloomThreshold = 0.55
+                postFXParams.bloomRadius = 1.35
+                postFXParams.lensDirtOpacity = 0.2
+                postFXParams.dreamyIntensity = 0.5
+                postFXParams.softFocusRadius = 1.9
+                postFXParams.hazeStrength = 0.3
+                postFXParams.saturationBoost = 1.08
+        }
     }
 
     private static func buildPostFXPipeline(device: MTLDevice,
