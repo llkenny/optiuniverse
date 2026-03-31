@@ -32,8 +32,7 @@ final class SolarSystemLoader {
                 meshName: config.meshName,
                 radius: (config.diameterKm / 2) * Constants.diameterFactor,
                 distance: Float(config.distanceFromSunKm) * Constants.distanceFactor,
-                orbitSpeed: config.orbitSpeed * Constants.orbitSpeedMultiplier,
-                color: SIMD3<Float>(config.color.r, config.color.g, config.color.b)
+                orbitSpeed: config.orbitSpeed * Constants.orbitSpeedMultiplier
             )
         }
     }

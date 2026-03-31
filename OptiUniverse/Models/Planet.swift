@@ -15,8 +15,6 @@ struct Planet {
     let distance: Float
     /// Rotation speed multiplier/
     let orbitSpeed: Float
-    // TODO: Remove?
-    let color: SIMD3<Float>
     /// Optional axial tilt
     let tilt: Float = 0
 }
