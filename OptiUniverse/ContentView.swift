@@ -8,25 +8,22 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedPlanet: String?
     private let planetNames = SolarSystemLoader.loadPlanets(from: "planets").map { $0.name }
-
+    
     var body: some View {
         NavigationView {
-            UniverseView(selectedPlanet: $selectedPlanet)
-                .toolbar {
-                      ToolbarItemGroup(placement: .navigationBarTrailing) {
-                          Menu("Objects") {
-                              ForEach(planetNames, id: \.self) { name in
-                                  Button(name) { selectedPlanet = name }
-                              }
-                          }
-                      }
-                  }
-          }
-      }
-  }
+            VStack {
+                TopBarView(
+                    viewModel: TopBarViewModel(planetNames: planetNames)
+                )
+                .padding(.horizontal)
+                UniverseView()
+            }
+        }
+    }
+}
 
 #Preview {
     ContentView()
+        .environment(UniverseSelectionState())
 }

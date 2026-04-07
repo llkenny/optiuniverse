@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct OptiUniverseApp: App {
+    @State private var universeSelectionState = UniverseSelectionState()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(universeSelectionState)
         }
     }
 }
