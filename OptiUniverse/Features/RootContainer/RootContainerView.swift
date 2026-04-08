@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  RootContainerView.swift
 //  OptiUniverse
 //
 //  Created by max on 23.07.2025.
@@ -7,7 +7,9 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct RootContainerView: View {
+    
+    @Environment(AppEnvironment.self) private var appEnvironment
     private let planetNames = SolarSystemLoader.loadPlanets(from: "planets").map { $0.name }
     
     var body: some View {
@@ -17,13 +19,18 @@ struct ContentView: View {
                     viewModel: TopBarViewModel(planetNames: planetNames)
                 )
                 .padding(.horizontal)
-                UniverseView()
+                switch appEnvironment.currentScreen {
+                    case .home:
+                        HomeView()
+                    case .objects:
+                        UniverseView()
+                }
             }
         }
     }
 }
 
 #Preview {
-    ContentView()
-        .environment(UniverseSelectionState())
+    RootContainerView()
+        .environment(AppEnvironment())
 }

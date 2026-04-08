@@ -10,7 +10,7 @@ import MetalKit
 import UIKit
 
 struct UniverseView: UIViewRepresentable {
-    @Environment(UniverseSelectionState.self) private var universeSelectionState
+    @Environment(AppEnvironment.self) private var appEnvironment
 
     func makeCoordinator() -> RendererCoordinator {
         RendererCoordinator()
@@ -65,7 +65,7 @@ struct UniverseView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        let selectedPlanet = universeSelectionState.selectedPlanet
+        let selectedPlanet = appEnvironment.selectedPlanet
 
         if context.coordinator.currentSelectedPlanet != selectedPlanet {
             context.coordinator.currentSelectedPlanet = selectedPlanet
