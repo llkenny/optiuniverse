@@ -39,6 +39,7 @@ struct TopBarView: View {
                 
             Spacer()
             Image(.avatar)
+                .frame(height: 44)
         }
     }
 }

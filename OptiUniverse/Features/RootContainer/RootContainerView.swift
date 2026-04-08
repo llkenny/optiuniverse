@@ -13,18 +13,18 @@ struct RootContainerView: View {
     private let planetNames = SolarSystemLoader.loadPlanets(from: "planets").map { $0.name }
     
     var body: some View {
-        NavigationView {
-            VStack {
-                TopBarView(
-                    viewModel: TopBarViewModel(planetNames: planetNames)
-                )
-                .padding(.horizontal)
-                switch appEnvironment.currentScreen {
-                    case .home:
-                        HomeView()
-                    case .objects:
-                        UniverseView()
-                }
+        VStack(spacing: 0) {
+            TopBarView(
+                viewModel: TopBarViewModel(planetNames: planetNames)
+            )
+            .padding(.horizontal)
+            .padding(.bottom, 16)
+            
+            switch appEnvironment.currentScreen {
+                case .home:
+                    HomeView()
+                case .objects:
+                    UniverseView()
             }
         }
     }
