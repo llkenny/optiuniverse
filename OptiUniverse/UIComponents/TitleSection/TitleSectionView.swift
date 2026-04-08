@@ -11,7 +11,7 @@ struct TitleSectionView: View {
     @State var name: String
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Hi \(name),")
                 .font(.system(size: 18, weight: .light))
                 .foregroundStyle(Color(.midEmphasized))
