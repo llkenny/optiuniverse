@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TitleSectionView: View {
-    @State var name: String
+    let name: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {

@@ -18,8 +18,7 @@ struct RootContainerView: View {
                 viewModel: TopBarViewModel(planetNames: planetNames)
             )
             .padding(.horizontal)
-            
-            Spacer(minLength: 16)
+            .padding(.bottom, 16)
             
             switch appEnvironment.currentScreen {
                 case .home:
