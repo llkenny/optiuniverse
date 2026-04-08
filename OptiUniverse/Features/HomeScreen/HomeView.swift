@@ -11,11 +11,12 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack {
+                VStack(spacing: 16) {
                     TitleSectionView(name: "Stranger")
                         .padding(.horizontal)
+                    HeroCarouselView()
+                    
                     // TODO: Add views:
-                    //                ├── HeroCarouselView
                     //                ├── PageIndicator
                     //                ├── CategoryChipsView
                     //                └── DestinationListView

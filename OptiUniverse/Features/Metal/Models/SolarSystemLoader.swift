@@ -14,18 +14,9 @@ final class SolarSystemLoader {
         static let orbitSpeedMultiplier: Float = 1e-3
         static let rotationSpeedKmSecMultiplier: Float = 1e-3
     }
-    
-    static func loadPlanetConfigs(from filename: String) -> [PlanetConfig] {
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let configs = try? JSONDecoder().decode([PlanetConfig].self, from: data) else {
-            return []
-        }
-        return configs
-    }
 
     static func loadPlanets(from filename: String) -> [Planet] {
-        let configs = loadPlanetConfigs(from: filename)
+        let configs: [PlanetConfig] = Bundle.main.loadConfig(filename: filename)
         
         return configs.map { config in
             Planet(
