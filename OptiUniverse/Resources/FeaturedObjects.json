@@ -1,0 +1,59 @@
+[
+    {
+        "id": "0E40ED4E-A635-41D3-974B-32C1FD2225DB",
+        "name": "Saturn",
+        "description": "Ringed giant",
+        "imageName": "Saturn_3",
+        "accentColor":
+        [
+            {
+                "r": 0.97,
+                "g": 0.72,
+                "b": 0.42
+            },
+            {
+                "r": 0.34,
+                "g": 0.16,
+                "b": 0.08
+            }
+        ]
+    },
+    {
+        "id": "83855A92-302D-46E5-87BC-A0DBA6748EF7",
+        "name": "Neptune",
+        "description": "Deep blue frontier",
+        "imageName": "Neptune_1",
+        "accentColor":
+        [
+            {
+                "r": 0.28,
+                "g": 0.57,
+                "b": 0.98
+            },
+            {
+                "r": 0.04,
+                "g": 0.11,
+                "b": 0.36
+            }
+        ]
+    },
+    {
+        "id": "E2232F82-868D-4F95-9BC8-CEFE50999A0E",
+        "name": "Mars",
+        "description": "Dust storms and canyons",
+        "imageName": "Mars_1",
+        "accentColor":
+        [
+            {
+                "r": 0.93,
+                "g": 0.45,
+                "b": 0.28
+            },
+            {
+                "r": 0.29,
+                "g": 0.08,
+                "b": 0.06
+            }
+        ]
+    }
+]
