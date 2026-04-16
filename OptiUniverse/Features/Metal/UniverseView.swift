@@ -74,8 +74,13 @@ struct UniverseView: UIViewRepresentable {
             }
         }
     }
+    
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.cameraController?.stop()
+    }
 }
 
+// FIXME: Check methods — looks like they are not used
 class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
     private var labels: [String: UILabel] = [:]
