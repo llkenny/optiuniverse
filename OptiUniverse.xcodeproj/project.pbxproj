@@ -25,6 +25,16 @@
 		50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptiUniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		504C15B22F9064750080076B /* Exceptions for "OptiUniverse" folder in "OptiUniverse" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FIXME.md,
+			);
+			target = 50BAAA352E30E2A800ECB7DE /* OptiUniverse */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		50209F6A2E6629400099E217 /* OptiUniverseTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -33,6 +43,9 @@
 		};
 		50BAAA382E30E2A800ECB7DE /* OptiUniverse */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				504C15B22F9064750080076B /* Exceptions for "OptiUniverse" folder in "OptiUniverse" target */,
+			);
 			path = OptiUniverse;
 			sourceTree = "<group>";
 		};
