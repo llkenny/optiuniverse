@@ -10,7 +10,17 @@ import SwiftUI
 struct RootContainerView: View {
     
     @Environment(AppEnvironment.self) private var appEnvironment
-    private let planetNames = SolarSystemLoader.loadPlanets(from: "planets").map { $0.name }
+    @Bindable private var metalProvider: MetalProvider
+    
+    private let modelLoader: ModelLoader
+    private let planetNames = SolarSystemLoader
+        .loadPlanets(from: "planets")
+        .map { $0.name }
+    
+    init() {
+        modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
+        metalProvider = MetalProvider(modelLoader: modelLoader)
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -20,12 +30,19 @@ struct RootContainerView: View {
             .padding(.horizontal)
             .padding(.bottom, 16)
             
-            switch appEnvironment.currentScreen {
-                case .home:
+            switch (metalProvider.isReady, appEnvironment.currentScreen) {
+                case (false, _):
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                case (true, .home):
                     HomeView()
-                case .objects:
-                    UniverseView()
+                case (true, .objects):
+                    UniverseView(metalProvider: metalProvider)
             }
+        }
+        .task {
+            await metalProvider.prepare()
         }
     }
 }

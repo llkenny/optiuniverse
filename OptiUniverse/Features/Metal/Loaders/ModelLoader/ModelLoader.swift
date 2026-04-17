@@ -29,7 +29,7 @@ actor ModelLoader {
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
     }
 
-    func loadMeshes(device: MTLDevice) {
+    func loadMeshes(device: MTLDevice) async {
         let url = Bundle.main.url(forResource: resourceName, withExtension: "usdz")!
 
         let allocator = MTKMeshBufferAllocator(device: device)
@@ -41,19 +41,28 @@ actor ModelLoader {
         let mdlMeshes = asset
             .childObjects(of: MDLMesh.self)
             .compactMap { $0 as? MDLMesh }
+        
+        meshes = await makeLoadedMeshes(mdlMeshes: mdlMeshes, device: device)
+    }
+    
+    /// Creates a dictionary of meshes with loaded textures. MainActor because of texture is using CoreGraphics implicitly.
+    /// - Parameters:
+    ///   - mdlMeshes: Raw meshes
+    ///   - device: Device for load a texture
+    /// - Returns: Prepared meshes with textures
+    @MainActor
+    private func makeLoadedMeshes(mdlMeshes: [MDLMesh], device: MTLDevice) -> [String : LoadedMesh] {
         let loadedMeshes = mdlMeshes
             .map { mdlMesh in
                 let textures = (mdlMesh.submeshes as? [MDLSubmesh])?
                     .map {
-                        // TODO: Implement MainActor loading
                         Textures(material: $0.material, device: device)
                     } ?? []
                 return LoadedMesh(mesh: try! MTKMesh(mesh: mdlMesh, device: device),
                                   textures: textures,
                                   boundsRadius: boundingRadius(of: mdlMesh))
             }
-
-        meshes = Dictionary(uniqueKeysWithValues: loadedMeshes.map { ($0.mesh.name, $0) })
+        return Dictionary(uniqueKeysWithValues: loadedMeshes.map { ($0.mesh.name, $0) })
     }
 
     func getMesh(name: String) -> LoadedMesh? {
