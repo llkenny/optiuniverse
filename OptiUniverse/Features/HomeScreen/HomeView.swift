@@ -19,7 +19,7 @@ struct HomeView: View {
                     // TODO: Add views:
                     //                ├── PageIndicator
                     //                ├── CategoryChipsView
-                    //                └── DestinationListView
+                    DestinationListView()
                 }
             }
         }

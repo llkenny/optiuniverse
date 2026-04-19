@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DestinationCardView: View {
-    let model: DestinationObjectModel
+    let model: DestinationCardModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -39,42 +39,11 @@ struct DestinationCardView: View {
     }
 }
 
-#Preview("Single") {
+#Preview {
     DestinationCardView(model: .init(id: .init(),
                                      title: "Mars",
                                      subtitle: "Dusty Red Planet",
                                      imageResource: .marsPerseveranceZR008120739017260428EBYN0391170ZCAM036710340LMJ))
     .frame(width: 174)
     .clipped()
-}
-
-#Preview("Multiple") {
-    let models = [
-        DestinationObjectModel(id: .init(),
-                               title: "Mars mountains",
-                               subtitle: "Dusty Red Planet",
-                               imageResource: .marsPerseveranceZR008120739017260428EBYN0391170ZCAM036710340LMJ),
-        DestinationObjectModel(id: .init(),
-                               title: "Neptune Scooter",
-                               subtitle: "Windy Blue Planet",
-                               imageResource: .pia01142Orig),
-        DestinationObjectModel(id: .init(),
-                               title: "Lunar landscape",
-                               subtitle: "Nearest destination to Earth",
-                               imageResource: .s21280)
-    ]
-    
-    VStack {
-        Spacer(minLength: 500)
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack {
-                ForEach(models) { model in
-                    DestinationCardView(model: model)
-                }
-            }
-            .frame(height: 174)
-            .padding()
-        }
-        Spacer()
-    }
 }
