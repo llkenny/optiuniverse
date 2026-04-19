@@ -33,15 +33,13 @@ final class PlanetsRenderer {
     /// Keys are planet names, values are coordinates in the scene space.
     var planetWorldPositions: [String: SIMD3<Float>] = [:]
     
-    init(device: MTLDevice, sampleCount: Int) {
+    init(device: MTLDevice, sampleCount: Int, modelLoader: ModelLoader) {
         self.device = device
-        self.modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
-        // FIXME: No loading indicator, meshes can not be ready while be asking
-        modelLoader.loadMeshes(device: device)
+        self.modelLoader = modelLoader
+        
         pipelineState = makePipelineState(fragmentFunction: "fragment_main",
                                           sampleCount: sampleCount)
         samplerState = makeSamplerState()
-        // Exclude the Sun; it's rendered separately by `SunRenderer`.
         planets = SolarSystemLoader.loadPlanets(from: "planets")
     }
     

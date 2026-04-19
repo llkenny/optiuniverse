@@ -82,6 +82,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var cameraAnimationProgress: Float = 1
     private let cameraAnimationDuration: Float = 1.0
     
+    private let metalProvider: MetalProvider
+    
     private var viewMatrix: float4x4 {
         didSet {
             viewMatrixLogger.logMatricies(matrix1: oldValue,
@@ -99,15 +101,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
     }
     
-    init?(metalView: MTKView) {
-        guard let device = MTLCreateSystemDefaultDevice(),
-              let commandQueue = device.makeCommandQueue() else {
+    init?(metalView: MTKView, metalProvider: MetalProvider) {
+        guard let commandQueue = metalProvider.device.makeCommandQueue() else {
             return nil
         }
         
-        self.device = device
+        self.device = metalProvider.device
         self.commandQueue = commandQueue
         self.metalView = metalView
+        self.metalProvider = metalProvider
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
         depthStencilDescriptor.isDepthWriteEnabled = true
@@ -116,7 +118,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         self.depthStencilState = depthStencilState
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
-        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
+        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount, modelLoader: metalProvider.modelLoader)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4

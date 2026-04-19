@@ -11,6 +11,7 @@ import UIKit
 
 struct UniverseView: UIViewRepresentable {
     @Environment(AppEnvironment.self) private var appEnvironment
+    let metalProvider: MetalProvider
 
     func makeCoordinator() -> RendererCoordinator {
         RendererCoordinator()
@@ -35,7 +36,7 @@ struct UniverseView: UIViewRepresentable {
         ])
 
         // Initialize renderer and delegate
-        let renderer = MetalRenderer(metalView: mtkView)
+        let renderer = MetalRenderer(metalView: mtkView, metalProvider: metalProvider)
         context.coordinator.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
@@ -74,8 +75,13 @@ struct UniverseView: UIViewRepresentable {
             }
         }
     }
+    
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.cameraController?.stop()
+    }
 }
 
+// FIXME: Check methods — looks like they are not used
 class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
     private var labels: [String: UILabel] = [:]
