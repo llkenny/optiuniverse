@@ -15,18 +15,19 @@ struct PageIndicatorView: View {
     private let maxVisibleDots = 7
     private let indicatorAnimation: Animation = .easeOut
     
-    private var visibleRange: ClosedRange<Int> {
-        guard totalCount > maxVisibleDots else { return 0...(max(totalCount - 1, 0)) }
-        
+    private var visibleIndices: [Int] {
+        guard totalCount > 0 else { return [] }
+        guard totalCount > maxVisibleDots else { return Array(0..<totalCount) }
+
         let half = maxVisibleDots / 2
         let lower = max(0, min(currentIndex - half, totalCount - maxVisibleDots))
         let upper = lower + maxVisibleDots - 1
-        return lower...upper
+        return Array(lower...upper)
     }
     
     var body: some View {
         HStack(spacing: 9) {
-            ForEach(Array(visibleRange), id: \.self) { index in
+            ForEach(visibleIndices, id: \.self) { index in
                 ZStack {
                     Circle()
                         .fill(index == currentIndex ? .enable : .disable)

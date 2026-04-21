@@ -8,10 +8,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    
-    // TODO: Connect with cards from HeroCarouselView
     @State private var currentIndex: Int = 0
-    @State private var totalCount: Int = 3
+    @State private var totalCount: Int = 0
     
     var body: some View {
         ZStack {
@@ -20,9 +18,13 @@ struct HomeView: View {
                     TitleSectionView(name: "Stranger")
                         .padding(.horizontal)
                         .padding(.bottom, 16)
-                    HeroCarouselView()
+                    HeroCarouselView(
+                        currentIndex: $currentIndex,
+                        totalCount: $totalCount
+                    )
                         .padding(.bottom, 12)
-                    PageIndicatorView(totalCount: totalCount, currentIndex: $currentIndex)
+                    PageIndicatorView(totalCount: totalCount,
+                                      currentIndex: $currentIndex)
                         .padding(.bottom, 16)
                     // TODO: Add views:
                     //                ├── CategoryChipsView
