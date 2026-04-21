@@ -18,7 +18,6 @@ struct DestinationListView: View {
                 }
             }
             .frame(height: 174)
-            .padding()
         }
         .onAppear {
             viewModel.loadCards()
@@ -28,4 +27,5 @@ struct DestinationListView: View {
 
 #Preview {
     DestinationListView()
+        .padding(.horizontal)
 }
