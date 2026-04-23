@@ -72,6 +72,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
+    private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
     private var followingPlanetName: String? = "Sun"
 
     // Camera animation state
@@ -220,7 +221,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let renderViewMatrix = float4x4.lookAt(
             eye: renderCameraPosition,
             target: .zero,
-            up: SIMD3<Float>(0, 1, 0)
+            up: cameraUp
         )
 
         // Render the remaining planets.
@@ -337,6 +338,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     func updateCamera() {
+        normalizeCameraAngles()
+
         // 1. Calculate orbit position
         let x = cameraDistance * sin(cameraYaw) * cos(cameraPitch)
         let y = cameraDistance * sin(cameraPitch)
@@ -344,14 +347,21 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         
         let cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
         self.cameraPosition = cameraPosition
+        cameraUp = cos(cameraPitch) >= 0 ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, -1, 0)
         
         // 2. Update matrices
         viewMatrix = float4x4.lookAt(
             eye: cameraPosition,
             target: cameraTarget,
-            up: SIMD3<Float>(0, 1, 0)
+            up: cameraUp
         )
         updateProjectionMatrix()
+    }
+
+    private func normalizeCameraAngles() {
+        let fullTurn = Float.pi * 2
+        cameraYaw = cameraYaw.remainder(dividingBy: fullTurn)
+        cameraPitch = cameraPitch.remainder(dividingBy: fullTurn)
     }
 
     private func distanceToFitPlanet(radius: Float) -> Float {
