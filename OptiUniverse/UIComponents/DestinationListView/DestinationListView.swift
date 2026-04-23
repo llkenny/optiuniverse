@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct DestinationListView: View {
+    
+    @Environment(AppEnvironment.self) private var appEnvironment
+    
     @Binding var selectedTag: String?
     @State var viewModel: DestinationListViewModel = .init()
     
@@ -16,6 +19,10 @@ struct DestinationListView: View {
             LazyHStack {
                 ForEach(viewModel.cards(filteredBy: selectedTag)) { model in
                     DestinationCardView(model: model)
+                        .onTapGesture {
+                            appEnvironment.selectedPlanet = model.object
+                            appEnvironment.currentScreen = .objects
+                        }
                 }
             }
             .frame(height: 174)
