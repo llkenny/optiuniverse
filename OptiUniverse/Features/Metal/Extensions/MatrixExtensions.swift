@@ -56,13 +56,23 @@ extension float4x4 {
     static func lookAt(eye: SIMD3<Float>,
                        target: SIMD3<Float>,
                        up: SIMD3<Float>) -> float4x4 {
+        let epsilon: Float = 0.000001
         
         // 1. Calculate forward vector (z-axis)
-//        let z = normalize(eye - target)  // Points backward (toward camera)
-        let z = normalize(target - eye) // Working, deepseek was wrong?
+        let forward = target - eye
+        guard length_squared(forward) > epsilon else {
+            return matrix_identity_float4x4
+        }
+        let z = normalize(forward)
         
         // 2. Calculate right vector (x-axis)
-        let x = normalize(cross(up, z)) // Perpendicular to up and z
+        var resolvedUp = length_squared(up) > epsilon ? normalize(up) : SIMD3<Float>(0, 1, 0)
+        var right = cross(resolvedUp, z)
+        if length_squared(right) <= epsilon {
+            resolvedUp = abs(z.y) < 0.999 ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, 0, 1)
+            right = cross(resolvedUp, z)
+        }
+        let x = normalize(right) // Perpendicular to up and z
         
         // 3. Recalculate true up vector (y-axis)
         let y = cross(z, x)             // Guaranteed perpendicular

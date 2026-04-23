@@ -50,7 +50,6 @@ final class CameraController: NSObject {
         if yawVelocity != 0 || pitchVelocity != 0 || zoomVelocity != 0 {
             renderer.cameraYaw += yawVelocity * delta
             renderer.cameraPitch += pitchVelocity * delta
-            renderer.cameraPitch = max(0.1, min(renderer.cameraPitch, .pi/2 - 0.01))
             renderer.cameraDistance = max(minDistance,
                                           min(renderer.cameraDistance + zoomVelocity * delta,
                                               maxDistance))
@@ -75,7 +74,6 @@ final class CameraController: NSObject {
         let translation = gesture.translation(in: gesture.view)
         renderer.cameraYaw -= Float(translation.x) * orbitSpeed
         renderer.cameraPitch -= Float(translation.y) * orbitSpeed
-        renderer.cameraPitch = max(0.1, min(renderer.cameraPitch, .pi/2 - 0.01))
         gesture.setTranslation(.zero, in: gesture.view)
         renderer.updateCamera()
 
