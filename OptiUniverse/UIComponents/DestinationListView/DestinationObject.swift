@@ -9,6 +9,7 @@ import Foundation
 
 struct DestinationObject: Decodable {
     let id: UUID
+    let object: String
     let title: String
     let subtitle: String
     let imageName: String

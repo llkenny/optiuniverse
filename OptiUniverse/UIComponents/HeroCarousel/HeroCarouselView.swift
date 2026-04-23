@@ -13,7 +13,9 @@ struct HeroCarouselView: View {
         static let cardSpacing: CGFloat = 16
         static let horizontalInset: CGFloat = 64
     }
-
+    
+    @Environment(AppEnvironment.self) private var appEnvironment
+    
     @Binding var currentIndex: Int
     @Binding var totalCount: Int
     @State private var viewModel: HeroCarouselViewModel = .init()
@@ -45,6 +47,10 @@ struct HeroCarouselView: View {
                                 )
                         }
                         .id(card.id)
+                        .onTapGesture {
+                            appEnvironment.selectedPlanet = card.title
+                            appEnvironment.currentScreen = .objects
+                        }
                 }
             }
             .scrollTargetLayout()

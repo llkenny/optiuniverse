@@ -20,6 +20,7 @@ final class DestinationListViewModel {
         allCards = destinationObjects.map {
             DestinationCardModel(
                 id: $0.id,
+                object: $0.object,
                 title: $0.title,
                 subtitle: $0.subtitle,
                 imageResource: ImageResource(name: $0.imageName, bundle: .main),

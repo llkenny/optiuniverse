@@ -10,6 +10,7 @@ import Foundation
 
 struct DestinationCardModel: Identifiable {
     let id: UUID
+    let object: String
     let title: String
     let subtitle: String
     let imageResource: ImageResource
