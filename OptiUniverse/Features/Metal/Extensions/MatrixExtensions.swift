@@ -57,18 +57,19 @@ extension float4x4 {
                        target: SIMD3<Float>,
                        up: SIMD3<Float>) -> float4x4 {
         let epsilon: Float = 0.000001
+        let epsilonSquared = epsilon * epsilon
         
         // 1. Calculate forward vector (z-axis)
         let forward = target - eye
-        guard length_squared(forward) > epsilon else {
+        guard length_squared(forward) > epsilonSquared else {
             return matrix_identity_float4x4
         }
         let z = normalize(forward)
         
         // 2. Calculate right vector (x-axis)
-        var resolvedUp = length_squared(up) > epsilon ? normalize(up) : SIMD3<Float>(0, 1, 0)
+        var resolvedUp = length_squared(up) > epsilonSquared ? normalize(up) : SIMD3<Float>(0, 1, 0)
         var right = cross(resolvedUp, z)
-        if length_squared(right) <= epsilon {
+        if length_squared(right) <= epsilonSquared {
             resolvedUp = abs(z.y) < 0.999 ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, 0, 1)
             right = cross(resolvedUp, z)
         }
