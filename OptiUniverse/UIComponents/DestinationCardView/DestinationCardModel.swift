@@ -13,4 +13,5 @@ struct DestinationCardModel: Identifiable {
     let title: String
     let subtitle: String
     let imageResource: ImageResource
+    let tag: String
 }

@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var currentIndex: Int = 0
+    private let chipsViewModel = CategoryChipsViewModel()
+
+    @State private var currentCarouselIndex: Int = 0
     @State private var totalCount: Int = 0
+    @State private var currentChipsIndex: Int? = nil
+    @State private var selectedTag: String? = nil
     
     var body: some View {
         ZStack {
@@ -19,16 +23,17 @@ struct HomeView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 16)
                     HeroCarouselView(
-                        currentIndex: $currentIndex,
+                        currentIndex: $currentCarouselIndex,
                         totalCount: $totalCount
                     )
                         .padding(.bottom, 12)
                     PageIndicatorView(totalCount: totalCount,
-                                      currentIndex: $currentIndex)
+                                      currentIndex: $currentCarouselIndex)
                         .padding(.bottom, 16)
-                    // TODO: Add views:
-                    //                ├── CategoryChipsView
-                    DestinationListView()
+                    CategoryChipsView(selectedTag: $selectedTag)
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                    DestinationListView(selectedTag: $selectedTag)
                         .padding(.horizontal)
                 }
             }

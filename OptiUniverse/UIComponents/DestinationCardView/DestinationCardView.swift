@@ -43,7 +43,8 @@ struct DestinationCardView: View {
     DestinationCardView(model: .init(id: .init(),
                                      title: "Mars",
                                      subtitle: "Dusty Red Planet",
-                                     imageResource: .marsPerseveranceZR008120739017260428EBYN0391170ZCAM036710340LMJ))
+                                     imageResource: .marsPerseveranceZR008120739017260428EBYN0391170ZCAM036710340LMJ,
+                                     tag: "nil"))
     .frame(width: 174)
     .clipped()
 }

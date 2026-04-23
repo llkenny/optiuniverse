@@ -12,4 +12,5 @@ struct DestinationObject: Decodable {
     let title: String
     let subtitle: String
     let imageName: String
+    let tag: String
 }
