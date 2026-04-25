@@ -8,7 +8,7 @@
 import simd
 
 extension float4x4 {
-    static func makeTranslation(_ t: SIMD3<Float>) -> float4x4 {
+    nonisolated static func makeTranslation(_ t: SIMD3<Float>) -> float4x4 {
         .init(
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -17,7 +17,7 @@ extension float4x4 {
         )
     }
     
-    static func makeRotationX(_ angle: Float) -> float4x4 {
+    nonisolated static func makeRotationX(_ angle: Float) -> float4x4 {
         .init(
             [1, 0, 0, 0],
             [0, cos(angle), -sin(angle), 0],
@@ -26,7 +26,7 @@ extension float4x4 {
         )
     }
     
-    static func makeRotationY(_ angle: Float) -> float4x4 {
+    nonisolated static func makeRotationY(_ angle: Float) -> float4x4 {
         .init(
             [cos(angle), 0, -sin(angle), 0],
             [0, 1, 0, 0],
@@ -35,7 +35,7 @@ extension float4x4 {
         )
     }
     
-    static func makeRotationZ(_ angle: Float) -> float4x4 {
+    nonisolated static func makeRotationZ(_ angle: Float) -> float4x4 {
         .init(
             [cos(angle), sin(angle), 0, 0],
             [-sin(angle), cos(angle), 0, 0],
@@ -44,7 +44,7 @@ extension float4x4 {
         )
     }
     
-    static func makeScale(_ s: SIMD3<Float>) -> float4x4 {
+    nonisolated static func makeScale(_ s: SIMD3<Float>) -> float4x4 {
         float4x4(
             [s.x, 0,   0,   0],
             [0,   s.y, 0,   0],
@@ -53,9 +53,9 @@ extension float4x4 {
         )
     }
     
-    static func lookAt(eye: SIMD3<Float>,
-                       target: SIMD3<Float>,
-                       up: SIMD3<Float>) -> float4x4 {
+    nonisolated static func lookAt(eye: SIMD3<Float>,
+                                   target: SIMD3<Float>,
+                                   up: SIMD3<Float>) -> float4x4 {
         let epsilon: Float = 0.000001
         let epsilonSquared = epsilon * epsilon
         
@@ -97,7 +97,7 @@ extension float4x4 {
         return rotation * translation
     }
     
-    static func perspective(fov: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
+    nonisolated static func perspective(fov: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
         let y = 1 / tan(fov * 0.5)
         let x = y / aspect
         let z = far / (far - near)

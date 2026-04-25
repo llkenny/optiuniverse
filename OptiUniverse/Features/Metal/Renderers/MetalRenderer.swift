@@ -45,6 +45,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
+    private let renderPreparationPipeline: RenderPreparationPipeline
     private let metalView: MTKView
     private let depthStencilState: MTLDepthStencilState
 
@@ -74,6 +75,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
     private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
     private var followingPlanetName: String? = "Sun"
+    private var pendingFollowPlanetName: String?
 
     // Camera animation state
     private var startCameraTarget: SIMD3<Float>?
@@ -119,7 +121,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         self.depthStencilState = depthStencilState
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
-        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount, modelLoader: metalProvider.modelLoader)
+        let planets = SolarSystemLoader.loadPlanets(from: "planets")
+        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
+        renderPreparationPipeline = RenderPreparationPipeline(modelLoader: metalProvider.modelLoader,
+                                                              planets: planets)
         
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -189,10 +194,19 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
         let delta = planetsRenderer.advanceTime()
+        renderPreparationPipeline.requestPreparation(simulationTime: planetsRenderer.currentTime)
+        let snapshot = renderPreparationPipeline.latestSnapshot
+
+        if let name = pendingFollowPlanetName,
+           let snapshot,
+           startFollowAnimation(named: name, snapshot: snapshot) {
+            pendingFollowPlanetName = nil
+        }
+
         if cameraAnimationProgress < 1 {
             updateCameraAnimation(delta: delta)
         } else if let name = followingPlanetName,
-                  let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
+                  let position = snapshot?.worldPosition(ofPlanetNamed: name) {
             cameraTarget = position
             updateCamera()
         }
@@ -225,13 +239,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         )
 
         // Render the remaining planets.
-        planetsRenderer.renderPlanets(with: renderEncoder,
+        planetsRenderer.renderPlanets(snapshot: snapshot,
+                                      with: renderEncoder,
                                       viewMatrix: renderViewMatrix,
                                       projectionMatrix: projectionMatrix,
                                       cameraPosition: cameraPosition,
                                       sceneOrigin: renderOrigin,
-                                      viewportSize: metalView.bounds.size,
-                                      delta: delta)
+                                      viewportSize: metalView.bounds.size)
         renderEncoder.endEncoding()
 
         if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
@@ -283,20 +297,20 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func followPlanet(named name: String) {
         followingPlanetName = name
 
-        if let position = planetsRenderer.worldPosition(ofPlanetNamed: name) {
-            startCameraTarget = cameraTarget
-            endCameraTarget = position
+        guard let snapshot = renderPreparationPipeline.latestSnapshot,
+              startFollowAnimation(named: name, snapshot: snapshot) else {
+            pendingFollowPlanetName = name
+            cameraAnimationProgress = 1
+            return
         }
-        if let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: name) {
-            startCameraDistance = cameraDistance
-            endCameraDistance = distanceToFitPlanet(radius: framingRadius)
-        }
-        cameraAnimationProgress = 0
+
+        pendingFollowPlanetName = nil
     }
 
     /// Stops any active camera interpolation so direct gestures manipulate
     /// distance/orbit immediately without being overridden on the next frame.
     func beginManualCameraControl() {
+        pendingFollowPlanetName = nil
         cameraAnimationProgress = 1
         startCameraTarget = nil
         endCameraTarget = nil
@@ -306,13 +320,37 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func minimumAllowedCameraDistance(baseMinimum: Float) -> Float {
         guard let followingPlanetName,
-              let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: followingPlanetName) else {
+              let framingRadius = renderPreparationPipeline
+            .latestSnapshot?
+            .framingRadius(ofPlanetNamed: followingPlanetName) else {
             return baseMinimum
         }
 
         // Keep zoom outside the followed planet so pinch changes camera
         // distance instead of effectively clipping through the geometry.
         return max(baseMinimum, framingRadius * 1.05)
+    }
+
+    private func startFollowAnimation(named name: String,
+                                      snapshot: PreparedRenderSnapshot) -> Bool {
+        var hasPreparedFollowData = false
+
+        if let position = snapshot.worldPosition(ofPlanetNamed: name) {
+            startCameraTarget = cameraTarget
+            endCameraTarget = position
+            hasPreparedFollowData = true
+        }
+
+        if let framingRadius = snapshot.framingRadius(ofPlanetNamed: name) {
+            startCameraDistance = cameraDistance
+            endCameraDistance = distanceToFitPlanet(radius: framingRadius)
+            hasPreparedFollowData = true
+        }
+
+        guard hasPreparedFollowData else { return false }
+
+        cameraAnimationProgress = 0
+        return true
     }
 
     private func updateCameraAnimation(delta: Float) {
@@ -380,7 +418,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private func nearPlaneDistance() -> Float {
         guard let followingPlanetName,
-              let framingRadius = planetsRenderer.framingRadius(ofPlanetNamed: followingPlanetName) else {
+              let framingRadius = renderPreparationPipeline
+            .latestSnapshot?
+            .framingRadius(ofPlanetNamed: followingPlanetName) else {
             return CameraFit.defaultNearPlane
         }
 
