@@ -7,7 +7,7 @@
 
 import MetalKit
 
-struct Planet {
+struct Planet: Sendable {
     let name: String
     let meshName: String
     let radius: Float

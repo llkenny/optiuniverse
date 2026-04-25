@@ -9,7 +9,7 @@
 import ModelIO
 import MetalKit
 
-struct LoadedMesh {
+struct LoadedMesh: @unchecked Sendable {
     let mesh: MTKMesh
     let textures: [Textures]
     let boundsRadius: Float

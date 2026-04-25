@@ -1,13 +1,13 @@
 import MetalKit
 
-struct MaterialUniforms {
+struct MaterialUniforms: Sendable {
     var roughnessFactor: Float = 1
     var metallicFactor: Float = 0
     var ambientOcclusionFactor: Float = 1
     var padding: Float = 0
 }
 
-struct Textures {
+struct Textures: @unchecked Sendable {
     var baseColor: MTLTexture?
     var normal: MTLTexture?
     var roughness: MTLTexture?
