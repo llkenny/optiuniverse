@@ -50,6 +50,11 @@ struct MaterialUniforms {
     float padding;
 };
 
+struct FragmentUniforms {
+    float3 cameraPosition;
+    float3 lightPosition;
+};
+
 float distributionGGX(float3 normal, float3 halfVector, float roughness) {
     float alpha = roughness * roughness;
     float alphaSquared = alpha * alpha;
@@ -99,7 +104,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> roughnessTexture [[texture(3)]],
                               texture2d<float> metallicTexture [[texture(4)]],
                               texture2d<float> ambientOcclusionTexture [[texture(5)]],
-                              constant float3 &cameraPosition [[buffer(0)]],
+                              constant FragmentUniforms &fragmentUniforms [[buffer(0)]],
                               constant MaterialUniforms &materialUniforms [[buffer(1)]],
                               sampler textureSampler [[sampler(0)]]) {
     // USD textures arrive with top-left image origin, so flip V before sampling.
@@ -117,8 +122,8 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
         normal = normalize(tbn * normalSample);
     }
 
-    float3 lightDir = normalize(-in.worldPos);
-    float3 viewDir = normalize(cameraPosition - in.worldPos);
+    float3 lightDir = normalize(fragmentUniforms.lightPosition - in.worldPos);
+    float3 viewDir = normalize(fragmentUniforms.cameraPosition - in.worldPos);
     float3 halfVector = normalize(lightDir + viewDir);
     float nDotL = saturate(dot(normal, lightDir));
     float nDotV = saturate(dot(normal, viewDir));
