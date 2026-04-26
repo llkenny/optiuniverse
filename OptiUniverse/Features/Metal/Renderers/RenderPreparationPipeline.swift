@@ -32,6 +32,7 @@ struct PreparedPlanetRenderPacket: Sendable {
     let baseModelMatrix: float4x4
     let worldModelMatrix: float4x4
     let normalizedScale: Float
+    let primaryMeshRadius: Float
     let framingRadius: Float
     let worldPosition: SIMD3<Float>
 }
@@ -97,6 +98,7 @@ final class RenderPreparationPipeline {
                     baseModelMatrix: baseModelMatrix,
                     worldModelMatrix: worldModelMatrix,
                     normalizedScale: normalizedScale,
+                    primaryMeshRadius: primaryMeshRadius,
                     framingRadius: framingRadius,
                     worldPosition: SIMD3<Float>(worldPosition4.x,
                                                 worldPosition4.y,

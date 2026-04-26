@@ -1,9 +1,17 @@
 import MetalKit
+import simd
 
 struct MaterialUniforms: Sendable {
+    var baseColorFactor: SIMD3<Float> = SIMD3<Float>(repeating: 1)
+    var opacityFactor: Float = 1
     var roughnessFactor: Float = 1
     var metallicFactor: Float = 0
     var ambientOcclusionFactor: Float = 1
+    var usesBaseColorAlpha: Float = 0
+    var usesOpacityTexture: Float = 0
+    var rimAlphaStrength: Float = 0
+    var unlit: Float = 0
+    var whiteAlbedo: Float = 0
     var padding: Float = 0
 }
 
@@ -14,6 +22,7 @@ struct Textures: @unchecked Sendable {
     var metallic: MTLTexture?
     var ambientOcclusion: MTLTexture?
     var emissive: MTLTexture?
+    var opacity: MTLTexture?
     var materialUniforms = MaterialUniforms()
 }
 
@@ -66,6 +75,57 @@ extension Textures {
             return defaultValue
         }
 
+        func colorFactor(for semantic: MDLMaterialSemantic,
+                         default defaultValue: SIMD3<Float>) -> SIMD3<Float> {
+            guard let property = properties(with: semantic)
+                .first(where: { $0.textureSamplerValue?.texture == nil }) else {
+                return defaultValue
+            }
+
+            let value4 = property.float4Value
+            let candidate = SIMD3<Float>(value4.x, value4.y, value4.z)
+            if !candidate.x.isZero || !candidate.y.isZero || !candidate.z.isZero {
+                return candidate
+            }
+
+            let value3 = property.float3Value
+            let fallbackCandidate = SIMD3<Float>(value3.x, value3.y, value3.z)
+            if !fallbackCandidate.x.isZero || !fallbackCandidate.y.isZero || !fallbackCandidate.z.isZero {
+                return fallbackCandidate
+            }
+
+            return defaultValue
+        }
+
+        func baseColorFactor() -> SIMD3<Float> {
+            guard textureProperty(with: .baseColor) == nil else {
+                return SIMD3<Float>(repeating: 1)
+            }
+
+            return colorFactor(for: .baseColor,
+                               default: SIMD3<Float>(repeating: 1))
+        }
+
+        func opacityTexture() -> MTLTexture? {
+            guard let property = textureProperty(with: .opacity) else {
+                return nil
+            }
+
+            let opacitySource = property.textureSamplerValue?.texture
+            let baseColorSource = textureProperty(with: .baseColor)?
+                .textureSamplerValue?
+                .texture
+            if let opacitySource,
+               let baseColorSource,
+               opacitySource === baseColorSource {
+                return nil
+            }
+
+            return texture(from: opacitySource, semantic: .opacity)
+        }
+
+        let hasOpacityProperty = !properties(with: .opacity).isEmpty
+
         func texturePropertyValue(with semantic: MDLMaterialSemantic) -> MTLTexture? {
             guard let property = textureProperty(with: semantic) else {
                 return nil
@@ -81,10 +141,19 @@ extension Textures {
         metallic = texturePropertyValue(with: .metallic)
         ambientOcclusion = texturePropertyValue(with: .ambientOcclusion)
         emissive = texturePropertyValue(with: .emission)
+        opacity = opacityTexture()
+        let hasSeparateOpacityTexture = opacity != nil
         materialUniforms = MaterialUniforms(
+            baseColorFactor: baseColorFactor(),
+            opacityFactor: scalarFactor(for: .opacity, default: 1),
             roughnessFactor: scalarFactor(for: .roughness, default: 1),
             metallicFactor: scalarFactor(for: .metallic, default: 0),
             ambientOcclusionFactor: scalarFactor(for: .ambientOcclusion, default: 1),
+            usesBaseColorAlpha: hasOpacityProperty ? 1 : 0,
+            usesOpacityTexture: hasSeparateOpacityTexture ? 1 : 0,
+            rimAlphaStrength: 0,
+            unlit: 0,
+            whiteAlbedo: 0,
             padding: 0
         )
     }

@@ -44,9 +44,16 @@ struct VertexOut {
 };
 
 struct MaterialUniforms {
+    float3 baseColorFactor;
+    float opacityFactor;
     float roughnessFactor;
     float metallicFactor;
     float ambientOcclusionFactor;
+    float usesBaseColorAlpha;
+    float usesOpacityTexture;
+    float rimAlphaStrength;
+    float unlit;
+    float whiteAlbedo;
     float padding;
 };
 
@@ -104,14 +111,30 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> roughnessTexture [[texture(3)]],
                               texture2d<float> metallicTexture [[texture(4)]],
                               texture2d<float> ambientOcclusionTexture [[texture(5)]],
+                              texture2d<float> opacityTexture [[texture(6)]],
                               constant FragmentUniforms &fragmentUniforms [[buffer(0)]],
                               constant MaterialUniforms &materialUniforms [[buffer(1)]],
                               sampler textureSampler [[sampler(0)]]) {
     // USD textures arrive with top-left image origin, so flip V before sampling.
     float2 uv = float2(in.texCoord.x, 1.0 - in.texCoord.y);
-    float4 color = planetTexture.sample(textureSampler, uv);
-    float3 albedo = color.rgb;
-    float alpha = color.a;
+    float3 albedo = materialUniforms.baseColorFactor;
+    float alpha = materialUniforms.opacityFactor;
+    float4 colorSample = float4(1.0);
+    if (planetTexture.get_width() > 0) {
+        colorSample = planetTexture.sample(textureSampler, uv);
+        albedo *= colorSample.rgb;
+        if (materialUniforms.usesBaseColorAlpha > 0.5) {
+            alpha *= colorSample.a;
+        }
+    }
+    if (materialUniforms.usesOpacityTexture > 0.5) {
+        alpha *= opacityTexture.sample(textureSampler, uv).r;
+    }
+    if (materialUniforms.whiteAlbedo > 0.5) {
+        float cloudCoverage = max(max(colorSample.r, colorSample.g), colorSample.b);
+        alpha *= smoothstep(0.08, 0.72, cloudCoverage);
+        albedo = float3(1.0);
+    }
 
     float3 normal = normalize(in.normal);
     if (normalTexture.get_width() > 0) {
@@ -121,12 +144,26 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                                 normal);
         normal = normalize(tbn * normalSample);
     }
+    float3 lightingNormal = normal;
+    if (materialUniforms.whiteAlbedo > 0.5) {
+        lightingNormal = -lightingNormal;
+    }
 
     float3 lightDir = normalize(fragmentUniforms.lightPosition - in.worldPos);
     float3 viewDir = normalize(fragmentUniforms.cameraPosition - in.worldPos);
+    if (materialUniforms.rimAlphaStrength > 0.0) {
+        float rim = 1.0 - saturate(abs(dot(lightingNormal, viewDir)));
+        alpha *= pow(rim, materialUniforms.rimAlphaStrength);
+    }
+
     float3 halfVector = normalize(lightDir + viewDir);
-    float nDotL = saturate(dot(normal, lightDir));
-    float nDotV = saturate(dot(normal, viewDir));
+    float nDotL = saturate(dot(lightingNormal, lightDir));
+    float nDotV = saturate(dot(lightingNormal, viewDir));
+    float cloudLight = 1.0;
+    if (materialUniforms.whiteAlbedo > 0.5) {
+        cloudLight = smoothstep(0.03, 0.35, nDotL);
+        alpha *= cloudLight;
+    }
 
     float roughness = clamp(materialUniforms.roughnessFactor, 0.04, 1.0);
     if (roughnessTexture.get_width() > 0) {
@@ -165,6 +202,12 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     }
 
     float3 litColor = ambient + directLight + emissive;
+    if (materialUniforms.unlit > 0.5) {
+        litColor = albedo + emissive;
+    }
+    if (materialUniforms.whiteAlbedo > 0.5) {
+        litColor = albedo * (0.05 + cloudLight * 1.35);
+    }
     return float4(litColor, alpha);
 }
 

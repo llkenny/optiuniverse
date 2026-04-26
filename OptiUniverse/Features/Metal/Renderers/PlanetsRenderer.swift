@@ -160,10 +160,6 @@ final class PlanetsRenderer {
                               projectionMatrix: float4x4,
                               sceneOrigin: SIMD3<Float>,
                               viewportSize: CGSize) {
-        var modelMatrix = localModelMatrix(for: planet, sceneOrigin: sceneOrigin)
-        
-        var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-        
         // Compute screen position of the planet's center
         planetWorldPositions[planet.planetName] = planet.worldPosition
         let localPosition4 = SIMD4<Float>(planet.worldPosition - sceneOrigin, 1)
@@ -189,17 +185,6 @@ final class PlanetsRenderer {
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
         // Set buffers
-        renderEncoder.setVertexBytes(&mvpMatrix,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 5)
-        renderEncoder.setVertexBytes(&modelMatrix,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 6)
-        var worldModelMatrixForShader = modelMatrix
-        renderEncoder.setVertexBytes(&worldModelMatrixForShader,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 7)
-
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
             cameraPosition: cameraPosition,
@@ -211,6 +196,21 @@ final class PlanetsRenderer {
 
         for loadedMesh in planet.meshes {
             let mesh = loadedMesh.mesh
+            var modelMatrix = localModelMatrix(for: planet,
+                                               loadedMesh: loadedMesh,
+                                               sceneOrigin: sceneOrigin)
+            var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+            renderEncoder.setVertexBytes(&mvpMatrix,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 5)
+            renderEncoder.setVertexBytes(&modelMatrix,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 6)
+            var worldModelMatrixForShader = modelMatrix
+            renderEncoder.setVertexBytes(&worldModelMatrixForShader,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 7)
+
             for (bufferIndex, vertexBuffer) in mesh.vertexBuffers.enumerated() {
                 renderEncoder.setVertexBuffer(vertexBuffer.buffer,
                                               offset: vertexBuffer.offset,
@@ -220,12 +220,25 @@ final class PlanetsRenderer {
             for (index, submesh) in mesh.submeshes.enumerated() {
                 let textures = loadedMesh.textures[safe: index]
                 var materialUniforms = textures?.materialUniforms ?? MaterialUniforms()
+                if planet.planetName == "Sun" {
+                    materialUniforms.unlit = 1
+                }
+                if mesh.name.localizedCaseInsensitiveContains("SunCorona") {
+                    materialUniforms.rimAlphaStrength = 2.5
+                }
+                if mesh.name.localizedCaseInsensitiveContains("Nuvem") ||
+                    mesh.name.localizedCaseInsensitiveContains("Cloud") {
+                    materialUniforms.whiteAlbedo = 1
+                    materialUniforms.opacityFactor *= 0.58
+                    materialUniforms.ambientOcclusionFactor = 1
+                }
                 renderEncoder.setFragmentTexture(textures?.baseColor, index: 0)
                 renderEncoder.setFragmentTexture(textures?.normal, index: 1)
                 renderEncoder.setFragmentTexture(textures?.emissive, index: 2)
                 renderEncoder.setFragmentTexture(textures?.roughness, index: 3)
                 renderEncoder.setFragmentTexture(textures?.metallic, index: 4)
                 renderEncoder.setFragmentTexture(textures?.ambientOcclusion, index: 5)
+                renderEncoder.setFragmentTexture(textures?.opacity, index: 6)
                 renderEncoder.setFragmentBytes(&materialUniforms,
                                                length: MemoryLayout<MaterialUniforms>.stride,
                                                index: 1)
@@ -241,14 +254,30 @@ final class PlanetsRenderer {
     }
 
     private func localModelMatrix(for planet: PreparedPlanetRenderPacket,
+                                  loadedMesh: LoadedMesh,
                                   sceneOrigin: SIMD3<Float>) -> float4x4 {
-        var matrix = planet.worldModelMatrix
+        var meshScale = planet.normalizedScale
+        if loadedMesh.boundsRadius > 0,
+           loadedMesh.boundsRadius < planet.primaryMeshRadius * 0.8,
+           isTransparentCompanionMesh(loadedMesh) {
+            meshScale = (planet.primaryMeshRadius * planet.normalizedScale * 1.02) / loadedMesh.boundsRadius
+        }
+
+        var matrix = planet.baseModelMatrix
+            * float4x4.makeScale(SIMD3<Float>(repeating: meshScale))
         var translation = matrix.columns.3
         translation.x = planet.worldPosition.x - sceneOrigin.x
         translation.y = planet.worldPosition.y - sceneOrigin.y
         translation.z = planet.worldPosition.z - sceneOrigin.z
         matrix.columns.3 = translation
         return matrix
+    }
+
+    private func isTransparentCompanionMesh(_ loadedMesh: LoadedMesh) -> Bool {
+        loadedMesh.textures.contains {
+            $0.materialUniforms.usesBaseColorAlpha > 0.5 ||
+            $0.materialUniforms.usesOpacityTexture > 0.5
+        }
     }
 }
 
