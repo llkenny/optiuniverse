@@ -36,6 +36,7 @@ struct VertexIn {
 
 struct VertexOut {
     float4 position [[position]];
+    float3 localPosition;
     float2 texCoord;
     float3 normal;
     float3 worldPos;
@@ -54,7 +55,7 @@ struct MaterialUniforms {
     float rimAlphaStrength;
     float unlit;
     float whiteAlbedo;
-    float padding;
+    float alphaGeometryRadius;
 };
 
 struct FragmentUniforms {
@@ -96,6 +97,7 @@ vertex VertexOut vertex_main(
                              ) {
     VertexOut out;
     out.position = mvpMatrix * in.position;
+    out.localPosition = in.position.xyz;
     out.worldPos = (worldMatrix * in.position).xyz;
     out.normal = normalize((modelMatrix * float4(in.normal, 0.0)).xyz);
     out.worldTangent = normalize((modelMatrix * float4(in.tangent.xyz, 0.0)).xyz);
@@ -123,6 +125,14 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     if (planetTexture.get_width() > 0) {
         colorSample = planetTexture.sample(textureSampler, uv);
         albedo *= colorSample.rgb;
+        if (materialUniforms.alphaGeometryRadius < -0.5 &&
+            length(in.localPosition) > -materialUniforms.alphaGeometryRadius) {
+            discard_fragment();
+        }
+        if (materialUniforms.alphaGeometryRadius > 0.5 &&
+            length(in.localPosition) <= materialUniforms.alphaGeometryRadius) {
+            discard_fragment();
+        }
         if (materialUniforms.usesBaseColorAlpha > 0.5) {
             alpha *= colorSample.a;
         }

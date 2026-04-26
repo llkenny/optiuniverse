@@ -1,3 +1,5 @@
+import Foundation
+import CoreGraphics
 import MetalKit
 import simd
 
@@ -12,7 +14,7 @@ struct MaterialUniforms: Sendable {
     var rimAlphaStrength: Float = 0
     var unlit: Float = 0
     var whiteAlbedo: Float = 0
-    var padding: Float = 0
+    var alphaGeometryRadius: Float = 0
 }
 
 struct Textures: @unchecked Sendable {
@@ -61,6 +63,10 @@ extension Textures {
             properties(with: semantic).first { $0.textureSamplerValue?.texture != nil }
         }
 
+        func scalarProperty(with semantic: MDLMaterialSemantic) -> MDLMaterialProperty? {
+            properties(with: semantic).first { $0.textureSamplerValue?.texture == nil }
+        }
+
         func scalarFactor(for semantic: MDLMaterialSemantic,
                           default defaultValue: Float) -> Float {
             let semanticProperties = properties(with: semantic)
@@ -77,33 +83,55 @@ extension Textures {
 
         func colorFactor(for semantic: MDLMaterialSemantic,
                          default defaultValue: SIMD3<Float>) -> SIMD3<Float> {
-            guard let property = properties(with: semantic)
-                .first(where: { $0.textureSamplerValue?.texture == nil }) else {
+            guard let property = scalarProperty(with: semantic) else {
                 return defaultValue
             }
 
-            let value4 = property.float4Value
-            let candidate = SIMD3<Float>(value4.x, value4.y, value4.z)
-            if !candidate.x.isZero || !candidate.y.isZero || !candidate.z.isZero {
-                return candidate
-            }
+            return colorFactor(from: property, default: defaultValue)
+        }
 
-            let value3 = property.float3Value
-            let fallbackCandidate = SIMD3<Float>(value3.x, value3.y, value3.z)
-            if !fallbackCandidate.x.isZero || !fallbackCandidate.y.isZero || !fallbackCandidate.z.isZero {
-                return fallbackCandidate
+        func colorFactor(from property: MDLMaterialProperty,
+                         default defaultValue: SIMD3<Float>) -> SIMD3<Float> {
+            switch property.type {
+            case .float:
+                return SIMD3<Float>(repeating: property.floatValue)
+            case .float3:
+                let value = property.float3Value
+                return SIMD3<Float>(value.x, value.y, value.z)
+            case .float4, .color:
+                let value = property.float4Value
+                return SIMD3<Float>(value.x, value.y, value.z)
+            default:
+                return defaultValue
             }
-
-            return defaultValue
         }
 
         func baseColorFactor() -> SIMD3<Float> {
-            guard textureProperty(with: .baseColor) == nil else {
+            guard let property = scalarProperty(with: .baseColor) else {
                 return SIMD3<Float>(repeating: 1)
             }
 
-            return colorFactor(for: .baseColor,
+            if textureProperty(with: .baseColor) != nil,
+               isModelIODefaultBaseColorFactor(property) {
+                return SIMD3<Float>(repeating: 1)
+            }
+
+            return colorFactor(from: property,
                                default: SIMD3<Float>(repeating: 1))
+        }
+
+        func isModelIODefaultBaseColorFactor(_ property: MDLMaterialProperty) -> Bool {
+            guard property.name == "baseColor",
+                  property.type == .float3 else {
+                return false
+            }
+
+            let value = property.float3Value
+            let defaultValue: Float = 0.18
+            let epsilon: Float = 0.0001
+            return abs(value.x - defaultValue) < epsilon &&
+                abs(value.y - defaultValue) < epsilon &&
+                abs(value.z - defaultValue) < epsilon
         }
 
         func opacityTexture() -> MTLTexture? {
@@ -117,14 +145,138 @@ extension Textures {
                 .texture
             if let opacitySource,
                let baseColorSource,
-               opacitySource === baseColorSource {
+               texturesShareSource(opacitySource, baseColorSource) {
                 return nil
             }
 
             return texture(from: opacitySource, semantic: .opacity)
         }
 
-        let hasOpacityProperty = !properties(with: .opacity).isEmpty
+        func usesBaseColorAlpha(hasSeparateOpacityTexture: Bool) -> Bool {
+            if hasSeparateOpacityTexture {
+                return false
+            }
+
+            guard
+                let property = textureProperty(with: .baseColor),
+                let baseColorSource = property.textureSamplerValue?.texture
+            else {
+                return false
+            }
+
+            if let opacitySource = textureProperty(with: .opacity)?
+                .textureSamplerValue?
+                .texture,
+               texturesShareSource(opacitySource, baseColorSource) {
+                return textureHasVisibleAlpha(baseColorSource)
+            }
+
+            return textureHasVisibleAlpha(baseColorSource)
+        }
+
+        func texturesShareSource(_ lhs: MDLTexture, _ rhs: MDLTexture) -> Bool {
+            if lhs === rhs {
+                return true
+            }
+
+            let lhsIdentifier = textureURLIdentifier(lhs)
+            let rhsIdentifier = textureURLIdentifier(rhs)
+            if let lhsIdentifier, let rhsIdentifier {
+                guard lhsIdentifier == rhsIdentifier else {
+                    return false
+                }
+                return true
+            }
+
+            return texturesHaveMatchingProbe(lhs, rhs)
+        }
+
+        func textureURLIdentifier(_ texture: MDLTexture) -> String? {
+            if let urlTexture = texture as? MDLURLTexture {
+                let url = urlTexture.url
+                if url.isFileURL {
+                    return "url:\(url.standardizedFileURL.path)"
+                }
+                return "url:\(url.absoluteString)"
+            }
+
+            return nil
+        }
+
+        func texturesHaveMatchingProbe(_ lhs: MDLTexture, _ rhs: MDLTexture) -> Bool {
+            guard lhs.dimensions.x == rhs.dimensions.x,
+                  lhs.dimensions.y == rhs.dimensions.y,
+                  lhs.channelCount == rhs.channelCount,
+                  lhs.channelEncoding == rhs.channelEncoding,
+                  let lhsProbe = normalizedRGBAProbe(for: lhs, maxDimension: 32),
+                  let rhsProbe = normalizedRGBAProbe(for: rhs, maxDimension: 32) else {
+                return false
+            }
+
+            return lhsProbe == rhsProbe
+        }
+
+        func textureHasVisibleAlpha(_ mdlTexture: MDLTexture) -> Bool {
+            guard mdlTexture.hasAlphaValues,
+                  let pixels = normalizedRGBAProbe(for: mdlTexture, maxDimension: 128) else {
+                return false
+            }
+
+            var nonOpaqueCount = 0
+            let pixelCount = pixels.count / 4
+            var alphaIndex = 3
+            while alphaIndex < pixels.count {
+                if pixels[alphaIndex] < 255 {
+                    nonOpaqueCount += 1
+                }
+                alphaIndex += 4
+            }
+
+            let alphaCoverage = Float(nonOpaqueCount) / Float(pixelCount)
+            return alphaCoverage >= 0.02
+        }
+
+        func normalizedRGBAProbe(for mdlTexture: MDLTexture,
+                                 maxDimension: Int) -> [UInt8]? {
+            guard mdlTexture.channelCount >= 4,
+                  let unmanagedImage = mdlTexture.imageFromTexture() else {
+                return nil
+            }
+
+            // `imageFromTexture` is not annotated/created as a retained Core
+            // Foundation result, so taking retained ownership over-releases it.
+            let image = unmanagedImage.takeUnretainedValue()
+            let width = image.width
+            let height = image.height
+            guard width > 0, height > 0 else {
+                return nil
+            }
+
+            let scale = min(1, Double(maxDimension) / Double(max(width, height)))
+            let probeWidth = max(1, Int((Double(width) * scale).rounded(.up)))
+            let probeHeight = max(1, Int((Double(height) * scale).rounded(.up)))
+            let bytesPerPixel = 4
+            let bytesPerRow = probeWidth * bytesPerPixel
+            var pixels = [UInt8](repeating: 0, count: probeHeight * bytesPerRow)
+            let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue |
+                CGBitmapInfo.byteOrder32Big.rawValue
+            guard let context = CGContext(data: &pixels,
+                                          width: probeWidth,
+                                          height: probeHeight,
+                                          bitsPerComponent: 8,
+                                          bytesPerRow: bytesPerRow,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: bitmapInfo) else {
+                return nil
+            }
+
+            context.draw(image, in: CGRect(x: 0,
+                                           y: 0,
+                                           width: probeWidth,
+                                           height: probeHeight))
+
+            return pixels
+        }
 
         func texturePropertyValue(with semantic: MDLMaterialSemantic) -> MTLTexture? {
             guard let property = textureProperty(with: semantic) else {
@@ -143,18 +295,19 @@ extension Textures {
         emissive = texturePropertyValue(with: .emission)
         opacity = opacityTexture()
         let hasSeparateOpacityTexture = opacity != nil
+        let shouldUseBaseColorAlpha = usesBaseColorAlpha(hasSeparateOpacityTexture: hasSeparateOpacityTexture)
         materialUniforms = MaterialUniforms(
             baseColorFactor: baseColorFactor(),
             opacityFactor: scalarFactor(for: .opacity, default: 1),
             roughnessFactor: scalarFactor(for: .roughness, default: 1),
             metallicFactor: scalarFactor(for: .metallic, default: 0),
             ambientOcclusionFactor: scalarFactor(for: .ambientOcclusion, default: 1),
-            usesBaseColorAlpha: hasOpacityProperty ? 1 : 0,
+            usesBaseColorAlpha: shouldUseBaseColorAlpha ? 1 : 0,
             usesOpacityTexture: hasSeparateOpacityTexture ? 1 : 0,
             rimAlphaStrength: 0,
             unlit: 0,
             whiteAlbedo: 0,
-            padding: 0
+            alphaGeometryRadius: 0
         )
     }
 }
