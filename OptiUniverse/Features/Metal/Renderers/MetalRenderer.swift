@@ -38,7 +38,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         static let defaultNearPlane: Float = 0.1
         static let minimumNearPlane: Float = 0.0005
     }
-    
+
     private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
     private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
     
@@ -69,11 +69,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     // Orbital Camera
     // Camera state
     var cameraDistance: Float = 3
-    var cameraYaw: Float = 0.0      // Horizontal rotation (radians)
-    var cameraPitch: Float = 0 // .pi/4  // Vertical tilt (45° default)
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
     private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
+    private var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
     private var followingPlanetName: String? = "Sun"
     private var pendingFollowPlanetName: String?
 
@@ -376,16 +375,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     func updateCamera() {
-        normalizeCameraAngles()
+        cameraOrientation = simd_normalize(cameraOrientation)
 
-        // 1. Calculate orbit position
-        let x = cameraDistance * sin(cameraYaw) * cos(cameraPitch)
-        let y = cameraDistance * sin(cameraPitch)
-        let z = cameraDistance * cos(cameraYaw) * cos(cameraPitch)
-        
-        let cameraPosition = SIMD3<Float>(x, y, z) + cameraTarget
+        let cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, cameraDistance))
+        let cameraPosition = cameraOffset + cameraTarget
         self.cameraPosition = cameraPosition
-        cameraUp = cos(cameraPitch) >= 0 ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, -1, 0)
+        cameraUp = cameraOrientation.act(SIMD3<Float>(0, 1, 0))
         
         // 2. Update matrices
         viewMatrix = float4x4.lookAt(
@@ -396,10 +391,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         updateProjectionMatrix()
     }
 
-    private func normalizeCameraAngles() {
-        let fullTurn = Float.pi * 2
-        cameraYaw = cameraYaw.remainder(dividingBy: fullTurn)
-        cameraPitch = cameraPitch.remainder(dividingBy: fullTurn)
+    func orbitCamera(horizontal horizontalAngle: Float, vertical verticalAngle: Float) {
+        cameraOrientation = simd_normalize(cameraOrientation)
+
+        let right = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
+        let up = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
+        let horizontalRotation = simd_quatf(angle: horizontalAngle, axis: up)
+        let verticalRotation = simd_quatf(angle: verticalAngle, axis: right)
+
+        cameraOrientation = simd_normalize(verticalRotation * horizontalRotation * cameraOrientation)
     }
 
     private func distanceToFitPlanet(radius: Float) -> Float {

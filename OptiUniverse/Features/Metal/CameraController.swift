@@ -48,8 +48,8 @@ final class CameraController: NSObject {
     private func update(delta: Float) {
         guard let renderer = renderer else { return }
         if yawVelocity != 0 || pitchVelocity != 0 || zoomVelocity != 0 {
-            renderer.cameraYaw += yawVelocity * delta
-            renderer.cameraPitch += pitchVelocity * delta
+            renderer.orbitCamera(horizontal: yawVelocity * delta,
+                                 vertical: -pitchVelocity * delta)
             renderer.cameraDistance = max(minDistance,
                                           min(renderer.cameraDistance + zoomVelocity * delta,
                                               maxDistance))
@@ -72,15 +72,15 @@ final class CameraController: NSObject {
         guard let renderer = renderer else { return }
         renderer.beginManualCameraControl()
         let translation = gesture.translation(in: gesture.view)
-        renderer.cameraYaw -= Float(translation.x) * orbitSpeed
-        renderer.cameraPitch -= Float(translation.y) * orbitSpeed
+        renderer.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
+                             vertical: -Float(translation.y) * orbitSpeed)
         gesture.setTranslation(.zero, in: gesture.view)
         renderer.updateCamera()
 
         if gesture.state == .ended {
             let velocity = gesture.velocity(in: gesture.view)
-            yawVelocity = -Float(velocity.x) * orbitSpeed * 0.1
-            pitchVelocity = -Float(velocity.y) * orbitSpeed * 0.1
+            yawVelocity = Float(velocity.x) * orbitSpeed * 0.1
+            pitchVelocity = Float(velocity.y) * orbitSpeed * 0.1
         }
     }
 
