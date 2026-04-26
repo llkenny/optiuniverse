@@ -27,6 +27,7 @@ struct TopBarView: View {
                 }
             } label: {
                 Image(.menu)
+                    .frame(width: 44, height: 44)
             }
             Spacer()
             

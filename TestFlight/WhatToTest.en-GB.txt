@@ -1,2 +1,3 @@
 - Add Render Pipeline (UX performance improve)
 - Fix rotations
+- Fix Menu button size
