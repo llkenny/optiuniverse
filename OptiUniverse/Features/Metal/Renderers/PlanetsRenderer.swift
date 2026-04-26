@@ -10,6 +10,11 @@ import QuartzCore
 import simd
 
 final class PlanetsRenderer {
+    private struct FragmentUniforms {
+        var cameraPosition: SIMD3<Float>
+        var lightPosition: SIMD3<Float>
+    }
+
     private static let colorPixelFormat: MTLPixelFormat = .rgba16Float
     private static let depthPixelFormat: MTLPixelFormat = .depth32Float
 
@@ -108,6 +113,7 @@ final class PlanetsRenderer {
         samplerDescriptor.minFilter = .linear
         samplerDescriptor.magFilter = .linear
         samplerDescriptor.mipFilter = .linear
+        samplerDescriptor.maxAnisotropy = 8
         return device.makeSamplerState(descriptor: samplerDescriptor)!
     }
     
@@ -154,15 +160,13 @@ final class PlanetsRenderer {
                               projectionMatrix: float4x4,
                               sceneOrigin: SIMD3<Float>,
                               viewportSize: CGSize) {
-        let sceneOffsetMatrix = float4x4.makeTranslation(-sceneOrigin)
-        var modelMatrix = sceneOffsetMatrix * planet.worldModelMatrix
+        var modelMatrix = localModelMatrix(for: planet, sceneOrigin: sceneOrigin)
         
         var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
         
         // Compute screen position of the planet's center
-        let worldPosition4 = SIMD4<Float>(planet.worldPosition, 1)
         planetWorldPositions[planet.planetName] = planet.worldPosition
-        let localPosition4 = sceneOffsetMatrix * worldPosition4
+        let localPosition4 = SIMD4<Float>(planet.worldPosition - sceneOrigin, 1)
         let clipPosition = projectionMatrix * viewMatrix * localPosition4
         // clip-space `w` is positive for objects in front of the camera in our
         // coordinate system. Ignore objects with non-positive `w` values to
@@ -191,15 +195,18 @@ final class PlanetsRenderer {
         renderEncoder.setVertexBytes(&modelMatrix,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 6)
-        var worldModelMatrixForShader = planet.worldModelMatrix
+        var worldModelMatrixForShader = modelMatrix
         renderEncoder.setVertexBytes(&worldModelMatrixForShader,
                                      length: MemoryLayout<float4x4>.stride,
                                      index: 7)
 
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
-        var fragmentCameraPosition = cameraPosition
-        renderEncoder.setFragmentBytes(&fragmentCameraPosition,
-                                       length: MemoryLayout<SIMD3<Float>>.stride,
+        var fragmentUniforms = FragmentUniforms(
+            cameraPosition: cameraPosition,
+            lightPosition: -sceneOrigin
+        )
+        renderEncoder.setFragmentBytes(&fragmentUniforms,
+                                       length: MemoryLayout<FragmentUniforms>.stride,
                                        index: 0)
 
         for loadedMesh in planet.meshes {
@@ -231,6 +238,17 @@ final class PlanetsRenderer {
                 )
             }
         }
+    }
+
+    private func localModelMatrix(for planet: PreparedPlanetRenderPacket,
+                                  sceneOrigin: SIMD3<Float>) -> float4x4 {
+        var matrix = planet.worldModelMatrix
+        var translation = matrix.columns.3
+        translation.x = planet.worldPosition.x - sceneOrigin.x
+        translation.y = planet.worldPosition.y - sceneOrigin.y
+        translation.z = planet.worldPosition.z - sceneOrigin.z
+        matrix.columns.3 = translation
+        return matrix
     }
 }
 

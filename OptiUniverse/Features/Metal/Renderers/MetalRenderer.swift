@@ -60,8 +60,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var postFXParams = PostFXParams(bloomThreshold: 0.55,
                                             bloomRadius: 1.35,
                                             lensDirtOpacity: 0.2,
-                                            style: PostFXStyle.dreamy.rawValue,
-                                            dreamyIntensity: 0.5,
+                                            style: PostFXStyle.standard.rawValue,
+                                            dreamyIntensity: 0.0,
                                             softFocusRadius: 1.9,
                                             hazeStrength: 0.3,
                                             saturationBoost: 1.08)
@@ -72,6 +72,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
     private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
+    private var cameraOffset = SIMD3<Float>(0, 0, 3)
     private var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
     private var followingPlanetName: String? = "Sun"
     private var pendingFollowPlanetName: String?
@@ -151,7 +152,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                             options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
         }
 
-        applyPostFXStyle(.dreamy)
+        applyPostFXStyle(.standard)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -230,9 +231,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setCullMode(.none)
 
         let renderOrigin = cameraTarget
-        let renderCameraPosition = cameraPosition - renderOrigin
         let renderViewMatrix = float4x4.lookAt(
-            eye: renderCameraPosition,
+            eye: cameraOffset,
             target: .zero,
             up: cameraUp
         )
@@ -242,7 +242,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                       with: renderEncoder,
                                       viewMatrix: renderViewMatrix,
                                       projectionMatrix: projectionMatrix,
-                                      cameraPosition: cameraPosition,
+                                      cameraPosition: cameraOffset,
                                       sceneOrigin: renderOrigin,
                                       viewportSize: metalView.bounds.size)
         renderEncoder.endEncoding()
@@ -377,9 +377,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func updateCamera() {
         cameraOrientation = simd_normalize(cameraOrientation)
 
-        let cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, cameraDistance))
-        let cameraPosition = cameraOffset + cameraTarget
-        self.cameraPosition = cameraPosition
+        cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, cameraDistance))
+        self.cameraPosition = cameraOffset + cameraTarget
         cameraUp = cameraOrientation.act(SIMD3<Float>(0, 1, 0))
         
         // 2. Update matrices

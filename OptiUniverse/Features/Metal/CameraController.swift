@@ -71,6 +71,11 @@ final class CameraController: NSObject {
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let renderer = renderer else { return }
         renderer.beginManualCameraControl()
+
+        if gesture.state == .began {
+            stopInertia()
+        }
+
         let translation = gesture.translation(in: gesture.view)
         renderer.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
                              vertical: -Float(translation.y) * orbitSpeed)
@@ -81,6 +86,9 @@ final class CameraController: NSObject {
             let velocity = gesture.velocity(in: gesture.view)
             yawVelocity = Float(velocity.x) * orbitSpeed * 0.1
             pitchVelocity = Float(velocity.y) * orbitSpeed * 0.1
+        } else if gesture.state == .cancelled || gesture.state == .failed {
+            yawVelocity = 0
+            pitchVelocity = 0
         }
     }
 
@@ -89,7 +97,7 @@ final class CameraController: NSObject {
         renderer.beginManualCameraControl()
 
         if gesture.state == .began {
-            zoomVelocity = 0
+            stopInertia()
         }
 
         let gestureScale = max(Float(gesture.scale), 0.01)
@@ -105,6 +113,12 @@ final class CameraController: NSObject {
         } else if gesture.state == .cancelled || gesture.state == .failed {
             zoomVelocity = 0
         }
+    }
+
+    private func stopInertia() {
+        yawVelocity = 0
+        pitchVelocity = 0
+        zoomVelocity = 0
     }
 
     @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
