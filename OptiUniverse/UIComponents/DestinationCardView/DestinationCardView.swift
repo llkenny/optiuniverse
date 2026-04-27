@@ -44,7 +44,7 @@ struct DestinationCardView: View {
                                      object: "Mars",
                                      title: "Mars mountains",
                                      subtitle: "Dusty Red Planet",
-                                     imageResource: .marsPerseveranceZR008120739017260428EBYN0391170ZCAM036710340LMJ,
+                                     imageResource: .dstMercury,
                                      tag: "nil"))
     .frame(width: 174)
     .clipped()

@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "dst-Saturn.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

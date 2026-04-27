@@ -13,9 +13,6 @@ struct RootContainerView: View {
     @Bindable private var metalProvider: MetalProvider
     
     private let modelLoader: ModelLoader
-    private let planetNames = SolarSystemLoader
-        .loadPlanets(from: "planets")
-        .map { $0.name }
     
     init() {
         modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
@@ -24,9 +21,7 @@ struct RootContainerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            TopBarView(
-                viewModel: TopBarViewModel(planetNames: planetNames)
-            )
+            TopBarView()
             .padding(.horizontal)
             .padding(.bottom, 16)
             
