@@ -32,6 +32,14 @@
         "tag": "Inhabited"
     },
     {
+        "id": "C8D6C926-C315-45FC-8916-4A1457CEB95F",
+        "object": "Moon",
+        "title": "Moon",
+        "subtitle": "Nearest Space Object",
+        "imageName": "dst-Moon",
+        "tag": "Satellite"
+    },
+    {
         "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
         "object": "Mars",
         "title": "Mars",

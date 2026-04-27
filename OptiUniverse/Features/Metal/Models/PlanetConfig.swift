@@ -10,6 +10,8 @@ struct PlanetConfig: Decodable {
     let meshName: String
     let diameterKm: Float
     let distanceFromSunKm: Double
+    let distanceFromParentKm: Double?
+    let parentName: String?
     let orbitSpeed: Float
     let rotationSpeedKmSec: Float
 }

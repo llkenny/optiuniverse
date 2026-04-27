@@ -11,6 +11,7 @@ struct CategoryChipsViewModel {
         .init(imageText: "🌎", title: "Inhabited"),
         .init(imageText: "❄️", title: "Cold"),
         .init(imageText: "🌶️", title: "Hot"),
-        .init(imageText: "🪐", title: "Rings")
+        .init(imageText: "🪐", title: "Rings"),
+        .init(imageText: "🪨", title: "Satellite")
     ]
 }

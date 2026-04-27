@@ -32,6 +32,16 @@
         "rotationSpeedKmSec": 0.465101
     },
     {
+        "name": "Moon",
+        "meshName": "MoonLow_Moon_0",
+        "diameterKm": 3475,
+        "distanceFromSunKm": 149598000,
+        "distanceFromParentKm": 384400,
+        "parentName": "Earth",
+        "orbitSpeed": 1.022,
+        "rotationSpeedKmSec": 0.004627
+    },
+    {
         "name": "Mars",
         "meshName": "MarsLow_Mars_0",
         "diameterKm": 6792,

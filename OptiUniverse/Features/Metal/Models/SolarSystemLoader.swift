@@ -19,11 +19,13 @@ final class SolarSystemLoader {
         let configs: [PlanetConfig] = Bundle.main.loadConfig(filename: filename)
         
         return configs.map { config in
-            Planet(
+            let orbitalDistanceKm = config.distanceFromParentKm ?? config.distanceFromSunKm
+            return Planet(
                 name: config.name,
                 meshName: config.meshName,
+                parentName: config.parentName,
                 radius: (config.diameterKm / 2) * Constants.diameterFactor,
-                distance: Float(config.distanceFromSunKm) * Constants.distanceFactor,
+                distance: Float(orbitalDistanceKm) * Constants.distanceFactor,
                 orbitSpeed: config.orbitSpeed * Constants.orbitSpeedMultiplier,
                 rotationSpeedKmSec: config.rotationSpeedKmSec * Constants.rotationSpeedKmSecMultiplier
             )
