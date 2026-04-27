@@ -10,6 +10,7 @@ import MetalKit
 struct Planet: Sendable {
     let name: String
     let meshName: String
+    let parentName: String?
     let radius: Float
     /// Orbital radius
     let distance: Float

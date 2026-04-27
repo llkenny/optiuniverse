@@ -73,12 +73,16 @@ final class RenderPreparationPipeline {
 
         var packets: [PreparedPlanetRenderPacket] = []
         packets.reserveCapacity(planets.count)
+        var worldPositionsByName: [String: SIMD3<Float>] = [:]
 
         for planet in planets {
             guard !Task.isCancelled else { return }
 
             let meshes = await loadedMeshes(for: planet)
-            let baseModelMatrix = planet.modelMatrix(at: simulationTime)
+            let parentWorldPosition = planet.parentName
+                .flatMap { worldPositionsByName[$0] }
+            let baseModelMatrix = planet.modelMatrix(at: simulationTime,
+                                                     parentWorldPosition: parentWorldPosition)
             let primaryMeshRadius = meshes.first?.boundsRadius ?? 1
             let normalizedScale = primaryMeshRadius > 0
                 ? planet.radius / primaryMeshRadius
@@ -90,6 +94,10 @@ final class RenderPreparationPipeline {
                 ? maxMeshRadius * normalizedScale
                 : planet.radius
             let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
+            let worldPosition = SIMD3<Float>(worldPosition4.x,
+                                             worldPosition4.y,
+                                             worldPosition4.z)
+            worldPositionsByName[planet.name] = worldPosition
 
             packets.append(
                 PreparedPlanetRenderPacket(
@@ -100,9 +108,7 @@ final class RenderPreparationPipeline {
                     normalizedScale: normalizedScale,
                     primaryMeshRadius: primaryMeshRadius,
                     framingRadius: framingRadius,
-                    worldPosition: SIMD3<Float>(worldPosition4.x,
-                                                worldPosition4.y,
-                                                worldPosition4.z)
+                    worldPosition: worldPosition
                 )
             )
         }
@@ -126,13 +132,15 @@ final class RenderPreparationPipeline {
 }
 
 extension Planet {
-    nonisolated func modelMatrix(at time: Float) -> float4x4 {
+    nonisolated func modelMatrix(at time: Float,
+                                 parentWorldPosition: SIMD3<Float>? = nil) -> float4x4 {
         let orbitAngle = time * orbitSpeed
         let orbitRotation = float4x4.makeRotationZ(orbitAngle)
         let orbitalTranslation = float4x4.makeTranslation([distance, 0, 0])
         let selfSpin = float4x4.makeRotationZ(time * rotationSpeedKmSec)
+        let parentTranslation = float4x4.makeTranslation(parentWorldPosition ?? .zero)
 
         // Transformations are applied right to left.
-        return orbitRotation * orbitalTranslation * selfSpin
+        return parentTranslation * orbitRotation * orbitalTranslation * selfSpin
     }
 }
