@@ -34,6 +34,7 @@ struct RootContainerView: View {
                     HomeView()
                 case (true, .objects):
                     UniverseView(metalProvider: metalProvider)
+                        .ignoresSafeArea(edges: .bottom)
             }
         }
         .task {
