@@ -1,2 +1,3 @@
 - Replace Menu button with only Home button
 - Full-fill all of the destination objects
+- Remove white bottom border on the objects screen
