@@ -1,4 +1,2 @@
-- Add Render Pipeline (UX performance improve)
-- Fix rotations
-- Fix Menu button size
-- Fix Earth atmosphere
+- Replace Menu button with only Home button
+- Full-fill all of the destination objects

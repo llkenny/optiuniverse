@@ -9,25 +9,19 @@ import SwiftUI
 
 struct TopBarView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
-    @State var viewModel: TopBarViewModel
 
     var body: some View {
         HStack {
-            Menu {
-                Button("Home") {
+            if appEnvironment.currentScreen == .home {
+                Spacer()
+                    .frame(width: 44)
+            } else {
+                Button {
                     appEnvironment.currentScreen = .home
+                } label: {
+                    Image(.menu)
+                        .frame(width: 44, height: 44)
                 }
-                Menu("Objects") {
-                    ForEach(viewModel.planetNames, id: \.self) { name in
-                        Button(name) {
-                            appEnvironment.selectedPlanet = name
-                            appEnvironment.currentScreen = .objects
-                        }
-                    }
-                }
-            } label: {
-                Image(.menu)
-                    .frame(width: 44, height: 44)
             }
             Spacer()
             
@@ -47,9 +41,7 @@ struct TopBarView: View {
 
 #Preview {
     VStack {
-        TopBarView(
-            viewModel: TopBarViewModel(planetNames: ["Mercury", "Venus", "Earth"])
-        )
+        TopBarView()
         Spacer()
     }
     .padding()

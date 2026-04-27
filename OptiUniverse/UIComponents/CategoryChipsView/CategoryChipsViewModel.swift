@@ -9,6 +9,8 @@ struct CategoryChipsViewModel {
     var chips: [CategoryChipModel] = [
         .init(imageText: "🔥", title: "Popular"),
         .init(imageText: "🌎", title: "Inhabited"),
-        .init(imageText: "❄️", title: "Cold")
+        .init(imageText: "❄️", title: "Cold"),
+        .init(imageText: "🌶️", title: "Hot"),
+        .init(imageText: "🪐", title: "Rings")
     ]
 }

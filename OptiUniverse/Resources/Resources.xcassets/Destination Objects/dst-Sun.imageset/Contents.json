@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "dst-Sun.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

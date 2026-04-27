@@ -32,7 +32,7 @@ struct HomeView: View {
                         .padding(.bottom, 16)
                     CategoryChipsView(selectedTag: $selectedTag)
                         .padding(.horizontal)
-                        .padding(.bottom, 12)
+                        .padding(.bottom, 2)
                     DestinationListView(selectedTag: $selectedTag)
                         .padding(.horizontal)
                 }
