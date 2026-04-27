@@ -12,6 +12,7 @@ import MetalKit
 struct LoadedMesh: @unchecked Sendable {
     let mesh: MTKMesh
     let textures: [Textures]
+    let boundsCenter: SIMD3<Float>
     let boundsRadius: Float
 }
 
@@ -60,6 +61,7 @@ actor ModelLoader {
                     } ?? []
                 return LoadedMesh(mesh: try! MTKMesh(mesh: mdlMesh, device: device),
                                   textures: textures,
+                                  boundsCenter: boundingCenter(of: mdlMesh),
                                   boundsRadius: boundingRadius(of: mdlMesh))
             }
         return Dictionary(uniqueKeysWithValues: loadedMeshes.map { ($0.mesh.name, $0) })
@@ -83,10 +85,20 @@ actor ModelLoader {
     }
 }
 
+private func boundingCenter(of mesh: MDLMesh) -> SIMD3<Float> {
+    let bounds = mesh.boundingBox
+    let min = bounds.minBounds
+    let max = bounds.maxBounds
+    return SIMD3<Float>((min.x + max.x) * 0.5,
+                        (min.y + max.y) * 0.5,
+                        (min.z + max.z) * 0.5)
+}
+
 private func boundingRadius(of mesh: MDLMesh) -> Float {
     let bounds = mesh.boundingBox
     let min = bounds.minBounds
     let max = bounds.maxBounds
+    let center = boundingCenter(of: mesh)
 
     let corners: [SIMD3<Float>] = [
         [min.x, min.y, min.z],
@@ -99,7 +111,7 @@ private func boundingRadius(of mesh: MDLMesh) -> Float {
         [max.x, max.y, max.z]
     ]
 
-    return corners.map(simd_length).max() ?? 1
+    return corners.map { simd_length($0 - center) }.max() ?? 1
 }
 
 private func rewriteTextureCoordinatesForRuntimePlanet(on mesh: MDLMesh) {

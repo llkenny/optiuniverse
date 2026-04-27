@@ -10,6 +10,16 @@ import QuartzCore
 import simd
 
 final class PlanetsRenderer {
+    private enum RenderPass {
+        case opaque
+        case transparent
+    }
+
+    private struct RenderSubmesh {
+        let loadedMesh: LoadedMesh
+        let submeshIndex: Int
+    }
+
     private struct FragmentUniforms {
         var cameraPosition: SIMD3<Float>
         var lightPosition: SIMD3<Float>
@@ -21,6 +31,8 @@ final class PlanetsRenderer {
     private let device: MTLDevice
     var pipelineState: MTLRenderPipelineState!
     private var samplerState: MTLSamplerState!
+    private let opaqueDepthStencilState: MTLDepthStencilState
+    private let transparentDepthStencilState: MTLDepthStencilState
     
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
@@ -35,6 +47,10 @@ final class PlanetsRenderer {
     
     init(device: MTLDevice, sampleCount: Int) {
         self.device = device
+        self.opaqueDepthStencilState = Self.makeDepthStencilState(device: device,
+                                                                  writesDepth: true)
+        self.transparentDepthStencilState = Self.makeDepthStencilState(device: device,
+                                                                       writesDepth: false)
         
         pipelineState = makePipelineState(fragmentFunction: "fragment_main",
                                           sampleCount: sampleCount)
@@ -72,6 +88,17 @@ final class PlanetsRenderer {
         } catch {
             fatalError("Failed to create pipeline state: \(error)")
         }
+    }
+
+    private static func makeDepthStencilState(device: MTLDevice,
+                                              writesDepth: Bool) -> MTLDepthStencilState {
+        let descriptor = MTLDepthStencilDescriptor()
+        descriptor.depthCompareFunction = .less
+        descriptor.isDepthWriteEnabled = writesDepth
+        guard let state = device.makeDepthStencilState(descriptor: descriptor) else {
+            fatalError("Failed to create planet depth stencil state")
+        }
+        return state
     }
     
     /// Creates the shared vertex descriptor for planet rendering.
@@ -140,10 +167,34 @@ final class PlanetsRenderer {
 
         guard let snapshot else { return }
 
+        renderEncoder.setRenderPipelineState(pipelineState)
+        renderEncoder.setDepthStencilState(opaqueDepthStencilState)
         for planet in snapshot.planets {
-            renderEncoder.setRenderPipelineState(pipelineState)
             renderPlanet(planet,
                          with: renderEncoder,
+                         renderPass: .opaque,
+                         cameraPosition: cameraPosition,
+                         viewMatrix: viewMatrix,
+                         projectionMatrix: projectionMatrix,
+                         sceneOrigin: sceneOrigin,
+                         viewportSize: viewportSize)
+        }
+
+        let cameraWorldPosition = sceneOrigin + cameraPosition
+        let transparentPlanets = snapshot.planets
+            .filter { planet in
+                hasTransparentSubmesh(in: planet)
+            }
+            .sorted {
+                simd_distance_squared($0.worldPosition, cameraWorldPosition) >
+                    simd_distance_squared($1.worldPosition, cameraWorldPosition)
+            }
+
+        renderEncoder.setDepthStencilState(transparentDepthStencilState)
+        for planet in transparentPlanets {
+            renderPlanet(planet,
+                         with: renderEncoder,
+                         renderPass: .transparent,
                          cameraPosition: cameraPosition,
                          viewMatrix: viewMatrix,
                          projectionMatrix: projectionMatrix,
@@ -155,31 +206,30 @@ final class PlanetsRenderer {
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: PreparedPlanetRenderPacket,
                               with renderEncoder: MTLRenderCommandEncoder,
+                              renderPass: RenderPass,
                               cameraPosition: SIMD3<Float>,
                               viewMatrix: float4x4,
                               projectionMatrix: float4x4,
                               sceneOrigin: SIMD3<Float>,
                               viewportSize: CGSize) {
-        var modelMatrix = localModelMatrix(for: planet, sceneOrigin: sceneOrigin)
-        
-        var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-        
         // Compute screen position of the planet's center
-        planetWorldPositions[planet.planetName] = planet.worldPosition
-        let localPosition4 = SIMD4<Float>(planet.worldPosition - sceneOrigin, 1)
-        let clipPosition = projectionMatrix * viewMatrix * localPosition4
-        // clip-space `w` is positive for objects in front of the camera in our
-        // coordinate system. Ignore objects with non-positive `w` values to
-        // skip planets behind the camera while also avoiding divide-by-zero.
-        if clipPosition.w > 0 {
-            let ndc = clipPosition / clipPosition.w
-            if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
-                let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
-                // Metal's projection matrix already flips the Y axis, so
-                // screen-space Y grows downward. Use `ndc.y + 1` instead of
-                // `1 - ndc.y` to avoid mirroring label positions vertically.
-                let y = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
-                planetScreenPositions[planet.planetName] = SIMD2<Float>(x, y)
+        if renderPass == .opaque {
+            planetWorldPositions[planet.planetName] = planet.worldPosition
+            let localPosition4 = SIMD4<Float>(planet.worldPosition - sceneOrigin, 1)
+            let clipPosition = projectionMatrix * viewMatrix * localPosition4
+            // clip-space `w` is positive for objects in front of the camera in our
+            // coordinate system. Ignore objects with non-positive `w` values to
+            // skip planets behind the camera while also avoiding divide-by-zero.
+            if clipPosition.w > 0 {
+                let ndc = clipPosition / clipPosition.w
+                if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
+                    let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+                    // Metal's projection matrix already flips the Y axis, so
+                    // screen-space Y grows downward. Use `ndc.y + 1` instead of
+                    // `1 - ndc.y` to avoid mirroring label positions vertically.
+                    let y = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
+                    planetScreenPositions[planet.planetName] = SIMD2<Float>(x, y)
+                }
             }
         }
         
@@ -189,17 +239,6 @@ final class PlanetsRenderer {
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
         
         // Set buffers
-        renderEncoder.setVertexBytes(&mvpMatrix,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 5)
-        renderEncoder.setVertexBytes(&modelMatrix,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 6)
-        var worldModelMatrixForShader = modelMatrix
-        renderEncoder.setVertexBytes(&worldModelMatrixForShader,
-                                     length: MemoryLayout<float4x4>.stride,
-                                     index: 7)
-
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
             cameraPosition: cameraPosition,
@@ -209,46 +248,260 @@ final class PlanetsRenderer {
                                        length: MemoryLayout<FragmentUniforms>.stride,
                                        index: 0)
 
-        for loadedMesh in planet.meshes {
+        let renderSubmeshes = submeshes(for: planet,
+                                        renderPass: renderPass,
+                                        cameraPosition: cameraPosition,
+                                        sceneOrigin: sceneOrigin)
+
+        for renderSubmesh in renderSubmeshes {
+            let loadedMesh = renderSubmesh.loadedMesh
             let mesh = loadedMesh.mesh
+            guard let submesh = mesh.submeshes[safe: renderSubmesh.submeshIndex] else {
+                continue
+            }
+
+            var modelMatrix = localModelMatrix(for: planet,
+                                               loadedMesh: loadedMesh,
+                                               sceneOrigin: sceneOrigin)
+            var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+            renderEncoder.setVertexBytes(&mvpMatrix,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 5)
+            renderEncoder.setVertexBytes(&modelMatrix,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 6)
+            var worldModelMatrixForShader = modelMatrix
+            renderEncoder.setVertexBytes(&worldModelMatrixForShader,
+                                         length: MemoryLayout<float4x4>.stride,
+                                         index: 7)
+
             for (bufferIndex, vertexBuffer) in mesh.vertexBuffers.enumerated() {
                 renderEncoder.setVertexBuffer(vertexBuffer.buffer,
                                               offset: vertexBuffer.offset,
                                               index: bufferIndex)
             }
 
-            for (index, submesh) in mesh.submeshes.enumerated() {
-                let textures = loadedMesh.textures[safe: index]
-                var materialUniforms = textures?.materialUniforms ?? MaterialUniforms()
-                renderEncoder.setFragmentTexture(textures?.baseColor, index: 0)
-                renderEncoder.setFragmentTexture(textures?.normal, index: 1)
-                renderEncoder.setFragmentTexture(textures?.emissive, index: 2)
-                renderEncoder.setFragmentTexture(textures?.roughness, index: 3)
-                renderEncoder.setFragmentTexture(textures?.metallic, index: 4)
-                renderEncoder.setFragmentTexture(textures?.ambientOcclusion, index: 5)
-                renderEncoder.setFragmentBytes(&materialUniforms,
-                                               length: MemoryLayout<MaterialUniforms>.stride,
-                                               index: 1)
-                renderEncoder.drawIndexedPrimitives(
-                    type: .triangle,
-                    indexCount: submesh.indexCount,
-                    indexType: submesh.indexType,
-                    indexBuffer: submesh.indexBuffer.buffer,
-                    indexBufferOffset: submesh.indexBuffer.offset
-                )
+            let textures = loadedMesh.textures[safe: renderSubmesh.submeshIndex]
+            var materialUniforms = materialUniforms(for: planet,
+                                                    loadedMesh: loadedMesh,
+                                                    renderPass: renderPass,
+                                                    textures: textures)
+            renderEncoder.setFragmentTexture(textures?.baseColor, index: 0)
+            renderEncoder.setFragmentTexture(textures?.normal, index: 1)
+            renderEncoder.setFragmentTexture(textures?.emissive, index: 2)
+            renderEncoder.setFragmentTexture(textures?.roughness, index: 3)
+            renderEncoder.setFragmentTexture(textures?.metallic, index: 4)
+            renderEncoder.setFragmentTexture(textures?.ambientOcclusion, index: 5)
+            renderEncoder.setFragmentTexture(textures?.opacity, index: 6)
+            renderEncoder.setFragmentBytes(&materialUniforms,
+                                           length: MemoryLayout<MaterialUniforms>.stride,
+                                           index: 1)
+            renderEncoder.drawIndexedPrimitives(
+                type: .triangle,
+                indexCount: submesh.indexCount,
+                indexType: submesh.indexType,
+                indexBuffer: submesh.indexBuffer.buffer,
+                indexBufferOffset: submesh.indexBuffer.offset
+            )
+        }
+    }
+
+    private func submeshes(for planet: PreparedPlanetRenderPacket,
+                           renderPass: RenderPass,
+                           cameraPosition: SIMD3<Float>,
+                           sceneOrigin: SIMD3<Float>) -> [RenderSubmesh] {
+        let renderSubmeshes = planet.meshes.flatMap { loadedMesh in
+            loadedMesh.mesh.submeshes.indices.compactMap { submeshIndex -> RenderSubmesh? in
+                if alphaGeometryRadius(for: planet,
+                                       loadedMesh: loadedMesh) > 0 {
+                    return RenderSubmesh(loadedMesh: loadedMesh,
+                                         submeshIndex: submeshIndex)
+                }
+
+                let isTransparent = isTransparentSubmesh(loadedMesh,
+                                                         submeshIndex: submeshIndex,
+                                                         planet: planet)
+                guard (renderPass == .transparent) == isTransparent else {
+                    return nil
+                }
+
+                return RenderSubmesh(loadedMesh: loadedMesh,
+                                     submeshIndex: submeshIndex)
             }
+        }
+
+        guard renderPass == .transparent else {
+            return renderSubmeshes
+        }
+
+        return renderSubmeshes.sorted {
+            let lhsDistance = simd_distance_squared(meshCenter(for: planet,
+                                                               loadedMesh: $0.loadedMesh,
+                                                               sceneOrigin: sceneOrigin),
+                                                    cameraPosition)
+            let rhsDistance = simd_distance_squared(meshCenter(for: planet,
+                                                               loadedMesh: $1.loadedMesh,
+                                                               sceneOrigin: sceneOrigin),
+                                                    cameraPosition)
+            if abs(lhsDistance - rhsDistance) > 0.0001 {
+                return lhsDistance > rhsDistance
+            }
+
+            let lhsRadius = effectiveRenderRadius(for: planet,
+                                                  loadedMesh: $0.loadedMesh)
+            let rhsRadius = effectiveRenderRadius(for: planet,
+                                                  loadedMesh: $1.loadedMesh)
+            if abs(lhsRadius - rhsRadius) > 0.0001 {
+                return lhsRadius < rhsRadius
+            }
+
+            return $0.submeshIndex > $1.submeshIndex
         }
     }
 
     private func localModelMatrix(for planet: PreparedPlanetRenderPacket,
+                                  loadedMesh: LoadedMesh,
                                   sceneOrigin: SIMD3<Float>) -> float4x4 {
-        var matrix = planet.worldModelMatrix
+        var meshScale = planet.normalizedScale
+        if loadedMesh.boundsRadius > 0,
+           loadedMesh.boundsRadius < planet.primaryMeshRadius * 0.8,
+           isTransparentCompanionMesh(loadedMesh) {
+            meshScale = (planet.primaryMeshRadius * planet.normalizedScale * 1.02) / loadedMesh.boundsRadius
+        }
+
+        var matrix = planet.baseModelMatrix
+            * float4x4.makeScale(SIMD3<Float>(repeating: meshScale))
         var translation = matrix.columns.3
         translation.x = planet.worldPosition.x - sceneOrigin.x
         translation.y = planet.worldPosition.y - sceneOrigin.y
         translation.z = planet.worldPosition.z - sceneOrigin.z
         matrix.columns.3 = translation
         return matrix
+    }
+
+    private func meshCenter(for planet: PreparedPlanetRenderPacket,
+                            loadedMesh: LoadedMesh,
+                            sceneOrigin: SIMD3<Float>) -> SIMD3<Float> {
+        let modelMatrix = localModelMatrix(for: planet,
+                                           loadedMesh: loadedMesh,
+                                           sceneOrigin: sceneOrigin)
+        let center = modelMatrix * SIMD4<Float>(loadedMesh.boundsCenter, 1)
+        return SIMD3<Float>(center.x, center.y, center.z)
+    }
+
+    private func effectiveRenderRadius(for planet: PreparedPlanetRenderPacket,
+                                       loadedMesh: LoadedMesh) -> Float {
+        if loadedMesh.boundsRadius > 0,
+           loadedMesh.boundsRadius < planet.primaryMeshRadius * 0.8,
+           isTransparentCompanionMesh(loadedMesh) {
+            return planet.primaryMeshRadius * planet.normalizedScale * 1.02
+        }
+
+        return loadedMesh.boundsRadius * planet.normalizedScale
+    }
+
+    private func isTransparentCompanionMesh(_ loadedMesh: LoadedMesh) -> Bool {
+        isNamedTransparentMesh(loadedMesh) ||
+            loadedMesh.textures.contains {
+                $0.materialUniforms.usesBaseColorAlpha > 0.5 ||
+                    $0.materialUniforms.usesOpacityTexture > 0.5
+            }
+    }
+
+    private func hasTransparentSubmesh(in planet: PreparedPlanetRenderPacket) -> Bool {
+        planet.meshes.contains { loadedMesh in
+            loadedMesh.mesh.submeshes.indices.contains { submeshIndex in
+                isTransparentSubmesh(loadedMesh,
+                                     submeshIndex: submeshIndex,
+                                     planet: planet)
+            }
+        }
+    }
+
+    private func isTransparentSubmesh(_ loadedMesh: LoadedMesh,
+                                      submeshIndex: Int,
+                                      planet: PreparedPlanetRenderPacket) -> Bool {
+        let textures = loadedMesh.textures[safe: submeshIndex]
+        let uniforms = materialUniforms(for: planet,
+                                        loadedMesh: loadedMesh,
+                                        renderPass: .transparent,
+                                        textures: textures)
+        return isTransparentMaterial(uniforms) ||
+            (textures == nil && isNamedTransparentMesh(loadedMesh))
+    }
+
+    private func materialUniforms(for planet: PreparedPlanetRenderPacket,
+                                  loadedMesh: LoadedMesh,
+                                  renderPass: RenderPass,
+                                  textures: Textures?) -> MaterialUniforms {
+        var materialUniforms = textures?.materialUniforms ?? MaterialUniforms()
+        let meshName = loadedMesh.mesh.name
+        if planet.planetName == "Sun" {
+            materialUniforms.unlit = 1
+        }
+        if meshName.localizedCaseInsensitiveContains("SunCorona") {
+            materialUniforms.rimAlphaStrength = 2.5
+        }
+        if meshName.localizedCaseInsensitiveContains("Atmosphere") {
+            materialUniforms.opacityFactor *= 0.58
+        }
+        if meshName.localizedCaseInsensitiveContains("Nuvem") ||
+            meshName.localizedCaseInsensitiveContains("Cloud") {
+            materialUniforms.whiteAlbedo = 1
+            materialUniforms.opacityFactor *= 0.58
+            materialUniforms.ambientOcclusionFactor = 1
+        }
+        let alphaGeometryRadius = alphaGeometryRadius(for: planet,
+                                                      loadedMesh: loadedMesh)
+        if alphaGeometryRadius > 0 {
+            materialUniforms.usesOpacityTexture = 0
+            switch renderPass {
+            case .opaque:
+                materialUniforms.usesBaseColorAlpha = 0
+                materialUniforms.alphaGeometryRadius = -alphaGeometryRadius
+            case .transparent:
+                materialUniforms.usesBaseColorAlpha = 1
+                materialUniforms.alphaGeometryRadius = alphaGeometryRadius
+            }
+        }
+        return materialUniforms
+    }
+
+    private func alphaGeometryRadius(for planet: PreparedPlanetRenderPacket,
+                                     loadedMesh: LoadedMesh) -> Float {
+        guard (planet.planetName == "Saturn" || planet.planetName == "Uranus"),
+              loadedMesh.mesh.name == planet.meshes.first?.mesh.name,
+              loadedMesh.mesh.submeshes.count == 1,
+              loadedMesh.boundsRadius > 0 else {
+            return 0
+        }
+
+        // The current Saturn/Uranus USD meshes combine the sphere and rings in
+        // one submesh. Split near the gap between sphere vertices and ring
+        // vertices so each pass can use the right alpha/depth behavior.
+        switch planet.planetName {
+        case "Saturn":
+            return loadedMesh.boundsRadius * 0.32
+        case "Uranus":
+            return loadedMesh.boundsRadius * 0.47
+        default:
+            return 0
+        }
+    }
+
+    private func isTransparentMaterial(_ materialUniforms: MaterialUniforms) -> Bool {
+        materialUniforms.usesBaseColorAlpha > 0.5 ||
+            materialUniforms.usesOpacityTexture > 0.5 ||
+            materialUniforms.opacityFactor < 0.999 ||
+            materialUniforms.rimAlphaStrength > 0.5
+    }
+
+    private func isNamedTransparentMesh(_ loadedMesh: LoadedMesh) -> Bool {
+        let meshName = loadedMesh.mesh.name
+        return meshName.localizedCaseInsensitiveContains("Atmosphere") ||
+            meshName.localizedCaseInsensitiveContains("Cloud") ||
+            meshName.localizedCaseInsensitiveContains("Nuvem") ||
+            meshName.localizedCaseInsensitiveContains("Corona")
     }
 }
 
