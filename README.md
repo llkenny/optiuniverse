@@ -18,13 +18,12 @@ The project is an active personal iOS rendering portfolio piece. It focuses on p
 
 ## Video and screenshots
 
-https://github.com/user-attachments/assets/3b1e8aba-406c-43b4-b3e6-0d8072ca9d54
-<img width="400" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />
-<img width="400" alt="" src="https://github.com/user-attachments/assets/be1b065e-fcdf-462c-bd0c-6f9b1fc90fc5" />
-<img width="400" alt="" src="https://github.com/user-attachments/assets/34294a43-97aa-4f22-9d23-aef2f559b850" />
-<img width="400" alt="" src="https://github.com/user-attachments/assets/552a9dc7-fb6f-4420-b9d8-91d1e86845ff" />
+<img width="200" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />
+<img width="200" alt="" src="https://github.com/user-attachments/assets/be1b065e-fcdf-462c-bd0c-6f9b1fc90fc5" />
+<img width="200" alt="" src="https://github.com/user-attachments/assets/34294a43-97aa-4f22-9d23-aef2f559b850" />
+<img width="200" alt="" src="https://github.com/user-attachments/assets/552a9dc7-fb6f-4420-b9d8-91d1e86845ff" />
 
-
+[<video src="" style="width:100px"></video>](https://github.com/user-attachments/assets/fc05f8cc-b137-4dac-bda6-c2017a23e21f)
 
 ## Tech Stack
 
