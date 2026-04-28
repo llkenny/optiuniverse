@@ -34,7 +34,10 @@ struct TopBarView: View {
                 
             Spacer()
             Image(.avatar)
-                .frame(height: 44)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 44, height: 44)
+                .clipShape(Circle())
         }
     }
 }
