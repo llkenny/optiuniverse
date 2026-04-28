@@ -16,12 +16,15 @@ The project is an active personal iOS rendering portfolio piece. It focuses on p
 - Render preparation pipeline that keeps async model lookup outside Metal command encoding.
 - Supporting RFC/ADR documentation for rendering architecture decisions.
 
-## Screenshots
+## Video and screenshots
 
-<img height="400" alt="OptiUniverse home and object exploration screen" src="https://github.com/user-attachments/assets/8750982e-4883-42aa-a772-cba4ba8e5a70" />
-<img height="400" alt="OptiUniverse 3D planet rendering screen" src="https://github.com/user-attachments/assets/964e63e1-1722-4a08-aa79-075a13f2acf7" />
-<img height="400" alt="OptiUniverse destination browsing screen" src="https://github.com/user-attachments/assets/33d5d0fc-ce53-4bc6-8b1a-7125099ce56a" />
-<img height="400" alt="OptiUniverse space object detail screen" src="https://github.com/user-attachments/assets/2c89e5fe-2ef9-444f-9b3d-9ed52b1fde2e" />
+https://github.com/user-attachments/assets/3b1e8aba-406c-43b4-b3e6-0d8072ca9d54
+<img width="400" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />
+<img width="400" alt="" src="https://github.com/user-attachments/assets/be1b065e-fcdf-462c-bd0c-6f9b1fc90fc5" />
+<img width="400" alt="" src="https://github.com/user-attachments/assets/34294a43-97aa-4f22-9d23-aef2f559b850" />
+<img width="400" alt="" src="https://github.com/user-attachments/assets/552a9dc7-fb6f-4420-b9d8-91d1e86845ff" />
+
+
 
 ## Tech Stack
 
