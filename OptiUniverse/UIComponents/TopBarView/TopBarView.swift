@@ -24,14 +24,14 @@ struct TopBarView: View {
                 }
             }
             Spacer()
-            
+
             Text(appEnvironment.location)
                 .foregroundStyle(Color(.lowEmphasized))
                 .fontWeight(.light)
                 .font(.system(size: 14))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
-                
+
             Spacer()
             Image(.avatar)
                 .resizable()

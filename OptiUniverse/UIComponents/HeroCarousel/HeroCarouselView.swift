@@ -13,9 +13,9 @@ struct HeroCarouselView: View {
         static let cardSpacing: CGFloat = 16
         static let horizontalInset: CGFloat = 64
     }
-    
+
     @Environment(AppEnvironment.self) private var appEnvironment
-    
+
     @Binding var currentIndex: Int
     @Binding var totalCount: Int
     @State private var viewModel: HeroCarouselViewModel = .init()
@@ -34,7 +34,7 @@ struct HeroCarouselView: View {
                         .scrollTransition(axis: .horizontal) { content, phase in
                             let isCentered = phase.isIdentity
                             let direction = phase.value
-                            
+
                             return content
                                 .scaleEffect(isCentered ? 1 : 0.88)
                                 .opacity(isCentered ? 1 : 0.2)

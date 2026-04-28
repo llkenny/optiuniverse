@@ -17,7 +17,7 @@ final class SolarSystemLoader {
 
     static func loadPlanets(from filename: String) -> [Planet] {
         let configs: [PlanetConfig] = Bundle.main.loadConfig(filename: filename)
-        
+
         return configs.map { config in
             let orbitalDistanceKm = config.distanceFromParentKm ?? config.distanceFromSunKm
             return Planet(

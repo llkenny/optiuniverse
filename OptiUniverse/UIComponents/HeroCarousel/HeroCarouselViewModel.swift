@@ -9,14 +9,14 @@ import SwiftUI
 
 @Observable
 final class HeroCarouselViewModel {
-    
+
     var activeCardID: HeroCard.ID?
     var cards: [HeroCard] = []
 
     var totalCount: Int {
         cards.count
     }
-    
+
     func loadCards() {
         let featuredObjects: [FeaturedObject] = Bundle.main.loadConfig(filename: "FeaturedObjects")
         cards = featuredObjects.map {

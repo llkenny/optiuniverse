@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct PageIndicatorView: View {
-    
+
     let totalCount: Int
     @Binding var currentIndex: Int
-    
+
     private let maxVisibleDots = 7
     private let indicatorAnimation: Animation = .easeOut
-    
+
     private var visibleIndices: [Int] {
         guard totalCount > 0 else { return [] }
         guard totalCount > maxVisibleDots else { return Array(0..<totalCount) }
@@ -24,7 +24,7 @@ struct PageIndicatorView: View {
         let upper = lower + maxVisibleDots - 1
         return Array(lower...upper)
     }
-    
+
     var body: some View {
         HStack(spacing: 9) {
             ForEach(visibleIndices, id: \.self) { index in
@@ -38,7 +38,7 @@ struct PageIndicatorView: View {
                                 currentIndex = index
                             }
                         }
-                    
+
                     if index == currentIndex {
                         Circle()
                             .stroke(lineWidth: 1)
@@ -54,6 +54,6 @@ struct PageIndicatorView: View {
 
 #Preview {
     @Previewable @State var currentIndex: Int = 0
-    
+
     PageIndicatorView(totalCount: 20, currentIndex: $currentIndex)
 }

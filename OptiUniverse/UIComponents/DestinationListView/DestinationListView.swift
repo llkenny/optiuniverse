@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct DestinationListView: View {
-    
+
     @Environment(AppEnvironment.self) private var appEnvironment
-    
+
     @Binding var selectedTag: String?
     @State private var viewModel: DestinationListViewModel = .init()
-    
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
@@ -36,8 +36,8 @@ struct DestinationListView: View {
 }
 
 #Preview {
-    @Previewable @State var selectedTag: String? = nil
-    
+    @Previewable @State var selectedTag: String?
+
     DestinationListView(selectedTag: $selectedTag)
         .padding(.horizontal)
 }

@@ -10,7 +10,7 @@ import Foundation
 actor DestinationsProvider: DestinationsProviderProtocol {
     var destinations: [DestinationObject] = []
     private var inFlightTask: Task<(), Never>?
-    
+
     func fetch() async {
         guard destinations.isEmpty else { return }
         if inFlightTask == nil {

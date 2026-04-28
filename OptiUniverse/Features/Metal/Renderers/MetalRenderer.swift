@@ -26,6 +26,7 @@ struct PostFXParams {
     var saturationBoost: Float
 }
 
+// swiftlint:disable type_body_length
 final class MetalRenderer: NSObject, MTKViewDelegate {
     enum PostFXStyle: UInt32 {
         case standard = 0
@@ -41,7 +42,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
     private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
-    
+
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let planetsRenderer: PlanetsRenderer
@@ -65,7 +66,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                             softFocusRadius: 1.9,
                                             hazeStrength: 0.3,
                                             saturationBoost: 1.08)
-    
+
     // Orbital Camera
     // Camera state
     var cameraDistance: Float = 3
@@ -84,9 +85,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var endCameraDistance: Float?
     private var cameraAnimationProgress: Float = 1
     private let cameraAnimationDuration: Float = 1.0
-    
+
     private let metalProvider: MetalProvider
-    
+
     private var viewMatrix: float4x4 {
         didSet {
             viewMatrixLogger.logMatricies(matrix1: oldValue,
@@ -103,12 +104,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                 level: .debug)
         }
     }
-    
+
     init?(metalView: MTKView, metalProvider: MetalProvider) {
         guard let commandQueue = metalProvider.device.makeCommandQueue() else {
             return nil
         }
-        
+
         self.device = metalProvider.device
         self.commandQueue = commandQueue
         self.metalView = metalView
@@ -125,10 +126,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
         renderPreparationPipeline = RenderPreparationPipeline(modelLoader: metalProvider.modelLoader,
                                                               planets: planets)
-        
+
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
-        
+
         super.init()
 
         metalView.device = device
@@ -137,7 +138,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         metalView.sampleCount = viewSampleCount
         if #available(iOS 13.0, *) {
             (metalView.layer as? CAMetalLayer)?.colorspace =
-                CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+            CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         }
         metalView.depthStencilPixelFormat = .depth32Float
 
@@ -188,8 +189,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
               let depthTexture = depthTexture,
               let postfxMsaaTexture = postfxMsaaTexture,
               let drawable = view.currentDrawable else {
-              return
-          }
+            return
+        }
 
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
@@ -251,7 +252,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             blit.generateMipmaps(for: hdrTexture)
             blit.endEncoding()
         }
-        
+
         geometryCommandBuffer.commit()
 
         // Update any label overlays with the latest planet positions
@@ -279,7 +280,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         postfxCommandBuffer.present(drawable)
         postfxCommandBuffer.commit()
     }
-    
+
     private func updateProjectionMatrix() {
         let aspect = Float(metalView.bounds.width / metalView.bounds.height)
         projectionMatrix = float4x4.perspective(
@@ -360,10 +361,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
               let endDistance = endCameraDistance else { return }
 
         cameraAnimationProgress = min(cameraAnimationProgress + delta / cameraAnimationDuration, 1)
-        let t = cameraAnimationProgress
+        let time = cameraAnimationProgress
 
-        cameraTarget = startTarget + (endTarget - startTarget) * t
-        cameraDistance = startDistance + (endDistance - startDistance) * t
+        cameraTarget = startTarget + (endTarget - startTarget) * time
+        cameraDistance = startDistance + (endDistance - startDistance) * time
         updateCamera()
 
         if cameraAnimationProgress >= 1 {
@@ -373,14 +374,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             endCameraDistance = nil
         }
     }
-    
+
     func updateCamera() {
         cameraOrientation = simd_normalize(cameraOrientation)
 
         cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, cameraDistance))
         self.cameraPosition = cameraOffset + cameraTarget
         cameraUp = cameraOrientation.act(SIMD3<Float>(0, 1, 0))
-        
+
         // 2. Update matrices
         viewMatrix = float4x4.lookAt(
             eye: cameraPosition,
@@ -430,25 +431,25 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func applyPostFXStyle(_ style: PostFXStyle) {
         postFXParams.style = style.rawValue
-        
+
         switch style {
-            case .standard:
-                postFXParams.bloomThreshold = 1.0
-                postFXParams.bloomRadius = 1.0
-                postFXParams.lensDirtOpacity = 0.0
-                postFXParams.dreamyIntensity = 0.0
-                postFXParams.softFocusRadius = 0.75
-                postFXParams.hazeStrength = 0.0
-                postFXParams.saturationBoost = 1.0
-                
-            case .dreamy:
-                postFXParams.bloomThreshold = 0.55
-                postFXParams.bloomRadius = 1.35
-                postFXParams.lensDirtOpacity = 0.2
-                postFXParams.dreamyIntensity = 0.5
-                postFXParams.softFocusRadius = 1.9
-                postFXParams.hazeStrength = 0.3
-                postFXParams.saturationBoost = 1.08
+        case .standard:
+            postFXParams.bloomThreshold = 1.0
+            postFXParams.bloomRadius = 1.0
+            postFXParams.lensDirtOpacity = 0.0
+            postFXParams.dreamyIntensity = 0.0
+            postFXParams.softFocusRadius = 0.75
+            postFXParams.hazeStrength = 0.0
+            postFXParams.saturationBoost = 1.0
+
+        case .dreamy:
+            postFXParams.bloomThreshold = 0.55
+            postFXParams.bloomRadius = 1.35
+            postFXParams.lensDirtOpacity = 0.2
+            postFXParams.dreamyIntensity = 0.5
+            postFXParams.softFocusRadius = 1.9
+            postFXParams.hazeStrength = 0.3
+            postFXParams.saturationBoost = 1.08
         }
     }
 
@@ -463,7 +464,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
         descriptor.rasterSampleCount = sampleCount
         descriptor.depthAttachmentPixelFormat = depthPixelFormat
-        return try! device.makeRenderPipelineState(descriptor: descriptor)
+        do {
+            return try device.makeRenderPipelineState(descriptor: descriptor)
+        } catch {
+            fatalError("makeRenderPipelineState fatal error")
+        }
     }
 
     private static func makeHDRTexture(device: MTLDevice, size: CGSize) -> MTLTexture {
@@ -495,3 +500,4 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         return device.makeTexture(descriptor: descriptor)!
     }
 }
+// swiftlint:enable type_body_length

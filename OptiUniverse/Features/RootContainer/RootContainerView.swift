@@ -8,33 +8,33 @@
 import SwiftUI
 
 struct RootContainerView: View {
-    
+
     @Environment(AppEnvironment.self) private var appEnvironment
     @Bindable private var metalProvider: MetalProvider
-    
+
     private let modelLoader: ModelLoader
-    
+
     init() {
         modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
         metalProvider = MetalProvider(modelLoader: modelLoader)
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             TopBarView()
-            .padding(.horizontal)
-            .padding(.bottom, 16)
-            
+                .padding(.horizontal)
+                .padding(.bottom, 16)
+
             switch (metalProvider.isReady, appEnvironment.currentScreen) {
-                case (false, _):
-                    ProgressView()
-                        .frame(maxHeight: .infinity)
-                        .controlSize(ControlSize.large)
-                case (true, .home):
-                    HomeView()
-                case (true, .objects):
-                    UniverseView(metalProvider: metalProvider)
-                        .ignoresSafeArea(edges: .bottom)
+            case (false, _):
+                ProgressView()
+                    .frame(maxHeight: .infinity)
+                    .controlSize(ControlSize.large)
+            case (true, .home):
+                HomeView()
+            case (true, .objects):
+                UniverseView(metalProvider: metalProvider)
+                    .ignoresSafeArea(edges: .bottom)
             }
         }
         .task {

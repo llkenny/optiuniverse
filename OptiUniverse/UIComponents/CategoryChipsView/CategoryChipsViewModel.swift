@@ -11,7 +11,7 @@ import Observation
 final class CategoryChipsViewModel {
     var tags: [String] = []
     var destinationsProvider: DestinationsProviderProtocol?
-    
+
     func loadTags() async {
         let tags: [String] = await destinationsProvider?
             .destinations

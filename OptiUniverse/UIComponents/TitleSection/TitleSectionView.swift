@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TitleSectionView: View {
     let name: String
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Hi \(name),")

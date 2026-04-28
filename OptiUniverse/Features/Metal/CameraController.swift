@@ -30,11 +30,11 @@ final class CameraController: NSObject {
         super.init()
         start()
     }
-    
+
     func stop() {
         displayLink?.invalidate()
     }
-    
+
     private func start() {
         displayLink = CADisplayLink(target: self, selector: #selector(step(_:)))
         displayLink?.add(to: .main, forMode: .common)

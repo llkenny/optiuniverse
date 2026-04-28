@@ -11,13 +11,13 @@ import SwiftUI
 final class DestinationListViewModel {
     private var cards: [DestinationCardModel] = []
     var destinationsProvider: DestinationsProviderProtocol?
-    
+
     func loadCards() async {
         guard cards.isEmpty,
               let destinationsProvider else {
             return
         }
-        
+
         let objects = await destinationsProvider.destinations
         // TODO: Make cache
         cards = objects.map {

@@ -75,7 +75,7 @@ struct UniverseView: UIViewRepresentable {
             }
         }
     }
-    
+
     static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
         coordinator.cameraController?.stop()
     }
@@ -106,7 +106,7 @@ class RendererCoordinator: NSObject, PlanetLabelDelegate {
         }
     }
 
-    func updatePlanetLabels(_ positions: [String : SIMD2<Float>]) {
+    func updatePlanetLabels(_ positions: [String: SIMD2<Float>]) {
         DispatchQueue.main.async {
             for (name, label) in self.labels {
                 if let position = positions[name] {

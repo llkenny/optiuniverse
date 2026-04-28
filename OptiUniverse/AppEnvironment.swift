@@ -9,16 +9,16 @@ import Observation
 
 @Observable
 final class AppEnvironment {
-    
+
     enum Screen {
         case home, objects
     }
-    
+
     var currentScreen: Screen = .home
     var selectedPlanet: String?
     var location: String {
         "\(selectedPlanet ?? "Unknown"), Solar System, Milky Way"
     }
-    
+
     let destinationsProvider: DestinationsProviderProtocol = DestinationsProvider()
 }

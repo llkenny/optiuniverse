@@ -5,7 +5,6 @@
 //  Created by max on 27.03.2026.
 //
 
-
 import ModelIO
 import MetalKit
 
@@ -17,7 +16,7 @@ struct LoadedMesh: @unchecked Sendable {
 }
 
 actor ModelLoader {
-    
+
     private let resourceName: String
     private let vertexDescriptor: MDLVertexDescriptor
 
@@ -38,31 +37,38 @@ actor ModelLoader {
                              vertexDescriptor: vertexDescriptor,
                              bufferAllocator: allocator)
         asset.loadTextures()
-        
+
         let mdlMeshes = asset
             .childObjects(of: MDLMesh.self)
             .compactMap { $0 as? MDLMesh }
-        
+
         meshes = await makeLoadedMeshes(mdlMeshes: mdlMeshes, device: device)
     }
-    
+
     /// Creates a dictionary of meshes with loaded textures. MainActor because of texture is using CoreGraphics implicitly.
     /// - Parameters:
     ///   - mdlMeshes: Raw meshes
     ///   - device: Device for load a texture
     /// - Returns: Prepared meshes with textures
     @MainActor
-    private func makeLoadedMeshes(mdlMeshes: [MDLMesh], device: MTLDevice) -> [String : LoadedMesh] {
+    private func makeLoadedMeshes(mdlMeshes: [MDLMesh], device: MTLDevice) -> [String: LoadedMesh] {
         let loadedMeshes = mdlMeshes
-            .map { mdlMesh in
+            .compactMap { mdlMesh in
                 let textures = (mdlMesh.submeshes as? [MDLSubmesh])?
                     .map {
                         Textures(material: $0.material, device: device)
                     } ?? []
-                return LoadedMesh(mesh: try! MTKMesh(mesh: mdlMesh, device: device),
-                                  textures: textures,
-                                  boundsCenter: boundingCenter(of: mdlMesh),
-                                  boundsRadius: boundingRadius(of: mdlMesh))
+                do {
+                    let mesh = try MTKMesh(mesh: mdlMesh, device: device)
+                    return LoadedMesh(mesh: mesh,
+                                      textures: textures,
+                                      boundsCenter: boundingCenter(of: mdlMesh),
+                                      boundsRadius: boundingRadius(of: mdlMesh))
+                } catch {
+                    assertionFailure("MTKMesh init failed")
+                    return nil
+                }
+
             }
         return Dictionary(uniqueKeysWithValues: loadedMeshes.map { ($0.mesh.name, $0) })
     }
@@ -116,8 +122,12 @@ private func boundingRadius(of mesh: MDLMesh) -> Float {
 
 private func rewriteTextureCoordinatesForRuntimePlanet(on mesh: MDLMesh) {
     guard
-        let positionAttribute = mesh.vertexAttributeData(forAttributeNamed: MDLVertexAttributePosition, as: .float3),
-        let texCoordAttribute = mesh.vertexAttributeData(forAttributeNamed: MDLVertexAttributeTextureCoordinate, as: .float2)
+        let positionAttribute = mesh
+            .vertexAttributeData(forAttributeNamed: MDLVertexAttributePosition,
+                                 as: .float3),
+        let texCoordAttribute = mesh
+            .vertexAttributeData(forAttributeNamed: MDLVertexAttributeTextureCoordinate,
+                                 as: .float2)
     else {
         return
     }
@@ -127,8 +137,8 @@ private func rewriteTextureCoordinatesForRuntimePlanet(on mesh: MDLMesh) {
 
     for index in 0..<mesh.vertexCount {
         let direction = simd_normalize(positions[index])
-        let u = atan2(direction.x, direction.z) / (2 * Float.pi) + 0.5
-        let v = acos(max(-1, min(1, direction.y))) / Float.pi
-        texCoords[index] = SIMD2<Float>(u, v)
+        let uValue = atan2(direction.x, direction.z) / (2 * Float.pi) + 0.5
+        let vValue = acos(max(-1, min(1, direction.y))) / Float.pi
+        texCoords[index] = SIMD2<Float>(uValue, vValue)
     }
 }

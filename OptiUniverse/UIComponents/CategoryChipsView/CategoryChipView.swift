@@ -10,7 +10,7 @@ import SwiftUI
 struct CategoryChipView: View {
     let isActive: Bool
     let title: String
-    
+
     var body: some View {
         Text(title)
             .foregroundStyle(isActive ? .white : Color.lowEmphasized)
@@ -23,7 +23,7 @@ struct CategoryChipView: View {
                     .fill(Color.enable)
                     .opacity(isActive ? 1 : 0)
                     .scaleEffect(isActive ? 1 : 0.96)
-                
+
                 Capsule()
                     .fill(.black.opacity(0.6))
                     .frame(height: 20)
@@ -31,7 +31,7 @@ struct CategoryChipView: View {
                     .blur(radius: 8)
                     .offset(y: isActive ? 12 : 0)
                     .opacity(isActive ? 1 : 0)
-                
+
                 Capsule()
                     .stroke(lineWidth: 1)
                     .foregroundStyle(.chipInactiveStroke)
@@ -44,7 +44,7 @@ struct CategoryChipView: View {
 
 #Preview {
     @Previewable @State var isActive: Bool = true
-    
+
     VStack {
         HStack {
             CategoryChipView(isActive: isActive, title: "🔥 Test")

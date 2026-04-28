@@ -9,12 +9,12 @@ import Metal
 
 @Observable
 final class MetalProvider {
-    
+
     let modelLoader: ModelLoader
     let device: MTLDevice
-    
+
     var isReady: Bool = false
-    
+
     init(modelLoader: ModelLoader) {
         self.modelLoader = modelLoader
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -22,7 +22,7 @@ final class MetalProvider {
         }
         self.device = device
     }
-    
+
     func prepare() async {
         guard !isReady else { return }
         await modelLoader.loadMeshes(device: device)
