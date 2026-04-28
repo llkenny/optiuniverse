@@ -8,18 +8,14 @@
 import SwiftUI
 
 struct CategoryChipView: View {
-    @Binding var isActive: Bool
-    let model: CategoryChipModel
+    let isActive: Bool
+    let title: String
     
     var body: some View {
-        HStack(spacing: 8) {
-            Text(model.imageText)
-                .font(.system(size: 14))
-            Text(model.title)
-                .foregroundStyle(isActive ? .white : Color.lowEmphasized)
-                .font(.system(size: 14))
-                .lineLimit(1)
-        }
+        Text(title)
+            .foregroundStyle(isActive ? .white : Color.lowEmphasized)
+            .font(.system(size: 14))
+            .lineLimit(1)
         .padding(10)
         .background {
             ZStack {
@@ -51,12 +47,7 @@ struct CategoryChipView: View {
     
     VStack {
         HStack {
-            CategoryChipView(isActive: $isActive,
-                             model: .init(
-                                imageText: "🔥",
-                                title: "Test"
-                             )
-            )
+            CategoryChipView(isActive: isActive, title: "🔥 Test")
             .onTapGesture { isActive.toggle() }
             Spacer()
             Toggle("", isOn: $isActive)

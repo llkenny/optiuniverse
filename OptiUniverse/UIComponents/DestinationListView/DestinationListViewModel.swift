@@ -9,15 +9,18 @@ import SwiftUI
 
 @Observable
 final class DestinationListViewModel {
-    private var allCards: [DestinationCardModel] = []
+    private var cards: [DestinationCardModel] = []
+    var destinationsProvider: DestinationsProviderProtocol?
     
-    func loadCards() {
-        guard allCards.isEmpty else {
+    func loadCards() async {
+        guard cards.isEmpty,
+              let destinationsProvider else {
             return
         }
         
-        let destinationObjects: [DestinationObject] = Bundle.main.loadConfig(filename: "DestinationObjects")
-        allCards = destinationObjects.map {
+        let objects = await destinationsProvider.destinations
+        // TODO: Make cache
+        cards = objects.map {
             DestinationCardModel(
                 id: $0.id,
                 object: $0.object,
@@ -31,9 +34,9 @@ final class DestinationListViewModel {
 
     func cards(filteredBy categoryTitle: String?) -> [DestinationCardModel] {
         guard let categoryTitle else {
-            return allCards
+            return cards
         }
 
-        return allCards.filter { $0.tag == categoryTitle }
+        return cards.filter { $0.tag == categoryTitle }
     }
 }

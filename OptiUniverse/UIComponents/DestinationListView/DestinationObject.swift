@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct DestinationObject: Decodable {
+nonisolated struct DestinationObject: Decodable {
     let id: UUID
     let object: String
     let title: String

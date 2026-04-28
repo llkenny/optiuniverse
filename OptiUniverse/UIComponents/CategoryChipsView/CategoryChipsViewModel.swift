@@ -5,13 +5,18 @@
 //  Created by max on 21.04.2026.
 //
 
-struct CategoryChipsViewModel {
-    var chips: [CategoryChipModel] = [
-        .init(imageText: "🔥", title: "Popular"),
-        .init(imageText: "🌎", title: "Inhabited"),
-        .init(imageText: "❄️", title: "Cold"),
-        .init(imageText: "🌶️", title: "Hot"),
-        .init(imageText: "🪐", title: "Rings"),
-        .init(imageText: "🪨", title: "Satellite")
-    ]
+import Observation
+
+@Observable
+final class CategoryChipsViewModel {
+    var tags: [String] = []
+    var destinationsProvider: DestinationsProviderProtocol?
+    
+    func loadTags() async {
+        let tags: [String] = await destinationsProvider?
+            .destinations
+            .map { $0.tag } ?? []
+        var seenTags = Set<String>()
+        self.tags = tags.filter { seenTags.insert($0).inserted }
+    }
 }
