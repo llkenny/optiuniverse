@@ -8,35 +8,43 @@
 import SwiftUI
 
 struct CategoryChipsView: View {
+    
+    @Environment(AppEnvironment.self) private var appEnvironment
+    
     @Binding var selectedTag: String?
-    private let viewModel: CategoryChipsViewModel = .init()
+    @State private var viewModel: CategoryChipsViewModel = .init()
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
-                ForEach(Array(viewModel.chips.enumerated()),
-                        id: \.element.id) { index, chip in
+                ForEach(viewModel.tags, id: \.self) { tag in
                     CategoryChipView(
-                        isActive: .constant(selectedTag == chip.title),
-                        model: chip
+                        isActive: selectedTag == tag,
+                        title: tag
                     )
                     .padding(.bottom, 20)
                     .onTapGesture {
-                        if selectedTag == chip.title {
+                        if selectedTag == tag {
                             selectedTag = nil
                         } else {
-                            selectedTag = chip.title
+                            selectedTag = tag
                         }
                     }
                 }
             }
         }
+        .task {
+            viewModel.destinationsProvider = appEnvironment.destinationsProvider
+            await viewModel.loadTags()
+        }
     }
 }
 
 #Preview {
+    @Previewable @State var selectedTag: String?
+    
     VStack {
-        CategoryChipsView(selectedTag: .constant(nil))
+        CategoryChipsView(selectedTag: $selectedTag)
         Spacer()
     }
     .padding()

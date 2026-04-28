@@ -12,7 +12,7 @@ struct DestinationListView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     
     @Binding var selectedTag: String?
-    @State var viewModel: DestinationListViewModel = .init()
+    @State private var viewModel: DestinationListViewModel = .init()
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -27,8 +27,9 @@ struct DestinationListView: View {
             }
             .frame(height: 174)
         }
-        .onAppear {
-            viewModel.loadCards()
+        .task {
+            viewModel.destinationsProvider = appEnvironment.destinationsProvider
+            await viewModel.loadCards()
         }
         .animation(.easeInOut, value: selectedTag)
     }

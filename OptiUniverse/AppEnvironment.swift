@@ -19,4 +19,6 @@ final class AppEnvironment {
     var location: String {
         "\(selectedPlanet ?? "Unknown"), Solar System, Milky Way"
     }
+    
+    let destinationsProvider: DestinationsProviderProtocol = DestinationsProvider()
 }

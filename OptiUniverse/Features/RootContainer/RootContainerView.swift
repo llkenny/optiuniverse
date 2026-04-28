@@ -27,9 +27,9 @@ struct RootContainerView: View {
             
             switch (metalProvider.isReady, appEnvironment.currentScreen) {
                 case (false, _):
-                    Spacer()
                     ProgressView()
-                    Spacer()
+                        .frame(maxHeight: .infinity)
+                        .controlSize(ControlSize.large)
                 case (true, .home):
                     HomeView()
                 case (true, .objects):

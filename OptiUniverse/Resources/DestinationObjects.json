@@ -5,7 +5,7 @@
         "title": "Sun",
         "subtitle": "Solar Giant",
         "imageName": "dst-Sun",
-        "tag": "Hot"
+        "tag": "🌶️ Hot"
     },
     {
         "id": "2F2B045C-4C7C-4797-A423-BAC3665F67AF",
@@ -13,7 +13,7 @@
         "title": "Mercury",
         "subtitle": "Swift Cratered World",
         "imageName": "dst-Mercury",
-        "tag": "Hot"
+        "tag": "🌶️ Hot"
     },
     {
         "id": "65759265-BD0F-43F8-BE5C-BD877D0EE4F6",
@@ -21,7 +21,7 @@
         "title": "Venus",
         "subtitle": "Cloud Veiled Inferno",
         "imageName": "dst-Venus",
-        "tag": "Hot"
+        "tag": "🌶️ Hot"
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB94F",
@@ -29,7 +29,7 @@
         "title": "Earth",
         "subtitle": "Blue Home World",
         "imageName": "dst-Earth",
-        "tag": "Inhabited"
+        "tag": "🌎 Inhabited"
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB95F",
@@ -37,7 +37,7 @@
         "title": "Moon",
         "subtitle": "Nearest Space Object",
         "imageName": "dst-Moon",
-        "tag": "Satellite"
+        "tag": "🪨 Satellite"
     },
     {
         "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
@@ -45,7 +45,7 @@
         "title": "Mars",
         "subtitle": "Dust Storm Frontier",
         "imageName": "dst-Mars",
-        "tag": "Popular"
+        "tag": "🔥 Popular"
     },
     {
         "id": "B09A3752-957D-4B27-AB40-C237B7CBEAD0",
@@ -53,7 +53,7 @@
         "title": "Jupiter",
         "subtitle": "Great Storm Giant",
         "imageName": "dst-Jupiter",
-        "tag": "Popular"
+        "tag": "🔥 Popular"
     },
     {
         "id": "9E86DC33-347C-48FD-8FB7-EC952E184418",
@@ -61,7 +61,7 @@
         "title": "Saturn",
         "subtitle": "Ring Crowned Giant",
         "imageName": "dst-Saturn",
-        "tag": "Rings"
+        "tag": "🪐 Rings"
     },
     {
         "id": "BCE5A337-2F76-498F-BFC0-DEED598C933A",
@@ -69,7 +69,7 @@
         "title": "Uranus",
         "subtitle": "Tilted Ice Giant",
         "imageName": "dst-Uranus",
-        "tag": "Rings"
+        "tag": "🪐 Rings"
     },
     {
         "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
@@ -77,6 +77,6 @@
         "title": "Neptune",
         "subtitle": "Deep Blue Giant",
         "imageName": "dst-Neptune",
-        "tag": "Cold"
+        "tag": "❄️ Cold"
     }
 ]

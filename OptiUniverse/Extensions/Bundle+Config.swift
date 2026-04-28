@@ -9,7 +9,7 @@ import Foundation
 
 extension Bundle {
     
-    func loadConfig<T: Decodable>(filename: String) -> [T] {
+    nonisolated func loadConfig<T: Decodable>(filename: String) -> [T] {
         guard let url = self.url(forResource: filename, withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let configs = try? JSONDecoder().decode([T].self, from: data) else {
