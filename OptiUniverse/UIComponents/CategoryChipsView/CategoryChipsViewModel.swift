@@ -6,6 +6,7 @@
 //
 
 import Observation
+import BaseModule
 
 @Observable
 final class CategoryChipsViewModel {
