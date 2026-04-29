@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MetalModule
+import BaseModule
 
 struct RootContainerView: View {
 

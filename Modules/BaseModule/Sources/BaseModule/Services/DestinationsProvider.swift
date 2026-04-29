@@ -6,6 +6,7 @@
 //
 
 import Foundation
+internal import CommonTools
 
 actor DestinationsProvider: DestinationsProviderProtocol {
     var destinations: [DestinationObject] = []

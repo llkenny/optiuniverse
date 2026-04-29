@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		502571F32FA205D6000AC26F /* MetalModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F22FA205D6000AC26F /* MetalModule */; };
+		502571F52FA20F05000AC26F /* BaseModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F42FA20F05000AC26F /* BaseModule */; };
+		502571F72FA20F08000AC26F /* CommonTools in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F62FA20F08000AC26F /* CommonTools */; };
+		502571F92FA20F0C000AC26F /* MetalModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F82FA20F0C000AC26F /* MetalModule */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,7 +62,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				502571F32FA205D6000AC26F /* MetalModule in Frameworks */,
+				502571F52FA20F05000AC26F /* BaseModule in Frameworks */,
+				502571F92FA20F0C000AC26F /* MetalModule in Frameworks */,
+				502571F72FA20F08000AC26F /* CommonTools in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,7 +155,9 @@
 			);
 			name = OptiUniverse;
 			packageProductDependencies = (
-				502571F22FA205D6000AC26F /* MetalModule */,
+				502571F42FA20F05000AC26F /* BaseModule */,
+				502571F62FA20F08000AC26F /* CommonTools */,
+				502571F82FA20F0C000AC26F /* MetalModule */,
 			);
 			productName = OptiUniverse;
 			productReference = 50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */;
@@ -533,7 +539,15 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		502571F22FA205D6000AC26F /* MetalModule */ = {
+		502571F42FA20F05000AC26F /* BaseModule */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BaseModule;
+		};
+		502571F62FA20F08000AC26F /* CommonTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CommonTools;
+		};
+		502571F82FA20F0C000AC26F /* MetalModule */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MetalModule;
 		};

@@ -10,6 +10,7 @@ import os
 import QuartzCore
 import simd
 
+@MainActor
 protocol PlanetLabelDelegate: AnyObject {
     /// Updates label positions in screen space for each planet.
     func updatePlanetLabels(_ positions: [String: SIMD2<Float>])

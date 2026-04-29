@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import BaseModule
 
 struct TopBarView: View {
     @Environment(AppEnvironment.self) private var appEnvironment

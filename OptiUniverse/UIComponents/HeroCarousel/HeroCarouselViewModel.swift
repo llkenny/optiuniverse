@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+internal import CommonTools
 
 @Observable
 final class HeroCarouselViewModel {

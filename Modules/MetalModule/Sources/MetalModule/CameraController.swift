@@ -1,6 +1,7 @@
 import UIKit
 
 /// Handles user gestures to control the orbital camera around the scene's origin.
+@MainActor
 final class CameraController: NSObject {
     weak var renderer: MetalRenderer?
 

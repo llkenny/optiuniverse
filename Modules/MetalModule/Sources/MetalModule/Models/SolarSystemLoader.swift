@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import CommonTools
+internal import CommonTools
 
 final class SolarSystemLoader {
     enum Constants {

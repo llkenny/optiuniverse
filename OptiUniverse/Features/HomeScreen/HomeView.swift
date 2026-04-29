@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import BaseModule
 
 struct HomeView: View {
 

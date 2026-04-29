@@ -8,6 +8,7 @@
 import SwiftUI
 import MetalKit
 import UIKit
+internal import BaseModule
 
 public struct UniverseView: UIViewRepresentable {
     @Environment(AppEnvironment.self) private var appEnvironment
@@ -17,11 +18,11 @@ public struct UniverseView: UIViewRepresentable {
         self.metalProvider = metalProvider
     }
 
-    func makeCoordinator() -> RendererCoordinator {
+    public func makeCoordinator() -> RendererCoordinator {
         RendererCoordinator()
     }
 
-    func makeUIView(context: Context) -> UIView {
+    public func makeUIView(context: Context) -> UIView {
         let container = UIView()
 
         // Setup Metal view
@@ -69,7 +70,7 @@ public struct UniverseView: UIViewRepresentable {
         return container
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
+    public func updateUIView(_ uiView: UIView, context: Context) {
         let selectedPlanet = appEnvironment.selectedPlanet
 
         if context.coordinator.currentSelectedPlanet != selectedPlanet {
@@ -80,13 +81,14 @@ public struct UniverseView: UIViewRepresentable {
         }
     }
 
-    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+    public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
         coordinator.cameraController?.stop()
     }
 }
 
 // FIXME: Check methods — looks like they are not used
-class RendererCoordinator: NSObject, PlanetLabelDelegate {
+@MainActor
+public final class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
     private var labels: [String: UILabel] = [:]
     var currentSelectedPlanet: String?

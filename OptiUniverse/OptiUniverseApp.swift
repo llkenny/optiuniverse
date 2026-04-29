@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import BaseModule
 
 @main
 struct OptiUniverseApp: App {
