@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MetalModule
 
 struct RootContainerView: View {
 

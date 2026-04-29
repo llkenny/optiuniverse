@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		502571F32FA205D6000AC26F /* MetalModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F22FA205D6000AC26F /* MetalModule */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		50209F6D2E6629400099E217 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -56,12 +60,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				502571F32FA205D6000AC26F /* MetalModule in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		502571F12FA205D6000AC26F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		506056262E5E587000536AA8 /* TestFlight */ = {
 			isa = PBXGroup;
 			children = (
@@ -82,6 +94,7 @@
 				50BAAA372E30E2A800ECB7DE /* Products */,
 				500657812F7B643C00DA651B /* AGENTS.md */,
 				50F3478D2F9C98B800046135 /* TODO */,
+				502571F12FA205D6000AC26F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -138,6 +151,7 @@
 			);
 			name = OptiUniverse;
 			packageProductDependencies = (
+				502571F22FA205D6000AC26F /* MetalModule */,
 			);
 			productName = OptiUniverse;
 			productReference = 50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */;
@@ -519,6 +533,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		502571F22FA205D6000AC26F /* MetalModule */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MetalModule;
+		};
 		50B54AD52FA10CEB0033669B /* SwiftLintBuildToolPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 504655C72FA10B1A00FD69D0 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
