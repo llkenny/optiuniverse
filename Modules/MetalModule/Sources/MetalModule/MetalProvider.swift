@@ -13,9 +13,10 @@ public final class MetalProvider {
     let modelLoader: ModelLoader
     let device: MTLDevice
 
-    var isReady: Bool = false
+    public var isReady: Bool = false
 
-    init(modelLoader: ModelLoader) {
+    // TODO: Make MetalProviderProtocol
+    public init(modelLoader: ModelLoader) {
         self.modelLoader = modelLoader
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError()
@@ -23,7 +24,7 @@ public final class MetalProvider {
         self.device = device
     }
 
-    func prepare() async {
+    public func prepare() async {
         guard !isReady else { return }
         await modelLoader.loadMeshes(device: device)
         isReady = true

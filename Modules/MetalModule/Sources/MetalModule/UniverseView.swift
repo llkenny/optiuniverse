@@ -9,9 +9,13 @@ import SwiftUI
 import MetalKit
 import UIKit
 
-struct UniverseView: UIViewRepresentable {
+public struct UniverseView: UIViewRepresentable {
     @Environment(AppEnvironment.self) private var appEnvironment
     let metalProvider: MetalProvider
+
+    public init(metalProvider: MetalProvider) {
+        self.metalProvider = metalProvider
+    }
 
     func makeCoordinator() -> RendererCoordinator {
         RendererCoordinator()

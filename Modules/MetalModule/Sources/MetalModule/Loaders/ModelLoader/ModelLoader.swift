@@ -15,7 +15,7 @@ struct LoadedMesh: @unchecked Sendable {
     let boundsRadius: Float
 }
 
-actor ModelLoader {
+public actor ModelLoader {
 
     private let resourceName: String
     private let vertexDescriptor: MDLVertexDescriptor
@@ -24,7 +24,8 @@ actor ModelLoader {
     // TODO: Add missing:
     // ["JupiterLow_JupiterAtmosphere_0", "MoonLow_Moon_0", "PlutoLow_Pluto_0"]
 
-    init(resourceName: String) {
+    // TODO: Make ModelLoaderProtocol
+    public init(resourceName: String) {
         self.resourceName = resourceName
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
     }
