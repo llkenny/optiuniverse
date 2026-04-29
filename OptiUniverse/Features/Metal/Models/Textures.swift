@@ -66,8 +66,8 @@ extension Textures {
                                 generateMipmaps: Bool) -> [MTKTextureLoader.Option: NSNumber] {
         let usesSRGB = semantic == .baseColor || semantic == .emission
         return [
-            MTKTextureLoader.Option.generateMipmaps: NSNumber(booleanLiteral: generateMipmaps),
-            MTKTextureLoader.Option.SRGB: NSNumber(booleanLiteral: usesSRGB)
+            MTKTextureLoader.Option.generateMipmaps: NSNumber(value: generateMipmaps),
+            MTKTextureLoader.Option.SRGB: NSNumber(value: usesSRGB)
         ]
     }
 
