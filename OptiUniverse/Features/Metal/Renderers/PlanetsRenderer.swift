@@ -9,6 +9,7 @@ import MetalKit
 import QuartzCore
 import simd
 
+// swiftlint:disable type_body_length
 final class PlanetsRenderer {
     private enum RenderPass {
         case opaque
@@ -33,33 +34,33 @@ final class PlanetsRenderer {
     private var samplerState: MTLSamplerState!
     private let opaqueDepthStencilState: MTLDepthStencilState
     private let transparentDepthStencilState: MTLDepthStencilState
-    
+
     private var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
-    
+
     /// Screen-space positions of planet centers, updated each frame.
     /// Keys are planet names, values are pixel coordinates in the viewport.
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
-    
+
     /// World-space positions of planet centers, updated each frame.
     /// Keys are planet names, values are coordinates in the scene space.
     var planetWorldPositions: [String: SIMD3<Float>] = [:]
-    
+
     init(device: MTLDevice, sampleCount: Int) {
         self.device = device
         self.opaqueDepthStencilState = Self.makeDepthStencilState(device: device,
                                                                   writesDepth: true)
         self.transparentDepthStencilState = Self.makeDepthStencilState(device: device,
                                                                        writesDepth: false)
-        
+
         pipelineState = makePipelineState(fragmentFunction: "fragment_main",
                                           sampleCount: sampleCount)
         samplerState = makeSamplerState()
     }
-    
+
     /// Current simulation time used for planet animations.
     var currentTime: Float { time }
-    
+
     /// Builds a render pipeline for the given fragment function.
     ///
     /// - Parameter fragmentFunction: The name of the fragment shader function.
@@ -67,7 +68,7 @@ final class PlanetsRenderer {
     private func makePipelineState(fragmentFunction: String,
                                    sampleCount: Int) -> MTLRenderPipelineState {
         let library = device.makeDefaultLibrary()!
-        
+
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.rasterSampleCount = sampleCount
         descriptor.colorAttachments[0].pixelFormat = Self.colorPixelFormat
@@ -82,7 +83,7 @@ final class PlanetsRenderer {
         descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
         descriptor.fragmentFunction = library.makeFunction(name: fragmentFunction)
         descriptor.vertexDescriptor = Self.makeVertexDescriptor()
-        
+
         do {
             return try device.makeRenderPipelineState(descriptor: descriptor)
         } catch {
@@ -100,21 +101,21 @@ final class PlanetsRenderer {
         }
         return state
     }
-    
+
     /// Creates the shared vertex descriptor for planet rendering.
     private static func makeVertexDescriptor() -> MTLVertexDescriptor {
         let vertexDescriptor = MTLVertexDescriptor()
-        
+
         // Position (attribute 0)
         vertexDescriptor.attributes[0].format = .float3
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-        
+
         // Normal (attribute 1)
         vertexDescriptor.attributes[1].format = .float3
         vertexDescriptor.attributes[1].offset = 0
         vertexDescriptor.attributes[1].bufferIndex = 1
-        
+
         // Texture coordinates (attribute 2)
         vertexDescriptor.attributes[2].format = .float2
         vertexDescriptor.attributes[2].offset = 0
@@ -124,7 +125,7 @@ final class PlanetsRenderer {
         vertexDescriptor.attributes[3].format = .float4
         vertexDescriptor.attributes[3].offset = 0
         vertexDescriptor.attributes[3].bufferIndex = 3
-        
+
         // Layout
         vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD3<Float>>.stride
         vertexDescriptor.layouts[1].stride = MemoryLayout<SIMD3<Float>>.stride
@@ -132,7 +133,7 @@ final class PlanetsRenderer {
         vertexDescriptor.layouts[3].stride = MemoryLayout<SIMD4<Float>>.stride
         return vertexDescriptor
     }
-    
+
     private func makeSamplerState() -> MTLSamplerState {
         let samplerDescriptor = MTLSamplerDescriptor()
         samplerDescriptor.sAddressMode = .repeat
@@ -143,7 +144,7 @@ final class PlanetsRenderer {
         samplerDescriptor.maxAnisotropy = 8
         return device.makeSamplerState(descriptor: samplerDescriptor)!
     }
-    
+
     /// Advances the internal time accumulator and returns the time delta.
     /// Should be called once per frame before rendering so other systems can
     /// use the updated time (e.g. camera following).
@@ -154,7 +155,7 @@ final class PlanetsRenderer {
         time += delta
         return delta
     }
-    
+
     func renderPlanets(snapshot: PreparedRenderSnapshot?,
                        with renderEncoder: MTLRenderCommandEncoder,
                        viewMatrix: float4x4,
@@ -187,7 +188,7 @@ final class PlanetsRenderer {
             }
             .sorted {
                 simd_distance_squared($0.worldPosition, cameraWorldPosition) >
-                    simd_distance_squared($1.worldPosition, cameraWorldPosition)
+                simd_distance_squared($1.worldPosition, cameraWorldPosition)
             }
 
         renderEncoder.setDepthStencilState(transparentDepthStencilState)
@@ -202,7 +203,7 @@ final class PlanetsRenderer {
                          viewportSize: viewportSize)
         }
     }
-    
+
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: PreparedPlanetRenderPacket,
                               with renderEncoder: MTLRenderCommandEncoder,
@@ -223,21 +224,21 @@ final class PlanetsRenderer {
             if clipPosition.w > 0 {
                 let ndc = clipPosition / clipPosition.w
                 if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
-                    let x = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+                    let xValue = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
                     // Metal's projection matrix already flips the Y axis, so
                     // screen-space Y grows downward. Use `ndc.y + 1` instead of
                     // `1 - ndc.y` to avoid mirroring label positions vertically.
-                    let y = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
-                    planetScreenPositions[planet.planetName] = SIMD2<Float>(x, y)
+                    let yValue = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
+                    planetScreenPositions[planet.planetName] = SIMD2<Float>(xValue, yValue)
                 }
             }
         }
-        
+
         // TODO:
         // Elliptical orbit example
         //        let eccentricity: Float = 0.1 // 0 for circular
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
-        
+
         // Set buffers
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
@@ -370,7 +371,7 @@ final class PlanetsRenderer {
         }
 
         var matrix = planet.baseModelMatrix
-            * float4x4.makeScale(SIMD3<Float>(repeating: meshScale))
+        * float4x4.makeScale(SIMD3<Float>(repeating: meshScale))
         var translation = matrix.columns.3
         translation.x = planet.worldPosition.x - sceneOrigin.x
         translation.y = planet.worldPosition.y - sceneOrigin.y
@@ -402,10 +403,10 @@ final class PlanetsRenderer {
 
     private func isTransparentCompanionMesh(_ loadedMesh: LoadedMesh) -> Bool {
         isNamedTransparentMesh(loadedMesh) ||
-            loadedMesh.textures.contains {
-                $0.materialUniforms.usesBaseColorAlpha > 0.5 ||
-                    $0.materialUniforms.usesOpacityTexture > 0.5
-            }
+        loadedMesh.textures.contains {
+            $0.materialUniforms.usesBaseColorAlpha > 0.5 ||
+            $0.materialUniforms.usesOpacityTexture > 0.5
+        }
     }
 
     private func hasTransparentSubmesh(in planet: PreparedPlanetRenderPacket) -> Bool {
@@ -427,7 +428,7 @@ final class PlanetsRenderer {
                                         renderPass: .transparent,
                                         textures: textures)
         return isTransparentMaterial(uniforms) ||
-            (textures == nil && isNamedTransparentMesh(loadedMesh))
+        (textures == nil && isNamedTransparentMesh(loadedMesh))
     }
 
     private func materialUniforms(for planet: PreparedPlanetRenderPacket,
@@ -469,7 +470,7 @@ final class PlanetsRenderer {
 
     private func alphaGeometryRadius(for planet: PreparedPlanetRenderPacket,
                                      loadedMesh: LoadedMesh) -> Float {
-        guard (planet.planetName == "Saturn" || planet.planetName == "Uranus"),
+        guard planet.planetName == "Saturn" || planet.planetName == "Uranus",
               loadedMesh.mesh.name == planet.meshes.first?.mesh.name,
               loadedMesh.mesh.submeshes.count == 1,
               loadedMesh.boundsRadius > 0 else {
@@ -491,19 +492,20 @@ final class PlanetsRenderer {
 
     private func isTransparentMaterial(_ materialUniforms: MaterialUniforms) -> Bool {
         materialUniforms.usesBaseColorAlpha > 0.5 ||
-            materialUniforms.usesOpacityTexture > 0.5 ||
-            materialUniforms.opacityFactor < 0.999 ||
-            materialUniforms.rimAlphaStrength > 0.5
+        materialUniforms.usesOpacityTexture > 0.5 ||
+        materialUniforms.opacityFactor < 0.999 ||
+        materialUniforms.rimAlphaStrength > 0.5
     }
 
     private func isNamedTransparentMesh(_ loadedMesh: LoadedMesh) -> Bool {
         let meshName = loadedMesh.mesh.name
         return meshName.localizedCaseInsensitiveContains("Atmosphere") ||
-            meshName.localizedCaseInsensitiveContains("Cloud") ||
-            meshName.localizedCaseInsensitiveContains("Nuvem") ||
-            meshName.localizedCaseInsensitiveContains("Corona")
+        meshName.localizedCaseInsensitiveContains("Cloud") ||
+        meshName.localizedCaseInsensitiveContains("Nuvem") ||
+        meshName.localizedCaseInsensitiveContains("Corona")
     }
 }
+// swiftlint:enable type_body_length
 
 private extension Array {
     subscript(safe index: Int) -> Element? {

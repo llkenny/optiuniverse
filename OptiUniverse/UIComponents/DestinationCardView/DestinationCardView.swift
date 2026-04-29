@@ -9,16 +9,16 @@ import SwiftUI
 
 struct DestinationCardView: View {
     let model: DestinationCardModel
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Spacer()
-            
+
             Text(model.title)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.white)
                 .lineLimit(1)
-            
+
             Text(model.subtitle)
                 .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(.white)

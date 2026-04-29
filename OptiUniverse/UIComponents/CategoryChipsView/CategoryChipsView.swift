@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct CategoryChipsView: View {
-    
+
     @Environment(AppEnvironment.self) private var appEnvironment
-    
+
     @Binding var selectedTag: String?
     @State private var viewModel: CategoryChipsViewModel = .init()
-    
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
@@ -42,7 +42,7 @@ struct CategoryChipsView: View {
 
 #Preview {
     @Previewable @State var selectedTag: String?
-    
+
     VStack {
         CategoryChipsView(selectedTag: $selectedTag)
         Spacer()

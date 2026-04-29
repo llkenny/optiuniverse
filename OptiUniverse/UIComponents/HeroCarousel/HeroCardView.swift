@@ -15,7 +15,7 @@ struct HeroCardView: View {
             Image(card.imageResource)
                 .resizable()
                 .scaledToFill()
-            
+
             Rectangle()
                 .fill(
                     LinearGradient(
@@ -35,14 +35,14 @@ struct HeroCardView: View {
         .frame(width: 283, height: 291)
         .overlay(alignment: .topLeading) {
             VStack(alignment: .leading, spacing: 6) {
-                
+
                 Spacer()
-                
+
                 Text(card.title)
                     .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                
+
                 Text(card.subtitle.uppercased())
                     .font(.system(size: 12, weight: .semibold))
                     .tracking(1.4)

@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct HomeView: View {
-    
+
     @Environment(AppEnvironment.self) private var appEnvironment
-    
+
     @State private var currentCarouselIndex: Int = 0
     @State private var totalCount: Int = 0
-    @State private var currentChipsIndex: Int? = nil
-    @State private var selectedTag: String? = nil
+    @State private var currentChipsIndex: Int?
+    @State private var selectedTag: String?
     @State private var isDataLoaded: Bool = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             TitleSectionView(name: "Stranger")
@@ -30,7 +30,7 @@ struct HomeView: View {
             PageIndicatorView(totalCount: totalCount,
                               currentIndex: $currentCarouselIndex)
             .padding(.bottom, 16)
-            
+
             if isDataLoaded {
                 CategoryChipsView(selectedTag: $selectedTag)
                     .padding(.horizontal)
