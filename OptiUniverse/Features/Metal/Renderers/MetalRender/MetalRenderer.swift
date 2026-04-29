@@ -46,11 +46,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                           category: "viewMatrix")
 
     private let device: MTLDevice
-    private let commandQueue: MTLCommandQueue
-    private let planetsRenderer: PlanetsRenderer
+    let commandQueue: MTLCommandQueue
+    let planetsRenderer: PlanetsRenderer
     private let renderPreparationPipeline: RenderPreparationPipeline
-    private let metalView: MTKView
-    private let depthStencilState: MTLDepthStencilState
+    let metalView: MTKView
+    let depthStencilState: MTLDepthStencilState
 
     weak var labelDelegate: PlanetLabelDelegate?
 
@@ -58,16 +58,16 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var msaaColorTexture: MTLTexture?
     private var depthTexture: MTLTexture?
     private var postfxMsaaTexture: MTLTexture?
-    private var postfxPipelineState: MTLRenderPipelineState!
-    private var lensDirtTexture: MTLTexture?
-    private var postFXParams = PostFXParams(bloomThreshold: 0.55,
-                                            bloomRadius: 1.35,
-                                            lensDirtOpacity: 0.2,
-                                            style: PostFXStyle.standard.rawValue,
-                                            dreamyIntensity: 0.0,
-                                            softFocusRadius: 1.9,
-                                            hazeStrength: 0.3,
-                                            saturationBoost: 1.08)
+    private(set) var postfxPipelineState: MTLRenderPipelineState!
+    private(set) var lensDirtTexture: MTLTexture?
+    var postFXParams = PostFXParams(bloomThreshold: 0.55,
+                                    bloomRadius: 1.35,
+                                    lensDirtOpacity: 0.2,
+                                    style: PostFXStyle.standard.rawValue,
+                                    dreamyIntensity: 0.0,
+                                    softFocusRadius: 1.9,
+                                    hazeStrength: 0.3,
+                                    saturationBoost: 1.08)
 
     // Orbital Camera
     // Camera state
@@ -75,7 +75,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cameraTarget = SIMD3<Float>(0, 0, 0)
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
     private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
-    private var cameraOffset = SIMD3<Float>(0, 0, 3)
+    private(set) var cameraOffset = SIMD3<Float>(0, 0, 3)
     private var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
     private var followingPlanetName: String? = "Sun"
     private var pendingFollowPlanetName: String?
@@ -98,7 +98,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                           level: .debug)
         }
     }
-    private var projectionMatrix: float4x4 {
+    private(set) var projectionMatrix: float4x4 {
         didSet {
             projectionMatrixLogger.logMatricies(matrix1: oldValue,
                                                 matrix2: self.projectionMatrix,
@@ -187,10 +187,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func draw(in view: MTKView) {
-        guard let hdrTexture = hdrTexture,
-              let msaaColorTexture = msaaColorTexture,
-              let depthTexture = depthTexture,
-              let postfxMsaaTexture = postfxMsaaTexture,
+        guard let hdrTexture,
+              let msaaColorTexture,
+              let depthTexture,
+              let postfxMsaaTexture,
               let drawable = view.currentDrawable else {
             return
         }
@@ -215,74 +215,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             updateCamera()
         }
 
-        // First pass: render scene to MSAA texture and resolve to HDR texture
-        guard let geometryCommandBuffer = commandQueue.makeCommandBuffer() else { return }
-        let hdrDescriptor = MTLRenderPassDescriptor()
-        hdrDescriptor.colorAttachments[0].texture = msaaColorTexture
-        hdrDescriptor.colorAttachments[0].resolveTexture = hdrTexture
-        hdrDescriptor.colorAttachments[0].loadAction = .clear
-        hdrDescriptor.colorAttachments[0].storeAction = .multisampleResolve
-        hdrDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
-        hdrDescriptor.depthAttachment.texture = depthTexture
-        hdrDescriptor.depthAttachment.loadAction = .clear
-        hdrDescriptor.depthAttachment.storeAction = .dontCare
-        hdrDescriptor.depthAttachment.clearDepth = 1.0
-
-        guard let renderEncoder = geometryCommandBuffer.makeRenderCommandEncoder(descriptor: hdrDescriptor) else {
-            return
+        do {
+            try drawFirstPass(msaaColorTexture: msaaColorTexture,
+                              hdrTexture: hdrTexture,
+                              depthTexture: depthTexture,
+                              snapshot: snapshot)
+            drawSecondPass(postfxMsaaTexture: postfxMsaaTexture,
+                           drawable: drawable,
+                           hdrTexture: hdrTexture)
+        } catch {
+            // Just skip — possible due transient Metal resource failures
         }
-        renderEncoder.setDepthStencilState(depthStencilState)
-        renderEncoder.setCullMode(.none)
-
-        let renderOrigin = cameraTarget
-        let renderViewMatrix = float4x4.lookAt(
-            eye: cameraOffset,
-            target: .zero,
-            up: cameraUp
-        )
-
-        let configuration = PlanetRenderConfiguration(snapshot: snapshot,
-                                                      renderEncoder: renderEncoder,
-                                                      viewMatrix: renderViewMatrix,
-                                                      projectionMatrix: projectionMatrix,
-                                                      cameraPosition: cameraOffset,
-                                                      sceneOrigin: renderOrigin,
-                                                      viewportSize: metalView.bounds.size)
-        // Render the remaining planets.
-        planetsRenderer.renderPlanets(configuration: configuration)
-        renderEncoder.endEncoding()
-
-        if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
-            blit.generateMipmaps(for: hdrTexture)
-            blit.endEncoding()
-        }
-
-        geometryCommandBuffer.commit()
-
-        // Update any label overlays with the latest planet positions
-        let positions = planetsRenderer.planetScreenPositions
-        labelDelegate?.updatePlanetLabels(positions)
-
-        // Second pass: post-process to drawable using MSAA and resolve to the drawable
-        guard let postfxCommandBuffer = commandQueue.makeCommandBuffer() else { return }
-        let finalDescriptor = MTLRenderPassDescriptor()
-        finalDescriptor.colorAttachments[0].texture = postfxMsaaTexture
-        finalDescriptor.colorAttachments[0].resolveTexture = drawable.texture
-        finalDescriptor.colorAttachments[0].loadAction = .clear
-        finalDescriptor.colorAttachments[0].storeAction = .multisampleResolve
-        finalDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
-
-        if let quadEncoder = postfxCommandBuffer.makeRenderCommandEncoder(descriptor: finalDescriptor) {
-            quadEncoder.setRenderPipelineState(postfxPipelineState)
-            quadEncoder.setFragmentTexture(hdrTexture, index: 0)
-            quadEncoder.setFragmentTexture(lensDirtTexture, index: 1)
-            quadEncoder.setFragmentBytes(&postFXParams, length: MemoryLayout<PostFXParams>.stride, index: 0)
-            quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-            quadEncoder.endEncoding()
-        }
-
-        postfxCommandBuffer.present(drawable)
-        postfxCommandBuffer.commit()
     }
 
     private func updateProjectionMatrix() {
