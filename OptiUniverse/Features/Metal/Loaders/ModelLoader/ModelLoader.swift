@@ -22,7 +22,7 @@ actor ModelLoader {
 
     var meshes: [String: LoadedMesh] = [:]
     // TODO: Add missing:
-    // ["JupiterLow_JupiterAtmosphere_0", "", "", "MoonLow_Moon_0", "", "PlutoLow_Pluto_0", "", "EarthClouds_Nuvem_0", "SunLow_SunCorona_0", "", "", "", "", ""]
+    // ["JupiterLow_JupiterAtmosphere_0", "MoonLow_Moon_0", "PlutoLow_Pluto_0"]
 
     init(resourceName: String) {
         self.resourceName = resourceName
@@ -45,7 +45,8 @@ actor ModelLoader {
         meshes = await makeLoadedMeshes(mdlMeshes: mdlMeshes, device: device)
     }
 
-    /// Creates a dictionary of meshes with loaded textures. MainActor because of texture is using CoreGraphics implicitly.
+    /// Creates a dictionary of meshes with loaded textures.
+    /// MainActor because of texture is using CoreGraphics implicitly.
     /// - Parameters:
     ///   - mdlMeshes: Raw meshes
     ///   - device: Device for load a texture

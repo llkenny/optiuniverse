@@ -40,8 +40,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         static let minimumNearPlane: Float = 0.0005
     }
 
-    private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "projectionMatrix")
-    private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer", category: "viewMatrix")
+    private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer",
+                                                category: "projectionMatrix")
+    private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer",
+                                          category: "viewMatrix")
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
@@ -149,8 +151,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         let textureLoader = MTKTextureLoader(device: device)
         if let url = Bundle.main.url(forResource: "lens_dirt_1024", withExtension: "png") {
-            lensDirtTexture = try? textureLoader.newTexture(URL: url,
-                                                            options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
+            lensDirtTexture = try? textureLoader
+                .newTexture(URL: url,
+                            options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
         }
 
         applyPostFXStyle(.standard)
@@ -395,10 +398,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func orbitCamera(horizontal horizontalAngle: Float, vertical verticalAngle: Float) {
         cameraOrientation = simd_normalize(cameraOrientation)
 
-        let right = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
-        let up = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
-        let horizontalRotation = simd_quatf(angle: horizontalAngle, axis: up)
-        let verticalRotation = simd_quatf(angle: verticalAngle, axis: right)
+        let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
+        let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
+        let horizontalRotation = simd_quatf(angle: horizontalAngle, axis: upVector)
+        let verticalRotation = simd_quatf(angle: verticalAngle, axis: rightVector)
 
         cameraOrientation = simd_normalize(verticalRotation * horizontalRotation * cameraOrientation)
     }
