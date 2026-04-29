@@ -8,6 +8,9 @@
       location = "group:Modules"
       name = "Modules">
       <FileRef
+         location = "group:CommonTools">
+      </FileRef>
+      <FileRef
          location = "group:MetalModule">
       </FileRef>
    </Group>

@@ -4,27 +4,26 @@
 import PackageDescription
 
 let package = Package(
-    name: "MetalModule",
+    name: "CommonTools",
     platforms: [
         .iOS(.v18)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "MetalModule",
-            targets: ["MetalModule"]
+            name: "CommonTools",
+            targets: ["CommonTools"]
         ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "MetalModule",
-            dependencies: ["CommonTools"]
+            name: "CommonTools"
         ),
         .testTarget(
-            name: "MetalModuleTests",
-            dependencies: ["MetalModule"]
+            name: "CommonToolsTests",
+            dependencies: ["CommonTools"]
         ),
     ],
     swiftLanguageModes: [.v6]
