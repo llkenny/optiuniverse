@@ -238,14 +238,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             up: cameraUp
         )
 
+        let configuration = PlanetRenderConfiguration(snapshot: snapshot,
+                                                      renderEncoder: renderEncoder,
+                                                      viewMatrix: renderViewMatrix,
+                                                      projectionMatrix: projectionMatrix,
+                                                      cameraPosition: cameraOffset,
+                                                      sceneOrigin: renderOrigin,
+                                                      viewportSize: metalView.bounds.size)
         // Render the remaining planets.
-        planetsRenderer.renderPlanets(snapshot: snapshot,
-                                      with: renderEncoder,
-                                      viewMatrix: renderViewMatrix,
-                                      projectionMatrix: projectionMatrix,
-                                      cameraPosition: cameraOffset,
-                                      sceneOrigin: renderOrigin,
-                                      viewportSize: metalView.bounds.size)
+        planetsRenderer.renderPlanets(configuration: configuration)
         renderEncoder.endEncoding()
 
         if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
