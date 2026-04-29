@@ -156,32 +156,21 @@ final class PlanetsRenderer {
         return delta
     }
 
-    func renderPlanets(snapshot: PreparedRenderSnapshot?,
-                       with renderEncoder: MTLRenderCommandEncoder,
-                       viewMatrix: float4x4,
-                       projectionMatrix: float4x4,
-                       cameraPosition: SIMD3<Float>,
-                       sceneOrigin: SIMD3<Float>,
-                       viewportSize: CGSize) {
+    func renderPlanets(configuration: PlanetRenderConfiguration) {
         planetScreenPositions.removeAll()
         planetWorldPositions.removeAll()
 
-        guard let snapshot else { return }
+        guard let snapshot = configuration.snapshot else { return }
 
-        renderEncoder.setRenderPipelineState(pipelineState)
-        renderEncoder.setDepthStencilState(opaqueDepthStencilState)
+        configuration.renderEncoder.setRenderPipelineState(pipelineState)
+        configuration.renderEncoder.setDepthStencilState(opaqueDepthStencilState)
         for planet in snapshot.planets {
             renderPlanet(planet,
-                         with: renderEncoder,
                          renderPass: .opaque,
-                         cameraPosition: cameraPosition,
-                         viewMatrix: viewMatrix,
-                         projectionMatrix: projectionMatrix,
-                         sceneOrigin: sceneOrigin,
-                         viewportSize: viewportSize)
+                         configuration: configuration)
         }
 
-        let cameraWorldPosition = sceneOrigin + cameraPosition
+        let cameraWorldPosition = configuration.sceneOrigin + configuration.cameraPosition
         let transparentPlanets = snapshot.planets
             .filter { planet in
                 hasTransparentSubmesh(in: planet)
@@ -191,44 +180,34 @@ final class PlanetsRenderer {
                 simd_distance_squared($1.worldPosition, cameraWorldPosition)
             }
 
-        renderEncoder.setDepthStencilState(transparentDepthStencilState)
+        configuration.renderEncoder.setDepthStencilState(transparentDepthStencilState)
         for planet in transparentPlanets {
             renderPlanet(planet,
-                         with: renderEncoder,
                          renderPass: .transparent,
-                         cameraPosition: cameraPosition,
-                         viewMatrix: viewMatrix,
-                         projectionMatrix: projectionMatrix,
-                         sceneOrigin: sceneOrigin,
-                         viewportSize: viewportSize)
+                         configuration: configuration)
         }
     }
 
     // TODO: Make orbit radius SIM3
     private func renderPlanet(_ planet: PreparedPlanetRenderPacket,
-                              with renderEncoder: MTLRenderCommandEncoder,
                               renderPass: RenderPass,
-                              cameraPosition: SIMD3<Float>,
-                              viewMatrix: float4x4,
-                              projectionMatrix: float4x4,
-                              sceneOrigin: SIMD3<Float>,
-                              viewportSize: CGSize) {
+                              configuration: PlanetRenderConfiguration) {
         // Compute screen position of the planet's center
         if renderPass == .opaque {
             planetWorldPositions[planet.planetName] = planet.worldPosition
-            let localPosition4 = SIMD4<Float>(planet.worldPosition - sceneOrigin, 1)
-            let clipPosition = projectionMatrix * viewMatrix * localPosition4
+            let localPosition4 = SIMD4<Float>(planet.worldPosition - configuration.sceneOrigin, 1)
+            let clipPosition = configuration.projectionMatrix * configuration.viewMatrix * localPosition4
             // clip-space `w` is positive for objects in front of the camera in our
             // coordinate system. Ignore objects with non-positive `w` values to
             // skip planets behind the camera while also avoiding divide-by-zero.
             if clipPosition.w > 0 {
                 let ndc = clipPosition / clipPosition.w
                 if abs(ndc.x) <= 1, abs(ndc.y) <= 1, ndc.z >= 0, ndc.z <= 1 {
-                    let xValue = (ndc.x + 1) * 0.5 * Float(viewportSize.width)
+                    let xValue = (ndc.x + 1) * 0.5 * Float(configuration.viewportSize.width)
                     // Metal's projection matrix already flips the Y axis, so
                     // screen-space Y grows downward. Use `ndc.y + 1` instead of
                     // `1 - ndc.y` to avoid mirroring label positions vertically.
-                    let yValue = (ndc.y + 1) * 0.5 * Float(viewportSize.height)
+                    let yValue = (ndc.y + 1) * 0.5 * Float(configuration.viewportSize.height)
                     planetScreenPositions[planet.planetName] = SIMD2<Float>(xValue, yValue)
                 }
             }
@@ -239,11 +218,12 @@ final class PlanetsRenderer {
         //        let eccentricity: Float = 0.1 // 0 for circular
         //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
 
+        let renderEncoder = configuration.renderEncoder
         // Set buffers
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
-            cameraPosition: cameraPosition,
-            lightPosition: -sceneOrigin
+            cameraPosition: configuration.cameraPosition,
+            lightPosition: -configuration.sceneOrigin
         )
         renderEncoder.setFragmentBytes(&fragmentUniforms,
                                        length: MemoryLayout<FragmentUniforms>.stride,
@@ -251,8 +231,8 @@ final class PlanetsRenderer {
 
         let renderSubmeshes = submeshes(for: planet,
                                         renderPass: renderPass,
-                                        cameraPosition: cameraPosition,
-                                        sceneOrigin: sceneOrigin)
+                                        cameraPosition: configuration.cameraPosition,
+                                        sceneOrigin: configuration.sceneOrigin)
 
         for renderSubmesh in renderSubmeshes {
             let loadedMesh = renderSubmesh.loadedMesh
@@ -263,8 +243,8 @@ final class PlanetsRenderer {
 
             var modelMatrix = localModelMatrix(for: planet,
                                                loadedMesh: loadedMesh,
-                                               sceneOrigin: sceneOrigin)
-            var mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
+                                               sceneOrigin: configuration.sceneOrigin)
+            var mvpMatrix = configuration.projectionMatrix * configuration.viewMatrix * modelMatrix
             renderEncoder.setVertexBytes(&mvpMatrix,
                                          length: MemoryLayout<float4x4>.stride,
                                          index: 5)
