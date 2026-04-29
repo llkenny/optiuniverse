@@ -406,7 +406,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                             colorPixelFormat: MTLPixelFormat,
                                             depthPixelFormat: MTLPixelFormat,
                                             sampleCount: Int) -> MTLRenderPipelineState {
-        let library = device.makeDefaultLibrary()!
+        let library: MTLLibrary
+        do {
+            library = try device.makeDefaultLibrary(bundle: .module)
+        } catch {
+            fatalError("Failed to load Metal shader library from MetalModule bundle: \(error)")
+        }
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
         descriptor.fragmentFunction = library.makeFunction(name: "postfx_fragment")

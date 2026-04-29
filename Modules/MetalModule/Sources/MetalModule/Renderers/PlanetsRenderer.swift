@@ -67,7 +67,7 @@ final class PlanetsRenderer {
     /// - Returns: A configured `MTLRenderPipelineState`.
     private func makePipelineState(fragmentFunction: String,
                                    sampleCount: Int) -> MTLRenderPipelineState {
-        let library = device.makeDefaultLibrary()!
+        let library = Self.makeShaderLibrary(device: device)
 
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.rasterSampleCount = sampleCount
@@ -88,6 +88,14 @@ final class PlanetsRenderer {
             return try device.makeRenderPipelineState(descriptor: descriptor)
         } catch {
             fatalError("Failed to create pipeline state: \(error)")
+        }
+    }
+
+    private static func makeShaderLibrary(device: MTLDevice) -> MTLLibrary {
+        do {
+            return try device.makeDefaultLibrary(bundle: .module)
+        } catch {
+            fatalError("Failed to load Metal shader library from MetalModule bundle: \(error)")
         }
     }
 

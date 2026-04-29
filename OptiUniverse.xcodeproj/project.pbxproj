@@ -192,6 +192,9 @@
 			mainGroup = 50BAAA2D2E30E2A800ECB7DE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				502571FA2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/BaseModule" */,
+				502571FB2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/CommonTools" */,
+				502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */,
 				504655C72FA10B1A00FD69D0 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -527,6 +530,21 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		502571FA2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/BaseModule" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/BaseModule;
+		};
+		502571FB2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/CommonTools" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/CommonTools;
+		};
+		502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/MetalModule;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		504655C72FA10B1A00FD69D0 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -541,14 +559,17 @@
 /* Begin XCSwiftPackageProductDependency section */
 		502571F42FA20F05000AC26F /* BaseModule */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 502571FA2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/BaseModule" */;
 			productName = BaseModule;
 		};
 		502571F62FA20F08000AC26F /* CommonTools */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 502571FB2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/CommonTools" */;
 			productName = CommonTools;
 		};
 		502571F82FA20F0C000AC26F /* MetalModule */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */;
 			productName = MetalModule;
 		};
 		50B54AD52FA10CEB0033669B /* SwiftLintBuildToolPlugin */ = {

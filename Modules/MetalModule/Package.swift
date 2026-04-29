@@ -27,6 +27,10 @@ let package = Package(
             dependencies: [
                 .product(name: "CommonTools", package: "CommonTools"),
                 .product(name: "BaseModule", package: "BaseModule")
+            ],
+            resources: [
+                .copy("Assets/Models/high_resolution_solar_system.usdz"),
+                .process("Models/planets.json")
             ]
         ),
         .testTarget(

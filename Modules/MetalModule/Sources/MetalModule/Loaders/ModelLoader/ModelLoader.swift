@@ -31,7 +31,9 @@ public actor ModelLoader {
     }
 
     func loadMeshes(device: MTLDevice) async {
-        let url = Bundle.main.url(forResource: resourceName, withExtension: "usdz")!
+        guard let url = Bundle.module.url(forResource: resourceName, withExtension: "usdz") else {
+            fatalError("Meshes resource not found")
+        }
 
         let allocator = MTKMeshBufferAllocator(device: device)
         let asset = MDLAsset(url: url,
