@@ -19,29 +19,32 @@ struct HomeView: View {
     @State private var isDataLoaded: Bool = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            TitleSectionView(name: "Stranger")
-                .padding(.horizontal)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
+                TitleSectionView(name: "Stranger")
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
+                HeroCarouselView(
+                    currentIndex: $currentCarouselIndex,
+                    totalCount: $totalCount
+                )
+                .padding(.bottom, 12)
+                PageIndicatorView(totalCount: totalCount,
+                                  currentIndex: $currentCarouselIndex)
                 .padding(.bottom, 16)
-            HeroCarouselView(
-                currentIndex: $currentCarouselIndex,
-                totalCount: $totalCount
-            )
-            .padding(.bottom, 12)
-            PageIndicatorView(totalCount: totalCount,
-                              currentIndex: $currentCarouselIndex)
-            .padding(.bottom, 16)
 
-            if isDataLoaded {
-                CategoryChipsView(selectedTag: $selectedTag)
-                    .padding(.horizontal)
-                    .padding(.bottom, 2)
-                DestinationListView(selectedTag: $selectedTag)
-                    .padding(.horizontal)
-            } else {
-                ProgressView()
-                    .controlSize(ControlSize.large)
-                    .frame(maxHeight: .infinity)
+                if isDataLoaded {
+                    CategoryChipsView(selectedTag: $selectedTag)
+                        .padding(.horizontal)
+                        .padding(.bottom, 2)
+                    DestinationListView(selectedTag: $selectedTag)
+                        .padding(.horizontal)
+                } else {
+                    Spacer(minLength: 80)
+                    ProgressView()
+                        .controlSize(ControlSize.large)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .task {
