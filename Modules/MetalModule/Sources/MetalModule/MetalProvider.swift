@@ -8,6 +8,7 @@
 import Metal
 
 @Observable
+@MainActor
 public final class MetalProvider {
 
     let modelLoader: ModelLoader
