@@ -61,6 +61,7 @@ struct MaterialUniforms {
 struct FragmentUniforms {
     float3 cameraPosition;
     float3 lightPosition;
+    float cartoonShaderIntensity;
 };
 
 float distributionGGX(float3 normal, float3 halfVector, float roughness) {
@@ -87,6 +88,81 @@ float geometrySmith(float3 normal, float3 viewDir, float3 lightDir, float roughn
 
 float3 fresnelSchlick(float cosTheta, float3 f0) {
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float toonLightBand(float lightAmount) {
+    float light = saturate(lightAmount);
+    if (light < 0.18) {
+        return 0.18;
+    }
+    if (light < 0.45) {
+        return 0.42;
+    }
+    if (light < 0.74) {
+        return 0.72;
+    }
+    return 1.0;
+}
+
+float3 adjustSaturation(float3 color, float saturation) {
+    float luminance = dot(color, float3(0.299, 0.587, 0.114));
+    return mix(float3(luminance), color, saturation);
+}
+
+float luminance(float3 color) {
+    return dot(color, float3(0.299, 0.587, 0.114));
+}
+
+float3 posterizeColor(float3 color, float levels) {
+    return floor(color * levels + 0.5) / levels;
+}
+
+float textureInkLine(texture2d<float> baseTexture,
+                     sampler textureSampler,
+                     float2 uv) {
+    float2 texelSize = 1.0 / float2(max(float(baseTexture.get_width()), 1.0),
+                                    max(float(baseTexture.get_height()), 1.0));
+    texelSize *= 1.35;
+
+    float left = luminance(baseTexture.sample(textureSampler, uv - float2(texelSize.x, 0.0)).rgb);
+    float right = luminance(baseTexture.sample(textureSampler, uv + float2(texelSize.x, 0.0)).rgb);
+    float up = luminance(baseTexture.sample(textureSampler, uv + float2(0.0, texelSize.y)).rgb);
+    float down = luminance(baseTexture.sample(textureSampler, uv - float2(0.0, texelSize.y)).rgb);
+    float diagA = luminance(baseTexture.sample(textureSampler, uv + texelSize).rgb);
+    float diagB = luminance(baseTexture.sample(textureSampler, uv - texelSize).rgb);
+    float diagC = luminance(baseTexture.sample(textureSampler, uv + float2(texelSize.x, -texelSize.y)).rgb);
+    float diagD = luminance(baseTexture.sample(textureSampler, uv + float2(-texelSize.x, texelSize.y)).rgb);
+
+    float edge = max(max(abs(left - right), abs(up - down)),
+                     max(abs(diagA - diagB), abs(diagC - diagD)));
+    return smoothstep(0.025, 0.115, edge);
+}
+
+float3 cartoonShade(float3 litColor,
+                    float3 albedo,
+                    float3 emissive,
+                    float3 normal,
+                    float3 viewDir,
+                    float nDotL,
+                    float ambientOcclusion,
+                    float textureLine,
+                    float intensity) {
+    float bandedLight = toonLightBand(nDotL);
+    float3 saturatedAlbedo = adjustSaturation(albedo, mix(1.0, 1.18, intensity));
+    float3 drawnAlbedo = posterizeColor(saturatedAlbedo, mix(8.0, 5.0, intensity));
+    float lightingRamp = mix(0.78, 1.08, bandedLight);
+    float3 toonColor = drawnAlbedo * lightingRamp * max(ambientOcclusion, 0.58);
+    toonColor += emissive;
+
+    float textureInk = textureLine * mix(0.0, 0.48, intensity);
+    toonColor = mix(toonColor, toonColor * 0.42, textureInk);
+
+    float silhouette = smoothstep(0.34, 0.64, 1.0 - saturate(abs(dot(normal, viewDir))));
+    float3 inkColor = float3(0.0);
+    toonColor = mix(toonColor, inkColor, silhouette * mix(0.0, 0.92, intensity));
+    toonColor = max((toonColor - 0.03) * mix(1.0, 1.18, intensity) + 0.03, 0.0);
+
+    return mix(litColor, toonColor, intensity);
 }
 
 vertex VertexOut vertex_main(
@@ -144,6 +220,10 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
         float cloudCoverage = max(max(colorSample.r, colorSample.g), colorSample.b);
         alpha *= smoothstep(0.08, 0.72, cloudCoverage);
         albedo = float3(1.0);
+    }
+    float textureLine = 0.0;
+    if (planetTexture.get_width() > 2 && planetTexture.get_height() > 2) {
+        textureLine = textureInkLine(planetTexture, textureSampler, uv);
     }
 
     float3 normal = normalize(in.normal);
@@ -217,6 +297,18 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     }
     if (materialUniforms.whiteAlbedo > 0.5) {
         litColor = albedo * (0.05 + cloudLight * 1.35);
+    }
+    float cartoonIntensity = saturate(fragmentUniforms.cartoonShaderIntensity);
+    if (cartoonIntensity > 0.0) {
+        litColor = cartoonShade(litColor,
+                                albedo,
+                                emissive,
+                                lightingNormal,
+                                viewDir,
+                                nDotL,
+                                ambientOcclusion,
+                                textureLine,
+                                cartoonIntensity);
     }
     return float4(litColor, alpha);
 }
