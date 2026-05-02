@@ -24,6 +24,7 @@ final class PlanetsRenderer {
     private struct FragmentUniforms {
         var cameraPosition: SIMD3<Float>
         var lightPosition: SIMD3<Float>
+        var cartoonShaderIntensity: Float
     }
 
     private static let colorPixelFormat: MTLPixelFormat = .rgba16Float
@@ -231,7 +232,8 @@ final class PlanetsRenderer {
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
             cameraPosition: configuration.cameraPosition,
-            lightPosition: -configuration.sceneOrigin
+            lightPosition: -configuration.sceneOrigin,
+            cartoonShaderIntensity: min(max(configuration.cartoonShaderIntensity, 0), 1)
         )
         renderEncoder.setFragmentBytes(&fragmentUniforms,
                                        length: MemoryLayout<FragmentUniforms>.stride,
