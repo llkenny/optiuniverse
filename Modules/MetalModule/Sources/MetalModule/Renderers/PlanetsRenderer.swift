@@ -195,8 +195,7 @@ final class PlanetsRenderer {
                          configuration: configuration)
         }
     }
-
-    // TODO: Make orbit radius SIM3
+    
     private func renderPlanet(_ planet: PreparedPlanetRenderPacket,
                               renderPass: RenderPass,
                               configuration: PlanetRenderConfiguration) {
@@ -220,11 +219,6 @@ final class PlanetsRenderer {
                 }
             }
         }
-
-        // TODO:
-        // Elliptical orbit example
-        //        let eccentricity: Float = 0.1 // 0 for circular
-        //        let ellipticalDistance = distance * (1 - eccentricity * eccentricity) / (1 + eccentricity * cos(angle))
 
         let renderEncoder = configuration.renderEncoder
         // Set buffers

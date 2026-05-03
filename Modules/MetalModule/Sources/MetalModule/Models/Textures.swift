@@ -33,8 +33,6 @@ struct Textures: @unchecked Sendable {
 
 extension Textures {
     init(material: MDLMaterial?, device: MTLDevice) {
-        // TODO: Remove object parameters: material and textureLoader
-        // Use them only for init methods
         self.material = material
         self.textureLoader = MTKTextureLoader(device: device)
 

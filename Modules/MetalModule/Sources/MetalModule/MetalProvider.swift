@@ -16,7 +16,6 @@ public final class MetalProvider {
 
     public var isReady: Bool = false
 
-    // TODO: Make MetalProviderProtocol
     public init(modelLoader: ModelLoader) {
         self.modelLoader = modelLoader
         guard let device = MTLCreateSystemDefaultDevice() else {

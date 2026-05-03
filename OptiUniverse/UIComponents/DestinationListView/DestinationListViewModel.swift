@@ -20,7 +20,6 @@ final class DestinationListViewModel {
         }
 
         let objects = await destinationsProvider.destinations
-        // TODO: Make cache
         cards = objects.map {
             DestinationCardModel(
                 id: $0.id,

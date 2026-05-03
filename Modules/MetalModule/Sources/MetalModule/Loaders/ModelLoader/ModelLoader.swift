@@ -21,10 +21,7 @@ public actor ModelLoader {
     private let vertexDescriptor: MDLVertexDescriptor
 
     var meshes: [String: LoadedMesh] = [:]
-    // TODO: Add missing:
-    // ["JupiterLow_JupiterAtmosphere_0", "MoonLow_Moon_0", "PlutoLow_Pluto_0"]
 
-    // TODO: Make ModelLoaderProtocol
     public init(resourceName: String) {
         self.resourceName = resourceName
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
