@@ -43,6 +43,7 @@ final class RenderPreparationPipeline {
     private let planets: [Planet]
     private var meshCache: [String: [LoadedMesh]] = [:]
     private var inFlightTask: Task<Void, Never>?
+    private var pendingSimulationTime: Float?
     private var nextFrameID: UInt64 = 0
 
     private(set) var latestSnapshot: PreparedRenderSnapshot?
@@ -57,20 +58,32 @@ final class RenderPreparationPipeline {
     }
 
     func requestPreparation(simulationTime: Float) {
+        pendingSimulationTime = simulationTime
+
         guard inFlightTask == nil else { return }
 
-        let frameID = nextFrameID
-        nextFrameID += 1
-
         inFlightTask = Task { @MainActor [weak self] in
-            await self?.prepareSnapshot(frameID: frameID,
-                                        simulationTime: simulationTime)
+            await self?.drainPendingPreparations()
+        }
+    }
+
+    private func drainPendingPreparations() async {
+        defer { inFlightTask = nil }
+
+        while let simulationTime = pendingSimulationTime {
+            pendingSimulationTime = nil
+
+            let frameID = nextFrameID
+            nextFrameID += 1
+
+            await prepareSnapshot(frameID: frameID,
+                                  simulationTime: simulationTime)
+
+            guard !Task.isCancelled else { return }
         }
     }
 
     private func prepareSnapshot(frameID: UInt64, simulationTime: Float) async {
-        defer { inFlightTask = nil }
-
         var packets: [PreparedPlanetRenderPacket] = []
         packets.reserveCapacity(planets.count)
         var worldPositionsByName: [String: SIMD3<Float>] = [:]
