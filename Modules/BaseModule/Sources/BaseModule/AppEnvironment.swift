@@ -14,6 +14,7 @@ public final class AppEnvironment {
         case home, objects
     }
 
+    public var username: String = "Stranger"
     public var currentScreen: Screen = .home
     public var selectedPlanet: String?
     public var location: String {

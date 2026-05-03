@@ -21,7 +21,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                TitleSectionView(name: "Stranger")
+                TitleSectionView(name: appEnvironment.username)
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                 HeroCarouselView(

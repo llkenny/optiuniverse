@@ -9,7 +9,9 @@ import SwiftUI
 import BaseModule
 
 struct TopBarView: View {
+
     @Environment(AppEnvironment.self) private var appEnvironment
+    @State private var isShowingProfile: Bool = false
 
     var body: some View {
         HStack {
@@ -39,6 +41,12 @@ struct TopBarView: View {
                 .scaledToFill()
                 .frame(width: 44, height: 44)
                 .clipShape(Circle())
+                .onTapGesture {
+                    isShowingProfile = true
+                }
+        }
+        .sheet(isPresented: $isShowingProfile) {
+            ProfileView()
         }
     }
 }
