@@ -5,6 +5,7 @@
 //  Created by max on 23.07.2025.
 //
 
+import Foundation
 import MetalKit
 import os
 import QuartzCore
@@ -42,10 +43,18 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         static let minimumNearPlane: Float = 0.0005
     }
 
-    private let projectionMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer",
-                                                category: "projectionMatrix")
-    private let viewMatrixLogger = Logger(subsystem: "com.OptiUniverse.MetalRenderer",
-                                          category: "viewMatrix")
+    private let projectionMatrixLogger = MatrixChangeLogger(
+        logger: Logger(subsystem: "com.OptiUniverse.MetalRenderer",
+                       category: "projectionMatrix"),
+        caption: "Projection Matrix update:",
+        queueLabel: "com.OptiUniverse.MetalRenderer.projectionMatrixLogging"
+    )
+    private let viewMatrixLogger = MatrixChangeLogger(
+        logger: Logger(subsystem: "com.OptiUniverse.MetalRenderer",
+                       category: "viewMatrix"),
+        caption: "View Matrix update:",
+        queueLabel: "com.OptiUniverse.MetalRenderer.viewMatrixLogging"
+    )
 
     private let device: MTLDevice
     let commandQueue: MTLCommandQueue
@@ -94,18 +103,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private var viewMatrix: float4x4 {
         didSet {
-            viewMatrixLogger.logMatricies(matrix1: oldValue,
-                                          matrix2: self.viewMatrix,
-                                          caption: "View Matrix update:",
-                                          level: .debug)
+            viewMatrixLogger.logChange(from: oldValue, to: viewMatrix)
         }
     }
     private(set) var projectionMatrix: float4x4 {
         didSet {
-            projectionMatrixLogger.logMatricies(matrix1: oldValue,
-                                                matrix2: self.projectionMatrix,
-                                                caption: "Projection Matrix update:",
-                                                level: .debug)
+            projectionMatrixLogger.logChange(from: oldValue, to: projectionMatrix)
         }
     }
 

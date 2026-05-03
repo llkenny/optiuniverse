@@ -10,7 +10,7 @@ import simd
 import Foundation
 
 extension Logger {
-    func logMatricies(matrix1: float4x4, matrix2: float4x4, caption: String?, level: OSLogType) {
+    nonisolated func logMatricies(matrix1: float4x4, matrix2: float4x4, caption: String?, level: OSLogType) {
         if let caption, !caption.isEmpty {
             log(level: level, "\(caption)")
         }
