@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct FeaturedObject: Decodable {
+nonisolated struct FeaturedObject: Decodable {
     // swiftlint:disable identifier_name
     struct AccentColor: Decodable {
         let r: Double
