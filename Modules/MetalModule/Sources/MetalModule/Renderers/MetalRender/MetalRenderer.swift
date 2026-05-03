@@ -94,18 +94,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private var viewMatrix: float4x4 {
         didSet {
-            viewMatrixLogger.logMatricies(matrix1: oldValue,
-                                          matrix2: self.viewMatrix,
-                                          caption: "View Matrix update:",
-                                          level: .debug)
+            Task.detached { [viewMatrixLogger, viewMatrix] in
+                viewMatrixLogger.logMatricies(matrix1: oldValue,
+                                              matrix2: viewMatrix,
+                                              caption: "View Matrix update:",
+                                              level: .debug)
+            }
         }
     }
     private(set) var projectionMatrix: float4x4 {
         didSet {
-            projectionMatrixLogger.logMatricies(matrix1: oldValue,
-                                                matrix2: self.projectionMatrix,
-                                                caption: "Projection Matrix update:",
-                                                level: .debug)
+            Task.detached { [projectionMatrixLogger, projectionMatrix] in
+                projectionMatrixLogger.logMatricies(matrix1: oldValue,
+                                                    matrix2: projectionMatrix,
+                                                    caption: "Projection Matrix update:",
+                                                    level: .debug)
+            }
         }
     }
 
