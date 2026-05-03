@@ -13,10 +13,12 @@ public extension Decodable {
         guard let url = URL(string: path) else {
             throw URLError(.badURL)
         }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse,
-                httpResponse.statusCode == 200 else {
+              httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
 
