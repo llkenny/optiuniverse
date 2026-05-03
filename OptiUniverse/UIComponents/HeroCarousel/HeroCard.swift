@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct HeroCard: Identifiable {
+struct HeroCard: Identifiable, Equatable {
     let id: UUID
     let imageResource: ImageResource
     let title: String

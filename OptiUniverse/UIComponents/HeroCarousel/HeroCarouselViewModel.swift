@@ -11,6 +11,11 @@ internal import CommonTools
 @Observable
 final class HeroCarouselViewModel {
 
+    enum Constants {
+        static let filename = "FeaturedObjects"
+        static let urlString = "https://api.kb404.com/static/FeaturedObjects.json"
+    }
+
     var activeCardID: HeroCard.ID?
     var cards: [HeroCard] = []
 
@@ -18,9 +23,37 @@ final class HeroCarouselViewModel {
         cards.count
     }
 
-    func loadCards() {
-        let featuredObjects: [FeaturedObject] = Bundle.main.loadConfig(filename: "FeaturedObjects")
-        cards = featuredObjects.map {
+    private var inFlightTask: Task<[HeroCard], Never>?
+
+    func loadCards() async {
+        guard cards.isEmpty,
+              inFlightTask == nil else {
+            // Only single load. Subsequent should listen for cards value.
+            return
+        }
+
+        let inFlightTask = Task.detached {
+            await self.fetchCards()
+        }
+
+        self.inFlightTask = inFlightTask
+        cards = await inFlightTask.value
+        self.inFlightTask = nil
+    }
+
+    private nonisolated func fetchCards() async -> [HeroCard] {
+        let featuredObjects: [FeaturedObject]
+
+        let remoteObjects = try? await [FeaturedObject]
+            .loadFromRemoteConfig(from: Constants.urlString)
+
+        if let remoteObjects, !remoteObjects.isEmpty {
+            featuredObjects = remoteObjects
+        } else {
+            featuredObjects = await Bundle.main.loadConfig(filename: Constants.filename)
+        }
+
+        return featuredObjects.map {
             HeroCard(
                 id: $0.id,
                 imageResource: ImageResource(name: $0.imageName, bundle: .main),

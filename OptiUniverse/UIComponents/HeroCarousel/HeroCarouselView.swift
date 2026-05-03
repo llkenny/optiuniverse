@@ -61,16 +61,18 @@ struct HeroCarouselView: View {
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $viewModel.activeCardID)
         .defaultScrollAnchor(.center)
-        .onAppear {
-            viewModel.loadCards()
-            totalCount = viewModel.cards.count
-            syncSelectionToCurrentIndex()
+        .task {
+            await viewModel.loadCards()
         }
         .onChange(of: currentIndex) { _, _ in
             syncSelectionToCurrentIndex()
         }
         .onChange(of: viewModel.activeCardID) { _, newValue in
             syncCurrentIndex(from: newValue)
+        }
+        .onChange(of: viewModel.cards) { _, newValue in
+            totalCount = newValue.count
+            syncSelectionToCurrentIndex()
         }
     }
 
