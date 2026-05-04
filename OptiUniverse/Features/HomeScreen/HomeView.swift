@@ -24,6 +24,11 @@ struct HomeView: View {
                 TitleSectionView(name: appEnvironment.username)
                     .padding(.horizontal)
                     .padding(.bottom, 16)
+
+                CurrentMissionView()
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
+
                 HeroCarouselView(
                     currentIndex: $currentCarouselIndex,
                     totalCount: $totalCount
