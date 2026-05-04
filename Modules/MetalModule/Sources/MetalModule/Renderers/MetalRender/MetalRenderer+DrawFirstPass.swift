@@ -47,7 +47,8 @@ extension MetalRenderer {
                                                       projectionMatrix: projectionMatrix,
                                                       cameraPosition: cameraOffset,
                                                       sceneOrigin: renderOrigin,
-                                                      viewportSize: metalView.bounds.size)
+                                                      viewportSize: metalView.bounds.size,
+                                                      cartoonShaderIntensity: min(max(cartoonShaderIntensity, 0), 1))
         // Render the remaining planets.
         planetsRenderer.renderPlanets(configuration: configuration)
         renderEncoder.endEncoding()
