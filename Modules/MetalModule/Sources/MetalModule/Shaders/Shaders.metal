@@ -44,6 +44,23 @@ struct VertexOut {
     float3 worldBitangent;
 };
 
+struct StarVertexIn {
+    float4 positionAndSize;
+    float4 colorAndBrightness;
+};
+
+struct StarUniforms {
+    float4x4 viewMatrix;
+    float4x4 projectionMatrix;
+    float3 sceneOrigin;
+};
+
+struct StarVertexOut {
+    float4 position [[position]];
+    float3 color;
+    float pointSize [[point_size]];
+};
+
 struct MaterialUniforms {
     float3 baseColorFactor;
     float opacityFactor;
@@ -180,6 +197,34 @@ vertex VertexOut vertex_main(
     out.worldBitangent = normalize(cross(out.normal, out.worldTangent) * in.tangent.w);
     out.texCoord = in.texCoord;
     return out;
+}
+
+vertex StarVertexOut star_vertex(const device StarVertexIn *stars [[buffer(0)]],
+                                 constant StarUniforms &uniforms [[buffer(1)]],
+                                 uint vid [[vertex_id]]) {
+    StarVertexIn star = stars[vid];
+    float3 localPosition = star.positionAndSize.xyz - uniforms.sceneOrigin;
+    float4 viewPosition = uniforms.viewMatrix * float4(localPosition, 1.0);
+
+    StarVertexOut out;
+    out.position = uniforms.projectionMatrix * viewPosition;
+    out.color = star.colorAndBrightness.rgb * star.colorAndBrightness.a;
+    out.pointSize = star.positionAndSize.w;
+    return out;
+}
+
+fragment float4 star_fragment(StarVertexOut in [[stage_in]],
+                              float2 pointCoord [[point_coord]]) {
+    float2 centeredCoord = pointCoord * 2.0 - 1.0;
+    float radius = length(centeredCoord);
+    float alpha = smoothstep(1.0, 0.35, radius);
+    if (alpha <= 0.001) {
+        discard_fragment();
+    }
+
+    float core = smoothstep(1.0, 0.0, radius);
+    float3 color = in.color * mix(0.72, 1.0, core);
+    return float4(color, alpha);
 }
 
 fragment float4 fragment_main(VertexOut in [[stage_in]],
