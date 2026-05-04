@@ -1,1 +1,1 @@
-- Fix tokens encoding
+- Add stars

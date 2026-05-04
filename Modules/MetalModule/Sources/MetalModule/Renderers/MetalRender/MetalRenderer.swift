@@ -59,6 +59,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     let commandQueue: MTLCommandQueue
     let planetsRenderer: PlanetsRenderer
+    let starsRenderer: StarsRenderer
     private let renderPreparationPipeline: RenderPreparationPipeline
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
@@ -132,6 +133,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
         let planets = SolarSystemLoader.loadPlanets(from: "planets")
         planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
+        starsRenderer = StarsRenderer(device: device, sampleCount: viewSampleCount)
         renderPreparationPipeline = RenderPreparationPipeline(modelLoader: metalProvider.modelLoader,
                                                               planets: planets)
 
