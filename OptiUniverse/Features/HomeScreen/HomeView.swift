@@ -21,19 +21,18 @@ struct HomeView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                TitleSectionView(name: appEnvironment.username)
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
-                HeroCarouselView(
-                    currentIndex: $currentCarouselIndex,
-                    totalCount: $totalCount
-                )
-                .padding(.bottom, 12)
-                PageIndicatorView(totalCount: totalCount,
-                                  currentIndex: $currentCarouselIndex)
-                .padding(.bottom, 16)
-
                 if isDataLoaded {
+                    TitleSectionView(name: appEnvironment.username)
+                        .padding(.horizontal)
+                        .padding(.bottom, 16)
+                    HeroCarouselView(
+                        currentIndex: $currentCarouselIndex,
+                        totalCount: $totalCount
+                    )
+                    .padding(.bottom, 12)
+                    PageIndicatorView(totalCount: totalCount,
+                                      currentIndex: $currentCarouselIndex)
+                    .padding(.bottom, 16)
                     CategoryChipsView(selectedTag: $selectedTag)
                         .padding(.horizontal)
                         .padding(.bottom, 2)
@@ -49,7 +48,10 @@ struct HomeView: View {
         }
         .task {
             await appEnvironment.destinationsProvider.fetch()
-            isDataLoaded = true
+            await appEnvironment.featuredObjectProvider.fetch()
+            withAnimation {
+                isDataLoaded = true
+            }
         }
     }
 }
