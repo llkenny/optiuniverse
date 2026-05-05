@@ -44,7 +44,8 @@ extension Textures {
         emissive = textureFactory.texturePropertyValue(with: .emission)
         opacity = textureFactory.opacityTexture()
         let hasSeparateOpacityTexture = opacity != nil
-        let shouldUseBaseColorAlpha = textureFactory.usesBaseColorAlpha(hasSeparateOpacityTexture: hasSeparateOpacityTexture)
+        let shouldUseBaseColorAlpha = textureFactory
+            .usesBaseColorAlpha(hasSeparateOpacityTexture: hasSeparateOpacityTexture)
         materialUniforms = MaterialUniforms(
             baseColorFactor: textureFactory.baseColorFactor(),
             opacityFactor: textureFactory.scalarFactor(for: .opacity, default: 1),

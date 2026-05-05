@@ -55,7 +55,7 @@ extension float4x4 {
 
     nonisolated static func lookAt(eye: SIMD3<Float>,
                                    target: SIMD3<Float>,
-                                   up: SIMD3<Float>) -> float4x4 {
+                                   upVector: SIMD3<Float>) -> float4x4 {
         let epsilon: Float = 0.000001
         let epsilonSquared = epsilon * epsilon
 
@@ -67,7 +67,9 @@ extension float4x4 {
         let zVector = normalize(forward)
 
         // 2. Calculate right vector (x-axis)
-        var resolvedUp = length_squared(up) > epsilonSquared ? normalize(up) : SIMD3<Float>(0, 1, 0)
+        var resolvedUp = length_squared(upVector) > epsilonSquared
+        ? normalize(upVector)
+        : SIMD3<Float>(0, 1, 0)
         var right = cross(resolvedUp, zVector)
         if length_squared(right) <= epsilonSquared {
             resolvedUp = abs(zVector.y) < 0.999 ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, 0, 1)

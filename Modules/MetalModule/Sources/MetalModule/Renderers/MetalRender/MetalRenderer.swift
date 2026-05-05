@@ -341,7 +341,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         viewMatrix = float4x4.lookAt(
             eye: cameraPosition,
             target: cameraTarget,
-            up: cameraUp
+            upVector: cameraUp
         )
         updateProjectionMatrix()
     }

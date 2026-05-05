@@ -17,7 +17,8 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../CommonTools"),
-        .package(path: "../BaseModule")
+        .package(path: "../BaseModule"),
+        .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -31,11 +32,17 @@ let package = Package(
             resources: [
                 .copy("Assets/Models/high_resolution_solar_system.usdz"),
                 .process("Models/planets.json")
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]
         ),
         .testTarget(
             name: "MetalModuleTests",
-            dependencies: ["MetalModule"]
+            dependencies: ["MetalModule"],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

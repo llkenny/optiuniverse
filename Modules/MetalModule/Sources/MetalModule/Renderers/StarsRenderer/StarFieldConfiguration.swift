@@ -5,7 +5,6 @@
 //  Created by max on 04.05.2026.
 //
 
-
 struct StarFieldConfiguration: Sendable {
     static let defaultBaseStarCount = 1_600
     static let maximumStarCount = 8_000

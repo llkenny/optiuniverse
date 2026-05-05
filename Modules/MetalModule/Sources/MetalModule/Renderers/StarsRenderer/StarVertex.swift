@@ -5,7 +5,6 @@
 //  Created by max on 04.05.2026.
 //
 
-
 struct StarVertex: Sendable {
     var positionAndSize: SIMD4<Float>
     var colorAndBrightness: SIMD4<Float>

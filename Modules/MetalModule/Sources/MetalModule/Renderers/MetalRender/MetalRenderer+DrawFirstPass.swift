@@ -38,7 +38,7 @@ extension MetalRenderer {
         let renderViewMatrix = float4x4.lookAt(
             eye: cameraOffset,
             target: .zero,
-            up: cameraUp
+            upVector: cameraUp
         )
 
         let configuration = PlanetRenderConfiguration(snapshot: snapshot,
