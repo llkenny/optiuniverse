@@ -196,7 +196,7 @@ final class PlanetsRenderer {
                          configuration: configuration)
         }
     }
-    
+
     private func renderPlanet(_ planet: PreparedPlanetRenderPacket,
                               renderPass: RenderPass,
                               configuration: PlanetRenderConfiguration) {

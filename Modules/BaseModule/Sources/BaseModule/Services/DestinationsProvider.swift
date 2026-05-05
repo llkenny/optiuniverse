@@ -15,7 +15,6 @@ actor DestinationsProvider: DestinationsProviderProtocol {
         static let urlString = "https://api.kb404.com/static/DestinationObjects.json"
     }
 
-
     var destinations: [DestinationObject] = []
     private var inFlightTask: Task<(), Never>?
 
