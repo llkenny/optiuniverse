@@ -16,7 +16,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../CommonTools")
+        .package(path: "../CommonTools"),
+        .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -25,11 +26,17 @@ let package = Package(
             name: "BaseModule",
             dependencies: [
                 .product(name: "CommonTools", package: "CommonTools")
+            ],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]
         ),
         .testTarget(
             name: "BaseModuleTests",
-            dependencies: ["BaseModule"]
+            dependencies: ["BaseModule"],
+            plugins: [
+                .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]
