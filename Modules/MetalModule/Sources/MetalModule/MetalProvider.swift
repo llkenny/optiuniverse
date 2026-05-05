@@ -13,8 +13,10 @@ public final class MetalProvider {
 
     let modelLoader: ModelLoader
     let device: MTLDevice
+    weak var renderer: MetalRenderer?
 
     public var isReady: Bool = false
+    public var transferOrbitSummary: TransferOrbitSummary?
 
     public init(modelLoader: ModelLoader) {
         self.modelLoader = modelLoader
@@ -28,5 +30,9 @@ public final class MetalProvider {
         guard !isReady else { return }
         await modelLoader.loadMeshes(device: device)
         isReady = true
+    }
+
+    public func showTransferOrbit(to destinationName: String) {
+        renderer?.showTransferOrbit(to: destinationName)
     }
 }

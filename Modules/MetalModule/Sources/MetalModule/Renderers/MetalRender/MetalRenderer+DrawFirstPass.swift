@@ -17,7 +17,8 @@ extension MetalRenderer {
     func drawFirstPass(msaaColorTexture: MTLTexture,
                        hdrTexture: MTLTexture,
                        depthTexture: MTLTexture,
-                       snapshot: PreparedRenderSnapshot?) throws(DrawFirstPassError) {
+                       snapshot: PreparedRenderSnapshot?,
+                       transferOrbit: HohmannTransferOrbit?) throws(DrawFirstPassError) {
 
         guard let geometryCommandBuffer = commandQueue
             .makeCommandBuffer() else {
@@ -53,6 +54,11 @@ extension MetalRenderer {
                              viewMatrix: renderViewMatrix,
                              projectionMatrix: projectionMatrix,
                              sceneOrigin: renderOrigin)
+        transferOrbitRenderer.render(transferOrbit: transferOrbit,
+                                     renderEncoder: renderEncoder,
+                                     viewMatrix: renderViewMatrix,
+                                     projectionMatrix: projectionMatrix,
+                                     sceneOrigin: renderOrigin)
         // Render the remaining planets.
         planetsRenderer.renderPlanets(configuration: configuration)
         renderEncoder.endEncoding()
