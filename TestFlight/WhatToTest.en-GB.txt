@@ -1,1 +1,2 @@
 - Add stars
+- Optimize Featured objects loading (minor UX improvement)

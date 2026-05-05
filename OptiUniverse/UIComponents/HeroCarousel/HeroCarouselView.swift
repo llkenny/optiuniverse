@@ -62,6 +62,7 @@ struct HeroCarouselView: View {
         .scrollPosition(id: $viewModel.activeCardID)
         .defaultScrollAnchor(.center)
         .task {
+            viewModel.featuredObjectProvider = appEnvironment.featuredObjectProvider
             await viewModel.loadCards()
         }
         .onChange(of: currentIndex) { _, _ in

@@ -22,6 +22,7 @@ public final class AppEnvironment {
     }
 
     public let destinationsProvider: DestinationsProviderProtocol = DestinationsProvider()
+    public let featuredObjectProvider: FeaturedObjectProviderProtocol = FeaturedObjectProvider()
 
     public init() {
     }
