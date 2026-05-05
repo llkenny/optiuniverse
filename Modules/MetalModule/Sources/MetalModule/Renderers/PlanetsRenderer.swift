@@ -238,6 +238,19 @@ final class PlanetsRenderer {
                                         cameraPosition: configuration.cameraPosition,
                                         sceneOrigin: configuration.sceneOrigin)
 
+        render(renderSubmeshes: renderSubmeshes,
+               planet: planet,
+               configuration: configuration,
+               renderPass: renderPass)
+    }
+
+    private func render(renderSubmeshes: [PlanetsRenderer.RenderSubmesh],
+                        planet: PreparedPlanetRenderPacket,
+                        configuration: PlanetRenderConfiguration,
+                        renderPass: RenderPass) {
+
+        let renderEncoder = configuration.renderEncoder
+
         for renderSubmesh in renderSubmeshes {
             let loadedMesh = renderSubmesh.loadedMesh
             let mesh = loadedMesh.mesh
