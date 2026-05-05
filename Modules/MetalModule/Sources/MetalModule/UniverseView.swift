@@ -53,7 +53,15 @@ public struct UniverseView: UIViewRepresentable {
         let panGesture = UIPanGestureRecognizer(
             target: cameraController,
             action: #selector(CameraController.handlePan(_:)))
+        panGesture.maximumNumberOfTouches = 1
         mtkView.addGestureRecognizer(panGesture)
+        let trajectoryPanGesture = UIPanGestureRecognizer(
+            target: cameraController,
+            action: #selector(CameraController.handleTrajectoryPan(_:)))
+        trajectoryPanGesture.minimumNumberOfTouches = 2
+        trajectoryPanGesture.maximumNumberOfTouches = 2
+        trajectoryPanGesture.delegate = cameraController
+        mtkView.addGestureRecognizer(trajectoryPanGesture)
         let pinchGesture = UIPinchGestureRecognizer(
             target: cameraController,
             action: #selector(CameraController.handlePinch(_:)))

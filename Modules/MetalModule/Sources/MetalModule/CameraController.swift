@@ -2,7 +2,7 @@ import UIKit
 
 /// Handles user gestures to control the orbital camera around the scene's origin.
 @MainActor
-final class CameraController: NSObject {
+final class CameraController: NSObject, UIGestureRecognizerDelegate {
     weak var renderer: MetalRenderer?
 
     // Tunable parameters
@@ -10,6 +10,7 @@ final class CameraController: NSObject {
     var zoomSpeed: Float
     var minDistance: Float
     var maxDistance: Float
+    var trajectoryPanSpeed: Float
 
     // Internal state for inertia
     private var yawVelocity: Float = 0
@@ -21,11 +22,13 @@ final class CameraController: NSObject {
     init(renderer: MetalRenderer?,
          orbitSpeed: Float = 0.01,
          zoomSpeed: Float = 1.0,
+         trajectoryPanSpeed: Float = 1.0,
          minDistance: Float = 0.001,
          maxDistance: Float = 10000.0) {
         self.renderer = renderer
         self.orbitSpeed = orbitSpeed
         self.zoomSpeed = zoomSpeed
+        self.trajectoryPanSpeed = trajectoryPanSpeed
         self.minDistance = minDistance
         self.maxDistance = maxDistance
         super.init()
@@ -93,6 +96,24 @@ final class CameraController: NSObject {
         }
     }
 
+    @objc func handleTrajectoryPan(_ gesture: UIPanGestureRecognizer) {
+        guard let renderer = renderer else { return }
+        renderer.beginManualCameraControl()
+
+        if gesture.state == .began {
+            stopInertia()
+        }
+
+        let translation = gesture.translation(in: gesture.view)
+        renderer.panTrajectoryCamera(byScreenTranslation: translation,
+                                     speed: trajectoryPanSpeed)
+        gesture.setTranslation(.zero, in: gesture.view)
+
+        if gesture.state == .cancelled || gesture.state == .failed {
+            stopInertia()
+        }
+    }
+
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         guard let renderer = renderer else { return }
         renderer.beginManualCameraControl()
@@ -124,5 +145,14 @@ final class CameraController: NSObject {
 
     @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
         // Optional roll gesture – renderer currently has no roll component.
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let panGesture = gestureRecognizer as? UIPanGestureRecognizer,
+              panGesture.minimumNumberOfTouches == 2 else {
+            return true
+        }
+
+        return renderer?.isTrajectoryModeActive == true
     }
 }
