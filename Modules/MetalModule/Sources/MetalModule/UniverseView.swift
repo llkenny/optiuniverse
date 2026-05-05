@@ -42,6 +42,7 @@ public struct UniverseView: UIViewRepresentable {
         // Initialize renderer and delegate
         let renderer = MetalRenderer(metalView: mtkView, metalProvider: metalProvider)
         context.coordinator.renderer = renderer
+        metalProvider.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
         // Camera controller
@@ -82,5 +83,6 @@ public struct UniverseView: UIViewRepresentable {
 
     public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
         coordinator.cameraController?.stop()
+        coordinator.renderer?.metalProvider.renderer = nil
     }
 }

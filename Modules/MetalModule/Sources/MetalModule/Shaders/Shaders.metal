@@ -227,6 +227,52 @@ fragment float4 star_fragment(StarVertexOut in [[stage_in]],
     return float4(color, alpha);
 }
 
+struct TransferOrbitVertexIn {
+    float4 positionAndProgress;
+};
+
+struct TransferOrbitUniforms {
+    float4x4 viewMatrix;
+    float4x4 projectionMatrix;
+    float4 sceneOriginAndOpacity;
+    float4 color;
+    float4 dash;
+};
+
+struct TransferOrbitVertexOut {
+    float4 position [[position]];
+    float progress;
+};
+
+vertex TransferOrbitVertexOut transfer_orbit_vertex(
+                                                    const device TransferOrbitVertexIn *vertices [[buffer(0)]],
+                                                    constant TransferOrbitUniforms &uniforms [[buffer(1)]],
+                                                    uint vid [[vertex_id]]
+                                                    ) {
+    TransferOrbitVertexIn orbitVertex = vertices[vid];
+    float3 sceneOrigin = uniforms.sceneOriginAndOpacity.xyz;
+    float3 localPosition = orbitVertex.positionAndProgress.xyz - sceneOrigin;
+
+    TransferOrbitVertexOut out;
+    out.position = uniforms.projectionMatrix * uniforms.viewMatrix * float4(localPosition, 1.0);
+    out.progress = orbitVertex.positionAndProgress.w;
+    return out;
+}
+
+fragment float4 transfer_orbit_fragment(TransferOrbitVertexOut in [[stage_in]],
+                                        constant TransferOrbitUniforms &uniforms [[buffer(0)]]) {
+    if (uniforms.dash.x > 0.0) {
+        float dashPhase = fract(in.progress * uniforms.dash.x);
+        if (dashPhase > uniforms.dash.y) {
+            discard_fragment();
+        }
+    }
+
+    float pulse = 0.76 + 0.24 * sin(in.progress * 3.14159265);
+    float alpha = uniforms.color.a * uniforms.sceneOriginAndOpacity.w;
+    return float4(uniforms.color.rgb * pulse, alpha);
+}
+
 fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> planetTexture [[texture(0)]],
                               texture2d<float> normalTexture [[texture(1)]],
