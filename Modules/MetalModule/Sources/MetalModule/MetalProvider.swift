@@ -11,12 +11,14 @@ import Metal
 @MainActor
 public final class MetalProvider {
 
+    public var transferOrbitSummary: TransferOrbitSummary?
+
     let modelLoader: ModelLoader
     let device: MTLDevice
     weak var renderer: MetalRenderer?
 
     private var isReady: Bool = false
-    public var transferOrbitSummary: TransferOrbitSummary?
+    private var inFlightTask: Task<Void, Never>?
 
     public init(modelLoader: ModelLoader) {
         self.modelLoader = modelLoader
@@ -28,8 +30,20 @@ public final class MetalProvider {
 
     public func prepare() async {
         guard !isReady else { return }
-        await modelLoader.loadMeshes(device: device)
+
+        if let inFlightTask {
+            await inFlightTask.value
+            return
+        }
+
+        let task = Task {
+            await modelLoader.loadMeshes(device: device)
+        }
+
+        self.inFlightTask = task
+        await task.value
         isReady = true
+        self.inFlightTask = nil
     }
 
     public func showTransferOrbit(to destinationName: String) {
