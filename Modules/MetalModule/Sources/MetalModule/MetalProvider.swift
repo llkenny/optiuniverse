@@ -15,7 +15,7 @@ public final class MetalProvider {
     let device: MTLDevice
     weak var renderer: MetalRenderer?
 
-    public var isReady: Bool = false
+    private var isReady: Bool = false
     public var transferOrbitSummary: TransferOrbitSummary?
 
     public init(modelLoader: ModelLoader) {

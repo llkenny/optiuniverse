@@ -16,41 +16,26 @@ struct HomeView: View {
     @State private var totalCount: Int = 0
     @State private var currentChipsIndex: Int?
     @State private var selectedTag: String?
-    @State private var isDataLoaded: Bool = false
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                if isDataLoaded {
-                    TitleSectionView(name: appEnvironment.username)
-                        .padding(.horizontal)
-                        .padding(.bottom, 16)
-                    HeroCarouselView(
-                        currentIndex: $currentCarouselIndex,
-                        totalCount: $totalCount
-                    )
-                    .padding(.bottom, 12)
-                    PageIndicatorView(totalCount: totalCount,
-                                      currentIndex: $currentCarouselIndex)
+                TitleSectionView(name: appEnvironment.username)
+                    .padding(.horizontal)
                     .padding(.bottom, 16)
-                    CategoryChipsView(selectedTag: $selectedTag)
-                        .padding(.horizontal)
-                        .padding(.bottom, 2)
-                    DestinationListView(selectedTag: $selectedTag)
-                        .padding(.horizontal)
-                } else {
-                    Spacer(minLength: 80)
-                    ProgressView()
-                        .controlSize(ControlSize.large)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .task {
-            await appEnvironment.destinationsProvider.fetch()
-            await appEnvironment.featuredObjectProvider.fetch()
-            withAnimation {
-                isDataLoaded = true
+                HeroCarouselView(
+                    currentIndex: $currentCarouselIndex,
+                    totalCount: $totalCount
+                )
+                .padding(.bottom, 12)
+                PageIndicatorView(totalCount: totalCount,
+                                  currentIndex: $currentCarouselIndex)
+                .padding(.bottom, 16)
+                CategoryChipsView(selectedTag: $selectedTag)
+                    .padding(.horizontal)
+                    .padding(.bottom, 2)
+                DestinationListView(selectedTag: $selectedTag)
+                    .padding(.horizontal)
             }
         }
     }
