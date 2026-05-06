@@ -28,14 +28,14 @@ final class HeroCarouselViewModel {
             return
         }
 
-        guard inFlightTask == nil else {
-            // Someone already started load, no need for a new request — just wait
+        if let inFlightTask {
+            _ = await inFlightTask.value
             return
         }
 
         let inFlightTask = Task.detached {
             let featuredObjects = await featuredObjectProvider.featuredObjects
-            let cards = await self.map(featuredObjects: featuredObjects)
+            let cards = self.map(featuredObjects: featuredObjects)
             return cards
         }
         self.inFlightTask = inFlightTask
@@ -43,7 +43,7 @@ final class HeroCarouselViewModel {
         self.inFlightTask = nil
     }
 
-    private nonisolated func map(featuredObjects: [FeaturedObject]) async -> [HeroCard] {
+    private nonisolated func map(featuredObjects: [FeaturedObject]) -> [HeroCard] {
         featuredObjects.map {
             HeroCard(
                 id: $0.id,

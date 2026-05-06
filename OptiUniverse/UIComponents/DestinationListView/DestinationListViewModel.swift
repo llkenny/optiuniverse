@@ -13,14 +13,30 @@ final class DestinationListViewModel {
     private var cards: [DestinationCardModel] = []
     var destinationsProvider: DestinationsProviderProtocol?
 
+    private var inFlightTask: Task<[DestinationCardModel], Never>?
+
     func loadCards() async {
         guard cards.isEmpty,
               let destinationsProvider else {
             return
         }
+        if let inFlightTask {
+            _ = await inFlightTask.value
+            return
+        }
 
-        let objects = await destinationsProvider.destinations
-        cards = objects.map {
+        let inFlightTask = Task.detached {
+            let destinations = await destinationsProvider.destinations
+            return self.map(destinations: destinations)
+        }
+
+        self.inFlightTask = inFlightTask
+        cards = await inFlightTask.value
+        self.inFlightTask = nil
+    }
+
+    private nonisolated func map(destinations: [DestinationObject]) -> [DestinationCardModel] {
+        destinations.map {
             DestinationCardModel(
                 id: $0.id,
                 object: $0.object,
