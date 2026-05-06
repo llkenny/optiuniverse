@@ -97,6 +97,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var pendingSelectedPlanetName: String?
     private var activeTransferDestinationName: String?
     private var activeTransferOrbit: HohmannTransferOrbit?
+    private var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)
 
     // Camera animation state
     private var startCameraTarget: SIMD3<Float>?
@@ -118,6 +119,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         didSet {
             projectionMatrixLogger.logChange(from: oldValue, to: projectionMatrix)
         }
+    }
+    var isTrajectoryModeActive: Bool {
+        activeTransferOrbit != nil
     }
 
     init?(metalView: MTKView, metalProvider: MetalProvider) {
@@ -235,7 +239,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             updateCameraAnimation(delta: delta)
         } else if activeTransferOrbit != nil,
                   let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
-            cameraTarget = earthPosition
+            cameraTarget = earthPosition + transferCameraTargetOffset
             updateCamera()
         } else if let name = followingPlanetName,
                   let position = snapshot?.worldPosition(ofPlanetNamed: name) {
@@ -305,6 +309,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
+        transferCameraTargetOffset = .zero
         publishTransferOrbitSummary(transferOrbit.summary)
         followingPlanetName = "Earth"
         pendingFollowPlanetName = nil
@@ -343,6 +348,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         pendingSelectedPlanetName = nil
         activeTransferDestinationName = nil
         activeTransferOrbit = nil
+        transferCameraTargetOffset = .zero
         publishTransferOrbitSummary(nil)
     }
 
@@ -401,6 +407,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// Stops any active camera interpolation so direct gestures manipulate
     /// distance/orbit immediately without being overridden on the next frame.
     func beginManualCameraControl() {
+        if activeTransferOrbit != nil,
+           let earthPosition = renderPreparationPipeline.latestSnapshot?
+            .worldPosition(ofPlanetNamed: "Earth") {
+            transferCameraTargetOffset = cameraTarget - earthPosition
+        }
+
         pendingFollowPlanetName = nil
         cameraAnimationProgress = 1
         startCameraTarget = nil
@@ -491,6 +503,30 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let verticalRotation = simd_quatf(angle: verticalAngle, axis: rightVector)
 
         cameraOrientation = simd_normalize(verticalRotation * horizontalRotation * cameraOrientation)
+    }
+
+    func panTrajectoryCamera(byScreenTranslation translation: CGPoint,
+                             speed: Float) {
+        guard activeTransferOrbit != nil else { return }
+
+        cameraOrientation = simd_normalize(cameraOrientation)
+
+        let width = max(Float(metalView.bounds.width), 1)
+        let height = max(Float(metalView.bounds.height), 1)
+        let aspect = width / height
+        let visibleHeight = (
+            2 * max(cameraDistance, CameraFit.minimumNearPlane)
+            * tan(CameraFit.verticalFieldOfView / 2)
+        )
+        let visibleWidth = visibleHeight * aspect
+        let horizontal = Float(translation.x) / width * visibleWidth * speed
+        let vertical = Float(translation.y) / height * visibleHeight * speed
+        let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
+        let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
+
+        transferCameraTargetOffset += (rightVector * horizontal) + (upVector * vertical)
+        cameraTarget += (rightVector * horizontal) + (upVector * vertical)
+        updateCamera()
     }
 
     private func distanceToFitPlanet(radius: Float) -> Float {
