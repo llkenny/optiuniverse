@@ -59,7 +59,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     private let device: MTLDevice
     let commandQueue: MTLCommandQueue
-    let planetsRenderer: PlanetsRenderer
+    let planetsRenderer: PlanetsRendererProtocol
     let starsRenderer: StarsRenderer
     let transferOrbitRenderer: TransferOrbitRenderer
     private let renderPreparationPipeline: RenderPreparationPipeline
