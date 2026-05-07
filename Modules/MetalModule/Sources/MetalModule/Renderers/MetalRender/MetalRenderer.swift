@@ -82,7 +82,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                     softFocusRadius: 1.9,
                                     hazeStrength: 0.3,
                                     saturationBoost: 1.08)
-    var cartoonShaderIntensity: Float = 0.75
+    var cartoonShaderIntensity: Float = 0
 
     // Orbital Camera
     // Camera state
