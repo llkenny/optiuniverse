@@ -22,7 +22,6 @@ extension PlanetsRenderer: PlanetsRendererProtocol {
 
     func renderPlanets(configuration: PlanetRenderConfiguration) {
         planetScreenPositions.removeAll()
-        planetWorldPositions.removeAll()
 
         guard let snapshot = configuration.snapshot else { return }
 

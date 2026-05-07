@@ -25,7 +25,6 @@ extension PlanetsRenderer {
                       configuration: PlanetRenderConfiguration) {
         // Compute screen position of the planet's center
         if renderPass == .opaque {
-            planetWorldPositions[planet.planetName] = planet.worldPosition
             let localPosition4 = SIMD4<Float>(planet.worldPosition - configuration.sceneOrigin, 1)
             let clipPosition = configuration.projectionMatrix * configuration.viewMatrix * localPosition4
             // clip-space `w` is positive for objects in front of the camera in our

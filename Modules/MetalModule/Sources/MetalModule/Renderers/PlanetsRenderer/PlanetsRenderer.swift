@@ -24,10 +24,6 @@ final class PlanetsRenderer {
 
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
-    /// World-space positions of planet centers, updated each frame.
-    /// Keys are planet names, values are coordinates in the scene space.
-    var planetWorldPositions: [String: SIMD3<Float>] = [:]
-
     init(device: MTLDevice, sampleCount: Int) {
         self.device = device
         self.opaqueDepthStencilState = Self.makeDepthStencilState(device: device,
