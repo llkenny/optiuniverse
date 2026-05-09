@@ -8,13 +8,12 @@
 import Foundation
 
 public nonisolated struct FeaturedObject: Decodable, Sendable {
-    // swiftlint:disable identifier_name
+
     public struct AccentColor: Decodable, Sendable {
-        public let r: Double
-        public let g: Double
-        public let b: Double
+        public let red: Double
+        public let green: Double
+        public let blue: Double
     }
-    // swiftlint:enable identifier_name
 
     public let id: UUID
     public let name: String

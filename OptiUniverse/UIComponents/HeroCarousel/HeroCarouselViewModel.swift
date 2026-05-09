@@ -51,7 +51,7 @@ final class HeroCarouselViewModel {
                 title: $0.name,
                 subtitle: $0.description,
                 accentColors: $0.accentColor.map { color in
-                    Color(red: color.r, green: color.g, blue: color.b)
+                    Color(red: color.red, green: color.green, blue: color.blue)
                 }
             )
         }
