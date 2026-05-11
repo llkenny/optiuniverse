@@ -12,9 +12,10 @@ import Foundation
 
 struct RootContainerView: View {
 
-    @Environment(AppEnvironment.self) private var appEnvironment
-    @Bindable private var metalProvider: MetalProvider
+    @Environment(AppEnvironment.self) var appEnvironment
+    @Bindable private(set) var metalProvider: MetalProvider
     @State private var isDataLoaded: Bool = false
+    @State var objectsViewState: ObjectsViewState = .raw
 
     private let modelLoader: ModelLoader
 
@@ -39,33 +40,18 @@ struct RootContainerView: View {
                             UniverseView(metalProvider: metalProvider)
                                 .ignoresSafeArea(edges: .bottom)
 
-                            if let summary = metalProvider.transferOrbitSummary {
-                                TransferOrbitFormulaOverlay(summary: summary)
-                                    .padding(.top, 12)
-                                    .padding(.horizontal, 16)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
-                                    .frame(maxWidth: .infinity,
-                                           maxHeight: .infinity,
-                                           alignment: .topTrailing)
+                            if case.orbit(let summary) = objectsViewState {
+                                makeOrbitSummary(summary: summary)
+                                makeOrbitBackButton()
                             }
 
-                            if let selectedPlanet = appEnvironment.selectedPlanet {
-                                Button {
-                                    metalProvider.showTransferOrbit(to: selectedPlanet)
-                                } label: {
-                                    Text("Navigate to")
-                                        .font(.headline.weight(.semibold))
-                                        .foregroundStyle(.black)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 15)
-                                }
-                                .background(.white, in: RoundedRectangle(cornerRadius: 8))
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 28)
-                                .frame(maxWidth: .infinity,
-                                       maxHeight: .infinity,
-                                       alignment: .bottom)
+                            if let selectedPlanet = appEnvironment.selectedPlanet,
+                               case .raw = objectsViewState {
+                                makeInfoButton(selectedPlanet: selectedPlanet)
                             }
+                        }
+                        .onAppear {
+                            objectsViewState = .raw
                         }
                     }
                 }
@@ -82,6 +68,12 @@ struct RootContainerView: View {
             await appEnvironment.featuredObjectProvider.fetch()
             isDataLoaded = true
         }
+        .overlay(alignment: .bottom) {
+            if case .info(let selectedObjectInfo) = objectsViewState {
+                makeInfoOverlay(entity: selectedObjectInfo)
+            }
+        }
+        .animation(.default, value: objectsViewState)
     }
 }
 
