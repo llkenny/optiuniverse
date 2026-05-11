@@ -55,7 +55,7 @@ extension RootContainerView {
         let entity = ObjectInfoViewEntity(id: destination.id,
                                           title: selectedPlanet,
                                           subtitle: destination.subtitle,
-                                          description: "",
+                                          description: destination.description,
                                           navigationButtonTitle: "Navigate to",
                                           navigationButtonAction: {
             metalProvider.showTransferOrbit(to: selectedPlanet)
