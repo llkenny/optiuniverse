@@ -12,6 +12,7 @@ public nonisolated struct DestinationObject: Decodable, Sendable {
     public let object: String
     public let title: String
     public let subtitle: String
+    public let description: String
     public let imageName: String
     public let tag: String
 }
