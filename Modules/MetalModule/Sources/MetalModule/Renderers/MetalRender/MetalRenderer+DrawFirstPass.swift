@@ -9,6 +9,11 @@ import Metal
 import simd
 import UIKit
 
+struct SceneRouteRenderState {
+    let transferOrbit: HohmannTransferOrbit?
+    let navigation: NavigationRouteRenderState
+}
+
 extension MetalRenderer {
     enum DrawFirstPassError: Error {
         case noGeometryCommandBuffer, noRenderEncoder
@@ -18,7 +23,7 @@ extension MetalRenderer {
                        hdrTexture: MTLTexture,
                        depthTexture: MTLTexture,
                        snapshot: PreparedRenderSnapshot?,
-                       transferOrbit: HohmannTransferOrbit?) throws(DrawFirstPassError) {
+                       routes: SceneRouteRenderState) throws(DrawFirstPassError) {
 
         guard let geometryCommandBuffer = commandQueue
             .makeCommandBuffer() else {
@@ -54,19 +59,24 @@ extension MetalRenderer {
                              viewMatrix: renderViewMatrix,
                              projectionMatrix: projectionMatrix,
                              sceneOrigin: renderOrigin)
-        transferOrbitRenderer.render(transferOrbit: transferOrbit,
+        transferOrbitRenderer.render(transferOrbit: routes.transferOrbit,
                                      renderEncoder: renderEncoder,
                                      viewMatrix: renderViewMatrix,
                                      projectionMatrix: projectionMatrix,
                                      sceneOrigin: renderOrigin)
+        routeRenderer.render(configuration: RouteRenderConfiguration(
+            state: routes.navigation,
+            renderEncoder: renderEncoder,
+            viewMatrix: renderViewMatrix,
+            projectionMatrix: projectionMatrix,
+            sceneOrigin: renderOrigin,
+            viewportSize: metalView.bounds.size
+        ))
         // Render the remaining planets.
         planetsRenderer.renderPlanets(configuration: configuration)
         renderEncoder.endEncoding()
 
-        if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
-            blit.generateMipmaps(for: hdrTexture)
-            blit.endEncoding()
-        }
+        makeBlit(hdrTexture: hdrTexture, geometryCommandBuffer: geometryCommandBuffer)
 
         geometryCommandBuffer.commit()
 
@@ -89,5 +99,13 @@ extension MetalRenderer {
         hdrDescriptor.depthAttachment.storeAction = .dontCare
         hdrDescriptor.depthAttachment.clearDepth = 1.0
         return hdrDescriptor
+    }
+
+    private func makeBlit(hdrTexture: MTLTexture,
+                          geometryCommandBuffer: MTLCommandBuffer) {
+        if let blit = geometryCommandBuffer.makeBlitCommandEncoder() {
+            blit.generateMipmaps(for: hdrTexture)
+            blit.endEncoding()
+        }
     }
 }

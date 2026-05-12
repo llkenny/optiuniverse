@@ -1,5 +1,5 @@
 //
-//  MetalProvider.swift
+//  MeshProvider.swift
 //  OptiUniverse
 //
 //  Created by max on 17.04.2026.
@@ -7,15 +7,15 @@
 
 import Metal
 
+/// Mesh provider (previously named MetalProvider).
+/// Stores necessary dependencies and handles loading deduplication.
+/// Model loading logic is in ModelLoader.
 @Observable
 @MainActor
-public final class MetalProvider {
-
-    public var transferOrbitSummary: TransferOrbitSummary?
+public final class MeshProvider {
 
     let modelLoader: ModelLoader
     let device: MTLDevice
-    weak var renderer: MetalRenderer?
 
     private var isReady: Bool = false
     private var inFlightTask: Task<Void, Never>?
@@ -44,9 +44,5 @@ public final class MetalProvider {
         await task.value
         isReady = true
         self.inFlightTask = nil
-    }
-
-    public func showTransferOrbit(to destinationName: String) {
-        renderer?.showTransferOrbit(to: destinationName)
     }
 }

@@ -13,15 +13,19 @@ import Foundation
 struct RootContainerView: View {
 
     @Environment(AppEnvironment.self) var appEnvironment
-    @Bindable private(set) var metalProvider: MetalProvider
+    @Bindable private(set) var meshProvider: MeshProvider
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
 
     private let modelLoader: ModelLoader
+    let orbitRenderHandler: OrbitRenderHandler
+    let navigationRenderHandler: NavigationRenderHandler
 
     init() {
         modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
-        metalProvider = MetalProvider(modelLoader: modelLoader)
+        meshProvider = MeshProvider(modelLoader: modelLoader)
+        orbitRenderHandler = OrbitRenderHandler()
+        navigationRenderHandler = NavigationRenderHandler()
     }
 
     var body: some View {
@@ -37,17 +41,25 @@ struct RootContainerView: View {
                         HomeView()
                     case .objects:
                         ZStack {
-                            UniverseView(metalProvider: metalProvider)
+                            UniverseView(meshProvider: meshProvider,
+                                         orbitRenderHandler: orbitRenderHandler,
+                                         navigationRenderHandler: navigationRenderHandler)
                                 .ignoresSafeArea(edges: .bottom)
 
-                            if case.orbit(let summary) = objectsViewState {
+                            switch objectsViewState {
+                            case .raw:
+                                if let selectedPlanet = appEnvironment.selectedPlanet {
+                                    makeInfoButton(selectedPlanet: selectedPlanet)
+                                }
+                            case .orbit(let summary):
                                 makeOrbitSummary(summary: summary)
                                 makeOrbitBackButton()
-                            }
-
-                            if let selectedPlanet = appEnvironment.selectedPlanet,
-                               case .raw = objectsViewState {
-                                makeInfoButton(selectedPlanet: selectedPlanet)
+                                // TODO: The feature is not ready for production #246
+                                // makeStartNavigationButton(summary: summary)
+                            case .navigation:
+                                makeNavigationControls(snapshot: navigationRenderHandler.navigationSnapshot)
+                            default:
+                                EmptyView()
                             }
                         }
                         .onAppear {
@@ -61,9 +73,18 @@ struct RootContainerView: View {
         }
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
-        .animation(.default, value: metalProvider.transferOrbitSummary)
+        .animation(.default, value: orbitRenderHandler.transferOrbitSummary)
+        .animation(.default, value: navigationRenderHandler.navigationSnapshot)
+        .onChange(of: navigationRenderHandler.navigationSnapshot.state) { _, newState in
+            guard objectsViewState == .navigation,
+                  newState == .cancelled else {
+                return
+            }
+
+            objectsViewState = .raw
+        }
         .task {
-            await metalProvider.prepare()
+            await meshProvider.prepare()
             await appEnvironment.destinationsProvider.fetch()
             await appEnvironment.featuredObjectProvider.fetch()
             isDataLoaded = true
