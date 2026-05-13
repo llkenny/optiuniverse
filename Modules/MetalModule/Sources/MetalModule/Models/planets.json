@@ -80,5 +80,13 @@
         "distanceFromSunKm": 4514953000,
         "orbitSpeed": 5.43,
         "rotationSpeedKmSec": 2.682888
+    },
+    {
+        "name": "Pluto",
+        "meshName": "PlutoLow_Pluto_0",
+        "diameterKm": 2377,
+        "distanceFromSunKm": 5900000000,
+        "orbitSpeed": 4.72,
+        "rotationSpeedKmSec": -0.01355
     }
 ]
