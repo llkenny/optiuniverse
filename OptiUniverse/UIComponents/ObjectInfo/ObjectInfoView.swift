@@ -22,6 +22,19 @@ struct ObjectInfoView: View {
                 .font(.system(size: 14))
                 .padding(.bottom, 12)
 
+            HStack {
+                ForEach(entity.details, id: \.title) { detail in
+                    ObjectInfoDetailCardView(entity: detail)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.bottom, 12)
+
+            Text("About \(entity.title)")
+                .foregroundStyle(.neonTextPrimary)
+                .font(.system(size: 16))
+                .padding(.bottom, 2)
+
             Text(entity.description)
                 .foregroundStyle(.neonTextSecondary)
                 .font(.system(size: 14))
@@ -47,6 +60,10 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                       title: "Mercury",
                                       subtitle: "Swift Cratered World",
                                       description: description,
+                                      details: [.init(title: "distance", value: "0.39", dimension: "AU"),
+                                                .init(title: "diameter", value: "4,879", dimension: "km"),
+                                                .init(title: "orbital period", value: "87.97", dimension: "days"),
+                                                .init(title: "surface temp", value: "-180 to 430", dimension: "°C")],
                                       navigationButtonTitle: "Navigate to",
                                       navigationButtonAction: {
         print("Navigate to Mercury")

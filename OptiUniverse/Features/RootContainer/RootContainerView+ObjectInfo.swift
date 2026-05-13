@@ -52,10 +52,17 @@ extension RootContainerView {
             }) else {
             return
         }
+        let details = destination.details.map {
+            ObjectInfoDetailCardEntity(title: $0.title,
+                                       value: $0.value,
+                                       dimension: $0.dimension)
+        }
+
         let entity = ObjectInfoViewEntity(id: destination.id,
                                           title: selectedPlanet,
                                           subtitle: destination.subtitle,
                                           description: destination.description,
+                                          details: details,
                                           navigationButtonTitle: "Route",
                                           navigationButtonAction: {
             orbitRenderHandler.showTransferOrbit(to: selectedPlanet)
