@@ -114,7 +114,6 @@ extension MetalRenderer {
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
         transferCameraTargetOffset = .zero
-        publishTransferOrbitSummary(transferOrbit.summary)
 
         guard navigationRouteCoordinator.start(destinationName: name,
                                                planets: planets,

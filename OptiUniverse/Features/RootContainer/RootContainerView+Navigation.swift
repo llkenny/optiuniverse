@@ -11,9 +11,9 @@ import MetalModule
 extension RootContainerView {
 
     @ViewBuilder
-    func makeStartNavigationButton(summary: TransferOrbitSummary) -> some View {
+    func makeStartNavigationButton(destinationName: String) -> some View {
         Button {
-            navigationRenderHandler.startNavigation(to: summary.destinationName)
+            navigationRenderHandler.startNavigation(to: destinationName)
             objectsViewState = .navigation
         } label: {
             Text("🚀")

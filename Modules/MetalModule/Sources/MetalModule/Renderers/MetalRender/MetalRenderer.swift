@@ -116,7 +116,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let cameraFollowTransitionDuration: Float = 1.1
 
     let meshProvider: MeshProvider
-    let orbitRenderHandler: OrbitRenderHandlerProtocol
     let navigationRenderHandler: NavigationRenderHandlerProtocol
     let planets: [Planet]
 
@@ -137,7 +136,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     init?(metalView: MTKView,
           meshProvider: MeshProvider,
-          orbitRenderHandler: OrbitRenderHandlerProtocol,
           navigationRenderHandler: NavigationRenderHandlerProtocol) {
         guard let commandQueue = meshProvider.device.makeCommandQueue() else {
             return nil
@@ -147,7 +145,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.commandQueue = commandQueue
         self.metalView = metalView
         self.meshProvider = meshProvider
-        self.orbitRenderHandler = orbitRenderHandler
         self.navigationRenderHandler = navigationRenderHandler
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
@@ -380,7 +377,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
         transferCameraTargetOffset = .zero
-        publishTransferOrbitSummary(transferOrbit.summary)
         followingPlanetName = "Earth"
         pendingFollowPlanetName = nil
         startTransferOverviewAnimation(transferOrbit: transferOrbit,
@@ -398,7 +394,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         activeTransferOrbit = transferOrbit
-        publishTransferOrbitSummary(transferOrbit.summary)
     }
 
     func makeTransferOrbit(destinationName: String,
@@ -419,12 +414,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         activeTransferDestinationName = nil
         activeTransferOrbit = nil
         transferCameraTargetOffset = .zero
-        publishTransferOrbitSummary(nil)
-    }
-
-    func publishTransferOrbitSummary(_ summary: TransferOrbitSummary?) {
-        guard orbitRenderHandler.transferOrbitSummary != summary else { return }
-        orbitRenderHandler.transferOrbitSummary = summary
     }
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,

@@ -51,11 +51,12 @@ struct RootContainerView: View {
                                 if let selectedPlanet = appEnvironment.selectedPlanet {
                                     makeInfoButton(selectedPlanet: selectedPlanet)
                                 }
-                            case .orbit(let summary):
-                                makeOrbitSummary(summary: summary)
+                            case .orbit:
                                 makeOrbitBackButton()
                                 // TODO: The feature is not ready for production #246
-                                // makeStartNavigationButton(summary: summary)
+//                                if let selectedPlanet = appEnvironment.selectedPlanet {
+//                                    makeStartNavigationButton(destinationName: selectedPlanet)
+//                                }
                             case .navigation:
                                 makeNavigationControls(snapshot: navigationRenderHandler.navigationSnapshot)
                             default:
@@ -73,7 +74,6 @@ struct RootContainerView: View {
         }
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
-        .animation(.default, value: orbitRenderHandler.transferOrbitSummary)
         .animation(.default, value: navigationRenderHandler.navigationSnapshot)
         .onChange(of: navigationRenderHandler.navigationSnapshot.state) { _, newState in
             guard objectsViewState == .navigation,

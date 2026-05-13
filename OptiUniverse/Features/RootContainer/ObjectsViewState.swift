@@ -9,7 +9,7 @@ import MetalModule
 
 enum ObjectsViewState: Equatable {
     case raw
-    case orbit(TransferOrbitSummary)
+    case orbit
     case info(ObjectInfoViewEntity)
     case navigation
 
@@ -19,8 +19,8 @@ enum ObjectsViewState: Equatable {
             true
         case (.navigation, .navigation):
             true
-        case let (.orbit(lhsSummary), .orbit(rhsSummary)):
-            lhsSummary == rhsSummary
+        case (.orbit, .orbit):
+            true
         case let (.info(lhsEntity), .info(rhsEntity)):
             lhsEntity.id == rhsEntity.id
         default:

@@ -104,7 +104,6 @@ private let testPlanets: [Planet] = [
                                              sampleCount: 16)
 
     #expect(abs((transfer?.semiMajorAxis ?? 0) - 1.26) < 0.0001)
-    #expect(abs((transfer?.summary.semiMajorAxisAU ?? 0) - 1.26) < 0.0001)
 }
 
 @Test func outwardTransferStartsAtEarthAndEndsAtDestinationRadius() throws {

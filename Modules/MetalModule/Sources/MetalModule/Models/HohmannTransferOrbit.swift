@@ -14,7 +14,6 @@ struct HohmannTransferOrbit: Equatable, Sendable {
     let semiMajorAxis: Float
     let sunPosition: SIMD3<Float>
     let points: [SIMD3<Float>]
-    let summary: TransferOrbitSummary
 
     static func make(destinationName: String,
                      planets: [Planet],
@@ -45,13 +44,7 @@ struct HohmannTransferOrbit: Equatable, Sendable {
             destinationOrbitRadius: destinationOrbitRadius,
             semiMajorAxis: semiMajorAxis,
             sunPosition: sunPosition,
-            points: sampledPoints.map { $0 + sunPosition },
-            summary: TransferOrbitSummary(
-                destinationName: destinationName,
-                earthOrbitRadiusAU: 1,
-                destinationOrbitRadiusAU: destinationOrbitRadius / earthOrbitRadius,
-                semiMajorAxisAU: semiMajorAxis / earthOrbitRadius
-            )
+            points: sampledPoints.map { $0 + sunPosition }
         )
     }
 
