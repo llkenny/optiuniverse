@@ -7,6 +7,7 @@
         "description": "The Sun is the star at the center of the solar system, holding every planet in orbit with its gravity. Its roiling plasma, magnetic storms, and constant stream of solar wind shape conditions across interplanetary space.",
         "imageName": "dst-Sun",
         "tag": "🌶️ Hot",
+        "isNavigable": false,
         "details": [
             {
                 "title": "Distance",
@@ -38,6 +39,7 @@
         "description": "Mercury is the smallest planet and the closest world to the Sun. Its cratered surface, long solar days, and lack of a thick atmosphere create extreme swings between scorching daylight and freezing night.",
         "imageName": "dst-Mercury",
         "tag": "🌶️ Hot",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -69,6 +71,7 @@
         "description": "Venus is wrapped in dense clouds of sulfuric acid above a crushing carbon dioxide atmosphere. Beneath that bright veil, runaway greenhouse heating makes its volcanic plains hotter than any other planet's surface.",
         "imageName": "dst-Venus",
         "tag": "🌶️ Hot",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -100,6 +103,7 @@
         "description": "Earth is the only known world with stable surface oceans and a living biosphere. Its active geology, protective magnetic field, and layered atmosphere make it a dynamic oasis in the inner solar system.",
         "imageName": "dst-Earth",
         "tag": "🌎 Inhabited",
+        "isNavigable": false,
         "details": [
             {
                 "title": "Distance",
@@ -131,6 +135,7 @@
         "description": "The Moon is Earth's natural satellite and the nearest destination beyond our planet. Its ancient impact basins, airless plains, and steady presence in the sky preserve a record of early solar system history.",
         "imageName": "dst-Moon",
         "tag": "🪨 Satellite",
+        "isNavigable": false,
         "details": [
             {
                 "title": "Distance",
@@ -162,6 +167,7 @@
         "description": "Mars is a cold desert world marked by iron-rich dust, giant volcanoes, deep canyons, and dried river valleys. Its polar caps and buried ice make it one of the most compelling targets for future exploration.",
         "imageName": "dst-Mars",
         "tag": "🔥 Popular",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -193,6 +199,7 @@
         "description": "Jupiter is the largest planet, a fast-spinning gas giant with powerful bands, auroras, and storms larger than Earth. Its immense gravity shapes the outer solar system and shepherds a diverse family of moons.",
         "imageName": "dst-Jupiter",
         "tag": "🔥 Popular",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -224,6 +231,7 @@
         "description": "Saturn is a pale gas giant encircled by the solar system's most spectacular ring system. The rings are made of countless icy fragments, while its moons range from hazy Titan to ocean-bearing Enceladus.",
         "imageName": "dst-Saturn",
         "tag": "🪐 Rings",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -255,6 +263,7 @@
         "description": "Uranus is an ice giant that rotates on its side, giving it seasons unlike any other planet. Its muted blue-green atmosphere, faint rings, and cold interior make it one of the solar system's strangest worlds.",
         "imageName": "dst-Uranus",
         "tag": "🪐 Rings",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
@@ -286,6 +295,7 @@
         "description": "Neptune is the farthest major planet, a deep blue ice giant swept by supersonic winds. Dark storms, bright methane clouds, and the captured moon Triton give this distant world a restless, high-energy character.",
         "imageName": "dst-Neptune",
         "tag": "❄️ Cold",
+        "isNavigable": true,
         "details": [
             {
                 "title": "Distance",
