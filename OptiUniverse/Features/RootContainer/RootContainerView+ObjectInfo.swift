@@ -56,6 +56,7 @@ extension RootContainerView {
                                           title: selectedPlanet,
                                           subtitle: destination.subtitle,
                                           description: destination.description,
+                                          details: [], // TODO: Provide details
                                           navigationButtonTitle: "Route",
                                           navigationButtonAction: {
             orbitRenderHandler.showTransferOrbit(to: selectedPlanet)
