@@ -12,17 +12,6 @@ import BaseModule
 extension RootContainerView {
 
     @ViewBuilder
-    func makeOrbitSummary(summary: TransferOrbitSummary) -> some View {
-        TransferOrbitFormulaOverlay(summary: summary)
-            .padding(.top, 12)
-            .padding(.horizontal, 16)
-            .transition(.opacity.combined(with: .move(edge: .top)))
-            .frame(maxWidth: .infinity,
-                   maxHeight: .infinity,
-                   alignment: .topTrailing)
-    }
-
-    @ViewBuilder
     func makeOrbitBackButton() -> some View {
         Button {
             appEnvironment.currentScreen = .home

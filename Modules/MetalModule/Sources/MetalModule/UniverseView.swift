@@ -48,7 +48,6 @@ public struct UniverseView: UIViewRepresentable {
         // Initialize renderer and delegate
         let renderer = MetalRenderer(metalView: mtkView,
                                      meshProvider: meshProvider,
-                                     orbitRenderHandler: orbitRenderHandler,
                                      navigationRenderHandler: navigationRenderHandler)
         context.coordinator.renderer = renderer
         orbitRenderHandler.renderer = renderer
