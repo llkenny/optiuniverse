@@ -36,14 +36,16 @@ struct TopBarView: View {
                 .multilineTextAlignment(.center)
 
             Spacer()
-            Image(.avatar)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 44, height: 44)
-                .clipShape(Circle())
-                .onTapGesture {
-                    isShowingProfile = true
-                }
+
+            // Hidden for version 1 release in #239
+//            Image(.avatar)
+//                .resizable()
+//                .scaledToFill()
+//                .frame(width: 44, height: 44)
+//                .clipShape(Circle())
+//                .onTapGesture {
+//                    isShowingProfile = true
+//                }
         }
         .sheet(isPresented: $isShowingProfile) {
             ProfileView()
