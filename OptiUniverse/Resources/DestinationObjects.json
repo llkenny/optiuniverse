@@ -6,7 +6,29 @@
         "subtitle": "Solar Giant",
         "description": "The Sun is the star at the center of the solar system, holding every planet in orbit with its gravity. Its roiling plasma, magnetic storms, and constant stream of solar wind shape conditions across interplanetary space.",
         "imageName": "dst-Sun",
-        "tag": "🌶️ Hot"
+        "tag": "🌶️ Hot",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "0",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "1.39M",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "230M",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "5,500",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "2F2B045C-4C7C-4797-A423-BAC3665F67AF",
@@ -15,7 +37,29 @@
         "subtitle": "Swift Cratered World",
         "description": "Mercury is the smallest planet and the closest world to the Sun. Its cratered surface, long solar days, and lack of a thick atmosphere create extreme swings between scorching daylight and freezing night.",
         "imageName": "dst-Mercury",
-        "tag": "🌶️ Hot"
+        "tag": "🌶️ Hot",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "0.39",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "4,879",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "88",
+                "dimension": "DAYS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-180 to 430",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "65759265-BD0F-43F8-BE5C-BD877D0EE4F6",
@@ -24,7 +68,29 @@
         "subtitle": "Cloud Veiled Inferno",
         "description": "Venus is wrapped in dense clouds of sulfuric acid above a crushing carbon dioxide atmosphere. Beneath that bright veil, runaway greenhouse heating makes its volcanic plains hotter than any other planet's surface.",
         "imageName": "dst-Venus",
-        "tag": "🌶️ Hot"
+        "tag": "🌶️ Hot",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "0.72",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "12,104",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "225",
+                "dimension": "DAYS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "465",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB94F",
@@ -33,7 +99,29 @@
         "subtitle": "Blue Home World",
         "description": "Earth is the only known world with stable surface oceans and a living biosphere. Its active geology, protective magnetic field, and layered atmosphere make it a dynamic oasis in the inner solar system.",
         "imageName": "dst-Earth",
-        "tag": "🌎 Inhabited"
+        "tag": "🌎 Inhabited",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "1.00",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "12,742",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "365.25",
+                "dimension": "DAYS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "15",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB95F",
@@ -42,7 +130,29 @@
         "subtitle": "Nearest Space Object",
         "description": "The Moon is Earth's natural satellite and the nearest destination beyond our planet. Its ancient impact basins, airless plains, and steady presence in the sky preserve a record of early solar system history.",
         "imageName": "dst-Moon",
-        "tag": "🪨 Satellite"
+        "tag": "🪨 Satellite",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "384,400",
+                "dimension": "KM"
+            },
+            {
+                "title": "Diameter",
+                "value": "3,474",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "27.3",
+                "dimension": "DAYS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-173 to 127",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
@@ -51,7 +161,29 @@
         "subtitle": "Dust Storm Frontier",
         "description": "Mars is a cold desert world marked by iron-rich dust, giant volcanoes, deep canyons, and dried river valleys. Its polar caps and buried ice make it one of the most compelling targets for future exploration.",
         "imageName": "dst-Mars",
-        "tag": "🔥 Popular"
+        "tag": "🔥 Popular",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "1.52",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "6,779",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "687",
+                "dimension": "DAYS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-65",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "B09A3752-957D-4B27-AB40-C237B7CBEAD0",
@@ -60,7 +192,29 @@
         "subtitle": "Great Storm Giant",
         "description": "Jupiter is the largest planet, a fast-spinning gas giant with powerful bands, auroras, and storms larger than Earth. Its immense gravity shapes the outer solar system and shepherds a diverse family of moons.",
         "imageName": "dst-Jupiter",
-        "tag": "🔥 Popular"
+        "tag": "🔥 Popular",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "5.20",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "139,820",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "11.86",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-110",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "9E86DC33-347C-48FD-8FB7-EC952E184418",
@@ -69,7 +223,29 @@
         "subtitle": "Ring Crowned Giant",
         "description": "Saturn is a pale gas giant encircled by the solar system's most spectacular ring system. The rings are made of countless icy fragments, while its moons range from hazy Titan to ocean-bearing Enceladus.",
         "imageName": "dst-Saturn",
-        "tag": "🪐 Rings"
+        "tag": "🪐 Rings",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "9.58",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "116,460",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "29.45",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-140",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "BCE5A337-2F76-498F-BFC0-DEED598C933A",
@@ -78,7 +254,29 @@
         "subtitle": "Tilted Ice Giant",
         "description": "Uranus is an ice giant that rotates on its side, giving it seasons unlike any other planet. Its muted blue-green atmosphere, faint rings, and cold interior make it one of the solar system's strangest worlds.",
         "imageName": "dst-Uranus",
-        "tag": "🪐 Rings"
+        "tag": "🪐 Rings",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "19.2",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "50,724",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "84",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-195",
+                "dimension": "C"
+            }
+        ]
     },
     {
         "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
@@ -87,6 +285,28 @@
         "subtitle": "Deep Blue Giant",
         "description": "Neptune is the farthest major planet, a deep blue ice giant swept by supersonic winds. Dark storms, bright methane clouds, and the captured moon Triton give this distant world a restless, high-energy character.",
         "imageName": "dst-Neptune",
-        "tag": "❄️ Cold"
+        "tag": "❄️ Cold",
+        "details": [
+            {
+                "title": "Distance",
+                "value": "30.1",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "49,244",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "164.8",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-200",
+                "dimension": "C"
+            }
+        ]
     }
 ]
