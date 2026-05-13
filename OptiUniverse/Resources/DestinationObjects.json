@@ -318,5 +318,37 @@
                 "dimension": "C"
             }
         ]
+    },
+    {
+        "id": "16ED9A2A-BC78-4D2E-8B9C-E70C25C3F532",
+        "object": "Pluto",
+        "title": "Pluto",
+        "subtitle": "Distant Dwarf World",
+        "description": "Pluto is a small icy dwarf planet in the Kuiper Belt, marked by mountains, plains, craters, and frozen volatile ices. Its thin atmosphere and moon system make it one of the solar system's most intriguing distant worlds.",
+        "imageName": "dst-Pluto",
+        "tag": "❄️ Cold",
+        "isNavigable": true,
+        "details": [
+            {
+                "title": "Distance",
+                "value": "39",
+                "dimension": "AU"
+            },
+            {
+                "title": "Diameter",
+                "value": "2,377",
+                "dimension": "KM"
+            },
+            {
+                "title": "Orbital period",
+                "value": "248",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "-232",
+                "dimension": "C"
+            }
+        ]
     }
 ]
