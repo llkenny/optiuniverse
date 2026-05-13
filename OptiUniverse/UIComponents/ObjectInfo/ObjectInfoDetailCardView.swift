@@ -28,6 +28,7 @@ struct ObjectInfoDetailCardView: View {
                 .font(.system(size: 8))
                 .foregroundStyle(.neonTextSecondary)
         }
+        .frame(maxHeight: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(.neonSectionFill)
@@ -43,4 +44,5 @@ struct ObjectInfoDetailCardView: View {
     ObjectInfoDetailCardView(entity: .init(title: "dinstance",
                                            value: "0.39",
                                            dimension: "AU"))
+    .frame(height: 10)
 }

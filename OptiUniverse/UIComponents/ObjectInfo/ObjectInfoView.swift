@@ -27,6 +27,7 @@ struct ObjectInfoView: View {
                     ObjectInfoDetailCardView(entity: detail)
                 }
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.bottom, 12)
 
             Text("About \(entity.title)")
