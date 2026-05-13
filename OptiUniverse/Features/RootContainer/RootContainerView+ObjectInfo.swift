@@ -64,6 +64,7 @@ extension RootContainerView {
                                           description: destination.description,
                                           details: details,
                                           navigationButtonTitle: "Route",
+                                          isNavigable: destination.isNavigable,
                                           navigationButtonAction: {
             orbitRenderHandler.showTransferOrbit(to: selectedPlanet)
             guard let summary = orbitRenderHandler.transferOrbitSummary else {
