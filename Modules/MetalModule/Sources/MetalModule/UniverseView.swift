@@ -11,10 +11,16 @@ internal import BaseModule
 
 public struct UniverseView: UIViewRepresentable {
     @Environment(AppEnvironment.self) private var appEnvironment
-    let metalProvider: MetalProvider
+    let meshProvider: MeshProvider
+    let orbitRenderHandler: OrbitRenderHandler
+    let navigationRenderHandler: NavigationRenderHandler
 
-    public init(metalProvider: MetalProvider) {
-        self.metalProvider = metalProvider
+    public init(meshProvider: MeshProvider,
+                orbitRenderHandler: OrbitRenderHandler,
+                navigationRenderHandler: NavigationRenderHandler) {
+        self.meshProvider = meshProvider
+        self.orbitRenderHandler = orbitRenderHandler
+        self.navigationRenderHandler = navigationRenderHandler
     }
 
     public func makeCoordinator() -> RendererCoordinator {
@@ -40,9 +46,13 @@ public struct UniverseView: UIViewRepresentable {
         ])
 
         // Initialize renderer and delegate
-        let renderer = MetalRenderer(metalView: mtkView, metalProvider: metalProvider)
+        let renderer = MetalRenderer(metalView: mtkView,
+                                     meshProvider: meshProvider,
+                                     orbitRenderHandler: orbitRenderHandler,
+                                     navigationRenderHandler: navigationRenderHandler)
         context.coordinator.renderer = renderer
-        metalProvider.renderer = renderer
+        orbitRenderHandler.renderer = renderer
+        navigationRenderHandler.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
         // Camera controller
@@ -91,6 +101,6 @@ public struct UniverseView: UIViewRepresentable {
 
     public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
         coordinator.cameraController?.stop()
-        coordinator.renderer?.metalProvider.renderer = nil
+        coordinator.renderer = nil
     }
 }

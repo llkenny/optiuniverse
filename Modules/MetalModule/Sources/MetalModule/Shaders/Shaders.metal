@@ -273,6 +273,57 @@ fragment float4 transfer_orbit_fragment(TransferOrbitVertexOut in [[stage_in]],
     return float4(uniforms.color.rgb * pulse, alpha);
 }
 
+struct RouteMarkerVertexIn {
+    float4 positionAndProgress;
+};
+
+struct RouteMarkerUniforms {
+    float4x4 viewMatrix;
+    float4x4 projectionMatrix;
+    float4 sceneOriginAndOpacity;
+    float4 color;
+    float4 params;
+};
+
+struct RouteMarkerVertexOut {
+    float4 position [[position]];
+    float progress;
+    float pointSize [[point_size]];
+};
+
+vertex RouteMarkerVertexOut route_marker_vertex(const device RouteMarkerVertexIn *vertices [[buffer(0)]],
+                                                constant RouteMarkerUniforms &uniforms [[buffer(1)]],
+                                                uint vid [[vertex_id]]) {
+    RouteMarkerVertexIn routeVertex = vertices[vid];
+    float3 sceneOrigin = uniforms.sceneOriginAndOpacity.xyz;
+    float3 localPosition = routeVertex.positionAndProgress.xyz - sceneOrigin;
+
+    RouteMarkerVertexOut out;
+    out.position = uniforms.projectionMatrix * uniforms.viewMatrix * float4(localPosition, 1.0);
+    out.progress = routeVertex.positionAndProgress.w;
+    out.pointSize = uniforms.params.y + 2.5 * sin(uniforms.params.x * 6.0);
+    return out;
+}
+
+fragment float4 route_marker_fragment(RouteMarkerVertexOut in [[stage_in]],
+                                      constant RouteMarkerUniforms &uniforms [[buffer(0)]],
+                                      float2 pointCoord [[point_coord]]) {
+    float2 centeredCoord = pointCoord * 2.0 - 1.0;
+    float radius = length(centeredCoord);
+    float outerMask = 1.0 - smoothstep(0.90, 1.0, radius);
+    float innerMask = smoothstep(0.58, 0.70, radius);
+    float ring = outerMask * innerMask;
+    float glow = (1.0 - smoothstep(0.70, 1.0, radius)) * 0.22;
+    float alpha = (ring + glow) * uniforms.sceneOriginAndOpacity.w;
+    if (alpha <= 0.001) {
+        discard_fragment();
+    }
+
+    float pulse = 0.82 + 0.18 * sin(uniforms.params.x * 8.0);
+    float3 color = uniforms.color.rgb * (pulse + ring * 0.55);
+    return float4(color, alpha);
+}
+
 fragment float4 fragment_main(VertexOut in [[stage_in]],
                               texture2d<float> planetTexture [[texture(0)]],
                               texture2d<float> normalTexture [[texture(1)]],

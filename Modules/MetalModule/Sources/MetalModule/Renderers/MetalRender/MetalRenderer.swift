@@ -28,7 +28,7 @@ struct PostFXParams {
     var saturationBoost: Float
 }
 
-// swiftlint:disable type_body_length
+// swiftlint:disable type_body_length file_length
 @MainActor
 final class MetalRenderer: NSObject, MTKViewDelegate {
     enum PostFXStyle: UInt32 {
@@ -36,7 +36,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         case dreamy = 1
     }
 
-    private enum CameraFit {
+    enum CameraFit {
         static let verticalFieldOfView: Float = .pi / 3
         static let viewportFill: Float = 0.84
         static let defaultNearPlane: Float = 0.1
@@ -62,7 +62,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let planetsRenderer: PlanetsRendererProtocol
     let starsRenderer: StarsRenderer
     let transferOrbitRenderer: TransferOrbitRenderer
-    private let renderPreparationPipeline: RenderPreparationPipeline
+    let routeRenderer: RouteRenderer
+    let navigationRouteCoordinator: NavigationRouteCoordinator
+    let renderPreparationPipeline: RenderPreparationPipeline
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
 
@@ -88,29 +90,41 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     // Camera state
     var cameraDistance: Float = 3
     var cameraTarget = SIMD3<Float>(0, 0, 0)
-    private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
-    private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
-    private(set) var cameraOffset = SIMD3<Float>(0, 0, 3)
+    var cameraPosition = SIMD3<Float>(0, 0, 0)
+    var cameraUp = SIMD3<Float>(0, 1, 0)
+    var cameraOffset = SIMD3<Float>(0, 0, 3)
     private var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
-    private var followingPlanetName: String? = "Sun"
-    private var pendingFollowPlanetName: String?
-    private var pendingSelectedPlanetName: String?
-    private var activeTransferDestinationName: String?
-    private var activeTransferOrbit: HohmannTransferOrbit?
-    private var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)
+    var followingPlanetName: String? = "Sun"
+    var pendingFollowPlanetName: String?
+    var pendingSelectedPlanetName: String?
+    var pendingNavigationDestinationName: String?
+    var activeTransferDestinationName: String?
+    var activeTransferOrbit: HohmannTransferOrbit?
+    var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)
+    var navigationCameraFollowEnabled = true
+    var navigationCameraTrailingOffset = SIMD3<Float>(0, 0, 0.18)
+    var navigationArrivalRouteID: UUID?
+    var navigationArrivalStartCameraPosition = SIMD3<Float>(repeating: 0)
+    var navigationArrivalStartTarget = SIMD3<Float>(repeating: 0)
+    var navigationArrivalTargetOffset = SIMD3<Float>(0, 0, 1)
+    var navigationArrivalProgress: Float = 1
+    let navigationArrivalDuration: Float = 0.9
+    let navigationArrivalDistanceMultiplier: Float = 5.8
 
     // Camera animation state
-    private var startCameraTarget: SIMD3<Float>?
-    private var endCameraTarget: SIMD3<Float>?
-    private var startCameraDistance: Float?
-    private var endCameraDistance: Float?
-    private var cameraAnimationProgress: Float = 1
+    var startCameraTarget: SIMD3<Float>?
+    var endCameraTarget: SIMD3<Float>?
+    var startCameraDistance: Float?
+    var endCameraDistance: Float?
+    var cameraAnimationProgress: Float = 1
     private let cameraAnimationDuration: Float = 1.0
 
-    let metalProvider: MetalProvider
-    private let planets: [Planet]
+    let meshProvider: MeshProvider
+    let orbitRenderHandler: OrbitRenderHandlerProtocol
+    let navigationRenderHandler: NavigationRenderHandlerProtocol
+    let planets: [Planet]
 
-    private var viewMatrix: float4x4 {
+    var viewMatrix: float4x4 {
         didSet {
             viewMatrixLogger.logChange(from: oldValue, to: viewMatrix)
         }
@@ -121,18 +135,24 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
     }
     var isTrajectoryModeActive: Bool {
-        activeTransferOrbit != nil
+        activeTransferOrbit != nil ||
+        navigationRouteCoordinator.activeRouteForRendering != nil
     }
 
-    init?(metalView: MTKView, metalProvider: MetalProvider) {
-        guard let commandQueue = metalProvider.device.makeCommandQueue() else {
+    init?(metalView: MTKView,
+          meshProvider: MeshProvider,
+          orbitRenderHandler: OrbitRenderHandlerProtocol,
+          navigationRenderHandler: NavigationRenderHandlerProtocol) {
+        guard let commandQueue = meshProvider.device.makeCommandQueue() else {
             return nil
         }
 
-        self.device = metalProvider.device
+        self.device = meshProvider.device
         self.commandQueue = commandQueue
         self.metalView = metalView
-        self.metalProvider = metalProvider
+        self.meshProvider = meshProvider
+        self.orbitRenderHandler = orbitRenderHandler
+        self.navigationRenderHandler = navigationRenderHandler
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
         depthStencilDescriptor.isDepthWriteEnabled = true
@@ -146,14 +166,21 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
         starsRenderer = StarsRenderer(device: device, sampleCount: viewSampleCount)
         transferOrbitRenderer = TransferOrbitRenderer(device: device, sampleCount: viewSampleCount)
-        renderPreparationPipeline = RenderPreparationPipeline(modelLoader: metalProvider.modelLoader,
+        routeRenderer = RouteRenderer(device: device, sampleCount: viewSampleCount)
+        navigationRouteCoordinator = NavigationRouteCoordinator { [weak navigationRenderHandler] snapshot in
+            navigationRenderHandler?.navigationSnapshot = snapshot
+        }
+        renderPreparationPipeline = RenderPreparationPipeline(modelLoader: meshProvider.modelLoader,
                                                               planets: planets)
 
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
 
         super.init()
+        prepare(viewSampleCount: viewSampleCount)
+    }
 
+    private func prepare(viewSampleCount: Int) {
         metalView.device = device
         metalView.delegate = self
         metalView.colorPixelFormat = .rgba16Float
@@ -221,38 +248,23 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         renderPreparationPipeline.requestPreparation(simulationTime: planetsRenderer.currentTime)
         let snapshot = renderPreparationPipeline.latestSnapshot
 
-        if let snapshot {
-            if let name = pendingSelectedPlanetName,
-               applySelectedPlanet(named: name, snapshot: snapshot) {
-                pendingSelectedPlanetName = nil
-            } else {
-                updateActiveTransferOrbit(snapshot: snapshot)
-            }
-
-            if let name = pendingFollowPlanetName,
-               startFollowAnimation(named: name, snapshot: snapshot) {
-                pendingFollowPlanetName = nil
-            }
-        }
-
-        if cameraAnimationProgress < 1 {
-            updateCameraAnimation(delta: delta)
-        } else if activeTransferOrbit != nil,
-                  let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
-            cameraTarget = earthPosition + transferCameraTargetOffset
-            updateCamera()
-        } else if let name = followingPlanetName,
-                  let position = snapshot?.worldPosition(ofPlanetNamed: name) {
-            cameraTarget = position
-            updateCamera()
-        }
+        update(snapshot: snapshot)
+        navigationRouteCoordinator.update()
+        updateCamera(snapshot: snapshot, delta: delta)
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,
                               hdrTexture: hdrTexture,
                               depthTexture: depthTexture,
                               snapshot: snapshot,
-                              transferOrbit: activeTransferOrbit)
+                              routes: SceneRouteRenderState(
+                                transferOrbit: activeTransferOrbit,
+                                navigation: NavigationRouteRenderState(
+                                    route: navigationRouteCoordinator.activeRouteForRendering,
+                                    progress: navigationRouteCoordinator.renderProgress,
+                                    elapsedTime: navigationRouteCoordinator.elapsedTime
+                                )
+                              ))
             drawSecondPass(postfxMsaaTexture: postfxMsaaTexture,
                            drawable: drawable,
                            hdrTexture: hdrTexture)
@@ -261,7 +273,64 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
     }
 
-    private func updateProjectionMatrix() {
+    private func update(snapshot: PreparedRenderSnapshot?) {
+        guard let snapshot else { return }
+
+        if let name = pendingNavigationDestinationName,
+           applyNavigation(named: name, snapshot: snapshot) {
+            pendingNavigationDestinationName = nil
+        } else if let name = pendingSelectedPlanetName,
+                  applySelectedPlanet(named: name, snapshot: snapshot) {
+            pendingSelectedPlanetName = nil
+        } else {
+            updateActiveTransferOrbit(snapshot: snapshot)
+        }
+
+        if navigationRouteCoordinator.isNavigationActive,
+           let activeTransferOrbit,
+           let destinationPosition = snapshot.worldPosition(
+            ofPlanetNamed: activeTransferOrbit.destinationName
+           ) {
+            navigationRouteCoordinator.refresh(using: activeTransferOrbit,
+                                               destinationPosition: destinationPosition)
+        }
+
+        if let name = pendingFollowPlanetName,
+           startFollowAnimation(named: name, snapshot: snapshot) {
+            pendingFollowPlanetName = nil
+        }
+    }
+
+    private func updateCamera(snapshot: PreparedRenderSnapshot?, delta: Float) {
+        if navigationRouteCoordinator.state == .completed,
+           let snapshot {
+            navigationCameraFollowEnabled = true
+            navigationRenderHandler.navigationCameraFollowEnabled = true
+            updateNavigationArrivalCamera(snapshot: snapshot,
+                                          delta: delta)
+        } else if navigationRouteCoordinator.isNavigationActive,
+                  navigationCameraFollowEnabled,
+                  let snapshot {
+            resetNavigationArrivalTransition()
+            updateNavigationFollowCamera(snapshot: snapshot)
+        } else if cameraAnimationProgress < 1 {
+            resetNavigationArrivalTransition()
+            updateCameraAnimation(delta: delta)
+        } else if activeTransferOrbit != nil,
+                  !navigationRouteCoordinator.isNavigationActive,
+                  let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
+            resetNavigationArrivalTransition()
+            cameraTarget = earthPosition + transferCameraTargetOffset
+            updateCamera()
+        } else if let name = followingPlanetName,
+                  let position = snapshot?.worldPosition(ofPlanetNamed: name) {
+            resetNavigationArrivalTransition()
+            cameraTarget = position
+            updateCamera()
+        }
+    }
+
+    func updateProjectionMatrix() {
         let aspect = Float(metalView.bounds.width / metalView.bounds.height)
         projectionMatrix = float4x4.perspective(
             fov: CameraFit.verticalFieldOfView,
@@ -276,6 +345,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// distance based on the planet's radius.
     func followPlanet(named name: String) {
         clearTransferOrbit()
+        navigationRouteCoordinator.cancel()
+        resetNavigationArrivalTransition()
         followingPlanetName = name
 
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
@@ -289,6 +360,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func showTransferOrbit(to name: String) {
+        navigationRouteCoordinator.cancel()
+        resetNavigationArrivalTransition()
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
               applySelectedPlanet(named: name, snapshot: snapshot) else {
             pendingSelectedPlanetName = name
@@ -331,8 +404,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         publishTransferOrbitSummary(transferOrbit.summary)
     }
 
-    private func makeTransferOrbit(destinationName: String,
-                                   snapshot: PreparedRenderSnapshot) -> HohmannTransferOrbit? {
+    func makeTransferOrbit(destinationName: String,
+                           snapshot: PreparedRenderSnapshot) -> HohmannTransferOrbit? {
         guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
             return nil
@@ -344,7 +417,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                          sunPosition: sunPosition)
     }
 
-    private func clearTransferOrbit() {
+    func clearTransferOrbit() {
         pendingSelectedPlanetName = nil
         activeTransferDestinationName = nil
         activeTransferOrbit = nil
@@ -352,9 +425,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         publishTransferOrbitSummary(nil)
     }
 
-    private func publishTransferOrbitSummary(_ summary: TransferOrbitSummary?) {
-        guard metalProvider.transferOrbitSummary != summary else { return }
-        metalProvider.transferOrbitSummary = summary
+    func publishTransferOrbitSummary(_ summary: TransferOrbitSummary?) {
+        guard orbitRenderHandler.transferOrbitSummary != summary else { return }
+        orbitRenderHandler.transferOrbitSummary = summary
     }
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
@@ -407,6 +480,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     /// Stops any active camera interpolation so direct gestures manipulate
     /// distance/orbit immediately without being overridden on the next frame.
     func beginManualCameraControl() {
+        if navigationRouteCoordinator.isNavigationActive,
+           navigationCameraFollowEnabled {
+            setNavigationCameraFollowEnabled(false)
+        }
+
         if activeTransferOrbit != nil,
            let earthPosition = renderPreparationPipeline.latestSnapshot?
             .worldPosition(ofPlanetNamed: "Earth") {
@@ -434,8 +512,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         return max(baseMinimum, framingRadius * 1.05)
     }
 
-    private func startFollowAnimation(named name: String,
-                                      snapshot: PreparedRenderSnapshot) -> Bool {
+    func startFollowAnimation(named name: String,
+                              snapshot: PreparedRenderSnapshot) -> Bool {
         var hasPreparedFollowData = false
 
         if let position = snapshot.worldPosition(ofPlanetNamed: name) {
@@ -494,6 +572,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         updateProjectionMatrix()
     }
 
+    func alignCameraOrientationToCurrentLookAt() {
+        guard simd_length_squared(cameraOffset) > 0.000001 else { return }
+
+        let forward = normalize(cameraOffset)
+        let fallbackUp = SIMD3<Float>(0, 1, 0)
+        let upSeed = simd_length_squared(cameraUp) > 0.000001 ? normalize(cameraUp) : fallbackUp
+        let candidateUp = abs(simd_dot(forward, upSeed)) > 0.94
+        ? SIMD3<Float>(1, 0, 0)
+        : upSeed
+        let right = normalize(simd_cross(candidateUp, forward))
+        let cameraUpDirection = normalize(simd_cross(forward, right))
+
+        cameraUp = cameraUpDirection
+        cameraOrientation = simd_normalize(simd_quatf(float3x3(columns: (right, cameraUpDirection, forward))))
+    }
+
     func orbitCamera(horizontal horizontalAngle: Float, vertical verticalAngle: Float) {
         cameraOrientation = simd_normalize(cameraOrientation)
 
@@ -507,7 +601,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func panTrajectoryCamera(byScreenTranslation translation: CGPoint,
                              speed: Float) {
-        guard activeTransferOrbit != nil else { return }
+        guard isTrajectoryModeActive else { return }
 
         cameraOrientation = simd_normalize(cameraOrientation)
 
@@ -524,12 +618,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
         let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
 
-        transferCameraTargetOffset += (rightVector * horizontal) + (upVector * vertical)
+        if activeTransferOrbit != nil {
+            transferCameraTargetOffset += (rightVector * horizontal) + (upVector * vertical)
+        }
         cameraTarget += (rightVector * horizontal) + (upVector * vertical)
         updateCamera()
     }
 
-    private func distanceToFitPlanet(radius: Float) -> Float {
+    func distanceToFitPlanet(radius: Float) -> Float {
         guard radius > 0 else { return max(cameraDistance, CameraFit.defaultNearPlane) }
 
         let width = max(Float(metalView.bounds.width), 1)
@@ -544,6 +640,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func nearPlaneDistance() -> Float {
+        if navigationRouteCoordinator.isNavigationActive,
+           navigationCameraFollowEnabled,
+           let route = navigationRouteCoordinator.activeRouteForRendering,
+           let framingRadius = renderPreparationPipeline
+            .latestSnapshot?
+            .framingRadius(ofPlanetNamed: route.destinationName) {
+            let frontClearance = max(cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
+            return min(CameraFit.defaultNearPlane,
+                       max(CameraFit.minimumNearPlane, frontClearance * 0.5))
+        }
+
         guard let followingPlanetName,
               let framingRadius = renderPreparationPipeline
             .latestSnapshot?
@@ -557,15 +664,57 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func farPlaneDistance() -> Float {
-        guard let activeTransferOrbit,
-              let snapshot = renderPreparationPipeline.latestSnapshot,
-              let transferRadius = transferProjectionRadius(transferOrbit: activeTransferOrbit,
-                                                            snapshot: snapshot) else {
+        guard let snapshot = renderPreparationPipeline.latestSnapshot else {
             return CameraFit.defaultFarPlane
         }
 
-        return max(CameraFit.defaultFarPlane,
-                   cameraDistance + transferRadius * 1.15)
+        if let activeTransferOrbit,
+           let transferRadius = transferProjectionRadius(transferOrbit: activeTransferOrbit,
+                                                         snapshot: snapshot) {
+            return max(CameraFit.defaultFarPlane,
+                       cameraDistance + transferRadius * 1.15)
+        }
+
+        if let route = navigationRouteCoordinator.activeRouteForRendering,
+           let routeRadius = routeProjectionRadius(route: route, snapshot: snapshot) {
+            return max(CameraFit.defaultFarPlane,
+                       cameraDistance + routeRadius * 1.15)
+        }
+
+        return CameraFit.defaultFarPlane
+    }
+
+    private func routeProjectionRadius(route: NavigationRoute,
+                                       snapshot: PreparedRenderSnapshot) -> Float? {
+        var radius: Float = 0
+
+        func include(center: SIMD3<Float>, radius includedRadius: Float) {
+            radius = max(radius,
+                         simd_distance(cameraTarget, center) + max(includedRadius, 0))
+        }
+
+        for point in route.points {
+            include(center: point, radius: 0)
+        }
+
+        if let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun") {
+            let routeOrbitRadius = route.points
+                .map { simd_distance($0, sunPosition) }
+                .max() ?? 0
+            include(center: sunPosition, radius: routeOrbitRadius)
+        }
+
+        for planetName in ["Sun", route.originName, route.destinationName] {
+            guard let planetPosition = snapshot.worldPosition(ofPlanetNamed: planetName) else {
+                continue
+            }
+
+            include(center: planetPosition,
+                    radius: snapshot.framingRadius(ofPlanetNamed: planetName) ?? 0)
+        }
+
+        guard radius.isFinite else { return nil }
+        return max(radius, 0.001)
     }
 
     private func transferProjectionRadius(transferOrbit: HohmannTransferOrbit,

@@ -56,10 +56,10 @@ extension RootContainerView {
                                           title: selectedPlanet,
                                           subtitle: destination.subtitle,
                                           description: destination.description,
-                                          navigationButtonTitle: "Navigate to",
+                                          navigationButtonTitle: "Route",
                                           navigationButtonAction: {
-            metalProvider.showTransferOrbit(to: selectedPlanet)
-            guard let summary = metalProvider.transferOrbitSummary else {
+            orbitRenderHandler.showTransferOrbit(to: selectedPlanet)
+            guard let summary = orbitRenderHandler.transferOrbitSummary else {
                 return
             }
             objectsViewState = .orbit(summary)
