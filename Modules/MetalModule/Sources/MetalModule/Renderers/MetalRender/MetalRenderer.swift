@@ -111,13 +111,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let navigationArrivalDuration: Float = 0.9
     let navigationArrivalDistanceMultiplier: Float = 5.8
 
-    // Camera animation state
-    var startCameraTarget: SIMD3<Float>?
-    var endCameraTarget: SIMD3<Float>?
-    var startCameraDistance: Float?
-    var endCameraDistance: Float?
-    var cameraAnimationProgress: Float = 1
-    private let cameraAnimationDuration: Float = 1.0
+    // Camera transition state
+    var cameraTransition: CameraTransition?
+    let cameraFollowTransitionDuration: Float = 1.1
 
     let meshProvider: MeshProvider
     let orbitRenderHandler: OrbitRenderHandlerProtocol
@@ -313,9 +309,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                   let snapshot {
             resetNavigationArrivalTransition()
             updateNavigationFollowCamera(snapshot: snapshot)
-        } else if cameraAnimationProgress < 1 {
+        } else if cameraTransition != nil {
             resetNavigationArrivalTransition()
-            updateCameraAnimation(delta: delta)
+            updateCameraTransition(snapshot: snapshot,
+                                   delta: delta)
         } else if activeTransferOrbit != nil,
                   !navigationRouteCoordinator.isNavigationActive,
                   let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
@@ -352,7 +349,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
               startFollowAnimation(named: name, snapshot: snapshot) else {
             pendingFollowPlanetName = name
-            cameraAnimationProgress = 1
+            cameraTransition = nil
             return
         }
 
@@ -365,7 +362,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
               applySelectedPlanet(named: name, snapshot: snapshot) else {
             pendingSelectedPlanetName = name
-            cameraAnimationProgress = 1
+            cameraTransition = nil
             return
         }
     }
@@ -437,11 +434,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        startCameraTarget = cameraTarget
-        endCameraTarget = framing.center
-        startCameraDistance = cameraDistance
-        endCameraDistance = distanceToFitPlanet(radius: framing.radius) * 1.08
-        cameraAnimationProgress = 0
+        cameraTransition = CameraTransition(
+            start: currentCameraTransitionFrame,
+            destination: .fixed(target: framing.center,
+                                distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
+            duration: cameraFollowTransitionDuration
+        )
     }
 
     private func earthCenteredTransferFraming(transferOrbit: HohmannTransferOrbit,
@@ -492,11 +490,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         pendingFollowPlanetName = nil
-        cameraAnimationProgress = 1
-        startCameraTarget = nil
-        endCameraTarget = nil
-        startCameraDistance = nil
-        endCameraDistance = nil
+        cameraTransition = nil
     }
 
     func minimumAllowedCameraDistance(baseMinimum: Float) -> Float {
@@ -514,46 +508,65 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func startFollowAnimation(named name: String,
                               snapshot: PreparedRenderSnapshot) -> Bool {
-        var hasPreparedFollowData = false
-
-        if let position = snapshot.worldPosition(ofPlanetNamed: name) {
-            startCameraTarget = cameraTarget
-            endCameraTarget = position
-            hasPreparedFollowData = true
+        guard resolvedPlanetTransitionFrame(named: name,
+                                            snapshot: snapshot) != nil else {
+            return false
         }
 
-        if let framingRadius = snapshot.framingRadius(ofPlanetNamed: name) {
-            startCameraDistance = cameraDistance
-            endCameraDistance = distanceToFitPlanet(radius: framingRadius)
-            hasPreparedFollowData = true
-        }
-
-        guard hasPreparedFollowData else { return false }
-
-        cameraAnimationProgress = 0
+        cameraTransition = CameraTransition(
+            start: currentCameraTransitionFrame,
+            destination: .planet(name: name),
+            duration: cameraFollowTransitionDuration
+        )
         return true
     }
 
-    private func updateCameraAnimation(delta: Float) {
-        guard cameraAnimationProgress < 1,
-              let startTarget = startCameraTarget,
-              let endTarget = endCameraTarget,
-              let startDistance = startCameraDistance,
-              let endDistance = endCameraDistance else { return }
+    var currentCameraTransitionFrame: CameraTransition.Frame {
+        CameraTransition.Frame(target: cameraTarget,
+                               distance: cameraDistance)
+    }
 
-        cameraAnimationProgress = min(cameraAnimationProgress + delta / cameraAnimationDuration, 1)
-        let time = cameraAnimationProgress
-
-        cameraTarget = startTarget + (endTarget - startTarget) * time
-        cameraDistance = startDistance + (endDistance - startDistance) * time
-        updateCamera()
-
-        if cameraAnimationProgress >= 1 {
-            startCameraTarget = nil
-            endCameraTarget = nil
-            startCameraDistance = nil
-            endCameraDistance = nil
+    private func updateCameraTransition(snapshot: PreparedRenderSnapshot?,
+                                        delta: Float) {
+        guard var transition = cameraTransition else { return }
+        guard let frame = transition.advance(delta: delta, resolveDestination: { [weak self] destination in
+            guard let self else { return nil }
+            return self.resolveCameraTransitionDestination(destination,
+                                                           snapshot: snapshot)
+        }) else {
+            return
         }
+
+        cameraTransition = transition.isComplete ? nil : transition
+        cameraTarget = frame.target
+        cameraDistance = frame.distance
+        updateCamera()
+    }
+
+    private func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,
+                                                    snapshot: PreparedRenderSnapshot?)
+    -> CameraTransition.Frame? {
+        switch destination {
+        case .planet(let name):
+            guard let snapshot else { return nil }
+            return resolvedPlanetTransitionFrame(named: name,
+                                                 snapshot: snapshot)
+        case .fixed(let target, let distance):
+            return CameraTransition.Frame(target: target,
+                                          distance: distance)
+        }
+    }
+
+    private func resolvedPlanetTransitionFrame(named name: String,
+                                               snapshot: PreparedRenderSnapshot)
+    -> CameraTransition.Frame? {
+        guard let position = snapshot.worldPosition(ofPlanetNamed: name),
+              let framingRadius = snapshot.framingRadius(ofPlanetNamed: name) else {
+            return nil
+        }
+
+        return CameraTransition.Frame(target: position,
+                                      distance: distanceToFitPlanet(radius: framingRadius))
     }
 
     func updateCamera() {

@@ -12,7 +12,7 @@ extension MetalRenderer {
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
               applyNavigation(named: name, snapshot: snapshot) else {
             pendingNavigationDestinationName = name
-            cameraAnimationProgress = 1
+            cameraTransition = nil
             return
         }
 
@@ -45,7 +45,7 @@ extension MetalRenderer {
         guard let snapshot = renderPreparationPipeline.latestSnapshot,
               startFollowAnimation(named: destinationName, snapshot: snapshot) else {
             pendingFollowPlanetName = destinationName
-            cameraAnimationProgress = 1
+            cameraTransition = nil
             return
         }
 
@@ -90,7 +90,7 @@ extension MetalRenderer {
         navigationCameraFollowEnabled = isEnabled
         navigationRenderHandler.navigationCameraFollowEnabled = isEnabled
         if isEnabled {
-            cameraAnimationProgress = 1
+            cameraTransition = nil
         } else if let route = navigationRouteCoordinator.activeRouteForRendering,
                   let snapshot = renderPreparationPipeline.latestSnapshot {
             startNavigationOverviewAnimation(route: route, snapshot: snapshot)
@@ -125,7 +125,7 @@ extension MetalRenderer {
         }
 
         if navigationCameraFollowEnabled {
-            cameraAnimationProgress = 1
+            cameraTransition = nil
             captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
             updateNavigationFollowCamera(snapshot: snapshot)
         } else {
@@ -142,11 +142,12 @@ extension MetalRenderer {
             return
         }
 
-        startCameraTarget = cameraTarget
-        endCameraTarget = framing.center
-        startCameraDistance = cameraDistance
-        endCameraDistance = distanceToFitPlanet(radius: framing.radius) * 1.08
-        cameraAnimationProgress = 0
+        cameraTransition = CameraTransition(
+            start: currentCameraTransitionFrame,
+            destination: .fixed(target: framing.center,
+                                distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
+            duration: cameraFollowTransitionDuration
+        )
     }
 
     private func earthCenteredNavigationFraming(route: NavigationRoute,
