@@ -12,6 +12,7 @@ struct TopBarView: View {
 
     @Environment(AppEnvironment.self) private var appEnvironment
     @State private var isShowingProfile: Bool = false
+    @State private var isShowingLegalCredits: Bool = false
 
     var body: some View {
         HStack {
@@ -36,6 +37,16 @@ struct TopBarView: View {
 
             Spacer()
 
+            Button {
+                isShowingLegalCredits = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(OptiColor.textTertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Legal and credits")
+
             // Hidden for version 1 release in #239
 //            Image(.avatar)
 //                .resizable()
@@ -48,6 +59,9 @@ struct TopBarView: View {
         }
         .sheet(isPresented: $isShowingProfile) {
             ProfileView()
+        }
+        .sheet(isPresented: $isShowingLegalCredits) {
+            LegalCreditsView()
         }
     }
 }
