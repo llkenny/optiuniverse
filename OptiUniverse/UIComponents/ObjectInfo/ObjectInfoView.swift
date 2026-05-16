@@ -13,13 +13,13 @@ struct ObjectInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(entity.title)
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 27))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.overlayTitle)
                 .padding(.bottom, 2)
 
             Text(entity.subtitle)
-                .foregroundStyle(.neonTextSecondary)
-                .font(.system(size: 14))
+                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .font(Typography.overlayBody)
                 .padding(.bottom, 12)
 
             HStack {
@@ -31,13 +31,13 @@ struct ObjectInfoView: View {
             .padding(.bottom, 12)
 
             Text("About \(entity.title)")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.overlayHeading)
                 .padding(.bottom, 2)
 
             Text(entity.description)
-                .foregroundStyle(.neonTextSecondary)
-                .font(.system(size: 14))
+                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .font(Typography.overlayBody)
                 .padding(.bottom, 32)
 
             if entity.isNavigable {
@@ -45,10 +45,11 @@ struct ObjectInfoView: View {
                     NeonButtonView(title: entity.navigationButtonTitle)
                 }
                 .buttonStyle(NeonButtonStyle())
+                .frame(maxWidth: .infinity)
             }
         }
         .padding()
-        .background(LinearGradient(colors: [.clear, .neonSectionFill],
+        .background(LinearGradient(colors: [.clear, OptiColor.overlaySurface],
                                    startPoint: .top, endPoint: .bottom))
     }
 }
@@ -66,10 +67,11 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                                 .init(title: "diameter", value: "4,879", dimension: "km"),
                                                 .init(title: "orbital period", value: "87.97", dimension: "days"),
                                                 .init(title: "surface temp", value: "-180 to 430", dimension: "°C")],
-                                      navigationButtonTitle: "Navigate to",
+                                      navigationButtonTitle: "🎯 Route",
                                       isNavigable: true,
                                       navigationButtonAction: {
         print("Navigate to Mercury")
     })
     ObjectInfoView(entity: entity)
+        .background(OptiColor.screenBackground)
 }

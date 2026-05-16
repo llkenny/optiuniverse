@@ -30,7 +30,7 @@ struct PageIndicatorView: View {
             ForEach(visibleIndices, id: \.self) { index in
                 ZStack {
                     Circle()
-                        .fill(index == currentIndex ? .enable : .disable)
+                        .fill(index == currentIndex ? OptiColor.controlSelected : OptiColor.controlDisabled)
                         .frame(width: 8, height: 8)
                         .scaleEffect(index == currentIndex ? 1.0 : 0.82)
                         .onTapGesture {
@@ -42,6 +42,7 @@ struct PageIndicatorView: View {
                     if index == currentIndex {
                         Circle()
                             .stroke(lineWidth: 1)
+                            .foregroundStyle(OptiColor.controlSelected)
                             .frame(width: 14, height: 14)
                             .transition(.blurReplace)
                     }
@@ -56,4 +57,6 @@ struct PageIndicatorView: View {
     @Previewable @State var currentIndex: Int = 0
 
     PageIndicatorView(totalCount: 20, currentIndex: $currentIndex)
+        .padding()
+        .background(OptiColor.screenBackground)
 }

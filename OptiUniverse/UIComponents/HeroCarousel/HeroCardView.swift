@@ -27,7 +27,7 @@ struct HeroCardView: View {
                 .opacity(0.5)
 
             LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
+                colors: [.clear, OptiColor.imageScrim],
                 startPoint: .center,
                 endPoint: .bottom
             )
@@ -39,20 +39,20 @@ struct HeroCardView: View {
                 Spacer()
 
                 Text(card.title)
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(Typography.pageCardTitle)
+                    .foregroundStyle(OptiColor.onImagePrimary)
                     .lineLimit(1)
 
                 Text(card.subtitle.uppercased())
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Typography.pageCardCaption)
                     .tracking(1.4)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(OptiColor.onImageSecondary)
                     .lineLimit(1)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 18)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous))
     }
 }
 
@@ -62,7 +62,8 @@ struct HeroCardView: View {
         imageResource: .neptune1,
         title: "Saturn",
         subtitle: "Ringed giant",
-        accentColors: [Color(red: 0.97, green: 0.72, blue: 0.42),
-                       Color(red: 0.34, green: 0.16, blue: 0.08)]
+        accentColors: [.orange, .brown]
     ))
+    .padding()
+    .background(OptiColor.screenBackground)
 }

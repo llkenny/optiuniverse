@@ -16,9 +16,9 @@ extension RootContainerView {
             navigationRenderHandler.startNavigation(to: destinationName)
             objectsViewState = .navigation
         } label: {
-            Text("🚀")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
+            Image(systemName: "paperplane")
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.button)
         }
         .frame(maxWidth: .infinity,
                maxHeight: .infinity,
@@ -32,39 +32,39 @@ extension RootContainerView {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(navigationTitle(snapshot: snapshot))
-                        .foregroundStyle(.neonTextPrimary)
-                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(OptiColor.overlayTextPrimary)
+                        .font(Typography.navigationTitle)
 
                     Text(navigationSubtitle(snapshot: snapshot))
-                        .foregroundStyle(.neonTextSecondary)
-                        .font(.system(size: 12))
+                        .foregroundStyle(OptiColor.overlayTextSecondary)
+                        .font(Typography.navigationSubtitle)
                 }
 
                 Spacer(minLength: 18)
 
                 Text("\(Int((snapshot.progress * 100).rounded()))%")
-                    .foregroundStyle(.neonTextPrimary)
-                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(OptiColor.overlayTextPrimary)
+                    .font(Typography.navigationMeta)
             }
 
             ProgressView(value: Double(snapshot.progress))
-                .tint(.neonTextPrimary)
+                .tint(OptiColor.overlayTextPrimary)
 
             Toggle(isOn: navigationCameraFollowBinding) {
                 Text("Follow marker")
-                    .foregroundStyle(.neonTextSecondary)
-                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(OptiColor.overlayTextSecondary)
+                    .font(Typography.navigationControl)
             }
-            .tint(.neonTextPrimary)
+            .tint(OptiColor.overlayTextPrimary)
 
             navigationActionControls(snapshot: snapshot)
         }
         .padding(14)
-        .background(.neonSectionFill.opacity(0.94))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(OptiColor.overlaySurface.opacity(0.94))
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.neonButtonBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: CornerRadius.panel)
+                .stroke(OptiColor.buttonBorder, lineWidth: 1)
         )
         .padding(.horizontal, 16)
         .padding(.bottom, 18)
@@ -110,8 +110,8 @@ extension RootContainerView {
                                          action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.navigationControl)
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(NeonButtonStyle())

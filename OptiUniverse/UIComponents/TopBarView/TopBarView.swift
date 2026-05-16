@@ -29,9 +29,8 @@ struct TopBarView: View {
             Spacer()
 
             Text(appEnvironment.location)
-                .foregroundStyle(Color(.lowEmphasized))
-                .fontWeight(.light)
-                .font(.system(size: 14))
+                .foregroundStyle(OptiColor.textTertiary)
+                .font(Typography.location)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
@@ -59,5 +58,6 @@ struct TopBarView: View {
         Spacer()
     }
     .padding()
+    .background(OptiColor.screenBackground)
     .environment(AppEnvironment())
 }

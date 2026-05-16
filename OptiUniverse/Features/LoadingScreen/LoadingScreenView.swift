@@ -34,19 +34,17 @@ private struct LoadingSpaceBackground: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.06, blue: 0.16),
-                    Color(red: 0.18, green: 0.09, blue: 0.34),
-                    Color(red: 0.13, green: 0.24, blue: 0.50),
-                    Color(red: 0.06, green: 0.04, blue: 0.15)
-                ],
+                colors: [.loadingBackgroundTop,
+                         .loadingBackgroundUpper,
+                         .loadingBackgroundLower,
+                         .loadingBackgroundBottom],
                 startPoint: .topTrailing,
                 endPoint: .bottomLeading
             )
 
             RadialGradient(
                 colors: [
-                    Color(red: 0.46, green: 0.18, blue: 0.85).opacity(0.70),
+                    .loadingGlowPrimary,
                     .clear
                 ],
                 center: UnitPoint(x: 0.12, y: 0.42),
@@ -56,7 +54,7 @@ private struct LoadingSpaceBackground: View {
 
             RadialGradient(
                 colors: [
-                    Color(red: 0.16, green: 0.40, blue: 0.82).opacity(0.56),
+                    .loadingGlowSecondary,
                     .clear
                 ],
                 center: UnitPoint(x: 0.86, y: 0.66),
@@ -159,11 +157,11 @@ private struct RotatingLoadingRing: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color(red: 0.83, green: 0.41, blue: 0.96),
-                                Color(red: 0.36, green: 0.42, blue: 1.00),
-                                Color(red: 0.40, green: 0.79, blue: 1.00),
-                                Color(red: 0.58, green: 0.29, blue: 1.00),
-                                Color(red: 0.83, green: 0.41, blue: 0.96)
+                                .loadingRingPink,
+                                .loadingRingBlue,
+                                .loadingRingCyan,
+                                .loadingRingPurple,
+                                .loadingRingPink
                             ],
                             center: .center
                         ),
@@ -173,7 +171,7 @@ private struct RotatingLoadingRing: View {
             }
         }
         .rotationEffect(rotation)
-        .shadow(color: Color(red: 0.55, green: 0.31, blue: 1.0).opacity(0.28),
+        .shadow(color: .loadingRingShadow,
                 radius: 16,
                 y: 4)
     }
@@ -191,7 +189,7 @@ private struct PulsingDots: View {
                 let opacity = 0.66 + 0.30 * (sin(phase) + 1.0) / 2.0
 
                 Circle()
-                    .fill(Color(red: 0.69, green: 0.36, blue: 0.90).opacity(opacity))
+                    .fill(.loadingDot.opacity(opacity))
                     .frame(width: 22, height: 22)
                     .scaleEffect(scale)
             }
@@ -242,13 +240,13 @@ private struct LoadingStar {
     private static func starColor(_ value: Double) -> Color {
         switch value {
         case 0..<0.18:
-            Color(red: 0.56, green: 0.23, blue: 0.95)
+            .loadingStarPurple
         case 0..<0.34:
-            Color(red: 0.66, green: 0.62, blue: 0.80)
+            .loadingStarMuted
         case 0..<0.48:
-            Color(red: 0.48, green: 0.62, blue: 0.96)
+            .loadingStarBlue
         default:
-            Color.white
+            .loadingStarWhite
         }
     }
 }

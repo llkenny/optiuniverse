@@ -16,9 +16,9 @@ extension RootContainerView {
         Button {
             appEnvironment.currentScreen = .home
         } label: {
-            Text("✖️")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
+            Image(systemName: "xmark")
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.button)
         }
         .frame(maxWidth: .infinity,
                maxHeight: .infinity,
