@@ -10,6 +10,7 @@ import BaseModule
 
 struct HeroCarouselView: View {
     private enum Constants {
+        static let cardWidth: CGFloat = 283
         static let cardHeight: CGFloat = 291
         static let cardSpacing: CGFloat = 16
         static let horizontalInset: CGFloat = 64
@@ -19,48 +20,55 @@ struct HeroCarouselView: View {
 
     @Binding var currentIndex: Int
     @Binding var totalCount: Int
-    @State private var viewModel: HeroCarouselViewModel = .init()
+    @State private var viewModel: HeroCarouselViewModel
+
+    init(viewModel: HeroCarouselViewModel = .init(),
+         currentIndex: Binding<Int>,
+         totalCount: Binding<Int>) {
+        self._viewModel = State(initialValue: viewModel)
+        self._currentIndex = currentIndex
+        self._totalCount = totalCount
+    }
 
     var body: some View {
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: Constants.cardSpacing) {
-                ForEach(viewModel.cards) { card in
-                    HeroCardView(card: card)
-                        .containerRelativeFrame(
-                            .horizontal,
-                            count: 3,
-                            span: 2,
-                            spacing: Constants.cardSpacing
-                        )
-                        .scrollTransition(axis: .horizontal) { content, phase in
-                            let isCentered = phase.isIdentity
-                            let direction = phase.value
+        GeometryReader { geometry in
+            let horizontalPadding = (geometry.size.width - Constants.cardWidth) / 2
 
-                            return content
-                                .scaleEffect(isCentered ? 1 : 0.88)
-                                .opacity(isCentered ? 1 : 0.2)
-                                .offset(y: phase.isIdentity ? 0 : 16)
-                                .offset(x: direction * -24)
-                                .rotation3DEffect(
-                                    .degrees(direction * -30),
-                                    axis: (x: 0, y: 1, z: 0),
-                                    perspective: 0.6
-                                )
-                        }
-                        .id(card.id)
-                        .onTapGesture {
-                            appEnvironment.selectedPlanet = card.title
-                            appEnvironment.currentScreen = .objects
-                        }
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: Constants.cardSpacing) {
+                    ForEach(viewModel.cards) { card in
+                        HeroCardView(card: card)
+                            .scrollTransition(axis: .horizontal) { content, phase in
+                                let isCentered = phase.isIdentity
+                                let direction = phase.value
+
+                                return content
+                                    .scaleEffect(isCentered ? 1 : 0.88)
+                                    .opacity(isCentered ? 1 : 0.2)
+                                    .offset(y: phase.isIdentity ? 0 : 16)
+                                    .offset(x: direction * -24)
+                                    .rotation3DEffect(
+                                        .degrees(direction * -30),
+                                        axis: (x: 0, y: 1, z: 0),
+                                        perspective: 0.6
+                                    )
+                            }
+                            .id(card.id)
+                            .onTapGesture {
+                                appEnvironment.selectedPlanet = card.title
+                                appEnvironment.currentScreen = .objects
+                            }
+                    }
                 }
+                .scrollTargetLayout()
+                .padding(.horizontal, horizontalPadding)
             }
-            .scrollTargetLayout()
-            .padding(.horizontal, Constants.horizontalInset)
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $viewModel.activeCardID)
+            .defaultScrollAnchor(.center)
         }
-        .scrollIndicators(.hidden)
-        .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $viewModel.activeCardID)
-        .defaultScrollAnchor(.center)
+        .frame(height: Constants.cardHeight)
         .task {
             viewModel.featuredObjectProvider = appEnvironment.featuredObjectProvider
             await viewModel.loadCards()
@@ -109,11 +117,35 @@ struct HeroCarouselView: View {
     }
 }
 
-#Preview {
-    @Previewable @State var currentIndex: Int = 0
-    @Previewable @State var totalCount: Int = 0
+private struct HeroCarouselPreview: View {
+    @State private var currentIndex = 0
+    @State private var totalCount = 0
 
-    HeroCarouselView(currentIndex: $currentIndex, totalCount: $totalCount)
+    private let viewModel: HeroCarouselViewModel = {
+        let viewModel = HeroCarouselViewModel()
+        viewModel.cards = (0..<3).map { index in
+            HeroCard(
+                id: UUID(),
+                imageResource: .dstMars,
+                title: "Mars",
+                subtitle: "Test \(index)",
+                accentColors: [.orange, .yellow]
+            )
+        }
+        return viewModel
+    }()
+
+    var body: some View {
+        HeroCarouselView(
+            viewModel: viewModel,
+            currentIndex: $currentIndex,
+            totalCount: $totalCount
+        )
         .background(OptiColor.screenBackground)
         .environment(AppEnvironment())
+    }
+}
+
+#Preview {
+    HeroCarouselPreview()
 }
