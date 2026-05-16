@@ -2,8 +2,6 @@
 
 OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI, MetalKit, and custom Metal shaders. The app combines a polished SwiftUI discovery interface with a real-time Metal scene for exploring celestial objects, following planets, and rendering high-fidelity space visuals on device.
 
-The project is an active personal iOS rendering portfolio piece. It focuses on practical graphics engineering, clean Swift architecture, and production-minded app structure rather than a static demo.
-
 ## Highlights
 
 - Real-time 3D solar-system rendering with MetalKit and Metal Shading Language.
