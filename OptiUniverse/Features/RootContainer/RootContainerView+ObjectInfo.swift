@@ -18,9 +18,9 @@ extension RootContainerView {
                 await makeObjectInfo(selectedPlanet: selectedPlanet)
             }
         } label: {
-            Image(systemName: "scope")
-                .foregroundStyle(OptiColor.overlayTextPrimary)
-                .font(Typography.button)
+            Text("🔭")
+                .foregroundStyle(.neonTextPrimary)
+                .font(.system(size: 16))
         }
         .frame(maxWidth: .infinity,
                maxHeight: .infinity,
@@ -63,7 +63,7 @@ extension RootContainerView {
                                           subtitle: destination.subtitle,
                                           description: destination.description,
                                           details: details,
-                                          navigationButtonTitle: "Route",
+                                          navigationButtonTitle: "🎯 Route",
                                           isNavigable: destination.isNavigable,
                                           navigationButtonAction: {
             orbitRenderHandler.showTransferOrbit(to: selectedPlanet)

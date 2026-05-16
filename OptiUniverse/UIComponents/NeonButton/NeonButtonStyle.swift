@@ -26,7 +26,7 @@ struct NeonButtonStyle: ButtonStyle {
     Button {
         print("Action triggered")
     } label: {
-        NeonButtonView(title: "Navigate to")
+        NeonButtonView(title: "🎯 Navigate to")
     }
     .buttonStyle(NeonButtonStyle())
     .padding()

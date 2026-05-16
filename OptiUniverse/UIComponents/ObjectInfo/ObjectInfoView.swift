@@ -45,6 +45,7 @@ struct ObjectInfoView: View {
                     NeonButtonView(title: entity.navigationButtonTitle)
                 }
                 .buttonStyle(NeonButtonStyle())
+                .frame(maxWidth: .infinity)
             }
         }
         .padding()
@@ -66,7 +67,7 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                                 .init(title: "diameter", value: "4,879", dimension: "km"),
                                                 .init(title: "orbital period", value: "87.97", dimension: "days"),
                                                 .init(title: "surface temp", value: "-180 to 430", dimension: "°C")],
-                                      navigationButtonTitle: "Navigate to",
+                                      navigationButtonTitle: "🎯 Route",
                                       isNavigable: true,
                                       navigationButtonAction: {
         print("Navigate to Mercury")
