@@ -18,9 +18,9 @@ extension RootContainerView {
                 await makeObjectInfo(selectedPlanet: selectedPlanet)
             }
         } label: {
-            Text("🔭")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
+            Image(systemName: "scope")
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.button)
         }
         .frame(maxWidth: .infinity,
                maxHeight: .infinity,

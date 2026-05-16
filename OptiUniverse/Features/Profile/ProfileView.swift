@@ -12,6 +12,7 @@ import AuthenticationServices
 struct ProfileView: View {
 
     @Environment(AppEnvironment.self) private var appEnvironment
+    @Environment(\.colorScheme) private var colorScheme
     private var viewModel: ProfileViewModel
 
     init(viewModel: ProfileViewModel = .init()) {
@@ -70,7 +71,13 @@ struct ProfileView: View {
                     }
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 15))
+            .scrollContentBackground(.hidden)
+            .background(OptiColor.overlaySurface)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+            .overlay(
+                RoundedRectangle(cornerRadius: CornerRadius.card)
+                    .stroke(OptiColor.overlayBorder, lineWidth: 1)
+            )
             .padding()
             .padding(.top, 16)
 
@@ -86,8 +93,10 @@ struct ProfileView: View {
                 }
             )
             .frame(height: 50)
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
             .padding()
         }
+        .background(OptiColor.screenBackground.ignoresSafeArea())
     }
 }
 

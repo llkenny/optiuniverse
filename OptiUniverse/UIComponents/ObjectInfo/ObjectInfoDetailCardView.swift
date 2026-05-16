@@ -19,30 +19,32 @@ struct ObjectInfoDetailCardView: View {
     var body: some View {
         VStack {
             Text(entity.title.uppercased())
-                .font(.system(size: 8))
-                .foregroundStyle(.neonTextSecondary)
+                .font(Typography.overlayCaption)
+                .foregroundStyle(OptiColor.overlayTextSecondary)
             Text(entity.value.uppercased())
-                .font(.system(size: 10))
-                .foregroundStyle(.neonTextPrimary)
+                .font(Typography.overlayValue)
+                .foregroundStyle(OptiColor.overlayTextPrimary)
             Text(entity.dimension.uppercased())
-                .font(.system(size: 8))
-                .foregroundStyle(.neonTextSecondary)
+                .font(Typography.overlayCaption)
+                .foregroundStyle(OptiColor.overlayTextSecondary)
         }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(.neonSectionFill)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(OptiColor.overlaySurface)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(.neonSectionBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: CornerRadius.detailCard)
+                .stroke(OptiColor.overlayBorder, lineWidth: 1)
         )
     }
 }
 
 #Preview {
-    ObjectInfoDetailCardView(entity: .init(title: "dinstance",
+    ObjectInfoDetailCardView(entity: .init(title: "distance",
                                            value: "0.39",
                                            dimension: "AU"))
-    .frame(height: 10)
+    .frame(height: 44)
+    .padding()
+    .background(OptiColor.screenBackground)
 }

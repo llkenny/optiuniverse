@@ -21,8 +21,8 @@ struct NeonButtonView: View {
                 Spacer()
 
                 Text(title)
-                    .foregroundStyle(.neonTextPrimary)
-                    .font(.system(size: 16))
+                    .foregroundStyle(OptiColor.overlayTextPrimary)
+                    .font(Typography.button)
                     .padding(.bottom, 2)
 
                 Spacer()
@@ -38,5 +38,6 @@ struct NeonButtonView: View {
 
 #Preview {
     NeonButtonView(title: "Navigate to")
-        .background(.black)
+        .padding()
+        .background(OptiColor.buttonSurface)
 }

@@ -13,12 +13,12 @@ struct TitleSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Hi \(name),")
-                .font(.system(size: 18, weight: .light))
-                .foregroundStyle(Color(.midEmphasized))
+                .font(Typography.greeting)
+                .foregroundStyle(OptiColor.textSecondary)
             HStack {
                 Text("Where do you wanna go?")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(Color(.highEmphasized))
+                    .font(Typography.screenTitle)
+                    .foregroundStyle(OptiColor.textPrimary)
                     .lineLimit(2)
                 Spacer(minLength: 60)
             }
@@ -32,4 +32,5 @@ struct TitleSectionView: View {
         Spacer()
     }
     .padding(.horizontal)
+    .background(OptiColor.screenBackground)
 }

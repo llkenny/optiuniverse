@@ -30,6 +30,9 @@ struct RootContainerView: View {
 
     var body: some View {
         ZStack {
+            OptiColor.screenBackground
+                .ignoresSafeArea()
+
             if isDataLoaded {
                 VStack(spacing: 0) {
                     TopBarView()

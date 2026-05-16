@@ -114,4 +114,6 @@ struct HeroCarouselView: View {
     @Previewable @State var totalCount: Int = 0
 
     HeroCarouselView(currentIndex: $currentIndex, totalCount: $totalCount)
+        .background(OptiColor.screenBackground)
+        .environment(AppEnvironment())
 }

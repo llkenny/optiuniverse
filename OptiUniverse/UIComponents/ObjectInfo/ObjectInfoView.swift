@@ -13,13 +13,13 @@ struct ObjectInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(entity.title)
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 27))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.overlayTitle)
                 .padding(.bottom, 2)
 
             Text(entity.subtitle)
-                .foregroundStyle(.neonTextSecondary)
-                .font(.system(size: 14))
+                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .font(Typography.overlayBody)
                 .padding(.bottom, 12)
 
             HStack {
@@ -31,13 +31,13 @@ struct ObjectInfoView: View {
             .padding(.bottom, 12)
 
             Text("About \(entity.title)")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .font(Typography.overlayHeading)
                 .padding(.bottom, 2)
 
             Text(entity.description)
-                .foregroundStyle(.neonTextSecondary)
-                .font(.system(size: 14))
+                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .font(Typography.overlayBody)
                 .padding(.bottom, 32)
 
             if entity.isNavigable {
@@ -48,7 +48,7 @@ struct ObjectInfoView: View {
             }
         }
         .padding()
-        .background(LinearGradient(colors: [.clear, .neonSectionFill],
+        .background(LinearGradient(colors: [.clear, OptiColor.overlaySurface],
                                    startPoint: .top, endPoint: .bottom))
     }
 }
@@ -72,4 +72,5 @@ It has a rocky surface covered in craters and experiences extreme temperature va
         print("Navigate to Mercury")
     })
     ObjectInfoView(entity: entity)
+        .background(OptiColor.screenBackground)
 }

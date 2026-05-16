@@ -13,19 +13,19 @@ struct CategoryChipView: View {
 
     var body: some View {
         Text(title)
-            .foregroundStyle(isActive ? .white : Color.lowEmphasized)
-            .font(.system(size: 14))
+            .foregroundStyle(isActive ? OptiColor.controlSelectedText : OptiColor.textTertiary)
+            .font(Typography.chip)
             .lineLimit(1)
         .padding(10)
         .background {
             ZStack {
                 Capsule()
-                    .fill(Color.enable)
+                    .fill(OptiColor.controlSelected)
                     .opacity(isActive ? 1 : 0)
                     .scaleEffect(isActive ? 1 : 0.96)
 
                 Capsule()
-                    .fill(.black.opacity(0.6))
+                    .fill(OptiColor.controlActiveShadow)
                     .frame(height: 20)
                     .padding(.horizontal, 12)
                     .blur(radius: 8)
@@ -34,7 +34,7 @@ struct CategoryChipView: View {
 
                 Capsule()
                     .stroke(lineWidth: 1)
-                    .foregroundStyle(.chipInactiveStroke)
+                    .foregroundStyle(OptiColor.controlInactiveStroke)
                     .opacity(isActive ? 0 : 1)
             }
         }

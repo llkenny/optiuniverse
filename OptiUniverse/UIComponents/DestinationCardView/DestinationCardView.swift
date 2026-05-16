@@ -15,13 +15,13 @@ struct DestinationCardView: View {
             Spacer()
 
             Text(model.title)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white)
+                .font(Typography.destinationTitle)
+                .foregroundStyle(OptiColor.onImagePrimary)
                 .lineLimit(1)
 
             Text(model.subtitle)
-                .font(.system(size: 11, weight: .regular))
-                .foregroundStyle(.white)
+                .font(Typography.destinationSubtitle)
+                .foregroundStyle(OptiColor.onImageSecondary)
                 .lineLimit(1)
         }
         .padding(.leading, 8)
@@ -32,10 +32,14 @@ struct DestinationCardView: View {
             Image(model.imageResource)
                 .resizable()
                 .scaledToFill()
+
+            LinearGradient(colors: [.clear, OptiColor.imageScrim],
+                           startPoint: .center,
+                           endPoint: .bottom)
         }
         .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: CornerRadius.card, style: .continuous))
     }
 }
 
