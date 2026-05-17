@@ -11,7 +11,8 @@ import BaseModule
 struct TopBarView: View {
 
     @Environment(AppEnvironment.self) private var appEnvironment
-    @State private var isShowingProfile: Bool = false
+    // Hidden for version 1 release in #239
+//    @State private var isShowingProfile: Bool = false
     @State private var isShowingLegalCredits: Bool = false
 
     var body: some View {
@@ -48,6 +49,8 @@ struct TopBarView: View {
             .accessibilityLabel("Legal and credits")
 
             // Hidden for version 1 release in #239
+            // Check ProfileView for re-enable
+            // Also add Sign In with Apple Capability
 //            Image(.avatar)
 //                .resizable()
 //                .scaledToFill()
@@ -57,9 +60,10 @@ struct TopBarView: View {
 //                    isShowingProfile = true
 //                }
         }
-        .sheet(isPresented: $isShowingProfile) {
-            ProfileView()
-        }
+        // Hidden for version 1 release in #239
+//        .sheet(isPresented: $isShowingProfile) {
+//            ProfileView()
+//        }
         .sheet(isPresented: $isShowingLegalCredits) {
             LegalCreditsView()
         }
