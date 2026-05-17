@@ -240,6 +240,33 @@ h3 {
   margin-top: 10px;
 }
 
+.legal-content {
+  max-width: 860px;
+}
+
+.legal-content h2 {
+  margin-top: 42px;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.legal-content p,
+.legal-content li {
+  color: var(--muted);
+}
+
+.legal-content p {
+  margin: 14px 0 0;
+}
+
+.legal-content ul {
+  margin: 18px 0 0;
+  padding-left: 1.2rem;
+}
+
+.legal-content li + li {
+  margin-top: 10px;
+}
+
 .site-footer {
   display: flex;
   justify-content: space-between;
