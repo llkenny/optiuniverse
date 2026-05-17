@@ -83,6 +83,11 @@ OptiUniverse demonstrates work across the parts of iOS development that are ofte
 - iOS 18.0 or newer deployment target
 - A Metal-capable simulator or device
 
+## Release 1 URLs
+
+- Marketing URL: https://llkenny.github.io/optiuniverse/
+- Support URL: https://llkenny.github.io/optiuniverse/support/
+
 ## Build
 
 Open the project in Xcode:
