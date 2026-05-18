@@ -12,7 +12,7 @@ actor FeaturedObjectProvider: FeaturedObjectProviderProtocol {
 
     enum Constants {
         static let filename = "FeaturedObjects"
-        static let urlString = "https://api.kb404.com/static/FeaturedObjects.json"
+        static let urlString = "https://llkenny.github.io/optiuniverse/static/FeaturedObjects.json"
     }
 
     var featuredObjects: [FeaturedObject] = []
