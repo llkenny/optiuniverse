@@ -20,8 +20,8 @@ public final class MeshProvider {
     private var isReady: Bool = false
     private var inFlightTask: Task<Void, Never>?
 
-    public init(modelLoader: ModelLoader) {
-        self.modelLoader = modelLoader
+    public init() {
+        self.modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError()
         }

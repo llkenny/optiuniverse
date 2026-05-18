@@ -16,14 +16,11 @@ struct RootContainerView: View {
     @Bindable private(set) var meshProvider: MeshProvider
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
-
-    private let modelLoader: ModelLoader
     let orbitRenderHandler: OrbitRenderHandler
     let navigationRenderHandler: NavigationRenderHandler
 
     init() {
-        modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
-        meshProvider = MeshProvider(modelLoader: modelLoader)
+        meshProvider = MeshProvider()
         orbitRenderHandler = OrbitRenderHandler()
         navigationRenderHandler = NavigationRenderHandler()
     }

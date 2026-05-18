@@ -15,14 +15,14 @@ struct LoadedMesh: @unchecked Sendable {
     let boundsRadius: Float
 }
 
-public actor ModelLoader {
+actor ModelLoader {
 
     private let resourceName: String
     private let vertexDescriptor: MDLVertexDescriptor
 
     var meshes: [String: LoadedMesh] = [:]
 
-    public init(resourceName: String) {
+    init(resourceName: String) {
         self.resourceName = resourceName
         self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
     }
