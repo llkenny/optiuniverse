@@ -12,7 +12,7 @@ actor DestinationsProvider: DestinationsProviderProtocol {
 
     enum Constants {
         static let filename = "DestinationObjects"
-        static let urlString = "https://api.kb404.com/static/DestinationObjects.json"
+        static let urlString = "https://llkenny.github.io/optiuniverse/static/DestinationObjects.json"
     }
 
     var destinations: [DestinationObject] = []
