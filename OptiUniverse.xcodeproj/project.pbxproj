@@ -28,6 +28,7 @@
 		500657822F7B646400DA651B /* LINKS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LINKS.md; sourceTree = "<group>"; };
 		500657832FB9601900DA651B /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		50209F692E6629400099E217 /* OptiUniverseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OptiUniverseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		505D78AE2FBC77CA00E3C185 /* ReleaseNotes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ReleaseNotes.md; sourceTree = "<group>"; };
 		506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WhatToTest.en-GB.txt"; sourceTree = "<group>"; };
 		50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptiUniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -91,6 +92,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		505D78AC2FBC77B600E3C185 /* AppStore */ = {
+			isa = PBXGroup;
+			children = (
+				505D78AE2FBC77CA00E3C185 /* ReleaseNotes.md */,
+			);
+			path = AppStore;
+			sourceTree = "<group>";
+		};
 		506056262E5E587000536AA8 /* TestFlight */ = {
 			isa = PBXGroup;
 			children = (
@@ -102,6 +111,7 @@
 		50BAAA2D2E30E2A800ECB7DE = {
 			isa = PBXGroup;
 			children = (
+				505D78AC2FBC77B600E3C185 /* AppStore */,
 				500657822F7B646400DA651B /* LINKS.md */,
 				50F3F1882F9475F200C4E44E /* RFC */,
 				500657802F7B642000DA651B /* README.md */,
@@ -461,7 +471,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -502,7 +512,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
