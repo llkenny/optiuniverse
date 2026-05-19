@@ -27,6 +27,7 @@
 		500657812F7B643C00DA651B /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		500657822F7B646400DA651B /* LINKS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LINKS.md; sourceTree = "<group>"; };
 		500657832FB9601900DA651B /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
+		5011A0012FC48D2D00F6A001 /* OptiUniverse.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = OptiUniverse.xctestplan; sourceTree = "<group>"; };
 		50209F692E6629400099E217 /* OptiUniverseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OptiUniverseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		505D78AE2FBC77CA00E3C185 /* ReleaseNotes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ReleaseNotes.md; sourceTree = "<group>"; };
 		506056272E5E587800536AA8 /* WhatToTest.en-GB.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WhatToTest.en-GB.txt"; sourceTree = "<group>"; };
@@ -92,6 +93,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		5011A0002FC48D2D00F6A001 /* TestPlans */ = {
+			isa = PBXGroup;
+			children = (
+				5011A0012FC48D2D00F6A001 /* OptiUniverse.xctestplan */,
+			);
+			path = TestPlans;
+			sourceTree = "<group>";
+		};
 		505D78AC2FBC77B600E3C185 /* AppStore */ = {
 			isa = PBXGroup;
 			children = (
@@ -119,6 +128,7 @@
 				506056262E5E587000536AA8 /* TestFlight */,
 				50BAAA382E30E2A800ECB7DE /* OptiUniverse */,
 				50209F6A2E6629400099E217 /* OptiUniverseTests */,
+				5011A0002FC48D2D00F6A001 /* TestPlans */,
 				50BAAA372E30E2A800ECB7DE /* Products */,
 				500657812F7B643C00DA651B /* AGENTS.md */,
 				502571F12FA205D6000AC26F /* Frameworks */,

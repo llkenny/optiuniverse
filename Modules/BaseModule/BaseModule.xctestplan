@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "9AE1C087-7902-4946-A721-90F4D90C2B8F",
+      "name" : "BaseModule Regression",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testExecutionOrdering" : "alphabetical"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:.",
+        "identifier" : "BaseModuleTests",
+        "name" : "BaseModuleTests"
+      }
+    }
+  ],
+  "version" : 1
+}
