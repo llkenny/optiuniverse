@@ -13,9 +13,10 @@ import Foundation
 struct RootContainerView: View {
 
     @Environment(AppEnvironment.self) var appEnvironment
-    @Bindable private(set) var meshProvider: MeshProvider
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
+
+    private let meshProvider: MeshProvider
     let orbitRenderHandler: OrbitRenderHandler
     let navigationRenderHandler: NavigationRenderHandler
 

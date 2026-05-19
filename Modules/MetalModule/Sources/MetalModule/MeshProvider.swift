@@ -10,7 +10,6 @@ import Metal
 /// Mesh provider (previously named MetalProvider).
 /// Stores necessary dependencies and handles loading deduplication.
 /// Model loading logic is in ModelLoader.
-@Observable
 @MainActor
 public final class MeshProvider {
 
