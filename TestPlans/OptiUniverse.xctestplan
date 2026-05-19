@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "B33C0C8B-4608-4D7F-9C72-0B315624899A",
+      "name" : "Version 1.0 Regression",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testExecutionOrdering" : "alphabetical"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:OptiUniverse.xcodeproj",
+        "identifier" : "50209F682E6629400099E217",
+        "name" : "OptiUniverseTests"
+      }
+    }
+  ],
+  "version" : 1
+}

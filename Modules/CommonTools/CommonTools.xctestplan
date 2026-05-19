@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "09147B49-6582-4CB0-A59E-B3BA5B498F77",
+      "name" : "CommonTools Regression",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testExecutionOrdering" : "alphabetical"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:.",
+        "identifier" : "CommonToolsTests",
+        "name" : "CommonToolsTests"
+      }
+    }
+  ],
+  "version" : 1
+}
