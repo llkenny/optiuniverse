@@ -45,8 +45,10 @@ public struct UniverseView: UIViewRepresentable {
             mtkView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
         ])
 
-        // Initialize renderer and delegate
+        let cameraState = CameraState()
+        // CameraController can live more than renderer,so it owns cameraState
         let renderer = MetalRenderer(metalView: mtkView,
+                                     cameraState: cameraState,
                                      meshProvider: meshProvider,
                                      navigationRenderHandler: navigationRenderHandler)
         context.coordinator.renderer = renderer
@@ -54,11 +56,19 @@ public struct UniverseView: UIViewRepresentable {
         navigationRenderHandler.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
-        // Camera controller
-        let cameraController = CameraController(renderer: renderer)
+        let cameraController = CameraController(cameraState: cameraState,
+                                                renderer: renderer)
         context.coordinator.cameraController = cameraController
+        setupGestures(mtkView: mtkView,
+                      cameraController: cameraController,
+                      coordinator: context.coordinator)
 
-        // Add gesture recognizers to the Metal view
+        return container
+    }
+
+    private func setupGestures(mtkView: MTKView,
+                               cameraController: CameraController,
+                               coordinator: Coordinator) {
         let panGesture = UIPanGestureRecognizer(
             target: cameraController,
             action: #selector(CameraController.handlePan(_:)))
@@ -80,11 +90,9 @@ public struct UniverseView: UIViewRepresentable {
             action: #selector(CameraController.handleRotation(_:)))
         mtkView.addGestureRecognizer(rotationGesture)
         let tapGesture = UITapGestureRecognizer(
-            target: context.coordinator,
+            target: coordinator,
             action: #selector(Coordinator.handleTap(_:)))
         mtkView.addGestureRecognizer(tapGesture)
-
-        return container
     }
 
     public func updateUIView(_ uiView: UIView, context: Context) {

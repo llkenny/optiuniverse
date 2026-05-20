@@ -17,31 +17,12 @@ protocol PlanetLabelDelegate: AnyObject {
     func updatePlanetLabels(_ positions: [String: SIMD2<Float>])
 }
 
-struct PostFXParams {
-    var bloomThreshold: Float
-    var bloomRadius: Float
-    var lensDirtOpacity: Float
-    var style: UInt32
-    var dreamyIntensity: Float
-    var softFocusRadius: Float
-    var hazeStrength: Float
-    var saturationBoost: Float
-}
-
 // swiftlint:disable type_body_length file_length
 @MainActor
 final class MetalRenderer: NSObject, MTKViewDelegate {
     enum PostFXStyle: UInt32 {
         case standard = 0
         case dreamy = 1
-    }
-
-    enum CameraFit {
-        static let verticalFieldOfView: Float = .pi / 3
-        static let viewportFill: Float = 0.84
-        static let defaultNearPlane: Float = 0.1
-        static let defaultFarPlane: Float = 10000
-        static let minimumNearPlane: Float = 0.0005
     }
 
     private let projectionMatrixLogger = MatrixChangeLogger(
@@ -86,21 +67,16 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                     saturationBoost: 1.08)
     var cartoonShaderIntensity: Float = 0
 
-    // Orbital Camera
-    // Camera state
-    var cameraDistance: Float = 3
-    var cameraTarget = SIMD3<Float>(0, 0, 0)
-    var cameraPosition = SIMD3<Float>(0, 0, 0)
-    var cameraUp = SIMD3<Float>(0, 1, 0)
-    var cameraOffset = SIMD3<Float>(0, 0, 3)
-    private var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
+    private(set) unowned var cameraState: CameraState // The renderer must not exists without the camera state
+    private(set) var trajectoryCameraTransition: TrajectoryCameraTransition
+    private(set) var navigationCameraTransition: NavigationCameraTransition
+
     var followingPlanetName: String? = "Sun"
     var pendingFollowPlanetName: String?
     var pendingSelectedPlanetName: String?
     var pendingNavigationDestinationName: String?
     var activeTransferDestinationName: String?
     var activeTransferOrbit: HohmannTransferOrbit?
-    var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)
     var navigationCameraFollowEnabled = true
     var navigationCameraTrailingOffset = SIMD3<Float>(0, 0, 0.18)
     var navigationArrivalRouteID: UUID?
@@ -110,10 +86,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var navigationArrivalProgress: Float = 1
     let navigationArrivalDuration: Float = 0.9
     let navigationArrivalDistanceMultiplier: Float = 5.8
-
-    // Camera transition state
     var cameraTransition: CameraTransition?
-    let cameraFollowTransitionDuration: Float = 1.1
 
     let meshProvider: MeshProvider
     let navigationRenderHandler: NavigationRenderHandlerProtocol
@@ -135,17 +108,24 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     init?(metalView: MTKView,
+          cameraState: CameraState,
           meshProvider: MeshProvider,
           navigationRenderHandler: NavigationRenderHandlerProtocol) {
+
         guard let commandQueue = meshProvider.device.makeCommandQueue() else {
             return nil
         }
 
-        self.device = meshProvider.device
-        self.commandQueue = commandQueue
         self.metalView = metalView
+        self.cameraState = cameraState
         self.meshProvider = meshProvider
         self.navigationRenderHandler = navigationRenderHandler
+
+        trajectoryCameraTransition = .init(cameraState: cameraState)
+        navigationCameraTransition = .init(cameraState: cameraState)
+
+        self.device = meshProvider.device
+        self.commandQueue = commandQueue
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
         depthStencilDescriptor.isDepthWriteEnabled = true
@@ -171,6 +151,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         super.init()
         prepare(viewSampleCount: viewSampleCount)
+    }
+
+    func setup(_ cameraState: CameraState) {
+        self.cameraState = cameraState
     }
 
     private func prepare(viewSampleCount: Int) {
@@ -314,12 +298,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                   !navigationRouteCoordinator.isNavigationActive,
                   let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
             resetNavigationArrivalTransition()
-            cameraTarget = earthPosition + transferCameraTargetOffset
+            trajectoryCameraTransition.applyOffsetForTransferOrbit(earthPosition: earthPosition)
             updateCamera()
         } else if let name = followingPlanetName,
                   let position = snapshot?.worldPosition(ofPlanetNamed: name) {
             resetNavigationArrivalTransition()
-            cameraTarget = position
+            cameraState.set(cameraTarget: position)
             updateCamera()
         }
     }
@@ -376,7 +360,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
-        transferCameraTargetOffset = .zero
+        trajectoryCameraTransition.resetTransferCameraTargetOffset()
         followingPlanetName = "Earth"
         pendingFollowPlanetName = nil
         startTransferOverviewAnimation(transferOrbit: transferOrbit,
@@ -413,7 +397,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         pendingSelectedPlanetName = nil
         activeTransferDestinationName = nil
         activeTransferOrbit = nil
-        transferCameraTargetOffset = .zero
+        trajectoryCameraTransition.resetTransferCameraTargetOffset()
     }
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
@@ -424,10 +408,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         cameraTransition = CameraTransition(
-            start: currentCameraTransitionFrame,
+            start: cameraState.currentCameraTransitionFrame,
             destination: .fixed(target: framing.center,
                                 distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
-            duration: cameraFollowTransitionDuration
+            duration: cameraState.cameraFollowTransitionDuration
         )
     }
 
@@ -475,24 +459,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if activeTransferOrbit != nil,
            let earthPosition = renderPreparationPipeline.latestSnapshot?
             .worldPosition(ofPlanetNamed: "Earth") {
-            transferCameraTargetOffset = cameraTarget - earthPosition
+            trajectoryCameraTransition.setOffsetForTransferOrbit(earthPosition: earthPosition)
         }
 
         pendingFollowPlanetName = nil
         cameraTransition = nil
-    }
-
-    func minimumAllowedCameraDistance(baseMinimum: Float) -> Float {
-        guard let followingPlanetName,
-              let framingRadius = renderPreparationPipeline
-            .latestSnapshot?
-            .framingRadius(ofPlanetNamed: followingPlanetName) else {
-            return baseMinimum
-        }
-
-        // Keep zoom outside the followed planet so pinch changes camera
-        // distance instead of effectively clipping through the geometry.
-        return max(baseMinimum, framingRadius * 1.05)
     }
 
     func startFollowAnimation(named name: String,
@@ -503,16 +474,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         cameraTransition = CameraTransition(
-            start: currentCameraTransitionFrame,
+            start: cameraState.currentCameraTransitionFrame,
             destination: .planet(name: name),
-            duration: cameraFollowTransitionDuration
+            duration: cameraState.cameraFollowTransitionDuration
         )
         return true
-    }
-
-    var currentCameraTransitionFrame: CameraTransition.Frame {
-        CameraTransition.Frame(target: cameraTarget,
-                               distance: cameraDistance)
     }
 
     private func updateCameraTransition(snapshot: PreparedRenderSnapshot?,
@@ -527,8 +493,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         cameraTransition = transition.isComplete ? nil : transition
-        cameraTarget = frame.target
-        cameraDistance = frame.distance
+        cameraState.set(cameraTarget: frame.target)
+        cameraState.set(cameraDistance: frame.distance)
         updateCamera()
     }
 
@@ -559,76 +525,38 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func updateCamera() {
-        cameraOrientation = simd_normalize(cameraOrientation)
-
-        cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, cameraDistance))
-        self.cameraPosition = cameraOffset + cameraTarget
-        cameraUp = cameraOrientation.act(SIMD3<Float>(0, 1, 0))
-
-        // 2. Update matrices
-        viewMatrix = float4x4.lookAt(
-            eye: cameraPosition,
-            target: cameraTarget,
-            upVector: cameraUp
-        )
+        cameraState.checkDistance(minDistance: minimumAllowedCameraDistance())
+        viewMatrix = cameraState.makeViewMatrix()
         updateProjectionMatrix()
     }
 
-    func alignCameraOrientationToCurrentLookAt() {
-        guard simd_length_squared(cameraOffset) > 0.000001 else { return }
+    private func minimumAllowedCameraDistance() -> Float {
+        let minDistance = cameraState.minDistance
 
-        let forward = normalize(cameraOffset)
-        let fallbackUp = SIMD3<Float>(0, 1, 0)
-        let upSeed = simd_length_squared(cameraUp) > 0.000001 ? normalize(cameraUp) : fallbackUp
-        let candidateUp = abs(simd_dot(forward, upSeed)) > 0.94
-        ? SIMD3<Float>(1, 0, 0)
-        : upSeed
-        let right = normalize(simd_cross(candidateUp, forward))
-        let cameraUpDirection = normalize(simd_cross(forward, right))
+        guard let followingPlanetName,
+              let framingRadius = renderPreparationPipeline
+            .latestSnapshot?
+            .framingRadius(ofPlanetNamed: followingPlanetName) else {
+            return minDistance
+        }
 
-        cameraUp = cameraUpDirection
-        cameraOrientation = simd_normalize(simd_quatf(float3x3(columns: (right, cameraUpDirection, forward))))
-    }
-
-    func orbitCamera(horizontal horizontalAngle: Float, vertical verticalAngle: Float) {
-        cameraOrientation = simd_normalize(cameraOrientation)
-
-        let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
-        let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
-        let horizontalRotation = simd_quatf(angle: horizontalAngle, axis: upVector)
-        let verticalRotation = simd_quatf(angle: verticalAngle, axis: rightVector)
-
-        cameraOrientation = simd_normalize(verticalRotation * horizontalRotation * cameraOrientation)
+        return max(minDistance, framingRadius * 1.05)
     }
 
     func panTrajectoryCamera(byScreenTranslation translation: CGPoint,
                              speed: Float) {
         guard isTrajectoryModeActive else { return }
-
-        cameraOrientation = simd_normalize(cameraOrientation)
-
-        let width = max(Float(metalView.bounds.width), 1)
-        let height = max(Float(metalView.bounds.height), 1)
-        let aspect = width / height
-        let visibleHeight = (
-            2 * max(cameraDistance, CameraFit.minimumNearPlane)
-            * tan(CameraFit.verticalFieldOfView / 2)
+        trajectoryCameraTransition.updateForPanTrajectory(
+            width: Float(metalView.bounds.width),
+            height: Float(metalView.bounds.height),
+            translation: translation,
+            speed: speed
         )
-        let visibleWidth = visibleHeight * aspect
-        let horizontal = Float(translation.x) / width * visibleWidth * speed
-        let vertical = Float(translation.y) / height * visibleHeight * speed
-        let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
-        let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
-
-        if activeTransferOrbit != nil {
-            transferCameraTargetOffset += (rightVector * horizontal) + (upVector * vertical)
-        }
-        cameraTarget += (rightVector * horizontal) + (upVector * vertical)
         updateCamera()
     }
 
     func distanceToFitPlanet(radius: Float) -> Float {
-        guard radius > 0 else { return max(cameraDistance, CameraFit.defaultNearPlane) }
+        guard radius > 0 else { return max(cameraState.cameraDistance, CameraFit.defaultNearPlane) }
 
         let width = max(Float(metalView.bounds.width), 1)
         let height = max(Float(metalView.bounds.height), 1)
@@ -648,7 +576,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
            let framingRadius = renderPreparationPipeline
             .latestSnapshot?
             .framingRadius(ofPlanetNamed: route.destinationName) {
-            let frontClearance = max(cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
+            let frontClearance = max(cameraState.cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
             return min(CameraFit.defaultNearPlane,
                        max(CameraFit.minimumNearPlane, frontClearance * 0.5))
         }
@@ -660,7 +588,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return CameraFit.defaultNearPlane
         }
 
-        let frontClearance = max(cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
+        let frontClearance = max(cameraState.cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
         return min(CameraFit.defaultNearPlane,
                    max(CameraFit.minimumNearPlane, frontClearance * 0.5))
     }
@@ -674,13 +602,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
            let transferRadius = transferProjectionRadius(transferOrbit: activeTransferOrbit,
                                                          snapshot: snapshot) {
             return max(CameraFit.defaultFarPlane,
-                       cameraDistance + transferRadius * 1.15)
+                       cameraState.cameraDistance + transferRadius * 1.15)
         }
 
         if let route = navigationRouteCoordinator.activeRouteForRendering,
            let routeRadius = routeProjectionRadius(route: route, snapshot: snapshot) {
             return max(CameraFit.defaultFarPlane,
-                       cameraDistance + routeRadius * 1.15)
+                       cameraState.cameraDistance + routeRadius * 1.15)
         }
 
         return CameraFit.defaultFarPlane
@@ -692,7 +620,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         func include(center: SIMD3<Float>, radius includedRadius: Float) {
             radius = max(radius,
-                         simd_distance(cameraTarget, center) + max(includedRadius, 0))
+                         simd_distance(cameraState.cameraTarget, center) + max(includedRadius, 0))
         }
 
         for point in route.points {
@@ -725,7 +653,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         func include(center: SIMD3<Float>, radius includedRadius: Float) {
             radius = max(radius,
-                         simd_distance(cameraTarget, center) + max(includedRadius, 0))
+                         simd_distance(cameraState.cameraTarget, center) + max(includedRadius, 0))
         }
 
         for point in transferOrbit.points {

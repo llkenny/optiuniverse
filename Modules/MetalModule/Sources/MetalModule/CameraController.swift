@@ -3,14 +3,16 @@ import UIKit
 /// Handles user gestures to control the orbital camera around the scene's origin.
 @MainActor
 final class CameraController: NSObject, UIGestureRecognizerDelegate {
+
+    private let cameraState: CameraState
     weak var renderer: MetalRenderer?
 
+    private var orbitCameraTransition: OrbitCameraTransition
+
     // Tunable parameters
-    var orbitSpeed: Float
-    var zoomSpeed: Float
-    var minDistance: Float
-    var maxDistance: Float
-    var trajectoryPanSpeed: Float
+    private let orbitSpeed: Float
+    private let zoomSpeed: Float
+    private let trajectoryPanSpeed: Float
 
     // Internal state for inertia
     private var yawVelocity: Float = 0
@@ -19,18 +21,20 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     private let damping: Float = 0.9
     private var displayLink: CADisplayLink?
 
-    init(renderer: MetalRenderer?,
+    init(cameraState: CameraState,
+         renderer: MetalRenderer?,
          orbitSpeed: Float = 0.01,
          zoomSpeed: Float = 1.0,
-         trajectoryPanSpeed: Float = 1.0,
-         minDistance: Float = 0.001,
-         maxDistance: Float = 10000.0) {
+         trajectoryPanSpeed: Float = 1.0) {
+
+        self.cameraState = cameraState
         self.renderer = renderer
+
+        orbitCameraTransition = .init(cameraState: cameraState)
+
         self.orbitSpeed = orbitSpeed
         self.zoomSpeed = zoomSpeed
         self.trajectoryPanSpeed = trajectoryPanSpeed
-        self.minDistance = minDistance
-        self.maxDistance = maxDistance
         super.init()
         start()
     }
@@ -52,11 +56,10 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     private func update(delta: Float) {
         guard let renderer = renderer else { return }
         if yawVelocity != 0 || pitchVelocity != 0 || zoomVelocity != 0 {
-            renderer.orbitCamera(horizontal: yawVelocity * delta,
-                                 vertical: -pitchVelocity * delta)
-            renderer.cameraDistance = max(minDistance,
-                                          min(renderer.cameraDistance + zoomVelocity * delta,
-                                              maxDistance))
+            orbitCameraTransition.orbitCamera(horizontal: yawVelocity * delta,
+                                              vertical: -pitchVelocity * delta)
+            let cameraDistance = cameraState.cameraDistance + zoomVelocity * delta
+            cameraState.set(cameraDistance: cameraDistance)
 
             let factor = pow(damping, delta * 60)
             yawVelocity *= factor
@@ -81,8 +84,8 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         }
 
         let translation = gesture.translation(in: gesture.view)
-        renderer.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
-                             vertical: -Float(translation.y) * orbitSpeed)
+        orbitCameraTransition.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
+                                          vertical: -Float(translation.y) * orbitSpeed)
         gesture.setTranslation(.zero, in: gesture.view)
         renderer.updateCamera()
 
@@ -124,14 +127,13 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
 
         let gestureScale = max(Float(gesture.scale), 0.01)
         let zoomFactor = pow(gestureScale, zoomSpeed)
-        let minimumDistance = renderer.minimumAllowedCameraDistance(baseMinimum: minDistance)
-        let distance = renderer.cameraDistance / zoomFactor
-        renderer.cameraDistance = max(minimumDistance, min(distance, maxDistance))
+        let cameraDistance = cameraState.cameraDistance / zoomFactor
+        cameraState.set(cameraDistance: cameraDistance)
         gesture.scale = 1.0
         renderer.updateCamera()
 
         if gesture.state == .ended {
-            zoomVelocity = -Float(gesture.velocity) * max(renderer.cameraDistance, minimumDistance) * 0.15
+            zoomVelocity = -Float(gesture.velocity) * cameraState.cameraDistance * 0.15
         } else if gesture.state == .cancelled || gesture.state == .failed {
             zoomVelocity = 0
         }

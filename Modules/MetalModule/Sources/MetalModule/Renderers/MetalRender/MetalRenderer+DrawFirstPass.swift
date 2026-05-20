@@ -40,18 +40,14 @@ extension MetalRenderer {
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setCullMode(.none)
 
-        let renderOrigin = cameraTarget
-        let renderViewMatrix = float4x4.lookAt(
-            eye: cameraOffset,
-            target: .zero,
-            upVector: cameraUp
-        )
+        let renderOrigin = cameraState.cameraTarget
+        let renderViewMatrix = cameraState.makeRenderViewMatrix()
 
         let configuration = PlanetRenderConfiguration(snapshot: snapshot,
                                                       renderEncoder: renderEncoder,
                                                       viewMatrix: renderViewMatrix,
                                                       projectionMatrix: projectionMatrix,
-                                                      cameraPosition: cameraOffset,
+                                                      cameraPosition: cameraState.cameraOffset,
                                                       sceneOrigin: renderOrigin,
                                                       viewportSize: metalView.bounds.size,
                                                       cartoonShaderIntensity: min(max(cartoonShaderIntensity, 0), 1))
