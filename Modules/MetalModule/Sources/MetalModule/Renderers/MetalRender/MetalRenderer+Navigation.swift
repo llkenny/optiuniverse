@@ -74,15 +74,13 @@ extension MetalRenderer {
         followingPlanetName = destinationName
         pendingFollowPlanetName = nil
 
-        guard let snapshot = renderPreparationPipeline.latestSnapshot,
-              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: destinationName) else {
+        guard let destinationPosition = renderPreparationPipeline
+            .latestSnapshot?
+            .worldPosition(ofPlanetNamed: destinationName) else {
             return
         }
 
-        cameraTarget = destinationPosition
-        cameraOffset = cameraPosition - destinationPosition
-        cameraDistance = max(simd_length(cameraOffset), CameraFit.minimumNearPlane)
-        alignCameraOrientationToCurrentLookAt()
+        navigationCameraTransition.set(destinationPosition: destinationPosition)
         updateCamera()
     }
 
@@ -113,7 +111,7 @@ extension MetalRenderer {
 
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
-        transferCameraTargetOffset = .zero
+        trajectoryCameraTransition.resetTransferCameraTargetOffset()
 
         guard navigationRouteCoordinator.start(destinationName: name,
                                                planets: planets,
@@ -142,10 +140,10 @@ extension MetalRenderer {
         }
 
         cameraTransition = CameraTransition(
-            start: currentCameraTransitionFrame,
+            start: cameraState.currentCameraTransitionFrame,
             destination: .fixed(target: framing.center,
                                 distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
-            duration: cameraFollowTransitionDuration
+            duration: cameraState.cameraFollowTransitionDuration
         )
     }
 
@@ -214,28 +212,11 @@ extension MetalRenderer {
 
         captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
 
-        let cameraEye = currentPoint + navigationCameraTrailingOffset
-        let localTarget = destinationPosition - currentPoint
-        let localEye = cameraEye - currentPoint
-
-        cameraTarget = currentPoint
-        cameraPosition = cameraEye
-        cameraOffset = localEye
-        cameraDistance = max(simd_length(cameraOffset), CameraFit.minimumNearPlane)
-
-        let fallbackUp = SIMD3<Float>(0, 1, 0)
-        let viewDirection = normalize(localTarget - localEye)
-        let candidateUp = abs(simd_dot(viewDirection, fallbackUp)) > 0.94
-        ? SIMD3<Float>(1, 0, 0)
-        : fallbackUp
-        let right = normalize(simd_cross(candidateUp, viewDirection))
-        cameraUp = normalize(simd_cross(viewDirection, right))
-
-        viewMatrix = float4x4.lookAt(
-            eye: localEye,
-            target: localTarget,
-            upVector: cameraUp
-        )
+        viewMatrix = navigationCameraTransition
+            .makeNavigationFollowViewMatrix(route: route,
+                                            currentPoint: currentPoint,
+                                            destinationPosition: destinationPosition,
+                                            trailingOffset: navigationCameraTrailingOffset)
         updateProjectionMatrix()
     }
 
@@ -250,13 +231,13 @@ extension MetalRenderer {
         let arrivalDistance = distanceToFitPlanet(radius: destinationRadius)
         * navigationArrivalDistanceMultiplier
         if navigationArrivalRouteID != route.id {
-            let existingDirection = simd_length_squared(cameraPosition - destinationPosition) > 0.000001
-            ? normalize(cameraPosition - destinationPosition)
+            let existingDirection = simd_length_squared(cameraState.cameraPosition - destinationPosition) > 0.000001
+            ? normalize(cameraState.cameraPosition - destinationPosition)
             : SIMD3<Float>(0, 0, 1)
 
             navigationArrivalRouteID = route.id
-            navigationArrivalStartCameraPosition = cameraPosition
-            navigationArrivalStartTarget = cameraTarget
+            navigationArrivalStartCameraPosition = cameraState.cameraPosition
+            navigationArrivalStartTarget = cameraState.cameraTarget
             navigationArrivalTargetOffset = existingDirection * arrivalDistance
             navigationArrivalProgress = 0
         }
@@ -285,27 +266,10 @@ extension MetalRenderer {
 
     private func applyLookAtCamera(position: SIMD3<Float>,
                                    target: SIMD3<Float>) {
-        let localEye = position - target
-        let viewDirection = simd_length_squared(-localEye) > 0.000001
-        ? normalize(-localEye)
-        : SIMD3<Float>(0, 0, -1)
-        let fallbackUp = SIMD3<Float>(0, 1, 0)
-        let candidateUp = abs(simd_dot(viewDirection, fallbackUp)) > 0.94
-        ? SIMD3<Float>(1, 0, 0)
-        : fallbackUp
-        let right = normalize(simd_cross(candidateUp, viewDirection))
 
-        cameraTarget = target
-        cameraOffset = localEye
-        cameraPosition = position
-        cameraDistance = max(simd_length(localEye), CameraFit.minimumNearPlane)
-        cameraUp = normalize(simd_cross(viewDirection, right))
-
-        viewMatrix = float4x4.lookAt(
-            eye: localEye,
-            target: .zero,
-            upVector: cameraUp
-        )
+        viewMatrix = navigationCameraTransition
+            .makeNavigationArrivalViewMatrix(position: position,
+                                             target: target)
         updateProjectionMatrix()
     }
 }

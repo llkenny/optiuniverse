@@ -8,6 +8,8 @@
 import Foundation
 import simd
 
+// Immutable per-frame render input prepared before Metal command encoding.
+// Keeps async mesh/model lookup out of the synchronous render pass.
 struct PreparedRenderSnapshot: Sendable {
     let frameID: UInt64
     let simulationTime: Float
