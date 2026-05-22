@@ -7,7 +7,7 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     private let cameraState: CameraState
     weak var renderer: MetalRenderer?
 
-    private var orbitCameraTransition: OrbitCameraTransition
+    private var orbitCameraMode: OrbitCameraMode
 
     // Tunable parameters
     private let orbitSpeed: Float
@@ -30,7 +30,7 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         self.cameraState = cameraState
         self.renderer = renderer
 
-        orbitCameraTransition = .init(cameraState: cameraState)
+        orbitCameraMode = .init(cameraState: cameraState)
 
         self.orbitSpeed = orbitSpeed
         self.zoomSpeed = zoomSpeed
@@ -56,8 +56,8 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     private func update(delta: Float) {
         guard let renderer = renderer else { return }
         if yawVelocity != 0 || pitchVelocity != 0 || zoomVelocity != 0 {
-            orbitCameraTransition.orbitCamera(horizontal: yawVelocity * delta,
-                                              vertical: -pitchVelocity * delta)
+            orbitCameraMode.orbitCamera(horizontal: yawVelocity * delta,
+                                        vertical: -pitchVelocity * delta)
             let cameraDistance = cameraState.cameraDistance + zoomVelocity * delta
             cameraState.set(cameraDistance: cameraDistance)
 
@@ -84,8 +84,8 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         }
 
         let translation = gesture.translation(in: gesture.view)
-        orbitCameraTransition.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
-                                          vertical: -Float(translation.y) * orbitSpeed)
+        orbitCameraMode.orbitCamera(horizontal: Float(translation.x) * orbitSpeed,
+                                    vertical: -Float(translation.y) * orbitSpeed)
         gesture.setTranslation(.zero, in: gesture.view)
         renderer.updateCamera()
 

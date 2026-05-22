@@ -1,5 +1,5 @@
 //
-//  TrajectoryCameraTransition.swift
+//  TrajectoryCameraMode.swift
 //  MetalModule
 //
 //  Created by max on 20.05.2026.
@@ -9,7 +9,7 @@ import simd
 import CoreFoundation
 
 /// Transformations for the trajectory camera mode
-final class TrajectoryCameraTransition {
+final class TrajectoryCameraMode {
 
     private unowned var cameraState: CameraState
     private var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)

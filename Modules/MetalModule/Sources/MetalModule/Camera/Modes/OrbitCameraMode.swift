@@ -1,5 +1,5 @@
 //
-//  OrbitCameraTransition.swift
+//  OrbitCameraMode.swift
 //  MetalModule
 //
 //  Created by max on 20.05.2026.
@@ -8,7 +8,7 @@
 import simd
 
 /// Transformations for the orbit camera mode
-final class OrbitCameraTransition {
+final class OrbitCameraMode {
 
     private unowned var cameraState: CameraState
 
