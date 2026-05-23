@@ -12,7 +12,8 @@ import CoreFoundation
 final class TrajectoryCameraMode {
 
     private unowned var cameraState: CameraState
-    private var transferCameraTargetOffset = SIMD3<Float>(repeating: 0)
+
+    private let trajectoryPanSpeed: Float = 1.0
 
     init(cameraState: CameraState) {
         self.cameraState = cameraState
@@ -27,6 +28,7 @@ final class TrajectoryCameraMode {
         let cameraDistance = cameraState.cameraDistance
         let cameraOrientation = cameraState.cameraOrientation
 
+        // TODO: Why we need width and height?
         let width = max(width, 1)
         let height = max(height, 1)
         let aspect = width / height
@@ -40,22 +42,20 @@ final class TrajectoryCameraMode {
         let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
         let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
 
-        transferCameraTargetOffset += (rightVector * horizontal) + (upVector * vertical)
-
         var cameraTarget = cameraState.cameraTarget
         cameraTarget += (rightVector * horizontal) + (upVector * vertical)
         cameraState.set(cameraTarget: cameraTarget)
     }
 
-    func applyOffsetForTransferOrbit(earthPosition: SIMD3<Float>) {
-        cameraState.set(cameraTarget: earthPosition + transferCameraTargetOffset)
+    func apply(translation: CGPoint) {
+        // TODO: Remove hard coded width and height
+        updateForPanTrajectory(
+            width: Float(300),
+            height: Float(400),
+            translation: translation,
+            speed: trajectoryPanSpeed
+        )
     }
 
-    func setOffsetForTransferOrbit(earthPosition: SIMD3<Float>) {
-        transferCameraTargetOffset = cameraState.cameraTarget - earthPosition
-    }
-
-    func resetTransferCameraTargetOffset() {
-        transferCameraTargetOffset = .zero
-    }
+    // TODO: Add inertia
 }
