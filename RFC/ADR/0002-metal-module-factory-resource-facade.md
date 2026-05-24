@@ -1,6 +1,6 @@
 # ADR 0002: Metal Module Factory Resource Facade
 
-Status: Proposed
+Status: Accepted
 Date: 19/05/26
 
 ## Context
@@ -23,18 +23,20 @@ await metalResources.prepare()
 UniverseView(resources: metalResources)
 ```
 
-`MetalModuleResources` becomes the public integration surface for the app target. It should expose:
+`MetalModuleResources` becomes the public integration surface for the app target. It exposes preloading directly and groups rendering controls through focused protocols:
 
 - `prepare() async`
-- `navigationSnapshot`
-- `navigationCameraFollowEnabled`
-- `showTransferOrbit(to:)`
-- `startNavigation(to:)`
-- `pauseNavigation()`
-- `resumeNavigation()`
-- `cancelNavigation()`
-- `doneNavigation()`
-- `setNavigationCameraFollowEnabled(_:)`
+- `MetalModuleNavigationControlling`
+  - `navigationSnapshot`
+  - `navigationCameraFollowEnabled`
+  - `startNavigation(to:)`
+  - `pauseNavigation()`
+  - `resumeNavigation()`
+  - `cancelNavigation()`
+  - `doneNavigation()`
+  - `setNavigationCameraFollowEnabled(_:)`
+- `MetalModuleTransferOrbitControlling`
+  - `showTransferOrbit(to:)`
 
 Keep `MeshProvider`, `ModelLoader`, `MTLDevice`, and renderer wiring internal to `MetalModule`.
 

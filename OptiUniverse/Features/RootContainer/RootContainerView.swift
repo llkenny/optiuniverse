@@ -16,14 +16,12 @@ struct RootContainerView: View {
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
 
-    private let meshProvider: MeshProvider
-    let orbitRenderHandler: OrbitRenderHandler
-    let navigationRenderHandler: NavigationRenderHandler
+    private let metalResources: MetalModuleResources
+    var navigationController: MetalModuleNavigationControlling { metalResources }
+    var transferOrbitController: MetalModuleTransferOrbitControlling { metalResources }
 
     init() {
-        meshProvider = MeshProvider()
-        orbitRenderHandler = OrbitRenderHandler()
-        navigationRenderHandler = NavigationRenderHandler()
+        metalResources = MetalModuleFactory.makeResources()
     }
 
     var body: some View {
@@ -42,9 +40,7 @@ struct RootContainerView: View {
                         HomeView()
                     case .objects:
                         ZStack {
-                            UniverseView(meshProvider: meshProvider,
-                                         orbitRenderHandler: orbitRenderHandler,
-                                         navigationRenderHandler: navigationRenderHandler)
+                            UniverseView(resources: metalResources)
                                 .ignoresSafeArea(edges: .bottom)
 
                             switch objectsViewState {
@@ -58,7 +54,7 @@ struct RootContainerView: View {
                                     makeStartNavigationButton(destinationName: selectedPlanet)
                                 }
                             case .navigation:
-                                makeNavigationControls(snapshot: navigationRenderHandler.navigationSnapshot)
+                                makeNavigationControls(snapshot: navigationController.navigationSnapshot)
                             default:
                                 EmptyView()
                             }
@@ -74,8 +70,8 @@ struct RootContainerView: View {
         }
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
-        .animation(.default, value: navigationRenderHandler.navigationSnapshot)
-        .onChange(of: navigationRenderHandler.navigationSnapshot.state) { _, newState in
+        .animation(.default, value: navigationController.navigationSnapshot)
+        .onChange(of: navigationController.navigationSnapshot.state) { _, newState in
             guard objectsViewState == .navigation,
                   newState == .cancelled else {
                 return
@@ -84,7 +80,7 @@ struct RootContainerView: View {
             objectsViewState = .raw
         }
         .task {
-            await meshProvider.prepare()
+            await metalResources.prepare()
             await appEnvironment.destinationsProvider.fetch()
             await appEnvironment.featuredObjectProvider.fetch()
             isDataLoaded = true

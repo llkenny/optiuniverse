@@ -53,11 +53,12 @@ vfx_scripts/           Experimental volume-noise export utilities
 
 The Metal path is organized around a clear split between preparation and command encoding:
 
-1. `ModelLoader` loads USDZ meshes, Metal buffers, textures, and material data.
-2. `RenderPreparationPipeline` resolves async mesh access and builds immutable per-frame render snapshots.
-3. `MetalRenderer` owns the `MTKViewDelegate` loop, camera state, HDR/MSAA targets, and post-processing pass.
-4. `PlanetsRenderer` consumes prepared snapshots synchronously while encoding draw commands.
-5. Metal shaders handle material lighting, texture sampling, transparency, tone mapping, bloom, and final color grading.
+1. `MetalModuleFactory` creates the app-owned `MetalModuleResources` facade.
+2. `MetalModuleResources` owns long-lived Metal, preparation, camera, navigation, and snapshot services.
+3. `RenderPreparationPipeline` resolves async mesh access and builds immutable per-frame render snapshots behind `SnapshotProvider`.
+4. `MetalRenderer` owns the `MTKViewDelegate` loop, HDR/MSAA targets, post-processing pass, and command encoding.
+5. `PlanetsRenderer` consumes prepared snapshots synchronously while encoding draw commands.
+6. Metal shaders handle material lighting, texture sampling, transparency, tone mapping, bloom, and final color grading.
 
 This avoids crossing `await` boundaries while a `MTLRenderCommandEncoder` is active, which keeps the render loop predictable and compatible with Metal API validation.
 

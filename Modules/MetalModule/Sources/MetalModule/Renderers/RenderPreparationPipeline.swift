@@ -8,6 +8,12 @@
 import Foundation
 import simd
 
+@MainActor
+protocol PreparedRenderSnapshotProviding: AnyObject {
+    var latestSnapshot: PreparedRenderSnapshot? { get }
+    func requestPreparation(simulationTime: Float)
+}
+
 // Immutable per-frame render input prepared before Metal command encoding.
 // Keeps async mesh/model lookup out of the synchronous render pass.
 struct PreparedRenderSnapshot: Sendable {
@@ -40,7 +46,7 @@ struct PreparedPlanetRenderPacket: Sendable {
 }
 
 @MainActor
-final class RenderPreparationPipeline {
+final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
     private let modelLoader: ModelLoader
     private let planets: [Planet]
     private var meshCache: [String: [LoadedMesh]] = [:]

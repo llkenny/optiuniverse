@@ -13,7 +13,7 @@ extension RootContainerView {
     @ViewBuilder
     func makeStartNavigationButton(destinationName: String) -> some View {
         Button {
-            navigationRenderHandler.startNavigation(to: destinationName)
+            navigationController.startNavigation(to: destinationName)
             objectsViewState = .navigation
         } label: {
             Image(systemName: "paperplane")
@@ -76,9 +76,9 @@ extension RootContainerView {
 
     private var navigationCameraFollowBinding: Binding<Bool> {
         Binding {
-            navigationRenderHandler.navigationCameraFollowEnabled
+            navigationController.navigationCameraFollowEnabled
         } set: { isEnabled in
-            navigationRenderHandler.setNavigationCameraFollowEnabled(isEnabled)
+            navigationController.setNavigationCameraFollowEnabled(isEnabled)
         }
     }
 
@@ -88,14 +88,14 @@ extension RootContainerView {
             switch snapshot.state {
             case .running:
                 navigationControlButton(title: "Pause") {
-                    navigationRenderHandler.pauseNavigation()
+                    navigationController.pauseNavigation()
                 }
                 navigationControlButton(title: "Cancel") {
                     cancelNavigationAndDismissOverlays()
                 }
             case .paused:
                 navigationControlButton(title: "Resume") {
-                    navigationRenderHandler.resumeNavigation()
+                    navigationController.resumeNavigation()
                 }
                 navigationControlButton(title: "Cancel") {
                     cancelNavigationAndDismissOverlays()
@@ -118,7 +118,7 @@ extension RootContainerView {
     }
 
     private func cancelNavigationAndDismissOverlays() {
-        navigationRenderHandler.cancelNavigation()
+        navigationController.cancelNavigation()
         objectsViewState = .raw
     }
 
