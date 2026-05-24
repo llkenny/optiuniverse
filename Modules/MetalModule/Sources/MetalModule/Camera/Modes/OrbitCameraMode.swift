@@ -43,7 +43,7 @@ final class OrbitCameraMode {
     }
 
     func update(delta: Float) {
-        guard yawVelocity != 0, pitchVelocity != 0 else {
+        guard yawVelocity != 0 || pitchVelocity != 0 else {
             return
         }
         apply(horizontal: yawVelocity * delta,
