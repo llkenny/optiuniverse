@@ -86,19 +86,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		502571F12FA205D6000AC26F /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		5011A0002FC48D2D00F6A001 /* TestPlans */ = {
 			isa = PBXGroup;
 			children = (
 				5011A0012FC48D2D00F6A001 /* OptiUniverse.xctestplan */,
 			);
 			path = TestPlans;
+			sourceTree = "<group>";
+		};
+		502571F12FA205D6000AC26F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		505D78AC2FBC77B600E3C185 /* AppStore */ = {
