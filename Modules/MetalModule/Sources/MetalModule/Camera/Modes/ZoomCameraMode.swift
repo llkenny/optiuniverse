@@ -42,8 +42,4 @@ final class ZoomCameraMode {
 
         if abs(zoomVelocity) < 0.0001 { zoomVelocity = 0 }
     }
-
-    private func stopInertia() {
-        zoomVelocity = 0
-    }
 }

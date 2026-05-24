@@ -68,7 +68,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cartoonShaderIntensity: Float = 0
 
     private(set) unowned var cameraState: CameraState // The renderer must not exists without the camera state
-    // TODO: Remove the mode from renderer
     private(set) var navigationCameraMode: NavigationCameraMode
 
     var followingPlanetName: String? = "Sun"
@@ -121,7 +120,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.meshProvider = meshProvider
         self.navigationRenderHandler = navigationRenderHandler
 
-        trajectoryCameraMode = .init(cameraState: cameraState)
         navigationCameraMode = .init(cameraState: cameraState)
 
         self.device = meshProvider.device
@@ -296,7 +294,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                    delta: delta)
         } else if activeTransferOrbit != nil, // 4
                   !navigationRouteCoordinator.isNavigationActive {
-            // TODO: Removing this breaks the pan gesture for the trajectory mode
+            // Removing this breaks the pan gesture for the trajectory mode
+            return
         } else if let name = followingPlanetName, // 5
                   let position = snapshot?.worldPosition(ofPlanetNamed: name) {
             resetNavigationArrivalTransition()

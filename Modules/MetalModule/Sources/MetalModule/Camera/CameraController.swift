@@ -4,30 +4,15 @@ import UIKit
 @MainActor
 final class CameraController: NSObject, UIGestureRecognizerDelegate {
 
-    // TODO: Remove renderer probably too
     weak var renderer: MetalRenderer?
-
     private let cameraCoordniator: CameraCoordinator
 
-    // TODO: Remove cameraState and orbitCameraMode
-    private let cameraState: CameraState
-    private var orbitCameraMode: OrbitCameraMode
-
-    // Tunable parameters
-    private let orbitSpeed: Float
-
     init(cameraState: CameraState,
-         renderer: MetalRenderer?,
-         orbitSpeed: Float = 0.01) {
+         renderer: MetalRenderer?) {
 
-        self.cameraState = cameraState
         self.renderer = renderer
         cameraCoordniator = .init(cameraState: cameraState)
         cameraCoordniator.renderer = renderer
-
-        orbitCameraMode = .init(cameraState: cameraState)
-
-        self.orbitSpeed = orbitSpeed
         super.init()
     }
 

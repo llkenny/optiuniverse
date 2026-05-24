@@ -28,7 +28,6 @@ final class TrajectoryCameraMode {
         let cameraDistance = cameraState.cameraDistance
         let cameraOrientation = cameraState.cameraOrientation
 
-        // TODO: Why we need width and height?
         let width = max(width, 1)
         let height = max(height, 1)
         let aspect = width / height
@@ -48,7 +47,6 @@ final class TrajectoryCameraMode {
     }
 
     func apply(translation: CGPoint) {
-        // TODO: Remove hard coded width and height
         updateForPanTrajectory(
             width: Float(300),
             height: Float(400),
@@ -56,6 +54,4 @@ final class TrajectoryCameraMode {
             speed: trajectoryPanSpeed
         )
     }
-
-    // TODO: Add inertia
 }

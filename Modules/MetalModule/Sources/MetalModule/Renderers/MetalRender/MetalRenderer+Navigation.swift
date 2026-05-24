@@ -216,7 +216,6 @@ extension MetalRenderer {
                                             currentPoint: currentPoint,
                                             destinationPosition: destinationPosition,
                                             trailingOffset: navigationCameraTrailingOffset)
-        // TODO: No update camera -> broken pipeline
         updateProjectionMatrix()
     }
 
