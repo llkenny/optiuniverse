@@ -1,5 +1,5 @@
 //
-//  NavigationCameraTransition.swift
+//  NavigationCameraMode.swift
 //  MetalModule
 //
 //  Created by max on 20.05.2026.
@@ -8,7 +8,7 @@
 import simd
 
 /// Transformations for the navigation camera mode
-final class NavigationCameraTransition {
+final class NavigationCameraMode {
 
     private unowned var cameraState: CameraState
 

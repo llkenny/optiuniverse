@@ -68,8 +68,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var cartoonShaderIntensity: Float = 0
 
     private(set) unowned var cameraState: CameraState // The renderer must not exists without the camera state
-    private(set) var trajectoryCameraTransition: TrajectoryCameraTransition
-    private(set) var navigationCameraTransition: NavigationCameraTransition
+    private(set) var navigationCameraMode: NavigationCameraMode
 
     var followingPlanetName: String? = "Sun"
     var pendingFollowPlanetName: String?
@@ -121,8 +120,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.meshProvider = meshProvider
         self.navigationRenderHandler = navigationRenderHandler
 
-        trajectoryCameraTransition = .init(cameraState: cameraState)
-        navigationCameraTransition = .init(cameraState: cameraState)
+        navigationCameraMode = .init(cameraState: cameraState)
 
         self.device = meshProvider.device
         self.commandQueue = commandQueue
@@ -294,13 +292,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             resetNavigationArrivalTransition()
             updateCameraTransition(snapshot: snapshot,
                                    delta: delta)
-        } else if activeTransferOrbit != nil,
-                  !navigationRouteCoordinator.isNavigationActive,
-                  let earthPosition = snapshot?.worldPosition(ofPlanetNamed: "Earth") {
-            resetNavigationArrivalTransition()
-            trajectoryCameraTransition.applyOffsetForTransferOrbit(earthPosition: earthPosition)
-            updateCamera()
-        } else if let name = followingPlanetName,
+        } else if activeTransferOrbit != nil, // 4
+                  !navigationRouteCoordinator.isNavigationActive {
+            // Removing this breaks the pan gesture for the trajectory mode
+            return
+        } else if let name = followingPlanetName, // 5
                   let position = snapshot?.worldPosition(ofPlanetNamed: name) {
             resetNavigationArrivalTransition()
             cameraState.set(cameraTarget: position)
@@ -360,7 +356,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
-        trajectoryCameraTransition.resetTransferCameraTargetOffset()
         followingPlanetName = "Earth"
         pendingFollowPlanetName = nil
         startTransferOverviewAnimation(transferOrbit: transferOrbit,
@@ -397,7 +392,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         pendingSelectedPlanetName = nil
         activeTransferDestinationName = nil
         activeTransferOrbit = nil
-        trajectoryCameraTransition.resetTransferCameraTargetOffset()
     }
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
@@ -454,12 +448,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if navigationRouteCoordinator.isNavigationActive,
            navigationCameraFollowEnabled {
             setNavigationCameraFollowEnabled(false)
-        }
-
-        if activeTransferOrbit != nil,
-           let earthPosition = renderPreparationPipeline.latestSnapshot?
-            .worldPosition(ofPlanetNamed: "Earth") {
-            trajectoryCameraTransition.setOffsetForTransferOrbit(earthPosition: earthPosition)
         }
 
         pendingFollowPlanetName = nil
@@ -541,18 +529,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         return max(minDistance, framingRadius * 1.05)
-    }
-
-    func panTrajectoryCamera(byScreenTranslation translation: CGPoint,
-                             speed: Float) {
-        guard isTrajectoryModeActive else { return }
-        trajectoryCameraTransition.updateForPanTrajectory(
-            width: Float(metalView.bounds.width),
-            height: Float(metalView.bounds.height),
-            translation: translation,
-            speed: speed
-        )
-        updateCamera()
     }
 
     func distanceToFitPlanet(radius: Float) -> Float {

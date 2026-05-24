@@ -107,7 +107,6 @@ public struct UniverseView: UIViewRepresentable {
     }
 
     public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
-        coordinator.cameraController?.stop()
         coordinator.renderer = nil
     }
 }

@@ -80,7 +80,7 @@ extension MetalRenderer {
             return
         }
 
-        navigationCameraTransition.set(destinationPosition: destinationPosition)
+        navigationCameraMode.set(destinationPosition: destinationPosition)
         updateCamera()
     }
 
@@ -111,7 +111,6 @@ extension MetalRenderer {
 
         activeTransferDestinationName = name
         activeTransferOrbit = transferOrbit
-        trajectoryCameraTransition.resetTransferCameraTargetOffset()
 
         guard navigationRouteCoordinator.start(destinationName: name,
                                                planets: planets,
@@ -212,7 +211,7 @@ extension MetalRenderer {
 
         captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
 
-        viewMatrix = navigationCameraTransition
+        viewMatrix = navigationCameraMode
             .makeNavigationFollowViewMatrix(route: route,
                                             currentPoint: currentPoint,
                                             destinationPosition: destinationPosition,
@@ -267,7 +266,7 @@ extension MetalRenderer {
     private func applyLookAtCamera(position: SIMD3<Float>,
                                    target: SIMD3<Float>) {
 
-        viewMatrix = navigationCameraTransition
+        viewMatrix = navigationCameraMode
             .makeNavigationArrivalViewMatrix(position: position,
                                              target: target)
         updateProjectionMatrix()
