@@ -16,9 +16,7 @@ struct RootContainerView: View {
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
 
-    private let metalResources: MetalModuleResources
-    var navigationController: MetalModuleNavigationControlling { metalResources }
-    var transferOrbitController: MetalModuleTransferOrbitControlling { metalResources }
+    let metalResources: MetalModuleResources
 
     init() {
         metalResources = MetalModuleFactory.makeResources()
@@ -54,7 +52,7 @@ struct RootContainerView: View {
                                     makeStartNavigationButton(destinationName: selectedPlanet)
                                 }
                             case .navigation:
-                                makeNavigationControls(snapshot: navigationController.navigationSnapshot)
+                                makeNavigationControls(snapshot: metalResources.navigation.navigationSnapshot)
                             default:
                                 EmptyView()
                             }
@@ -70,8 +68,8 @@ struct RootContainerView: View {
         }
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
-        .animation(.default, value: navigationController.navigationSnapshot)
-        .onChange(of: navigationController.navigationSnapshot.state) { _, newState in
+        .animation(.default, value: metalResources.navigation.navigationSnapshot)
+        .onChange(of: metalResources.navigation.navigationSnapshot.state) { _, newState in
             guard objectsViewState == .navigation,
                   newState == .cancelled else {
                 return

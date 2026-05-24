@@ -6,6 +6,11 @@
 //
 
 extension MetalModuleResources: MetalModuleNavigationControlling {
+
+    public var navigation: any MetalModuleNavigationControlling {
+        self
+    }
+
     public func startNavigation(to destinationName: String) {
         renderer?.startNavigation(to: destinationName)
     }

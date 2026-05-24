@@ -6,6 +6,11 @@
 //
 
 extension MetalModuleResources: MetalModuleTransferOrbitControlling {
+
+    public var transferOrbit: any MetalModuleTransferOrbitControlling {
+        self
+    }
+
     public func showTransferOrbit(to destinationName: String) {
         renderer?.showTransferOrbit(to: destinationName)
     }
