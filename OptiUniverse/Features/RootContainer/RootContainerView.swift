@@ -54,10 +54,9 @@ struct RootContainerView: View {
                                 }
                             case .orbit:
                                 makeOrbitBackButton()
-                                // The feature is not ready for production #246
-//                                if let selectedPlanet = appEnvironment.selectedPlanet {
-//                                    makeStartNavigationButton(destinationName: selectedPlanet)
-//                                }
+                                if let selectedPlanet = appEnvironment.selectedPlanet {
+                                    makeStartNavigationButton(destinationName: selectedPlanet)
+                                }
                             case .navigation:
                                 makeNavigationControls(snapshot: navigationRenderHandler.navigationSnapshot)
                             default:
