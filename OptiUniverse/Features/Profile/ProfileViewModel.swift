@@ -5,9 +5,28 @@
 //  Created by max on 04.05.2026.
 //
 
-import Foundation
 import Observation
 import AuthenticationServices
+
+private struct SocialAuthRequest: Encodable {
+    let provider: String
+    let identityToken: String
+    let authorizationCode: String
+    let nonce: String
+    let firstName: String
+    let lastName: String
+    let email: String
+
+    enum CodingKeys: String, CodingKey {
+        case provider
+        case identityToken = "identity_token"
+        case authorizationCode = "authorization_code"
+        case nonce
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+    }
+}
 
 @Observable
 final class ProfileViewModel {
@@ -19,26 +38,6 @@ final class ProfileViewModel {
         let secondName: String?
         let authorizationCodeString: String?
         let tokenString: String?
-    }
-
-    private struct SocialAuthRequest: Encodable {
-        let provider: String
-        let identityToken: String
-        let authorizationCode: String
-        let nonce: String
-        let firstName: String
-        let lastName: String
-        let email: String
-
-        enum CodingKeys: String, CodingKey {
-            case provider
-            case identityToken = "identity_token"
-            case authorizationCode = "authorization_code"
-            case nonce
-            case firstName = "first_name"
-            case lastName = "last_name"
-            case email
-        }
     }
 
     enum AuthenticationError: LocalizedError {
