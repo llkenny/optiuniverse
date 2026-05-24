@@ -40,7 +40,7 @@ final class CameraCoordinator {
 
     private var displayLink: CADisplayLink?
 
-    var renderer: MetalRenderer?
+    weak var renderer: MetalRenderer?
 
     init(cameraState: CameraState) {
         self.cameraState = cameraState

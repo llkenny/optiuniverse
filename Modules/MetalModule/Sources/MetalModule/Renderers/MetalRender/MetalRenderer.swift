@@ -150,6 +150,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.cameraState = cameraState
     }
 
+    func dismantle() {
+        metalView.isPaused = true
+        metalView.delegate = nil
+        labelDelegate = nil
+    }
+
     private func prepare(viewSampleCount: Int) {
         metalView.device = device
         metalView.delegate = self
