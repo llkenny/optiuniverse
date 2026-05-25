@@ -9,7 +9,7 @@ import simd
 extension MetalRenderer {
 
     func startNavigation(to name: String) {
-        guard let snapshot = renderPreparationPipeline.latestSnapshot,
+        guard let snapshot = snapshotProvider.latestSnapshot,
               applyNavigation(named: name, snapshot: snapshot) else {
             pendingNavigationDestinationName = name
             cameraTransition = nil
@@ -29,7 +29,7 @@ extension MetalRenderer {
 
     func cancelNavigation() {
         let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-            ?? navigationRenderHandler.navigationSnapshot.destinationName
+            ?? navigationStatePublisher.navigationSnapshot.destinationName
             ?? activeTransferDestinationName
 
         navigationRouteCoordinator.cancel()
@@ -37,12 +37,12 @@ extension MetalRenderer {
         clearTransferOrbit()
         pendingNavigationDestinationName = nil
         navigationCameraFollowEnabled = true
-        navigationRenderHandler.navigationCameraFollowEnabled = true
+        navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
         guard let destinationName else { return }
 
         followingPlanetName = destinationName
-        guard let snapshot = renderPreparationPipeline.latestSnapshot,
+        guard let snapshot = snapshotProvider.latestSnapshot,
               startFollowAnimation(named: destinationName, snapshot: snapshot) else {
             pendingFollowPlanetName = destinationName
             cameraTransition = nil
@@ -59,7 +59,7 @@ extension MetalRenderer {
         }
 
         let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-            ?? navigationRenderHandler.navigationSnapshot.destinationName
+            ?? navigationStatePublisher.navigationSnapshot.destinationName
             ?? activeTransferDestinationName
 
         navigationRouteCoordinator.cancel()
@@ -67,14 +67,14 @@ extension MetalRenderer {
         clearTransferOrbit()
         pendingNavigationDestinationName = nil
         navigationCameraFollowEnabled = true
-        navigationRenderHandler.navigationCameraFollowEnabled = true
+        navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
         guard let destinationName else { return }
 
         followingPlanetName = destinationName
         pendingFollowPlanetName = nil
 
-        guard let destinationPosition = renderPreparationPipeline
+        guard let destinationPosition = snapshotProvider
             .latestSnapshot?
             .worldPosition(ofPlanetNamed: destinationName) else {
             return
@@ -86,11 +86,11 @@ extension MetalRenderer {
 
     func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
         navigationCameraFollowEnabled = isEnabled
-        navigationRenderHandler.navigationCameraFollowEnabled = isEnabled
+        navigationStatePublisher.publishNavigationCameraFollowEnabled(isEnabled)
         if isEnabled {
             cameraTransition = nil
         } else if let route = navigationRouteCoordinator.activeRouteForRendering,
-                  let snapshot = renderPreparationPipeline.latestSnapshot {
+                  let snapshot = snapshotProvider.latestSnapshot {
             startNavigationOverviewAnimation(route: route, snapshot: snapshot)
         }
     }

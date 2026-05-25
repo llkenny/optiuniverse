@@ -5,42 +5,10 @@
 //  Created by Codex on 25.04.2026.
 //
 
-import Foundation
 import simd
 
-// Immutable per-frame render input prepared before Metal command encoding.
-// Keeps async mesh/model lookup out of the synchronous render pass.
-struct PreparedRenderSnapshot: Sendable {
-    let frameID: UInt64
-    let simulationTime: Float
-    let planets: [PreparedPlanetRenderPacket]
-
-    nonisolated func planet(named name: String) -> PreparedPlanetRenderPacket? {
-        planets.first { $0.planetName == name }
-    }
-
-    nonisolated func framingRadius(ofPlanetNamed name: String) -> Float? {
-        planet(named: name)?.framingRadius
-    }
-
-    nonisolated func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
-        planet(named: name)?.worldPosition
-    }
-}
-
-struct PreparedPlanetRenderPacket: Sendable {
-    let planetName: String
-    let meshes: [LoadedMesh]
-    let baseModelMatrix: float4x4
-    let worldModelMatrix: float4x4
-    let normalizedScale: Float
-    let primaryMeshRadius: Float
-    let framingRadius: Float
-    let worldPosition: SIMD3<Float>
-}
-
 @MainActor
-final class RenderPreparationPipeline {
+final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
     private let modelLoader: ModelLoader
     private let planets: [Planet]
     private var meshCache: [String: [LoadedMesh]] = [:]

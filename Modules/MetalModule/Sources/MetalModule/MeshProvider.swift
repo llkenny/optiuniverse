@@ -11,7 +11,7 @@ import Metal
 /// Stores necessary dependencies and handles loading deduplication.
 /// Model loading logic is in ModelLoader.
 @MainActor
-public final class MeshProvider {
+final class MeshProvider {
 
     let modelLoader: ModelLoader
     let device: MTLDevice
@@ -19,7 +19,7 @@ public final class MeshProvider {
     private var isReady: Bool = false
     private var inFlightTask: Task<Void, Never>?
 
-    public init() {
+    init() {
         self.modelLoader = ModelLoader(resourceName: "high_resolution_solar_system")
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError()
@@ -27,7 +27,7 @@ public final class MeshProvider {
         self.device = device
     }
 
-    public func prepare() async {
+    func prepare() async {
         guard !isReady else { return }
 
         if let inFlightTask {

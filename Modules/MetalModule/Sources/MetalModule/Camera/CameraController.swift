@@ -7,13 +7,17 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     weak var renderer: MetalRenderer?
     private let cameraCoordniator: CameraCoordinator
 
-    init(cameraState: CameraState,
+    init(cameraCoordinator: CameraCoordinator,
          renderer: MetalRenderer?) {
 
         self.renderer = renderer
-        cameraCoordniator = .init(cameraState: cameraState)
-        cameraCoordniator.renderer = renderer
+        cameraCoordniator = cameraCoordinator
         super.init()
+    }
+
+    func dismantle() {
+        cameraCoordniator.deactivate(renderer: renderer)
+        renderer = nil
     }
 
     // MARK: - Gesture handling

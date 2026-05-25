@@ -7,14 +7,16 @@
 
 import SwiftUI
 import BaseModule
+import MetalModule
 
 @main
 struct OptiUniverseApp: App {
     @State private var appEnvironment = AppEnvironment()
+    @State private var metalResources = MetalModuleFactory.makeResources()
 
     var body: some Scene {
         WindowGroup {
-            RootContainerView()
+            RootContainerView(metalResources: metalResources)
                 .environment(appEnvironment)
         }
     }

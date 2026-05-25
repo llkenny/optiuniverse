@@ -11,16 +11,10 @@ internal import BaseModule
 
 public struct UniverseView: UIViewRepresentable {
     @Environment(AppEnvironment.self) private var appEnvironment
-    let meshProvider: MeshProvider
-    let orbitRenderHandler: OrbitRenderHandler
-    let navigationRenderHandler: NavigationRenderHandler
+    let resources: MetalModuleResources
 
-    public init(meshProvider: MeshProvider,
-                orbitRenderHandler: OrbitRenderHandler,
-                navigationRenderHandler: NavigationRenderHandler) {
-        self.meshProvider = meshProvider
-        self.orbitRenderHandler = orbitRenderHandler
-        self.navigationRenderHandler = navigationRenderHandler
+    public init(resources: MetalModuleResources) {
+        self.resources = resources
     }
 
     public func makeCoordinator() -> RendererCoordinator {
@@ -45,18 +39,11 @@ public struct UniverseView: UIViewRepresentable {
             mtkView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
         ])
 
-        let cameraState = CameraState()
-        // CameraController can live more than renderer,so it owns cameraState
-        let renderer = MetalRenderer(metalView: mtkView,
-                                     cameraState: cameraState,
-                                     meshProvider: meshProvider,
-                                     navigationRenderHandler: navigationRenderHandler)
+        let renderer = resources.makeRenderer(for: mtkView)
         context.coordinator.renderer = renderer
-        orbitRenderHandler.renderer = renderer
-        navigationRenderHandler.renderer = renderer
         renderer?.labelDelegate = context.coordinator
 
-        let cameraController = CameraController(cameraState: cameraState,
+        let cameraController = CameraController(cameraCoordinator: resources.cameraCoordinator,
                                                 renderer: renderer)
         context.coordinator.cameraController = cameraController
         setupGestures(mtkView: mtkView,
@@ -107,6 +94,9 @@ public struct UniverseView: UIViewRepresentable {
     }
 
     public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.cameraController?.dismantle()
+        coordinator.renderer?.dismantle()
+        coordinator.cameraController = nil
         coordinator.renderer = nil
     }
 }

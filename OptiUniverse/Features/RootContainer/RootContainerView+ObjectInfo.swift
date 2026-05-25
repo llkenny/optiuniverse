@@ -66,7 +66,7 @@ extension RootContainerView {
                                           navigationButtonTitle: "🎯 Route",
                                           isNavigable: destination.isNavigable,
                                           navigationButtonAction: {
-            orbitRenderHandler.showTransferOrbit(to: selectedPlanet)
+            metalResources.transferOrbit.showTransferOrbit(to: selectedPlanet)
             objectsViewState = .orbit
         })
         objectsViewState = .info(entity)

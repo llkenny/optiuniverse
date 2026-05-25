@@ -45,7 +45,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let transferOrbitRenderer: TransferOrbitRenderer
     let routeRenderer: RouteRenderer
     let navigationRouteCoordinator: NavigationRouteCoordinator
-    let renderPreparationPipeline: RenderPreparationPipeline
+    let snapshotProvider: SnapshotProvider
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
 
@@ -87,8 +87,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let navigationArrivalDistanceMultiplier: Float = 5.8
     var cameraTransition: CameraTransition?
 
-    let meshProvider: MeshProvider
-    let navigationRenderHandler: NavigationRenderHandlerProtocol
+    let navigationStatePublisher: NavigationRenderStatePublishing
     let planets: [Planet]
 
     var viewMatrix: float4x4 {
@@ -107,22 +106,21 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     init?(metalView: MTKView,
+          device: MTLDevice,
+          commandQueue: MTLCommandQueue,
           cameraState: CameraState,
-          meshProvider: MeshProvider,
-          navigationRenderHandler: NavigationRenderHandlerProtocol) {
-
-        guard let commandQueue = meshProvider.device.makeCommandQueue() else {
-            return nil
-        }
+          planets: [Planet],
+          snapshotProvider: SnapshotProvider,
+          navigationStatePublisher: NavigationRenderStatePublishing) {
 
         self.metalView = metalView
         self.cameraState = cameraState
-        self.meshProvider = meshProvider
-        self.navigationRenderHandler = navigationRenderHandler
+        self.navigationStatePublisher = navigationStatePublisher
+        self.snapshotProvider = snapshotProvider
 
         navigationCameraMode = .init(cameraState: cameraState)
 
-        self.device = meshProvider.device
+        self.device = device
         self.commandQueue = commandQueue
         let depthStencilDescriptor = MTLDepthStencilDescriptor()
         depthStencilDescriptor.depthCompareFunction = .less
@@ -132,17 +130,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         self.depthStencilState = depthStencilState
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
-        let planets = SolarSystemLoader.loadPlanets(from: "planets")
         self.planets = planets
         planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
         starsRenderer = StarsRenderer(device: device, sampleCount: viewSampleCount)
         transferOrbitRenderer = TransferOrbitRenderer(device: device, sampleCount: viewSampleCount)
         routeRenderer = RouteRenderer(device: device, sampleCount: viewSampleCount)
-        navigationRouteCoordinator = NavigationRouteCoordinator { [weak navigationRenderHandler] snapshot in
-            navigationRenderHandler?.navigationSnapshot = snapshot
+        navigationRouteCoordinator = NavigationRouteCoordinator { [weak navigationStatePublisher] snapshot in
+            navigationStatePublisher?.publishNavigationSnapshot(snapshot)
         }
-        renderPreparationPipeline = RenderPreparationPipeline(modelLoader: meshProvider.modelLoader,
-                                                              planets: planets)
 
         viewMatrix = matrix_identity_float4x4
         projectionMatrix = matrix_identity_float4x4
@@ -153,6 +148,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func setup(_ cameraState: CameraState) {
         self.cameraState = cameraState
+    }
+
+    func dismantle() {
+        metalView.isPaused = true
+        metalView.delegate = nil
+        labelDelegate = nil
     }
 
     private func prepare(viewSampleCount: Int) {
@@ -220,8 +221,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         // Advance simulation time and update camera before rendering so that
         // the view matches the planets' latest positions within the same frame.
         let delta = planetsRenderer.advanceTime()
-        renderPreparationPipeline.requestPreparation(simulationTime: planetsRenderer.currentTime)
-        let snapshot = renderPreparationPipeline.latestSnapshot
+        snapshotProvider.requestPreparation(simulationTime: planetsRenderer.currentTime)
+        let snapshot = snapshotProvider.latestSnapshot
 
         update(snapshot: snapshot)
         navigationRouteCoordinator.update()
@@ -280,7 +281,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if navigationRouteCoordinator.state == .completed,
            let snapshot {
             navigationCameraFollowEnabled = true
-            navigationRenderHandler.navigationCameraFollowEnabled = true
+            navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
             updateNavigationArrivalCamera(snapshot: snapshot,
                                           delta: delta)
         } else if navigationRouteCoordinator.isNavigationActive,
@@ -323,7 +324,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         resetNavigationArrivalTransition()
         followingPlanetName = name
 
-        guard let snapshot = renderPreparationPipeline.latestSnapshot,
+        guard let snapshot = snapshotProvider.latestSnapshot,
               startFollowAnimation(named: name, snapshot: snapshot) else {
             pendingFollowPlanetName = name
             cameraTransition = nil
@@ -336,7 +337,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func showTransferOrbit(to name: String) {
         navigationRouteCoordinator.cancel()
         resetNavigationArrivalTransition()
-        guard let snapshot = renderPreparationPipeline.latestSnapshot,
+        guard let snapshot = snapshotProvider.latestSnapshot,
               applySelectedPlanet(named: name, snapshot: snapshot) else {
             pendingSelectedPlanetName = name
             cameraTransition = nil
@@ -522,7 +523,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let minDistance = cameraState.minDistance
 
         guard let followingPlanetName,
-              let framingRadius = renderPreparationPipeline
+              let framingRadius = snapshotProvider
             .latestSnapshot?
             .framingRadius(ofPlanetNamed: followingPlanetName) else {
             return minDistance
@@ -549,7 +550,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if navigationRouteCoordinator.isNavigationActive,
            navigationCameraFollowEnabled,
            let route = navigationRouteCoordinator.activeRouteForRendering,
-           let framingRadius = renderPreparationPipeline
+           let framingRadius = snapshotProvider
             .latestSnapshot?
             .framingRadius(ofPlanetNamed: route.destinationName) {
             let frontClearance = max(cameraState.cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
@@ -558,7 +559,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
 
         guard let followingPlanetName,
-              let framingRadius = renderPreparationPipeline
+              let framingRadius = snapshotProvider
             .latestSnapshot?
             .framingRadius(ofPlanetNamed: followingPlanetName) else {
             return CameraFit.defaultNearPlane
@@ -570,7 +571,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func farPlaneDistance() -> Float {
-        guard let snapshot = renderPreparationPipeline.latestSnapshot else {
+        guard let snapshot = snapshotProvider.latestSnapshot else {
             return CameraFit.defaultFarPlane
         }
 
