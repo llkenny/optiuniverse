@@ -52,15 +52,17 @@ public final class MetalModuleResources {
             return nil
         }
 
-        let renderer = MetalRenderer(metalView: metalView,
-                                     device: meshProvider.device,
-                                     commandQueue: commandQueue,
-                                     cameraState: cameraState,
-                                     planets: planets,
-                                     snapshotProvider: snapshotProvider,
-                                     navigationStatePublisher: self)
+        guard let renderer = MetalRenderer(metalView: metalView,
+                                           device: meshProvider.device,
+                                           commandQueue: commandQueue,
+                                           cameraState: cameraState,
+                                           planets: planets,
+                                           snapshotProvider: snapshotProvider,
+                                           navigationStatePublisher: self) else {
+            return nil
+        }
         self.renderer = renderer
-        cameraCoordinator.renderer = renderer
+        cameraCoordinator.activate(renderer: renderer)
         return renderer
     }
 }

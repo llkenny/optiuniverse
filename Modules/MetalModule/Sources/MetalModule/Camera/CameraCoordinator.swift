@@ -48,8 +48,18 @@ final class CameraCoordinator {
         orbitMode = .init(cameraState: cameraState)
         trajectoryMode = .init(cameraState: cameraState)
         navigationMode = .init(cameraState: cameraState)
+    }
 
+    func activate(renderer: MetalRenderer) {
+        self.renderer = renderer
         startLoop()
+    }
+
+    func deactivate(renderer: MetalRenderer?) {
+        if self.renderer === renderer || renderer == nil {
+            self.renderer = nil
+            stopLoop()
+        }
     }
 
     func makeTranslation(with value: CGPoint) {
@@ -77,8 +87,15 @@ final class CameraCoordinator {
     // MARK: Update loop
 
     private func startLoop() {
+        guard displayLink == nil else { return }
+
         displayLink = CADisplayLink(target: self, selector: #selector(step(_:)))
         displayLink?.add(to: .main, forMode: .common)
+    }
+
+    private func stopLoop() {
+        displayLink?.invalidate()
+        displayLink = nil
     }
 
     @objc private func step(_ link: CADisplayLink) {

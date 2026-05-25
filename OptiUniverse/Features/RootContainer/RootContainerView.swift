@@ -15,7 +15,7 @@ struct RootContainerView: View {
     @Environment(AppEnvironment.self) var appEnvironment
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
-    unowned let metalResources: MetalModuleResources
+    let metalResources: MetalModuleResources
 
     init(metalResources: MetalModuleResources) {
         self.metalResources = metalResources
