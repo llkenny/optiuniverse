@@ -6,11 +6,12 @@
 //
 
 @MainActor
+// TODO: Rename to NavigationControllerProtocol
 public protocol MetalModuleNavigationControlling: AnyObject {
     var navigationSnapshot: NavigationRouteSnapshot { get }
     var navigationCameraFollowEnabled: Bool { get }
 
-    func startNavigation(to destinationName: String)
+    func startNavigation(to name: String)
     func pauseNavigation()
     func resumeNavigation()
     func cancelNavigation()

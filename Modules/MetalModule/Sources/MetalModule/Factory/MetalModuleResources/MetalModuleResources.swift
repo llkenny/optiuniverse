@@ -18,6 +18,7 @@ public final class MetalModuleResources {
     let cameraState: CameraState
     let cameraCoordinator: CameraCoordinator
     let snapshotProvider: SnapshotProvider
+    @ObservationIgnored private(set) var navigationController: NavigationController!
 
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
         didSet {
@@ -40,7 +41,17 @@ public final class MetalModuleResources {
                                                               planets: planets)
         cameraState = CameraState()
         cameraCoordinator = CameraCoordinator(cameraState: cameraState)
-        snapshotProvider = SnapshotProvider(snapshotSource: renderPreparationPipeline)
+        snapshotProvider = SnapshotProvider(cameraState: cameraState,
+                                            snapshotSource: renderPreparationPipeline)
+        navigationController = NavigationController(
+            navigationStatePublisher: self,
+            snapshotProvider: snapshotProvider,
+            cameraState: cameraState,
+            planets: planets,
+            viewportSize: { [weak self] in
+                self?.renderer?.metalView.bounds.size ?? .zero
+            }
+        )
     }
 
     public func prepare() async {
@@ -58,10 +69,13 @@ public final class MetalModuleResources {
                                            cameraState: cameraState,
                                            planets: planets,
                                            snapshotProvider: snapshotProvider,
-                                           navigationStatePublisher: self) else {
+                                           navigationController: navigationController) else {
             return nil
         }
         self.renderer = renderer
+        navigationController.followPlanet = { [weak renderer] name in
+            renderer?.followNavigationDestination(named: name)
+        }
         cameraCoordinator.activate(renderer: renderer)
         return renderer
     }

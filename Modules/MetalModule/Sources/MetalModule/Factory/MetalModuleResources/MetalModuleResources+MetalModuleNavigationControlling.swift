@@ -5,35 +5,10 @@
 //  Created by max on 24.05.2026.
 //
 
-extension MetalModuleResources: MetalModuleNavigationControlling {
+extension MetalModuleResources {
 
     public var navigation: any MetalModuleNavigationControlling {
-        self
-    }
-
-    public func startNavigation(to destinationName: String) {
-        renderer?.startNavigation(to: destinationName)
-    }
-
-    public func pauseNavigation() {
-        renderer?.pauseNavigation()
-    }
-
-    public func resumeNavigation() {
-        renderer?.resumeNavigation()
-    }
-
-    public func cancelNavigation() {
-        renderer?.cancelNavigation()
-    }
-
-    public func doneNavigation() {
-        renderer?.doneNavigation()
-    }
-
-    public func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
-        navigationCameraFollowEnabled = isEnabled
-        renderer?.setNavigationCameraFollowEnabled(isEnabled)
+        navigationController
     }
 
     func scheduleDoneNavigation() {
@@ -57,5 +32,9 @@ extension MetalModuleResources: MetalModuleNavigationControlling {
                 self.doneNavigation()
             }
         }
+    }
+
+    private func doneNavigation() {
+        navigationController.doneNavigation()
     }
 }
