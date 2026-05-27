@@ -209,20 +209,31 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         // TODO: Get data from SnapshotProvider
         update(snapshot: snapshot)
-        let navigationCameraUpdate = navigationController.update(snapshot: snapshot,
-                                                                  delta: delta)
-        updateCamera(snapshot: snapshot,
-                     delta: delta,
-                     navigationCameraUpdate: navigationCameraUpdate)
+        navigationController.update(snapshot: snapshot,
+                                    delta: delta)
+        if !navigationController.controlsCamera {
+            updateCamera(snapshot: snapshot,
+                         delta: delta)
+        }
+        let cameraSnapshot = snapshotProvider.makeCameraSnapshot(
+            viewportSize: metalView.bounds.size,
+            legacyNearPlane: nearPlaneDistance(),
+            legacyFarPlane: farPlaneDistance(),
+            navigationProjectionState: navigationController.projectionState(snapshot: snapshot)
+        )
+        projectionMatrix = cameraSnapshot.projectionMatrix
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,
                               hdrTexture: hdrTexture,
                               depthTexture: depthTexture,
-                              snapshot: snapshot,
-                              routes: SceneRouteRenderState(
-                                transferOrbit: activeTransferOrbit,
-                                navigation: navigationController.routeRenderState
+                              state: SceneRenderState(
+                                cameraSnapshot: cameraSnapshot,
+                                snapshot: snapshot,
+                                routes: SceneRouteRenderState(
+                                    transferOrbit: activeTransferOrbit,
+                                    navigation: navigationController.routeRenderState
+                                )
                               ))
             drawSecondPass(postfxMsaaTexture: postfxMsaaTexture,
                            drawable: drawable,
@@ -249,24 +260,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func updateCamera(snapshot: PreparedRenderSnapshot?,
-                              delta: Float,
-                              navigationCameraUpdate: NavigationCameraUpdate) {
-        switch navigationCameraUpdate {
-        case .customLookAt, .noCameraChange:
-            updateProjectionMatrix()
-            return
-        case .standardCameraState:
-            updateCamera()
-            return
-        case .inactive:
-            break
-        }
-
+                              delta: Float) {
         if cameraTransition != nil {
             updateCameraTransition(snapshot: snapshot,
                                    delta: delta)
-        } else if activeTransferOrbit != nil, // 4
-                  !navigationController.isNavigationActive {
+        } else if activeTransferOrbit != nil { // 4
             // Removing this breaks the pan gesture for the trajectory mode
             return
         } else if let name = followingPlanetName, // 5
@@ -525,10 +523,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func nearPlaneDistance() -> Float {
-        if let navigationNearPlaneDistance = navigationController.navigationNearPlaneDistance() {
-            return navigationNearPlaneDistance
-        }
-
         guard let followingPlanetName,
               let framingRadius = snapshotProvider
             .latestSnapshot?
@@ -551,11 +545,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                          snapshot: snapshot) {
             return max(CameraFit.defaultFarPlane,
                        cameraState.cameraDistance + transferRadius * 1.15)
-        }
-
-        if let routeRadius = navigationController.routeProjectionRadius(snapshot: snapshot) {
-            return max(CameraFit.defaultFarPlane,
-                       cameraState.cameraDistance + routeRadius * 1.15)
         }
 
         return CameraFit.defaultFarPlane

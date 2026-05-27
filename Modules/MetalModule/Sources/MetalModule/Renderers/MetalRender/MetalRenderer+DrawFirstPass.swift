@@ -14,6 +14,12 @@ struct SceneRouteRenderState {
     let navigation: NavigationRouteRenderState
 }
 
+struct SceneRenderState {
+    let cameraSnapshot: SnapshotProvider.CameraSnapshot
+    let snapshot: PreparedRenderSnapshot?
+    let routes: SceneRouteRenderState
+}
+
 extension MetalRenderer {
     enum DrawFirstPassError: Error {
         case noGeometryCommandBuffer, noRenderEncoder
@@ -22,8 +28,7 @@ extension MetalRenderer {
     func drawFirstPass(msaaColorTexture: MTLTexture,
                        hdrTexture: MTLTexture,
                        depthTexture: MTLTexture,
-                       snapshot: PreparedRenderSnapshot?,
-                       routes: SceneRouteRenderState) throws(DrawFirstPassError) {
+                       state: SceneRenderState) throws(DrawFirstPassError) {
 
         guard let geometryCommandBuffer = commandQueue
             .makeCommandBuffer() else {
@@ -40,33 +45,33 @@ extension MetalRenderer {
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setCullMode(.none)
 
-        let renderOrigin = cameraState.cameraTarget
-        let renderViewMatrix = cameraState.makeRenderViewMatrix()
+        let renderOrigin = state.cameraSnapshot.sceneOrigin
+        let renderViewMatrix = state.cameraSnapshot.renderViewMatrix
 
-        let configuration = PlanetRenderConfiguration(snapshot: snapshot,
+        let configuration = PlanetRenderConfiguration(snapshot: state.snapshot,
                                                       renderEncoder: renderEncoder,
                                                       viewMatrix: renderViewMatrix,
-                                                      projectionMatrix: projectionMatrix,
-                                                      cameraPosition: cameraState.cameraOffset,
+                                                      projectionMatrix: state.cameraSnapshot.projectionMatrix,
+                                                      cameraPosition: state.cameraSnapshot.cameraPosition,
                                                       sceneOrigin: renderOrigin,
-                                                      viewportSize: metalView.bounds.size,
+                                                      viewportSize: state.cameraSnapshot.viewportSize,
                                                       cartoonShaderIntensity: min(max(cartoonShaderIntensity, 0), 1))
         starsRenderer.render(renderEncoder: renderEncoder,
                              viewMatrix: renderViewMatrix,
-                             projectionMatrix: projectionMatrix,
+                             projectionMatrix: state.cameraSnapshot.projectionMatrix,
                              sceneOrigin: renderOrigin)
-        transferOrbitRenderer.render(transferOrbit: routes.transferOrbit,
+        transferOrbitRenderer.render(transferOrbit: state.routes.transferOrbit,
                                      renderEncoder: renderEncoder,
                                      viewMatrix: renderViewMatrix,
-                                     projectionMatrix: projectionMatrix,
+                                     projectionMatrix: state.cameraSnapshot.projectionMatrix,
                                      sceneOrigin: renderOrigin)
         routeRenderer.render(configuration: RouteRenderConfiguration(
-            state: routes.navigation,
+            state: state.routes.navigation,
             renderEncoder: renderEncoder,
             viewMatrix: renderViewMatrix,
-            projectionMatrix: projectionMatrix,
+            projectionMatrix: state.cameraSnapshot.projectionMatrix,
             sceneOrigin: renderOrigin,
-            viewportSize: metalView.bounds.size
+            viewportSize: state.cameraSnapshot.viewportSize
         ))
         // Render the remaining planets.
         planetsRenderer.renderPlanets(configuration: configuration)

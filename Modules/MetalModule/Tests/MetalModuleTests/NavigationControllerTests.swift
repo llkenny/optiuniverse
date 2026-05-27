@@ -15,6 +15,17 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerStartCommitsOneNavigationCameraTransaction() {
+    let fixture = NavigationControllerFixture()
+    let initialRevision = fixture.cameraState.revision
+
+    fixture.controller.startNavigation(to: "Mars")
+
+    #expect(fixture.cameraCoordinator.isNavigationCameraActive)
+    #expect(fixture.cameraState.revision == initialRevision + 1)
+}
+
+@MainActor
 @Test func navigationControllerCancelFollowsDestination() {
     let fixture = NavigationControllerFixture()
     var followedPlanets: [String] = []
@@ -33,11 +44,11 @@ import Testing
 
     fixture.controller.startNavigation(to: "Mars")
     fixture.controller.setNavigationCameraFollowEnabled(false)
-    let cameraUpdate = fixture.controller.update(snapshot: fixture.snapshot,
-                                                 delta: 0.1)
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
 
     #expect(fixture.publisher.navigationCameraFollowEnabled == false)
-    #expect(cameraUpdate == .standardCameraState)
+    #expect(fixture.cameraCoordinator.isNavigationCameraActive)
 }
 
 @MainActor
@@ -46,14 +57,19 @@ private struct NavigationControllerFixture {
     let publisher = FakeNavigationStatePublisher()
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
+    let cameraState: CameraState
+    let cameraCoordinator: CameraCoordinator
     let controller: NavigationController
 
     init() {
         source = FakeNavigationSnapshotSource(latestSnapshot: snapshot)
-        provider = SnapshotProvider(snapshotSource: source)
+        cameraState = CameraState()
+        provider = SnapshotProvider(cameraState: cameraState,
+                                    snapshotSource: source)
+        cameraCoordinator = CameraCoordinator(cameraState: cameraState)
         controller = NavigationController(navigationStatePublisher: publisher,
                                           snapshotProvider: provider,
-                                          cameraState: CameraState(),
+                                          cameraCoordinator: cameraCoordinator,
                                           planets: testPlanets,
                                           viewportSize: { CGSize(width: 390, height: 844) })
     }

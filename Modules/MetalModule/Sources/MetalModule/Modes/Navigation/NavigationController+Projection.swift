@@ -8,19 +8,16 @@
 import simd
 
 extension NavigationController {
-    func navigationNearPlaneDistance() -> Float? {
-        guard navigationRouteCoordinator.isNavigationActive,
-              navigationCameraFollowEnabled,
-              let route = navigationRouteCoordinator.activeRouteForRendering,
-              let framingRadius = snapshotProvider
-                .latestSnapshot?
-                .framingRadius(ofPlanetNamed: route.destinationName) else {
+    func projectionState(snapshot: PreparedRenderSnapshot?) -> NavigationCameraProjectionState? {
+        guard let route = navigationRouteCoordinator.activeRouteForRendering else {
             return nil
         }
 
-        let frontClearance = max(cameraState.cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
-        return min(CameraFit.defaultNearPlane,
-                   max(CameraFit.minimumNearPlane, frontClearance * 0.5))
+        return NavigationCameraProjectionState(
+            destinationName: route.destinationName,
+            usesFollowNearPlane: navigationRouteCoordinator.isNavigationActive && navigationCameraFollowEnabled,
+            routeProjectionRadius: snapshot.flatMap(routeProjectionRadius(snapshot:))
+        )
     }
 
     func routeProjectionRadius(snapshot: PreparedRenderSnapshot) -> Float? {
@@ -32,7 +29,7 @@ extension NavigationController {
 
         func include(center: SIMD3<Float>, radius includedRadius: Float) {
             radius = max(radius,
-                         simd_distance(cameraState.cameraTarget, center) + max(includedRadius, 0))
+                         simd_distance(cameraCoordinator.cameraTarget, center) + max(includedRadius, 0))
         }
 
         for point in route.points {
@@ -96,7 +93,7 @@ extension NavigationController {
     }
 
     func distanceToFitPlanet(radius: Float) -> Float {
-        guard radius > 0 else { return max(cameraState.cameraDistance, CameraFit.defaultNearPlane) }
+        guard radius > 0 else { return max(cameraCoordinator.cameraDistance, CameraFit.defaultNearPlane) }
 
         let size = viewportSize()
         let width = max(Float(size.width), 1)

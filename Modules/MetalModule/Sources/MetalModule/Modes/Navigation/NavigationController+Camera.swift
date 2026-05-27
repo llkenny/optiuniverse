@@ -9,30 +9,27 @@ import simd
 
 extension NavigationController {
     func updateNavigationCamera(snapshot: PreparedRenderSnapshot,
-                                delta: Float) -> NavigationCameraUpdate {
+                                delta: Float) {
         if navigationRouteCoordinator.state == .completed {
             navigationCameraFollowEnabled = true
             navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
             updateNavigationArrivalCamera(snapshot: snapshot,
                                           delta: delta)
-            return .customLookAt
+            return
         }
 
         if navigationRouteCoordinator.isNavigationActive,
            navigationCameraFollowEnabled {
             resetNavigationArrivalTransition()
             updateNavigationFollowCamera(snapshot: snapshot)
-            return .customLookAt
+            return
         }
 
         if cameraTransition != nil {
             resetNavigationArrivalTransition()
             updateCameraTransition(snapshot: snapshot,
                                    delta: delta)
-            return .standardCameraState
         }
-
-        return navigationRouteCoordinator.isNavigationActive ? .noCameraChange : .inactive
     }
 
     func startNavigationOverviewAnimation(route: NavigationRoute,
@@ -43,11 +40,12 @@ extension NavigationController {
         }
 
         cameraTransition = CameraTransition(
-            start: cameraState.currentCameraTransitionFrame,
+            start: cameraCoordinator.currentCameraTransitionFrame,
             destination: .fixed(target: framing.center,
                                 distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
-            duration: cameraState.cameraFollowTransitionDuration
+            duration: cameraCoordinator.cameraFollowTransitionDuration
         )
+        cameraCoordinator.beginNavigationCameraControl(routeID: route.id)
     }
 
     func captureNavigationCameraTrailingOffset(route: NavigationRoute,
@@ -78,10 +76,10 @@ extension NavigationController {
         }
 
         captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
-        _ = navigationCameraMode.makeNavigationFollowViewMatrix(route: route,
-                                                                currentPoint: currentPoint,
-                                                                destinationPosition: destinationPosition,
-                                                                trailingOffset: navigationCameraTrailingOffset)
+        cameraCoordinator.commitNavigationFollow(route: route,
+                                                 currentPoint: currentPoint,
+                                                 destinationPosition: destinationPosition,
+                                                 trailingOffset: navigationCameraTrailingOffset)
     }
 
     func updateNavigationArrivalCamera(snapshot: PreparedRenderSnapshot,
@@ -95,13 +93,14 @@ extension NavigationController {
         let arrivalDistance = distanceToFitPlanet(radius: destinationRadius)
         * navigationArrivalDistanceMultiplier
         if navigationArrivalRouteID != route.id {
-            let existingDirection = simd_length_squared(cameraState.cameraPosition - destinationPosition) > 0.000001
-            ? normalize(cameraState.cameraPosition - destinationPosition)
+            let currentOffset = cameraCoordinator.cameraPosition - destinationPosition
+            let existingDirection = simd_length_squared(currentOffset) > 0.000001
+            ? normalize(currentOffset)
             : SIMD3<Float>(0, 0, 1)
 
             navigationArrivalRouteID = route.id
-            navigationArrivalStartCameraPosition = cameraState.cameraPosition
-            navigationArrivalStartTarget = cameraState.cameraTarget
+            navigationArrivalStartCameraPosition = cameraCoordinator.cameraPosition
+            navigationArrivalStartTarget = cameraCoordinator.cameraTarget
             navigationArrivalTargetOffset = existingDirection * arrivalDistance
             navigationArrivalProgress = 0
         }
@@ -114,8 +113,9 @@ extension NavigationController {
         let position = navigationArrivalStartCameraPosition
         + (finalPosition - navigationArrivalStartCameraPosition) * easedProgress
 
-        _ = navigationCameraMode.makeNavigationArrivalViewMatrix(position: position,
-                                                                 target: target)
+        cameraCoordinator.commitNavigationArrival(route: route,
+                                                  position: position,
+                                                  target: target)
     }
 
     func resetNavigationArrivalTransition() {
@@ -135,8 +135,9 @@ extension NavigationController {
         }
 
         cameraTransition = transition.isComplete ? nil : transition
-        cameraState.set(cameraTarget: frame.target)
-        cameraState.set(cameraDistance: frame.distance)
+        guard let routeID = navigationRouteCoordinator.activeRouteForRendering?.id else { return }
+        cameraCoordinator.commitNavigationTransition(routeID: routeID,
+                                                     frame: frame)
     }
 
     func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,

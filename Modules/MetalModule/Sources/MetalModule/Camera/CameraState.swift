@@ -9,6 +9,28 @@ import simd
 
 /// Owns canonical camera variables and camera revision metadata
 final class CameraState {
+    struct Transaction {
+        var cameraTarget: SIMD3<Float>?
+        var cameraPosition: SIMD3<Float>?
+        var cameraDistance: Float?
+        var cameraUp: SIMD3<Float>?
+        var cameraOffset: SIMD3<Float>?
+        var cameraOrientation: simd_quatf?
+
+        init(cameraTarget: SIMD3<Float>? = nil,
+             cameraPosition: SIMD3<Float>? = nil,
+             cameraDistance: Float? = nil,
+             cameraUp: SIMD3<Float>? = nil,
+             cameraOffset: SIMD3<Float>? = nil,
+             cameraOrientation: simd_quatf? = nil) {
+            self.cameraTarget = cameraTarget
+            self.cameraPosition = cameraPosition
+            self.cameraDistance = cameraDistance
+            self.cameraUp = cameraUp
+            self.cameraOffset = cameraOffset
+            self.cameraOrientation = cameraOrientation
+        }
+    }
 
     let cameraFollowTransitionDuration: Float = 1.1
 
@@ -28,6 +50,7 @@ final class CameraState {
     private(set) var cameraPosition = SIMD3<Float>(0, 0, 0)
     private(set) var cameraUp = SIMD3<Float>(0, 1, 0)
     private(set) var cameraOffset = SIMD3<Float>(0, 0, 3)
+    private(set) var revision = 0
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
         .init(target: cameraTarget,
@@ -38,28 +61,56 @@ final class CameraState {
 
     func set(cameraTarget: SIMD3<Float>) {
         self.cameraTarget = cameraTarget
+        revision += 1
     }
 
     func set(cameraPosition: SIMD3<Float>) {
         self.cameraPosition = cameraPosition
+        revision += 1
     }
 
     // MARK: Derivatives
     func set(cameraDistance: Float) {
         self.cameraDistance = cameraDistance
+        revision += 1
     }
 
     func set(cameraUp: SIMD3<Float>) {
         self.cameraUp = cameraUp
+        revision += 1
     }
 
     func set(cameraOffset: SIMD3<Float>) {
         self.cameraOffset = cameraOffset
+        revision += 1
     }
 
     // Probable deriative too
     func set(cameraOrientation: simd_quatf) {
         self.cameraOrientation = cameraOrientation
+        revision += 1
+    }
+
+    func commit(_ transaction: Transaction) {
+        if let cameraTarget = transaction.cameraTarget {
+            self.cameraTarget = cameraTarget
+        }
+        if let cameraPosition = transaction.cameraPosition {
+            self.cameraPosition = cameraPosition
+        }
+        if let cameraDistance = transaction.cameraDistance {
+            self.cameraDistance = cameraDistance
+        }
+        if let cameraUp = transaction.cameraUp {
+            self.cameraUp = cameraUp
+        }
+        if let cameraOffset = transaction.cameraOffset {
+            self.cameraOffset = cameraOffset
+        }
+        if let cameraOrientation = transaction.cameraOrientation {
+            self.cameraOrientation = cameraOrientation
+        }
+        revision += 1
     }
 
     // MARK: Common

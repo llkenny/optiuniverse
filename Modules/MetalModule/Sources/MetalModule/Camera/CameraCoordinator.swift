@@ -6,7 +6,9 @@
 //
 
 import CoreFoundation
+import Foundation
 import QuartzCore
+import simd
 
 /*
  Owns camera mode priority, ownership, cancellation, and ticking.
@@ -39,6 +41,7 @@ final class CameraCoordinator {
     private let navigationMode: NavigationCameraMode
 
     private var displayLink: CADisplayLink?
+    private(set) var navigationCameraOwnerRouteID: UUID?
 
     weak var renderer: MetalRenderer?
 
@@ -47,7 +50,39 @@ final class CameraCoordinator {
         zoomMode = .init(cameraState: cameraState)
         orbitMode = .init(cameraState: cameraState)
         trajectoryMode = .init(cameraState: cameraState)
-        navigationMode = .init(cameraState: cameraState)
+        navigationMode = .init()
+    }
+
+    var isNavigationCameraActive: Bool {
+        navigationCameraOwnerRouteID != nil
+    }
+
+    var cameraRevision: Int {
+        cameraState.revision
+    }
+
+    var currentCameraTransitionFrame: CameraTransition.Frame {
+        cameraState.currentCameraTransitionFrame
+    }
+
+    var cameraFollowTransitionDuration: Float {
+        cameraState.cameraFollowTransitionDuration
+    }
+
+    var cameraPosition: SIMD3<Float> {
+        cameraState.cameraPosition
+    }
+
+    var cameraTarget: SIMD3<Float> {
+        cameraState.cameraTarget
+    }
+
+    var cameraDistance: Float {
+        cameraState.cameraDistance
+    }
+
+    var cameraUp: SIMD3<Float> {
+        cameraState.cameraUp
     }
 
     func activate(renderer: MetalRenderer) {
@@ -77,11 +112,69 @@ final class CameraCoordinator {
         zoomMode.addInertia(velocity: velocity)
     }
 
+    func beginNavigationCameraControl(routeID: UUID) {
+        navigationCameraOwnerRouteID = routeID
+    }
+
+    func suspendNavigationFollow(routeID: UUID?) {
+        guard routeID == nil || navigationCameraOwnerRouteID == routeID else { return }
+        navigationCameraOwnerRouteID = nil
+    }
+
+    func endNavigationCameraControl(routeID: UUID?) {
+        guard routeID == nil || navigationCameraOwnerRouteID == routeID else { return }
+        navigationCameraOwnerRouteID = nil
+    }
+
+    func commitNavigationFollow(route: NavigationRoute,
+                                currentPoint: SIMD3<Float>,
+                                destinationPosition: SIMD3<Float>,
+                                trailingOffset: SIMD3<Float>) {
+        navigationCameraOwnerRouteID = route.id
+        cameraState.commit(navigationMode.makeNavigationFollowTransaction(currentPoint: currentPoint,
+                                                                          destinationPosition: destinationPosition,
+                                                                          trailingOffset: trailingOffset))
+    }
+
+    func commitNavigationArrival(route: NavigationRoute,
+                                 position: SIMD3<Float>,
+                                 target: SIMD3<Float>) {
+        navigationCameraOwnerRouteID = route.id
+        cameraState.commit(navigationMode.makeNavigationArrivalTransaction(position: position,
+                                                                          target: target))
+    }
+
+    func commitNavigationTransition(routeID: UUID,
+                                    frame: CameraTransition.Frame) {
+        navigationCameraOwnerRouteID = routeID
+        cameraState.normalizeCameraOrientation()
+        let cameraOffset = cameraState.cameraOrientation.act(SIMD3<Float>(0, 0, frame.distance))
+        let cameraPosition = cameraOffset + frame.target
+        let cameraUp = cameraState.cameraOrientation.act(SIMD3<Float>(0, 1, 0))
+
+        cameraState.commit(CameraState.Transaction(cameraTarget: frame.target,
+                                                   cameraPosition: cameraPosition,
+                                                   cameraDistance: frame.distance,
+                                                   cameraUp: cameraUp,
+                                                   cameraOffset: cameraOffset))
+    }
+
+    func commitNavigationDestination(destinationPosition: SIMD3<Float>) {
+        guard let transaction = navigationMode.makeDestinationTransaction(destinationPosition: destinationPosition,
+                                                                         cameraPosition: cameraState.cameraPosition,
+                                                                         cameraUp: cameraState.cameraUp) else {
+            return
+        }
+        cameraState.commit(transaction)
+    }
+
     private func update(delta: Float) {
         zoomMode.update(delta: delta)
         orbitMode.update(delta: delta)
 
-        renderer?.updateCamera()
+        if !isNavigationCameraActive {
+            renderer?.updateCamera()
+        }
     }
 
     // MARK: Update loop

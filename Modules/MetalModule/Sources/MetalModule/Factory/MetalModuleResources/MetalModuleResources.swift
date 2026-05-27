@@ -46,7 +46,7 @@ public final class MetalModuleResources {
         navigationController = NavigationController(
             navigationStatePublisher: self,
             snapshotProvider: snapshotProvider,
-            cameraState: cameraState,
+            cameraCoordinator: cameraCoordinator,
             planets: planets,
             viewportSize: { [weak self] in
                 self?.renderer?.metalView.bounds.size ?? .zero

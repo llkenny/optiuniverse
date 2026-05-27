@@ -36,8 +36,10 @@ extension NavigationController: MetalModuleNavigationControlling {
         ?? navigationStatePublisher.navigationSnapshot.destinationName
 
         navigationRouteCoordinator.cancel()
+        cameraCoordinator.endNavigationCameraControl(routeID: nil)
         resetNavigationArrivalTransition()
         pendingNavigationDestinationName = nil
+        cameraTransition = nil
         navigationCameraFollowEnabled = true
         navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
@@ -56,8 +58,10 @@ extension NavigationController: MetalModuleNavigationControlling {
         ?? navigationStatePublisher.navigationSnapshot.destinationName
 
         navigationRouteCoordinator.cancel()
+        cameraCoordinator.endNavigationCameraControl(routeID: nil)
         resetNavigationArrivalTransition()
         pendingNavigationDestinationName = nil
+        cameraTransition = nil
         navigationCameraFollowEnabled = true
         navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
@@ -84,6 +88,7 @@ extension NavigationController: MetalModuleNavigationControlling {
                                                planets: planets,
                                                snapshot: snapshot),
               let route = navigationRouteCoordinator.route else {
+            cameraCoordinator.endNavigationCameraControl(routeID: nil)
             followPlanet?(name)
             return true
         }

@@ -9,21 +9,13 @@ import CoreGraphics
 import Foundation
 import simd
 
-enum NavigationCameraUpdate: Equatable {
-    case inactive
-    case customLookAt
-    case standardCameraState
-    case noCameraChange
-}
-
 /// Owns route navigation state and navigation-specific camera behavior.
 @MainActor
 final class NavigationController {
     let navigationStatePublisher: NavigationRenderStatePublishing
     let navigationRouteCoordinator: NavigationRouteCoordinator
     unowned let snapshotProvider: SnapshotProvider
-    unowned let cameraState: CameraState
-    let navigationCameraMode: NavigationCameraMode
+    unowned let cameraCoordinator: CameraCoordinator
     let planets: [Planet]
     let viewportSize: () -> CGSize
 
@@ -62,22 +54,21 @@ final class NavigationController {
 
     init(navigationStatePublisher: NavigationRenderStatePublishing,
          snapshotProvider: SnapshotProvider,
-         cameraState: CameraState,
+         cameraCoordinator: CameraCoordinator,
          planets: [Planet],
          viewportSize: @escaping () -> CGSize) {
         self.navigationStatePublisher = navigationStatePublisher
         self.snapshotProvider = snapshotProvider
-        self.cameraState = cameraState
+        self.cameraCoordinator = cameraCoordinator
         self.planets = planets
         self.viewportSize = viewportSize
-        navigationCameraMode = NavigationCameraMode(cameraState: cameraState)
         navigationRouteCoordinator = NavigationRouteCoordinator { [weak navigationStatePublisher] snapshot in
             navigationStatePublisher?.publishNavigationSnapshot(snapshot)
         }
     }
 
     func update(snapshot: PreparedRenderSnapshot?,
-                delta: Float) -> NavigationCameraUpdate {
+                delta: Float) {
         if let snapshot,
            let name = pendingNavigationDestinationName,
            applyNavigation(named: name, snapshot: snapshot) {
@@ -88,16 +79,15 @@ final class NavigationController {
 
         if let snapshot {
             refreshActiveRoute(snapshot: snapshot)
-            return updateNavigationCamera(snapshot: snapshot,
-                                          delta: delta)
+            updateNavigationCamera(snapshot: snapshot,
+                                   delta: delta)
         }
-
-        return controlsCamera ? .noCameraChange : .inactive
     }
 
     func beginManualCameraControl() {
         if navigationRouteCoordinator.isNavigationActive,
            navigationCameraFollowEnabled {
+            cameraCoordinator.suspendNavigationFollow(routeID: navigationRouteCoordinator.activeRouteForRendering?.id)
             setNavigationCameraFollowEnabled(false)
         }
     }
