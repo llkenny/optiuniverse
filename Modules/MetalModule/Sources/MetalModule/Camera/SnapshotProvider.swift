@@ -26,19 +26,6 @@ final class SnapshotProvider {
     var latestSnapshot: PreparedRenderSnapshot? {
         snapshotSource.latestSnapshot
     }
-    // scene snapshots
-
-    // viewport data
-    // time-dependent mode requirements
-
-    // Output
-    // snapshots
-
-    struct Snapshot {
-        let viewMatrix: float4x4
-        let projectionMatrix: float4x4
-        let version: Int
-    }
 
     struct CameraSnapshot {
         let renderViewMatrix: float4x4
