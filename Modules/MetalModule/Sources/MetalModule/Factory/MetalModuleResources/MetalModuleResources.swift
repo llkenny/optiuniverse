@@ -18,6 +18,8 @@ public final class MetalModuleResources {
     let cameraState: CameraState
     let cameraCoordinator: CameraCoordinator
     let snapshotProvider: SnapshotProvider
+    public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
+    public internal(set) var navigationCameraFollowEnabled = true
     @ObservationIgnored private(set) var navigationController: NavigationController!
 
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
@@ -39,6 +41,12 @@ public final class MetalModuleResources {
                 self?.renderer?.metalView.bounds.size ?? .zero
             }
         )
+        navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
+            self?.navigationSnapshot = snapshot
+        }
+        navigationController.navigationCameraFollowEnabledDidChange = { [weak self] isEnabled in
+            self?.navigationCameraFollowEnabled = isEnabled
+        }
     }
 
     public func prepare() async {

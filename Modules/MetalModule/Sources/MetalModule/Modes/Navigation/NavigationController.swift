@@ -32,6 +32,8 @@ final class NavigationController {
     unowned let cameraCoordinator: any NavigationCameraCoordinating
     let planets: [Planet]
     let viewportSize: () -> CGSize
+    var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
+    var navigationCameraFollowEnabledDidChange: ((Bool) -> Void)?
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,
@@ -53,10 +55,15 @@ final class NavigationController {
     let navigationArrivalDuration: Float = 0.9
     let navigationArrivalDistanceMultiplier: Float = 5.8
 
-    var navigationCameraFollowEnabled = true
+    var navigationCameraFollowEnabled = true {
+        didSet {
+            navigationCameraFollowEnabledDidChange?(navigationCameraFollowEnabled)
+        }
+    }
 
     private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
         didSet {
+            navigationSnapshotDidChange?(navigationSnapshot)
             if navigationSnapshot.state == .completed {
                 scheduleDoneNavigation()
             } else {

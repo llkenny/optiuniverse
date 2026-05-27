@@ -63,6 +63,21 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerPublishesObservableFacadeStateChanges() {
+    let fixture = NavigationControllerFixture()
+    var snapshots: [NavigationRouteSnapshot] = []
+    var followStates: [Bool] = []
+    fixture.controller.navigationSnapshotDidChange = { snapshots.append($0) }
+    fixture.controller.navigationCameraFollowEnabledDidChange = { followStates.append($0) }
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.setNavigationCameraFollowEnabled(false)
+
+    #expect(snapshots.contains { $0.state == .running && $0.destinationName == "Mars" })
+    #expect(followStates == [false])
+}
+
+@MainActor
 @Test func navigationControllerAppliesRouteProjectionParameters() {
     let fixture = NavigationControllerFixture()
     let baseProjection = CameraProjectionParameters(nearPlane: 0.03,
