@@ -8,13 +8,12 @@
 import CoreGraphics
 import simd
 
-struct NavigationCameraProjectionState {
-    let destinationName: String
-    let usesFollowNearPlane: Bool
-    let routeProjectionRadius: Float?
+struct CameraProjectionParameters {
+    let nearPlane: Float
+    let farPlane: Float
 }
 
-/// Reads committed camera state, scene snapshots, viewport data, and time-dependent mode requirements.
+/// Reads committed camera state, scene snapshots, viewport data, and explicit projection requirements.
 /// It produces immutable camera snapshots containing render-ready matrices and derived camera values.
 @MainActor
 final class SnapshotProvider {
@@ -52,17 +51,13 @@ final class SnapshotProvider {
     }
 
     func makeCameraSnapshot(viewportSize: CGSize,
-                            legacyNearPlane: Float,
-                            legacyFarPlane: Float,
-                            navigationProjectionState: NavigationCameraProjectionState?) -> CameraSnapshot {
-        let nearPlane = navigationNearPlaneDistance(state: navigationProjectionState) ?? legacyNearPlane
-        let farPlane = navigationFarPlaneDistance(state: navigationProjectionState) ?? legacyFarPlane
+                            projection: CameraProjectionParameters) -> CameraSnapshot {
         let aspect = Float(viewportSize.width / max(viewportSize.height, 1))
         let projectionMatrix = float4x4.perspective(
             fov: CameraFit.verticalFieldOfView,
             aspect: aspect,
-            near: nearPlane,
-            far: max(farPlane, nearPlane + CameraFit.minimumNearPlane)
+            near: projection.nearPlane,
+            far: max(projection.farPlane, projection.nearPlane + CameraFit.minimumNearPlane)
         )
 
         return CameraSnapshot(renderViewMatrix: cameraState.makeRenderViewMatrix(),
@@ -71,26 +66,5 @@ final class SnapshotProvider {
                               cameraPosition: cameraState.cameraOffset,
                               viewportSize: viewportSize,
                               cameraRevision: cameraState.revision)
-    }
-
-    private func navigationNearPlaneDistance(state: NavigationCameraProjectionState?) -> Float? {
-        guard let state,
-              state.usesFollowNearPlane,
-              let framingRadius = latestSnapshot?.framingRadius(ofPlanetNamed: state.destinationName) else {
-            return nil
-        }
-
-        let frontClearance = max(cameraState.cameraDistance - framingRadius, CameraFit.minimumNearPlane * 2)
-        return min(CameraFit.defaultNearPlane,
-                   max(CameraFit.minimumNearPlane, frontClearance * 0.5))
-    }
-
-    private func navigationFarPlaneDistance(state: NavigationCameraProjectionState?) -> Float? {
-        guard let routeProjectionRadius = state?.routeProjectionRadius else {
-            return nil
-        }
-
-        return max(CameraFit.defaultFarPlane,
-                   cameraState.cameraDistance + routeProjectionRadius * 1.15)
     }
 }

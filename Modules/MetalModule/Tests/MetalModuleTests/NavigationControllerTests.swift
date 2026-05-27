@@ -63,6 +63,30 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerAppliesRouteProjectionParameters() {
+    let fixture = NavigationControllerFixture()
+    let baseProjection = CameraProjectionParameters(nearPlane: 0.03,
+                                                    farPlane: 1)
+
+    fixture.controller.startNavigation(to: "Mars")
+    let followProjection = fixture.controller.projectionParameters(snapshot: fixture.snapshot,
+                                                                  baseProjection: baseProjection)
+    let expectedNearPlane = min(CameraFit.defaultNearPlane,
+                                max(CameraFit.minimumNearPlane,
+                                    (fixture.cameraCoordinator.cameraDistance - 0.05) * 0.5))
+
+    #expect(abs(followProjection.nearPlane - expectedNearPlane) < 0.000001)
+    #expect(followProjection.farPlane == CameraFit.defaultFarPlane)
+
+    fixture.controller.setNavigationCameraFollowEnabled(false)
+    let overviewProjection = fixture.controller.projectionParameters(snapshot: fixture.snapshot,
+                                                                    baseProjection: baseProjection)
+
+    #expect(overviewProjection.nearPlane == baseProjection.nearPlane)
+    #expect(overviewProjection.farPlane == CameraFit.defaultFarPlane)
+}
+
+@MainActor
 @Test func navigationControllerDonePreservesDestinationCameraBeforeFollowHandoff() {
     let playback = CompletingRoutePlayback()
     let fixture = NavigationControllerFixture(routePlayback: playback)

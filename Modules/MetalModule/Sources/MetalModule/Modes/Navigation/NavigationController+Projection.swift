@@ -8,16 +8,32 @@
 import simd
 
 extension NavigationController {
-    func projectionState(snapshot: PreparedRenderSnapshot?) -> NavigationCameraProjectionState? {
+    func projectionParameters(snapshot: PreparedRenderSnapshot?,
+                              baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         guard let route = navigationRouteCoordinator.activeRouteForRendering else {
-            return nil
+            return baseProjection
         }
 
-        return NavigationCameraProjectionState(
-            destinationName: route.destinationName,
-            usesFollowNearPlane: navigationRouteCoordinator.isNavigationActive && navigationCameraFollowEnabled,
-            routeProjectionRadius: snapshot.flatMap(routeProjectionRadius(snapshot:))
-        )
+        var nearPlane = baseProjection.nearPlane
+        if navigationRouteCoordinator.isNavigationActive,
+           navigationCameraFollowEnabled,
+           let framingRadius = snapshot?.framingRadius(ofPlanetNamed: route.destinationName) {
+            let frontClearance = max(cameraCoordinator.cameraDistance - framingRadius,
+                                     CameraFit.minimumNearPlane * 2)
+            nearPlane = min(CameraFit.defaultNearPlane,
+                            max(CameraFit.minimumNearPlane, frontClearance * 0.5))
+        }
+
+        var farPlane = baseProjection.farPlane
+        if let snapshot,
+           let routeProjectionRadius = routeProjectionRadius(snapshot: snapshot) {
+            farPlane = max(farPlane,
+                           CameraFit.defaultFarPlane,
+                           cameraCoordinator.cameraDistance + routeProjectionRadius * 1.15)
+        }
+
+        return CameraProjectionParameters(nearPlane: nearPlane,
+                                          farPlane: farPlane)
     }
 
     func routeProjectionRadius(snapshot: PreparedRenderSnapshot) -> Float? {

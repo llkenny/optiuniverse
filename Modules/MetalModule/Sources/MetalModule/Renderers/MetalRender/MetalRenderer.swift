@@ -214,12 +214,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             updateCamera(snapshot: snapshot,
                          delta: delta)
         }
-        let cameraSnapshot = snapshotProvider.makeCameraSnapshot(
-            viewportSize: metalView.bounds.size,
-            legacyNearPlane: nearPlaneDistance(),
-            legacyFarPlane: farPlaneDistance(),
-            navigationProjectionState: navigationController.projectionState(snapshot: snapshot)
-        )
+        let baseProjection = CameraProjectionParameters(nearPlane: nearPlaneDistance(),
+                                                        farPlane: farPlaneDistance())
+        let projection = navigationController.projectionParameters(snapshot: snapshot,
+                                                                  baseProjection: baseProjection)
+        let cameraSnapshot = snapshotProvider.makeCameraSnapshot(viewportSize: metalView.bounds.size,
+                                                                 projection: projection)
         projectionMatrix = cameraSnapshot.projectionMatrix
 
         do {
