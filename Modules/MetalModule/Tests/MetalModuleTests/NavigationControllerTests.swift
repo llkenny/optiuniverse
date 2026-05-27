@@ -63,6 +63,26 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerDonePreservesDestinationCameraBeforeFollowHandoff() {
+    let playback = CompletingRoutePlayback()
+    let fixture = NavigationControllerFixture(routePlayback: playback)
+    var followedPlanets: [String] = []
+    fixture.controller.followPlanet = { followedPlanets.append($0) }
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+    let revisionBeforeDone = fixture.cameraState.revision
+
+    fixture.controller.doneNavigation()
+
+    #expect(fixture.publisher.navigationSnapshot.state == .cancelled)
+    #expect(fixture.cameraState.revision > revisionBeforeDone)
+    #expect(fixture.cameraState.cameraTarget == SIMD3<Float>(1.52, 0, 0))
+    #expect(followedPlanets == ["Mars"])
+}
+
+@MainActor
 private struct NavigationControllerFixture {
     let snapshot = PreparedRenderSnapshot.navigationControllerTestSnapshot
     let publisher = FakeNavigationStatePublisher()
@@ -72,7 +92,7 @@ private struct NavigationControllerFixture {
     let cameraCoordinator: CameraCoordinator
     let controller: NavigationController
 
-    init() {
+    init(routePlayback: RoutePlayback = RoutePlaybackController()) {
         source = FakeNavigationSnapshotSource(latestSnapshot: snapshot)
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
@@ -82,7 +102,38 @@ private struct NavigationControllerFixture {
                                           snapshotProvider: provider,
                                           cameraCoordinator: cameraCoordinator,
                                           planets: testPlanets,
-                                          viewportSize: { CGSize(width: 390, height: 844) })
+                                          viewportSize: { CGSize(width: 390, height: 844) },
+                                          routePlayback: routePlayback)
+    }
+}
+
+private final class CompletingRoutePlayback: RoutePlayback {
+    private(set) var progress: Float = 0
+    private(set) var elapsedTime: TimeInterval = 0
+    private(set) var isCompleted = false
+    private var duration: TimeInterval = 1
+
+    func start(duration: TimeInterval) {
+        self.duration = duration
+        progress = 0
+        elapsedTime = 0
+        isCompleted = false
+    }
+
+    func pause() {}
+
+    func resume() {}
+
+    func cancel() {
+        progress = 0
+        elapsedTime = 0
+        isCompleted = false
+    }
+
+    func update() {
+        progress = 1
+        elapsedTime = duration
+        isCompleted = true
     }
 }
 

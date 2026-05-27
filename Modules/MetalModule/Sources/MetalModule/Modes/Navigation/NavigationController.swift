@@ -70,15 +70,21 @@ final class NavigationController {
          snapshotProvider: SnapshotProvider,
          cameraCoordinator: CameraCoordinator,
          planets: [Planet],
-         viewportSize: @escaping () -> CGSize) {
+         viewportSize: @escaping () -> CGSize,
+         routeBuilder: RouteBuilding = RoutePathBuilder(),
+         routePlayback: RoutePlayback = RoutePlaybackController()) {
         self.navigationStatePublisher = navigationStatePublisher
         self.snapshotProvider = snapshotProvider
         self.cameraCoordinator = cameraCoordinator
         self.planets = planets
         self.viewportSize = viewportSize
-        navigationRouteCoordinator = NavigationRouteCoordinator { [weak navigationStatePublisher] snapshot in
-            navigationStatePublisher?.publishNavigationSnapshot(snapshot)
-        }
+        navigationRouteCoordinator = NavigationRouteCoordinator(
+            routeBuilder: routeBuilder,
+            playback: routePlayback,
+            snapshotPublisher: { [weak navigationStatePublisher] snapshot in
+                navigationStatePublisher?.publishNavigationSnapshot(snapshot)
+            }
+        )
     }
 
     func update(snapshot: PreparedRenderSnapshot?,

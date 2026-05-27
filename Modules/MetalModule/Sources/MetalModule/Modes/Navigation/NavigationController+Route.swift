@@ -35,6 +35,13 @@ extension NavigationController: MetalModuleNavigationControlling {
         let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
         ?? navigationStatePublisher.navigationSnapshot.destinationName
 
+        if let destinationName,
+           let destinationPosition = snapshotProvider
+            .latestSnapshot?
+            .worldPosition(ofPlanetNamed: destinationName) {
+            cameraCoordinator.commitNavigationDestination(destinationPosition: destinationPosition)
+        }
+
         navigationRouteCoordinator.cancel()
         cameraCoordinator.endNavigationCameraControl(routeID: nil)
         resetNavigationArrivalTransition()
