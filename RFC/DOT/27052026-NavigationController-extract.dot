@@ -1,0 +1,418 @@
+digraph CurrentGitChangesDependencies {
+    graph [
+        rankdir=LR,
+        bgcolor="white",
+        fontname="Helvetica",
+        label="Current Git Changes: Route Navigation ADR 0003 Dependency Graph",
+        labelloc=t,
+        fontsize=20
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        fontname="Helvetica",
+        fontsize=11,
+        fillcolor="white",
+        color="#6b7280"
+    ];
+
+    edge [
+        fontname="Helvetica",
+        fontsize=10,
+        color="#374151",
+        arrowsize=0.8
+    ];
+
+    subgraph cluster_legend {
+        label="Legend";
+        color="#e5e7eb";
+        style="rounded,dashed";
+
+        LegendOwner [label="owner / lifecycle", fillcolor="#dbeafe"];
+        LegendFacade [label="observable public facade", fillcolor="#fef3c7"];
+        LegendCommit [label="camera commit path", fillcolor="#dcfce7"];
+        LegendSnapshot [label="snapshot derivation", fillcolor="#ede9fe"];
+        LegendRender [label="render consumption", fillcolor="#ffedd5"];
+        LegendLegacy [label="legacy retained / out of scope", fillcolor="#f3f4f6"];
+    }
+
+    subgraph cluster_composition {
+        label="Composition / Public Surface";
+        color="#fde68a";
+        style="rounded";
+
+        MetalModuleResources [
+            label="MetalModuleResources\n@Observable public facade\nmirrors nav snapshot + follow flag",
+            fillcolor="#fef3c7"
+        ];
+        MetalModuleNavigationControlling [
+            label="MetalModuleNavigationControlling\n(public API unchanged)",
+            fillcolor="#fef3c7"
+        ];
+        NavigationStateCallbacks [
+            label="NavigationController callbacks\nsnapshotDidChange / followDidChange",
+            fillcolor="#fef3c7"
+        ];
+    }
+
+    subgraph cluster_navigation {
+        label="Route Navigation Ownership";
+        color="#93c5fd";
+        style="rounded";
+
+        NavigationController [
+            label="NavigationController\n(route navigation owner)",
+            fillcolor="#dbeafe"
+        ];
+        NavigationControllerCamera [
+            label="NavigationController+Camera\nroute camera orchestration",
+            fillcolor="#dbeafe"
+        ];
+        NavigationControllerProjection [
+            label="NavigationController+Projection\nroute projection policy",
+            fillcolor="#dbeafe"
+        ];
+        NavigationControllerRoute [
+            label="NavigationController+Route\nroute lifecycle commands",
+            fillcolor="#dbeafe"
+        ];
+        NavigationRouteCoordinator [
+            label="NavigationRouteCoordinator\nroute playback state",
+            fillcolor="#dbeafe"
+        ];
+        NavigationRouteRenderState [
+            label="NavigationRouteRenderState\nroute render handoff",
+            fillcolor="#dbeafe"
+        ];
+        CameraProjectionParameters [
+            label="CameraProjectionParameters\ngeneric near/far input",
+            fillcolor="#ede9fe"
+        ];
+    }
+
+    subgraph cluster_camera {
+        label="Camera Pipeline";
+        color="#86efac";
+        style="rounded";
+
+        CameraCoordinator [
+            label="CameraCoordinator\nroutes camera ownership",
+            fillcolor="#dcfce7"
+        ];
+        NavigationCameraCoordinating [
+            label="NavigationCameraCoordinating\nnarrow nav camera protocol",
+            fillcolor="#dcfce7"
+        ];
+        NavigationCameraOwner [
+            label="NavigationCameraOwner\nowns route camera priority",
+            fillcolor="#dcfce7"
+        ];
+        NavigationCameraMode [
+            label="NavigationCameraMode\ncomputes transactions",
+            fillcolor="#dcfce7"
+        ];
+        CameraState [
+            label="CameraState\ncanonical camera variables + revision",
+            fillcolor="#dcfce7"
+        ];
+        CameraTransaction [
+            label="CameraState.Transaction\natomic camera mutation",
+            fillcolor="#dcfce7"
+        ];
+        SnapshotProvider [
+            label="SnapshotProvider\nmode-independent camera snapshot producer",
+            fillcolor="#ede9fe"
+        ];
+        CameraSnapshot [
+            label="SnapshotProvider.CameraSnapshot\nimmutable render camera",
+            fillcolor="#ede9fe"
+        ];
+        PreparedRenderSnapshotProvider [
+            label="PreparedRenderSnapshotProviding\nscene snapshot source",
+            fillcolor="#ede9fe"
+        ];
+    }
+
+    subgraph cluster_renderer {
+        label="Renderer Consumption";
+        color="#fdba74";
+        style="rounded";
+
+        MetalRenderer [
+            label="MetalRenderer\nticks nav + composes render state",
+            fillcolor="#ffedd5"
+        ];
+        DrawFirstPass [
+            label="MetalRenderer+DrawFirstPass\nrender encoding",
+            fillcolor="#ffedd5"
+        ];
+        SceneRenderState [
+            label="SceneRenderState\ncamera + scene + routes",
+            fillcolor="#ffedd5"
+        ];
+        SceneRouteRenderState [
+            label="SceneRouteRenderState\ntransfer + navigation routes",
+            fillcolor="#ffedd5"
+        ];
+        RouteRenderer [
+            label="RouteRenderer\nuses navigation route render state",
+            fillcolor="#ffedd5"
+        ];
+        TransferPreview [
+            label="HohmannTransferOrbit preview\nrenderer-owned, out of scope",
+            fillcolor="#f3f4f6"
+        ];
+        LegacyFollowCamera [
+            label="legacy follow / transfer camera\nrenderer-owned, retained",
+            fillcolor="#f3f4f6"
+        ];
+    }
+
+    subgraph cluster_tests {
+        label="Tests";
+        color="#d1d5db";
+        style="rounded";
+
+        NavigationControllerTests [
+            label="NavigationControllerTests\nroute lifecycle + callbacks + projection",
+            fillcolor="#f9fafb"
+        ];
+        SnapshotProviderTests [
+            label="SnapshotProviderTests\nexplicit generic projection input",
+            fillcolor="#f9fafb"
+        ];
+        MetalModuleResourcesNavigationTests [
+            label="MetalModuleResourcesNavigationTests\nobservable facade regression",
+            fillcolor="#f9fafb"
+        ];
+    }
+
+    MetalModuleResources -> CameraState [
+        label="creates",
+        color="#2563eb"
+    ];
+    MetalModuleResources -> CameraCoordinator [
+        label="creates with CameraState",
+        color="#2563eb"
+    ];
+    MetalModuleResources -> SnapshotProvider [
+        label="creates with CameraState + scene source",
+        color="#2563eb"
+    ];
+    MetalModuleResources -> NavigationController [
+        label="creates internal owner",
+        color="#2563eb"
+    ];
+    MetalModuleResources -> MetalRenderer [
+        label="injects NavigationController",
+        color="#2563eb"
+    ];
+    MetalModuleResources -> MetalModuleNavigationControlling [
+        label="implements public facade",
+        color="#d97706",
+        penwidth=2
+    ];
+    MetalModuleResources -> NavigationStateCallbacks [
+        label="subscribes",
+        color="#d97706",
+        penwidth=2
+    ];
+    NavigationStateCallbacks -> NavigationController [
+        label="mirrors internal state",
+        color="#d97706"
+    ];
+
+    NavigationController -> MetalModuleNavigationControlling [
+        label="internal command implementation",
+        color="#2563eb",
+        style=dashed
+    ];
+    NavigationController -> NavigationRouteCoordinator [
+        label="owns",
+        color="#2563eb",
+        penwidth=2
+    ];
+    NavigationController -> SnapshotProvider [
+        label="reads latest scene snapshot",
+        color="#7c3aed"
+    ];
+    NavigationController -> NavigationCameraCoordinating [
+        label="depends on protocol",
+        color="#16a34a",
+        penwidth=2
+    ];
+    NavigationController -> NavigationRouteRenderState [
+        label="exposes routeRenderState",
+        color="#ea580c"
+    ];
+    NavigationControllerRoute -> NavigationRouteCoordinator [
+        label="start/pause/resume/cancel/done",
+        color="#2563eb"
+    ];
+    NavigationControllerCamera -> NavigationCameraCoordinating [
+        label="claim/suspend/end + commit follow/arrival/transition",
+        color="#16a34a",
+        penwidth=2
+    ];
+    NavigationControllerProjection -> CameraProjectionParameters [
+        label="returns generic route-adjusted near/far",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    NavigationControllerProjection -> NavigationRouteCoordinator [
+        label="reads active route",
+        color="#2563eb"
+    ];
+    NavigationControllerProjection -> NavigationCameraCoordinating [
+        label="reads camera target/distance",
+        color="#16a34a"
+    ];
+
+    CameraCoordinator -> NavigationCameraCoordinating [
+        label="implements forwarding API",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> NavigationCameraOwner [
+        label="delegates nav camera ownership",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> CameraState [
+        label="coordinates legacy camera updates",
+        color="#16a34a"
+    ];
+    NavigationCameraOwner -> NavigationCameraMode [
+        label="owns mode math",
+        color="#16a34a",
+        penwidth=2
+    ];
+    NavigationCameraMode -> CameraTransaction [
+        label="returns transactions",
+        color="#16a34a",
+        penwidth=2
+    ];
+    NavigationCameraOwner -> CameraState [
+        label="commits transactions",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraTransaction -> CameraState [
+        label="target/position/offset/up/distance/orientation",
+        color="#16a34a"
+    ];
+    CameraState -> SnapshotProvider [
+        label="canonical camera variables + revision",
+        color="#7c3aed"
+    ];
+    PreparedRenderSnapshotProvider -> SnapshotProvider [
+        label="latest scene snapshot",
+        color="#7c3aed"
+    ];
+    CameraProjectionParameters -> SnapshotProvider [
+        label="explicit mode-agnostic near/far",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    SnapshotProvider -> CameraSnapshot [
+        label="produces immutable render camera",
+        color="#7c3aed",
+        penwidth=2
+    ];
+
+    MetalRenderer -> NavigationController [
+        label="ticks route navigation; reads controlsCamera",
+        color="#ea580c"
+    ];
+    MetalRenderer -> CameraProjectionParameters [
+        label="composes base + navigation projection",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    MetalRenderer -> SnapshotProvider [
+        label="requests CameraSnapshot",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    MetalRenderer -> SceneRenderState [
+        label="assembles render state",
+        color="#ea580c"
+    ];
+    SceneRenderState -> CameraSnapshot [
+        label="contains",
+        color="#ea580c"
+    ];
+    SceneRenderState -> SceneRouteRenderState [
+        label="contains",
+        color="#ea580c"
+    ];
+    SceneRouteRenderState -> NavigationRouteRenderState [
+        label="contains",
+        color="#ea580c"
+    ];
+    SceneRouteRenderState -> TransferPreview [
+        label="contains",
+        color="#9ca3af",
+        style=dashed
+    ];
+    MetalRenderer -> DrawFirstPass [
+        label="passes SceneRenderState",
+        color="#ea580c"
+    ];
+    DrawFirstPass -> CameraSnapshot [
+        label="uses matrices/origin/viewport",
+        color="#ea580c",
+        penwidth=2
+    ];
+    DrawFirstPass -> RouteRenderer [
+        label="passes navigation route state",
+        color="#ea580c"
+    ];
+
+    MetalRenderer -> LegacyFollowCamera [
+        label="retained non-navigation camera behavior",
+        color="#9ca3af",
+        style=dashed
+    ];
+    MetalRenderer -> TransferPreview [
+        label="retained renderer ownership",
+        color="#9ca3af",
+        style=dashed
+    ];
+    LegacyFollowCamera -> CameraState [
+        label="legacy setters still used",
+        color="#9ca3af",
+        style=dashed
+    ];
+    TransferPreview -> CameraState [
+        label="legacy transition state still used",
+        color="#9ca3af",
+        style=dashed
+    ];
+
+    NavigationControllerTests -> NavigationController [
+        label="exercises route lifecycle",
+        color="#4b5563"
+    ];
+    NavigationControllerTests -> NavigationCameraOwner [
+        label="asserts camera ownership via coordinator",
+        color="#4b5563"
+    ];
+    NavigationControllerTests -> CameraState [
+        label="asserts transaction commits",
+        color="#4b5563"
+    ];
+    NavigationControllerTests -> CameraProjectionParameters [
+        label="asserts route projection adjustment",
+        color="#4b5563"
+    ];
+    SnapshotProviderTests -> SnapshotProvider [
+        label="asserts mode-independent projection input",
+        color="#4b5563"
+    ];
+    MetalModuleResourcesNavigationTests -> MetalModuleResources [
+        label="asserts observable navigation facade",
+        color="#4b5563"
+    ];
+}

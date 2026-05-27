@@ -6,7 +6,9 @@
 //
 
 import CoreFoundation
+import Foundation
 import QuartzCore
+import simd
 
 /*
  Owns camera mode priority, ownership, cancellation, and ticking.
@@ -36,7 +38,7 @@ final class CameraCoordinator {
     private let zoomMode: ZoomCameraMode
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
-    private let navigationMode: NavigationCameraMode
+    let navigationCameraOwner: NavigationCameraOwner
 
     private var displayLink: CADisplayLink?
 
@@ -47,7 +49,27 @@ final class CameraCoordinator {
         zoomMode = .init(cameraState: cameraState)
         orbitMode = .init(cameraState: cameraState)
         trajectoryMode = .init(cameraState: cameraState)
-        navigationMode = .init(cameraState: cameraState)
+        navigationCameraOwner = .init(cameraState: cameraState)
+    }
+
+    var currentCameraTransitionFrame: CameraTransition.Frame {
+        cameraState.currentCameraTransitionFrame
+    }
+
+    var cameraFollowTransitionDuration: Float {
+        cameraState.cameraFollowTransitionDuration
+    }
+
+    var cameraPosition: SIMD3<Float> {
+        cameraState.cameraPosition
+    }
+
+    var cameraTarget: SIMD3<Float> {
+        cameraState.cameraTarget
+    }
+
+    var cameraDistance: Float {
+        cameraState.cameraDistance
     }
 
     func activate(renderer: MetalRenderer) {
@@ -81,7 +103,9 @@ final class CameraCoordinator {
         zoomMode.update(delta: delta)
         orbitMode.update(delta: delta)
 
-        renderer?.updateCamera()
+        if !isNavigationCameraActive {
+            renderer?.updateCamera()
+        }
     }
 
     // MARK: Update loop

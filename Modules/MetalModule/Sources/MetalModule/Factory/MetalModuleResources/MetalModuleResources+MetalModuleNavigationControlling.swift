@@ -11,51 +11,27 @@ extension MetalModuleResources: MetalModuleNavigationControlling {
         self
     }
 
-    public func startNavigation(to destinationName: String) {
-        renderer?.startNavigation(to: destinationName)
+    public func startNavigation(to name: String) {
+        navigationController.startNavigation(to: name)
     }
 
     public func pauseNavigation() {
-        renderer?.pauseNavigation()
+        navigationController.pauseNavigation()
     }
 
     public func resumeNavigation() {
-        renderer?.resumeNavigation()
+        navigationController.resumeNavigation()
     }
 
     public func cancelNavigation() {
-        renderer?.cancelNavigation()
+        navigationController.cancelNavigation()
     }
 
     public func doneNavigation() {
-        renderer?.doneNavigation()
+        navigationController.doneNavigation()
     }
 
     public func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
-        navigationCameraFollowEnabled = isEnabled
-        renderer?.setNavigationCameraFollowEnabled(isEnabled)
-    }
-
-    func scheduleDoneNavigation() {
-        let routeID = navigationSnapshot.routeID
-
-        pendingDoneNavigationTask?.cancel()
-        pendingDoneNavigationTask = Task { [weak self] in
-            do {
-                try await Task.sleep(for: .milliseconds(1_100))
-            } catch {
-                return
-            }
-
-            await MainActor.run {
-                guard let self,
-                      self.navigationSnapshot.state == .completed,
-                      self.navigationSnapshot.routeID == routeID else {
-                    return
-                }
-
-                self.doneNavigation()
-            }
-        }
+        navigationController.setNavigationCameraFollowEnabled(isEnabled)
     }
 }

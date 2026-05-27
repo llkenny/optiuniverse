@@ -8,6 +8,10 @@
 import Foundation
 import simd
 
+/// Public lifecycle state for route navigation.
+///
+/// This enum is the stable state surface consumed by UI and resource facades. It exists separately from
+/// render state so navigation controls can observe lifecycle changes without depending on route geometry.
 public enum NavigationRouteState: Sendable, Equatable {
     case idle
     case preparing
@@ -17,6 +21,16 @@ public enum NavigationRouteState: Sendable, Equatable {
     case cancelled
 }
 
+/// Immutable route geometry and timing metadata for one navigation session.
+///
+/// `NavigationRoute` is necessary as the shared data model between route playback, camera follow logic,
+/// and route rendering. It stores sampled world-space points plus cumulative distances so progress can be
+/// converted into a current route point without recalculating geometry every frame.
+///
+/// Ownership:
+/// - Created by `RouteBuilding` implementations and owned by `NavigationRouteCoordinator`.
+/// - Read by `NavigationController` for camera commits and by `RouteRenderer` through render state.
+/// - Does not own playback time, camera state, or renderer resources.
 public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let id: UUID
     public let originName: String
@@ -86,6 +100,16 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Public, lightweight snapshot of navigation state.
+///
+/// `NavigationRouteSnapshot` is necessary because views and facades need navigation progress and timing
+/// without depending on `NavigationRoute` geometry or coordinator internals. It is published by
+/// `NavigationRouteCoordinator` and stored by `MetalModuleResources`.
+///
+/// Ownership:
+/// - Produced by the route coordinator whenever lifecycle/progress state changes.
+/// - Consumed outside the navigation mode as immutable value data.
+/// - Does not grant access to mutable route or camera ownership.
 public struct NavigationRouteSnapshot: Sendable, Equatable {
     public let routeID: UUID?
     public let state: NavigationRouteState

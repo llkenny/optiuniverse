@@ -8,6 +8,18 @@
 import Foundation
 import simd
 
+/// Owns route construction, playback state, and public route snapshots for a single navigation session.
+///
+/// `NavigationRouteCoordinator` is necessary because route playback has a state machine separate from
+/// camera behavior: preparing a route can fail, progress can pause or resume, rendering needs a stable
+/// active route, and UI state should only publish when the route snapshot actually changes.
+///
+/// Ownership:
+/// - Owns the current `NavigationRoute`, `NavigationRouteState`, and last published route snapshot.
+/// - Owns injected route-building and playback collaborators through `RouteBuilding` and
+///   `RoutePlayback` so tests can replace geometry or time behavior.
+/// - Does not own camera state, render matrices, or transfer-orbit preview state.
+/// - Is owned by `NavigationController`, which decides when route lifecycle operations are invoked.
 @MainActor
 final class NavigationRouteCoordinator {
     private let routeBuilder: RouteBuilding

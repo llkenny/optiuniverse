@@ -2,3 +2,6 @@ xcuserdata
 build
 .DS_Store
 DerivedData
+
+RFC/DOT/*.svg
+RFC/DOT/*.png
