@@ -21,17 +21,24 @@ import simd
 /// - Does not own canonical camera variables; it asks `NavigationCameraCoordinating` to claim or release
 ///   navigation camera ownership and to commit camera transactions.
 /// - Reads scene data through `SnapshotProvider` but does not own snapshot production.
-/// - Publishes public navigation state through `NavigationRenderStatePublishing`.
+/// - Stores and publishes public navigation state through `MetalModuleNavigationControlling`.
 /// - Uses `followPlanet` only as a completion/cancellation handoff back to legacy non-navigation follow
 ///   behavior that still lives outside the route navigation mode.
 @MainActor
 final class NavigationController {
-    let navigationStatePublisher: NavigationRenderStatePublishing
-    let navigationRouteCoordinator: NavigationRouteCoordinator
+    let routeBuilder: RouteBuilding
+    let routePlayback: RoutePlayback
     unowned let snapshotProvider: SnapshotProvider
     unowned let cameraCoordinator: any NavigationCameraCoordinating
     let planets: [Planet]
     let viewportSize: () -> CGSize
+    lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
+        routeBuilder: routeBuilder,
+        playback: routePlayback,
+        snapshotPublisher: { [weak self] snapshot in
+            self?.publishNavigationSnapshot(snapshot)
+        }
+    )
 
     var followPlanet: ((String) -> Void)?
 
@@ -48,9 +55,16 @@ final class NavigationController {
 
     var navigationCameraFollowEnabled = true
 
-    var navigationSnapshot: NavigationRouteSnapshot {
-        navigationStatePublisher.navigationSnapshot
+    private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
+        didSet {
+            if navigationSnapshot.state == .completed {
+                scheduleDoneNavigation()
+            } else {
+                pendingDoneNavigationTask?.cancel()
+            }
+        }
     }
+    private var pendingDoneNavigationTask: Task<Void, Never>?
 
     var routeRenderState: NavigationRouteRenderState {
         NavigationRouteRenderState(route: navigationRouteCoordinator.activeRouteForRendering,
@@ -66,25 +80,18 @@ final class NavigationController {
         isNavigationActive || cameraTransition != nil
     }
 
-    init(navigationStatePublisher: NavigationRenderStatePublishing,
-         snapshotProvider: SnapshotProvider,
+    init(snapshotProvider: SnapshotProvider,
          cameraCoordinator: any NavigationCameraCoordinating,
          planets: [Planet],
          viewportSize: @escaping () -> CGSize,
          routeBuilder: RouteBuilding = RoutePathBuilder(),
          routePlayback: RoutePlayback = RoutePlaybackController()) {
-        self.navigationStatePublisher = navigationStatePublisher
         self.snapshotProvider = snapshotProvider
         self.cameraCoordinator = cameraCoordinator
         self.planets = planets
         self.viewportSize = viewportSize
-        navigationRouteCoordinator = NavigationRouteCoordinator(
-            routeBuilder: routeBuilder,
-            playback: routePlayback,
-            snapshotPublisher: { [weak navigationStatePublisher] snapshot in
-                navigationStatePublisher?.publishNavigationSnapshot(snapshot)
-            }
-        )
+        self.routeBuilder = routeBuilder
+        self.routePlayback = routePlayback
     }
 
     func update(snapshot: PreparedRenderSnapshot?,
@@ -114,7 +121,33 @@ final class NavigationController {
 
         if navigationCameraFollowEnabled {
             navigationCameraFollowEnabled = false
-            navigationStatePublisher.publishNavigationCameraFollowEnabled(false)
+        }
+    }
+
+    private func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {
+        navigationSnapshot = snapshot
+    }
+
+    private func scheduleDoneNavigation() {
+        let routeID = navigationSnapshot.routeID
+
+        pendingDoneNavigationTask?.cancel()
+        pendingDoneNavigationTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(1_100))
+            } catch {
+                return
+            }
+
+            await MainActor.run {
+                guard let self,
+                      self.navigationSnapshot.state == .completed,
+                      self.navigationSnapshot.routeID == routeID else {
+                    return
+                }
+
+                self.doneNavigation()
+            }
         }
     }
 }

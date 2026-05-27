@@ -12,7 +12,6 @@ extension NavigationController {
                                 delta: Float) {
         if navigationRouteCoordinator.state == .completed {
             navigationCameraFollowEnabled = true
-            navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
             updateNavigationArrivalCamera(snapshot: snapshot,
                                           delta: delta)
             return

@@ -9,7 +9,7 @@ import Testing
 
     fixture.controller.startNavigation(to: "Mars")
 
-    #expect(fixture.publisher.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
     #expect(fixture.controller.routeRenderState.route?.destinationName == "Mars")
     #expect(fixture.controller.routeRenderState.progress == 0)
 }
@@ -34,7 +34,7 @@ import Testing
     fixture.controller.startNavigation(to: "Mars")
     fixture.controller.cancelNavigation()
 
-    #expect(fixture.publisher.navigationSnapshot.state == .cancelled)
+    #expect(fixture.controller.navigationSnapshot.state == .cancelled)
     #expect(followedPlanets == ["Mars"])
 }
 
@@ -47,7 +47,7 @@ import Testing
     fixture.controller.update(snapshot: fixture.snapshot,
                               delta: 0.1)
 
-    #expect(fixture.publisher.navigationCameraFollowEnabled == false)
+    #expect(fixture.controller.navigationCameraFollowEnabled == false)
     #expect(fixture.cameraCoordinator.isNavigationCameraActive)
 }
 
@@ -58,7 +58,7 @@ import Testing
     fixture.controller.startNavigation(to: "Mars")
     fixture.controller.beginManualCameraControl()
 
-    #expect(fixture.publisher.navigationCameraFollowEnabled == false)
+    #expect(fixture.controller.navigationCameraFollowEnabled == false)
     #expect(!fixture.cameraCoordinator.isNavigationCameraActive)
 }
 
@@ -76,7 +76,7 @@ import Testing
 
     fixture.controller.doneNavigation()
 
-    #expect(fixture.publisher.navigationSnapshot.state == .cancelled)
+    #expect(fixture.controller.navigationSnapshot.state == .cancelled)
     #expect(fixture.cameraState.revision > revisionBeforeDone)
     #expect(fixture.cameraState.cameraTarget == SIMD3<Float>(1.52, 0, 0))
     #expect(followedPlanets == ["Mars"])
@@ -85,7 +85,6 @@ import Testing
 @MainActor
 private struct NavigationControllerFixture {
     let snapshot = PreparedRenderSnapshot.navigationControllerTestSnapshot
-    let publisher = FakeNavigationStatePublisher()
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
     let cameraState: CameraState
@@ -98,8 +97,7 @@ private struct NavigationControllerFixture {
         provider = SnapshotProvider(cameraState: cameraState,
                                     snapshotSource: source)
         cameraCoordinator = CameraCoordinator(cameraState: cameraState)
-        controller = NavigationController(navigationStatePublisher: publisher,
-                                          snapshotProvider: provider,
+        controller = NavigationController(snapshotProvider: provider,
                                           cameraCoordinator: cameraCoordinator,
                                           planets: testPlanets,
                                           viewportSize: { CGSize(width: 390, height: 844) },
@@ -134,20 +132,6 @@ private final class CompletingRoutePlayback: RoutePlayback {
         progress = 1
         elapsedTime = duration
         isCompleted = true
-    }
-}
-
-@MainActor
-private final class FakeNavigationStatePublisher: NavigationRenderStatePublishing {
-    var navigationSnapshot: NavigationRouteSnapshot = .idle
-    var navigationCameraFollowEnabled = true
-
-    func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {
-        navigationSnapshot = snapshot
-    }
-
-    func publishNavigationCameraFollowEnabled(_ isEnabled: Bool) {
-        navigationCameraFollowEnabled = isEnabled
     }
 }
 

@@ -20,19 +20,7 @@ public final class MetalModuleResources {
     let snapshotProvider: SnapshotProvider
     @ObservationIgnored private(set) var navigationController: NavigationController!
 
-    public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
-        didSet {
-            if navigationSnapshot.state == .completed {
-                scheduleDoneNavigation()
-            } else {
-                pendingDoneNavigationTask?.cancel()
-            }
-        }
-    }
-    public internal(set) var navigationCameraFollowEnabled = true
-
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
-    @ObservationIgnored var pendingDoneNavigationTask: Task<Void, Never>?
 
     init() {
         meshProvider = MeshProvider()
@@ -44,7 +32,6 @@ public final class MetalModuleResources {
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
                                             snapshotSource: renderPreparationPipeline)
         navigationController = NavigationController(
-            navigationStatePublisher: self,
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
             planets: planets,

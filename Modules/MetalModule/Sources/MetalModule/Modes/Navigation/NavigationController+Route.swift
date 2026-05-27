@@ -33,7 +33,7 @@ extension NavigationController: MetalModuleNavigationControlling {
 
     func cancelNavigation(followDestination: Bool) {
         let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-        ?? navigationStatePublisher.navigationSnapshot.destinationName
+        ?? navigationSnapshot.destinationName
 
         if let destinationName,
            let destinationPosition = snapshotProvider
@@ -48,7 +48,6 @@ extension NavigationController: MetalModuleNavigationControlling {
         pendingNavigationDestinationName = nil
         cameraTransition = nil
         navigationCameraFollowEnabled = true
-        navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
         guard followDestination,
               let destinationName else { return }
@@ -62,7 +61,14 @@ extension NavigationController: MetalModuleNavigationControlling {
         }
 
         let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-        ?? navigationStatePublisher.navigationSnapshot.destinationName
+        ?? navigationSnapshot.destinationName
+
+        if let destinationName,
+           let destinationPosition = snapshotProvider
+            .latestSnapshot?
+            .worldPosition(ofPlanetNamed: destinationName) {
+            cameraCoordinator.commitNavigationDestination(destinationPosition: destinationPosition)
+        }
 
         navigationRouteCoordinator.cancel()
         cameraCoordinator.endNavigationCameraControl(routeID: nil)
@@ -70,7 +76,6 @@ extension NavigationController: MetalModuleNavigationControlling {
         pendingNavigationDestinationName = nil
         cameraTransition = nil
         navigationCameraFollowEnabled = true
-        navigationStatePublisher.publishNavigationCameraFollowEnabled(true)
 
         guard let destinationName else { return }
         followPlanet?(destinationName)
@@ -78,7 +83,6 @@ extension NavigationController: MetalModuleNavigationControlling {
 
     func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
         navigationCameraFollowEnabled = isEnabled
-        navigationStatePublisher.publishNavigationCameraFollowEnabled(isEnabled)
         if isEnabled {
             cameraTransition = nil
         } else if let route = navigationRouteCoordinator.activeRouteForRendering,
