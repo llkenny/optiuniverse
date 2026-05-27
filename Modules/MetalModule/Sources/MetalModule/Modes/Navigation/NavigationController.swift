@@ -18,8 +18,8 @@ import simd
 ///
 /// Ownership:
 /// - Owns `NavigationRouteCoordinator` and all route-specific pending/arrival camera state.
-/// - Does not own canonical camera variables; it asks `CameraCoordinator` to claim or release navigation
-///   camera ownership and to commit camera transactions.
+/// - Does not own canonical camera variables; it asks `NavigationCameraCoordinating` to claim or release
+///   navigation camera ownership and to commit camera transactions.
 /// - Reads scene data through `SnapshotProvider` but does not own snapshot production.
 /// - Publishes public navigation state through `NavigationRenderStatePublishing`.
 /// - Uses `followPlanet` only as a completion/cancellation handoff back to legacy non-navigation follow
@@ -29,7 +29,7 @@ final class NavigationController {
     let navigationStatePublisher: NavigationRenderStatePublishing
     let navigationRouteCoordinator: NavigationRouteCoordinator
     unowned let snapshotProvider: SnapshotProvider
-    unowned let cameraCoordinator: CameraCoordinator
+    unowned let cameraCoordinator: any NavigationCameraCoordinating
     let planets: [Planet]
     let viewportSize: () -> CGSize
 
@@ -68,7 +68,7 @@ final class NavigationController {
 
     init(navigationStatePublisher: NavigationRenderStatePublishing,
          snapshotProvider: SnapshotProvider,
-         cameraCoordinator: CameraCoordinator,
+         cameraCoordinator: any NavigationCameraCoordinating,
          planets: [Planet],
          viewportSize: @escaping () -> CGSize,
          routeBuilder: RouteBuilding = RoutePathBuilder(),
