@@ -52,6 +52,17 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerManualControlReleasesNavigationCameraOwner() {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.beginManualCameraControl()
+
+    #expect(fixture.publisher.navigationCameraFollowEnabled == false)
+    #expect(!fixture.cameraCoordinator.isNavigationCameraActive)
+}
+
+@MainActor
 private struct NavigationControllerFixture {
     let snapshot = PreparedRenderSnapshot.navigationControllerTestSnapshot
     let publisher = FakeNavigationStatePublisher()

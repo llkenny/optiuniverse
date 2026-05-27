@@ -85,10 +85,16 @@ final class NavigationController {
     }
 
     func beginManualCameraControl() {
-        if navigationRouteCoordinator.isNavigationActive,
-           navigationCameraFollowEnabled {
-            cameraCoordinator.suspendNavigationFollow(routeID: navigationRouteCoordinator.activeRouteForRendering?.id)
-            setNavigationCameraFollowEnabled(false)
+        guard navigationRouteCoordinator.isNavigationActive else {
+            return
+        }
+
+        cameraCoordinator.suspendNavigationFollow(routeID: navigationRouteCoordinator.activeRouteForRendering?.id)
+        cameraTransition = nil
+
+        if navigationCameraFollowEnabled {
+            navigationCameraFollowEnabled = false
+            navigationStatePublisher.publishNavigationCameraFollowEnabled(false)
         }
     }
 }
