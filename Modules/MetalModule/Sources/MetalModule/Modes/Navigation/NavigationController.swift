@@ -9,7 +9,21 @@ import CoreGraphics
 import Foundation
 import simd
 
-/// Owns route navigation state and navigation-specific camera behavior.
+/// Main controller for time-dependent route navigation.
+///
+/// `NavigationController` is the module-facing owner of route navigation. It translates public
+/// navigation commands into route playback, render-state publishing, and navigation camera requests.
+/// The controller is necessary because route navigation is a long-lived mode: it spans multiple render
+/// frames, can be paused or cancelled, and needs to coordinate route progress with camera ownership.
+///
+/// Ownership:
+/// - Owns `NavigationRouteCoordinator` and all route-specific pending/arrival camera state.
+/// - Does not own canonical camera variables; it asks `CameraCoordinator` to claim or release navigation
+///   camera ownership and to commit camera transactions.
+/// - Reads scene data through `SnapshotProvider` but does not own snapshot production.
+/// - Publishes public navigation state through `NavigationRenderStatePublishing`.
+/// - Uses `followPlanet` only as a completion/cancellation handoff back to legacy non-navigation follow
+///   behavior that still lives outside the route navigation mode.
 @MainActor
 final class NavigationController {
     let navigationStatePublisher: NavigationRenderStatePublishing

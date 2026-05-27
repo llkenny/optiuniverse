@@ -8,6 +8,11 @@
 import Foundation
 import QuartzCore
 
+/// Time source abstraction for route playback.
+///
+/// This protocol is necessary to keep route progress calculation independent from wall-clock APIs.
+/// `NavigationRouteCoordinator` owns a value conforming to this protocol and uses it as the single
+/// source of route elapsed time and completion state.
 protocol RoutePlayback {
     var progress: Float { get }
     var elapsedTime: TimeInterval { get }
@@ -20,6 +25,17 @@ protocol RoutePlayback {
     func update()
 }
 
+/// Default wall-clock playback engine for navigation routes.
+///
+/// `RoutePlaybackController` converts elapsed time into clamped route progress while preserving pause,
+/// resume, cancel, and completion semantics. It is necessary because route progress must advance
+/// consistently across render frames without coupling the route state machine to `CACurrentMediaTime`.
+///
+/// Ownership:
+/// - Owns only playback timing fields for one route session.
+/// - Receives its clock as an injected closure, making tests deterministic.
+/// - Does not know about planets, route geometry, camera state, or render state.
+/// - Is owned through the `RoutePlayback` protocol by `NavigationRouteCoordinator`.
 final class RoutePlaybackController: RoutePlayback {
     private let clock: () -> TimeInterval
     private var duration: TimeInterval = 1

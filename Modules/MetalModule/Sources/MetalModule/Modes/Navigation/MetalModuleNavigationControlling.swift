@@ -6,7 +6,17 @@
 //
 
 @MainActor
-// TODO: Rename to NavigationControllerProtocol
+/// Public command surface for route navigation.
+///
+/// This protocol is necessary to keep `MetalModuleResources.navigation` stable while the concrete
+/// navigation owner can evolve internally. `NavigationController` implements it, and callers use it for
+/// lifecycle commands and read-only navigation state.
+///
+/// Ownership:
+/// - Does not own route, camera, or render state.
+/// - Exposes immutable route snapshots and navigation camera-follow preference.
+/// - Keeps transfer-orbit preview out of the navigation API; that remains a separate renderer-facing
+///   control surface.
 public protocol MetalModuleNavigationControlling: AnyObject {
     var navigationSnapshot: NavigationRouteSnapshot { get }
     var navigationCameraFollowEnabled: Bool { get }

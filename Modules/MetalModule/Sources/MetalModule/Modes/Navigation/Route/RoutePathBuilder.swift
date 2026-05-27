@@ -8,6 +8,11 @@
 import Foundation
 import simd
 
+/// Immutable input bundle for route path construction.
+///
+/// The builder needs positions and planet metadata from a prepared scene snapshot, but it should not own
+/// that snapshot or reach back into render systems. This value defines the complete data dependency for
+/// route geometry creation.
 struct RouteBuildInput {
     let destinationName: String
     let planets: [Planet]
@@ -17,10 +22,26 @@ struct RouteBuildInput {
     let estimatedDuration: TimeInterval
 }
 
+/// Route geometry construction boundary.
+///
+/// `NavigationRouteCoordinator` depends on this protocol so route-building policy can vary independently
+/// from playback and state publication. The default implementation uses Hohmann transfer geometry, while
+/// tests can inject simpler deterministic builders.
 protocol RouteBuilding {
     func makeRoute(input: RouteBuildInput) -> NavigationRoute?
 }
 
+/// Builds sampled route geometry for navigation playback and rendering.
+///
+/// `RoutePathBuilder` is necessary because the user-facing route is not just the static transfer orbit:
+/// it also includes a short destination-orbit arc so the animated route can visibly meet the current
+/// destination position. It owns no runtime navigation state; it is a pure geometry builder.
+///
+/// Ownership:
+/// - Owns only its sampling policy (`sampleCount`).
+/// - Depends on `HohmannTransferOrbit` for transfer-orbit geometry but does not own transfer preview
+///   state or render state.
+/// - Returns immutable `NavigationRoute` values to `NavigationRouteCoordinator`.
 struct RoutePathBuilder: RouteBuilding {
     private let sampleCount: Int
 
