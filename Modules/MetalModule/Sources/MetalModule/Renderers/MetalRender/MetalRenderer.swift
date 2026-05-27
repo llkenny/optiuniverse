@@ -207,7 +207,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         snapshotProvider.requestPreparation(simulationTime: planetsRenderer.currentTime)
         let snapshot = snapshotProvider.latestSnapshot
 
-        // TODO: Get data from SnapshotProvider
         update(snapshot: snapshot)
         navigationController.update(snapshot: snapshot,
                                     delta: delta)
