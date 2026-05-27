@@ -13,7 +13,7 @@ extension CameraCoordinator: NavigationCameraCoordinating {
         navigationCameraOwner.isActive
     }
 
-    func beginNavigationCameraControl(routeID: UUID) {
+    func claimNavigationCameraControl(routeID: UUID) {
         navigationCameraOwner.begin(routeID: routeID)
     }
 

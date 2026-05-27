@@ -44,7 +44,7 @@ extension NavigationController {
                                 distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
             duration: cameraCoordinator.cameraFollowTransitionDuration
         )
-        cameraCoordinator.beginNavigationCameraControl(routeID: route.id)
+        cameraCoordinator.claimNavigationCameraControl(routeID: route.id)
     }
 
     func captureNavigationCameraTrailingOffset(route: NavigationRoute,

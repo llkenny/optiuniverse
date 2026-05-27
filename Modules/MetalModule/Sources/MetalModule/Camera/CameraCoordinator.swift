@@ -52,10 +52,6 @@ final class CameraCoordinator {
         navigationCameraOwner = .init(cameraState: cameraState)
     }
 
-    var cameraRevision: Int {
-        cameraState.revision
-    }
-
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
     }
@@ -74,10 +70,6 @@ final class CameraCoordinator {
 
     var cameraDistance: Float {
         cameraState.cameraDistance
-    }
-
-    var cameraUp: SIMD3<Float> {
-        cameraState.cameraUp
     }
 
     func activate(renderer: MetalRenderer) {

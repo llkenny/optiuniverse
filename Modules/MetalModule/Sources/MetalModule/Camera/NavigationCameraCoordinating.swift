@@ -15,14 +15,13 @@ import simd
 /// transactions, while the coordinator remains free to own priority and route those commits internally.
 @MainActor
 protocol NavigationCameraCoordinating: AnyObject {
-    var isNavigationCameraActive: Bool { get }
     var currentCameraTransitionFrame: CameraTransition.Frame { get }
     var cameraFollowTransitionDuration: Float { get }
     var cameraPosition: SIMD3<Float> { get }
     var cameraTarget: SIMD3<Float> { get }
     var cameraDistance: Float { get }
 
-    func beginNavigationCameraControl(routeID: UUID)
+    func claimNavigationCameraControl(routeID: UUID)
     func suspendNavigationFollow(routeID: UUID?)
     func endNavigationCameraControl(routeID: UUID?)
     func commitNavigationFollow(route: NavigationRoute,
