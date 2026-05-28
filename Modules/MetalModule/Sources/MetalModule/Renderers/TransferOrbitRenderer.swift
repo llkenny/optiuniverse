@@ -23,12 +23,12 @@ final class TransferOrbitRenderer {
         depthStencilState = Self.makeDepthStencilState(device: device)
     }
 
-    func render(transferOrbit: HohmannTransferOrbit?,
+    func render(state: TransferOrbitRenderState,
                 renderEncoder: MTLRenderCommandEncoder,
                 viewMatrix: float4x4,
                 projectionMatrix: float4x4,
                 sceneOrigin: SIMD3<Float>) {
-        guard let transferOrbit,
+        guard let transferOrbit = state.transferOrbit,
               transferOrbit.points.count >= 2 else { return }
 
         let context = RenderContext(renderEncoder: renderEncoder,

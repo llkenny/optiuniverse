@@ -14,7 +14,8 @@ extension RootContainerView {
     @ViewBuilder
     func makeOrbitBackButton() -> some View {
         Button {
-            appEnvironment.currentScreen = .home
+            metalResources.transferOrbit.clearTransferOrbit()
+            objectsViewState = .raw
         } label: {
             Image(systemName: "xmark")
                 .foregroundStyle(OptiColor.overlayTextPrimary)
