@@ -147,6 +147,12 @@ final class CameraState {
         set(cameraDistance: fixedDinstance)
     }
 
+    @discardableResult
+    func refreshDerivedCameraValues(minDistance: Float) -> float4x4 {
+        checkDistance(minDistance: minDistance)
+        return makeViewMatrix()
+    }
+
     func makeRenderViewMatrix() -> float4x4 {
         float4x4.lookAt(
             eye: cameraOffset,

@@ -41,10 +41,16 @@ public struct UniverseView: UIViewRepresentable {
 
         let renderer = resources.makeRenderer(for: mtkView)
         context.coordinator.renderer = renderer
+        context.coordinator.resources = resources
         renderer?.labelDelegate = context.coordinator
 
         let cameraController = CameraController(cameraCoordinator: resources.cameraCoordinator,
-                                                renderer: renderer)
+                                                beginManualCameraControl: { [resources] in
+                                                    resources.beginManualCameraControl()
+                                                },
+                                                isTrajectoryModeActive: { [resources] in
+                                                    resources.isTrajectoryModeActive
+                                                })
         context.coordinator.cameraController = cameraController
         setupGestures(mtkView: mtkView,
                       cameraController: cameraController,
@@ -88,7 +94,7 @@ public struct UniverseView: UIViewRepresentable {
         if context.coordinator.currentSelectedPlanet != selectedPlanet {
             context.coordinator.currentSelectedPlanet = selectedPlanet
             if let name = selectedPlanet {
-                context.coordinator.renderer?.followPlanet(named: name)
+                resources.followPlanet(named: name)
             }
         }
     }

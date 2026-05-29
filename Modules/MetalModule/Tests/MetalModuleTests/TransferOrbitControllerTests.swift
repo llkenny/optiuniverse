@@ -94,7 +94,8 @@ private struct TransferOrbitControllerFixture {
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
                                     snapshotSource: source)
-        cameraCoordinator = CameraCoordinator(cameraState: cameraState)
+        cameraCoordinator = CameraCoordinator(cameraState: cameraState,
+                                              snapshotProvider: provider)
         controller = TransferOrbitController(snapshotProvider: provider,
                                              cameraCoordinator: cameraCoordinator,
                                              planets: testPlanets,

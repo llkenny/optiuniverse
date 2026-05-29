@@ -6,6 +6,7 @@
 //
 
 import CoreFoundation
+import CoreGraphics
 import Foundation
 import QuartzCore
 import simd
@@ -34,22 +35,26 @@ final class CameraCoordinator {
     private let orbitSpeed: Float = 0.01
 
     private let cameraState: CameraState
+    private unowned let snapshotProvider: SnapshotProvider
 
     private let zoomMode: ZoomCameraMode
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
+    let followCameraOwner: FollowCameraOwner
     let navigationCameraOwner: NavigationCameraOwner
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
     private var displayLink: CADisplayLink?
 
-    weak var renderer: MetalRenderer?
-
-    init(cameraState: CameraState) {
+    init(cameraState: CameraState,
+         snapshotProvider: SnapshotProvider) {
         self.cameraState = cameraState
+        self.snapshotProvider = snapshotProvider
         zoomMode = .init(cameraState: cameraState)
         orbitMode = .init(cameraState: cameraState)
         trajectoryMode = .init(cameraState: cameraState)
+        followCameraOwner = .init(cameraState: cameraState,
+                                  snapshotProvider: snapshotProvider)
         navigationCameraOwner = .init(cameraState: cameraState)
         transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
@@ -74,16 +79,12 @@ final class CameraCoordinator {
         cameraState.cameraDistance
     }
 
-    func activate(renderer: MetalRenderer) {
-        self.renderer = renderer
+    func activate() {
         startLoop()
     }
 
-    func deactivate(renderer: MetalRenderer?) {
-        if self.renderer === renderer || renderer == nil {
-            self.renderer = nil
-            stopLoop()
-        }
+    func deactivate() {
+        stopLoop()
     }
 
     func makeTranslation(with value: CGPoint) {
@@ -101,12 +102,56 @@ final class CameraCoordinator {
         zoomMode.addInertia(velocity: velocity)
     }
 
+    func followPlanet(named name: String,
+                      viewportSize: CGSize) {
+        followCameraOwner.followPlanet(named: name,
+                                       viewportSize: viewportSize)
+        refreshCamera()
+    }
+
+    func followNavigationDestination(named name: String,
+                                     viewportSize: CGSize) {
+        followCameraOwner.followPlanet(named: name,
+                                       viewportSize: viewportSize)
+        refreshCamera()
+    }
+
+    func beginManualCameraControl() {
+        followCameraOwner.beginManualCameraControl()
+    }
+
+    func updateFollowCamera(snapshot: PreparedRenderSnapshot?,
+                            delta: Float,
+                            viewportSize: CGSize,
+                            isSuppressed: Bool) {
+        followCameraOwner.update(snapshot: snapshot,
+                                 delta: delta,
+                                 viewportSize: viewportSize,
+                                 isSuppressed: isSuppressed)
+        if !isSuppressed {
+            refreshCamera(snapshot: snapshot)
+        }
+    }
+
+    func followProjectionParameters(snapshot: PreparedRenderSnapshot?,
+                                    baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
+        followCameraOwner.projectionParameters(snapshot: snapshot,
+                                               baseProjection: baseProjection)
+    }
+
+    func refreshCamera(snapshot: PreparedRenderSnapshot? = nil) {
+        let snapshot = snapshot ?? snapshotProvider.latestSnapshot
+        cameraState.refreshDerivedCameraValues(
+            minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)
+        )
+    }
+
     private func update(delta: Float) {
         zoomMode.update(delta: delta)
         orbitMode.update(delta: delta)
 
         if !isNavigationCameraActive {
-            renderer?.updateCamera()
+            refreshCamera()
         }
     }
 
