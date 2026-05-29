@@ -39,6 +39,7 @@ final class CameraCoordinator {
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
     let navigationCameraOwner: NavigationCameraOwner
+    let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
     private var displayLink: CADisplayLink?
 
@@ -50,6 +51,7 @@ final class CameraCoordinator {
         orbitMode = .init(cameraState: cameraState)
         trajectoryMode = .init(cameraState: cameraState)
         navigationCameraOwner = .init(cameraState: cameraState)
+        transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
     var currentCameraTransitionFrame: CameraTransition.Frame {

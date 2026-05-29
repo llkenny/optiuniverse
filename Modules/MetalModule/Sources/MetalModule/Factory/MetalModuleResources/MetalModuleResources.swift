@@ -20,6 +20,7 @@ public final class MetalModuleResources {
     let snapshotProvider: SnapshotProvider
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
     public internal(set) var navigationCameraFollowEnabled = true
+    @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
     @ObservationIgnored private(set) var navigationController: NavigationController!
 
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
@@ -33,6 +34,14 @@ public final class MetalModuleResources {
         cameraCoordinator = CameraCoordinator(cameraState: cameraState)
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
                                             snapshotSource: renderPreparationPipeline)
+        transferOrbitController = TransferOrbitController(
+            snapshotProvider: snapshotProvider,
+            cameraCoordinator: cameraCoordinator,
+            planets: planets,
+            viewportSize: { [weak self] in
+                self?.renderer?.metalView.bounds.size ?? .zero
+            }
+        )
         navigationController = NavigationController(
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
@@ -64,11 +73,15 @@ public final class MetalModuleResources {
                                            cameraState: cameraState,
                                            planets: planets,
                                            snapshotProvider: snapshotProvider,
-                                           navigationController: navigationController) else {
+                                           navigationController: navigationController,
+                                           transferOrbitController: transferOrbitController) else {
             return nil
         }
         self.renderer = renderer
         navigationController.followPlanet = { [weak renderer] name in
+            renderer?.followNavigationDestination(named: name)
+        }
+        transferOrbitController.followPlanet = { [weak renderer] name in
             renderer?.followNavigationDestination(named: name)
         }
         cameraCoordinator.activate(renderer: renderer)

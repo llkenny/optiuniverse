@@ -12,6 +12,7 @@ extension MetalModuleResources: MetalModuleNavigationControlling {
     }
 
     public func startNavigation(to name: String) {
+        transferOrbitController.clearTransferOrbit()
         navigationController.startNavigation(to: name)
     }
 

@@ -10,7 +10,7 @@ import simd
 import UIKit
 
 struct SceneRouteRenderState {
-    let transferOrbit: HohmannTransferOrbit?
+    let transfer: TransferOrbitRenderState
     let navigation: NavigationRouteRenderState
 }
 
@@ -60,7 +60,7 @@ extension MetalRenderer {
                              viewMatrix: renderViewMatrix,
                              projectionMatrix: state.cameraSnapshot.projectionMatrix,
                              sceneOrigin: renderOrigin)
-        transferOrbitRenderer.render(transferOrbit: state.routes.transferOrbit,
+        transferOrbitRenderer.render(state: state.routes.transfer,
                                      renderEncoder: renderEncoder,
                                      viewMatrix: renderViewMatrix,
                                      projectionMatrix: state.cameraSnapshot.projectionMatrix,

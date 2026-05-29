@@ -12,6 +12,11 @@ extension MetalModuleResources: MetalModuleTransferOrbitControlling {
     }
 
     public func showTransferOrbit(to destinationName: String) {
-        renderer?.showTransferOrbit(to: destinationName)
+        navigationController.cancelNavigation(followDestination: false)
+        transferOrbitController.showTransferOrbit(to: destinationName)
+    }
+
+    public func clearTransferOrbit() {
+        transferOrbitController.clearTransferOrbit()
     }
 }

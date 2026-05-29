@@ -50,6 +50,10 @@ digraph CurrentGitChangesDependencies {
             label="MetalModuleNavigationControlling\n(public API unchanged)",
             fillcolor="#fef3c7"
         ];
+        MetalModuleTransferOrbitControlling [
+            label="MetalModuleTransferOrbitControlling\nshow/clear preview facade",
+            fillcolor="#fef3c7"
+        ];
         NavigationStateCallbacks [
             label="NavigationController callbacks\nsnapshotDidChange / followDidChange",
             fillcolor="#fef3c7"
@@ -91,6 +95,17 @@ digraph CurrentGitChangesDependencies {
         ];
     }
 
+    subgraph cluster_transfer_preview {
+        label="Transfer Preview Ownership";
+        color="#c4b5fd";
+        style="rounded";
+
+        TransferOrbitController [
+            label="TransferOrbitController\npreview lifecycle owner",
+            fillcolor="#ede9fe"
+        ];
+    }
+
     subgraph cluster_camera {
         label="Camera Pipeline";
         color="#86efac";
@@ -104,8 +119,16 @@ digraph CurrentGitChangesDependencies {
             label="NavigationCameraCoordinating\nnarrow nav camera protocol",
             fillcolor="#dcfce7"
         ];
+        TransferPreviewCameraCoordinating [
+            label="TransferPreviewCameraCoordinating\nnarrow preview camera protocol",
+            fillcolor="#dcfce7"
+        ];
         NavigationCameraOwner [
             label="NavigationCameraOwner\nowns route camera priority",
+            fillcolor="#dcfce7"
+        ];
+        TransferPreviewCameraOwner [
+            label="TransferPreviewCameraOwner\ncommits preview transactions",
             fillcolor="#dcfce7"
         ];
         NavigationCameraMode [
@@ -160,31 +183,12 @@ digraph CurrentGitChangesDependencies {
             fillcolor="#ffedd5"
         ];
         TransferPreview [
-            label="HohmannTransferOrbit preview\nrenderer-owned, out of scope",
-            fillcolor="#f3f4f6"
+            label="TransferOrbitRenderState\ncontroller-owned preview handoff",
+            fillcolor="#ffedd5"
         ];
         LegacyFollowCamera [
-            label="legacy follow / transfer camera\nrenderer-owned, retained",
+            label="legacy follow camera\nrenderer-owned, retained",
             fillcolor="#f3f4f6"
-        ];
-    }
-
-    subgraph cluster_tests {
-        label="Tests";
-        color="#d1d5db";
-        style="rounded";
-
-        NavigationControllerTests [
-            label="NavigationControllerTests\nroute lifecycle + callbacks + projection",
-            fillcolor="#f9fafb"
-        ];
-        SnapshotProviderTests [
-            label="SnapshotProviderTests\nexplicit generic projection input",
-            fillcolor="#f9fafb"
-        ];
-        MetalModuleResourcesNavigationTests [
-            label="MetalModuleResourcesNavigationTests\nobservable facade regression",
-            fillcolor="#f9fafb"
         ];
     }
 
@@ -204,8 +208,12 @@ digraph CurrentGitChangesDependencies {
         label="creates internal owner",
         color="#2563eb"
     ];
+    MetalModuleResources -> TransferOrbitController [
+        label="creates internal owner",
+        color="#2563eb"
+    ];
     MetalModuleResources -> MetalRenderer [
-        label="injects NavigationController",
+        label="injects NavigationController + TransferOrbitController",
         color="#2563eb"
     ];
     MetalModuleResources -> MetalModuleNavigationControlling [
@@ -215,6 +223,11 @@ digraph CurrentGitChangesDependencies {
     ];
     MetalModuleResources -> NavigationStateCallbacks [
         label="subscribes",
+        color="#d97706",
+        penwidth=2
+    ];
+    MetalModuleResources -> MetalModuleTransferOrbitControlling [
+        label="implements transfer preview facade",
         color="#d97706",
         penwidth=2
     ];
@@ -269,6 +282,31 @@ digraph CurrentGitChangesDependencies {
         color="#16a34a"
     ];
 
+    MetalModuleTransferOrbitControlling -> TransferOrbitController [
+        label="delegates preview commands",
+        color="#2563eb",
+        style=dashed
+    ];
+    TransferOrbitController -> SnapshotProvider [
+        label="reads latest scene snapshot",
+        color="#7c3aed"
+    ];
+    TransferOrbitController -> TransferPreviewCameraCoordinating [
+        label="commits preview camera transactions",
+        color="#16a34a",
+        penwidth=2
+    ];
+    TransferOrbitController -> CameraProjectionParameters [
+        label="returns preview-adjusted far plane",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    TransferOrbitController -> TransferPreview [
+        label="publishes renderState",
+        color="#ea580c",
+        penwidth=2
+    ];
+
     CameraCoordinator -> NavigationCameraCoordinating [
         label="implements forwarding API",
         color="#16a34a",
@@ -276,6 +314,11 @@ digraph CurrentGitChangesDependencies {
     ];
     CameraCoordinator -> NavigationCameraOwner [
         label="delegates nav camera ownership",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> TransferPreviewCameraCoordinating [
+        label="implements forwarding API",
         color="#16a34a",
         penwidth=2
     ];
@@ -298,9 +341,24 @@ digraph CurrentGitChangesDependencies {
         color="#16a34a",
         penwidth=2
     ];
+    CameraCoordinator -> TransferPreviewCameraOwner [
+        label="delegates preview camera commits",
+        color="#16a34a",
+        penwidth=2
+    ];
     CameraTransaction -> CameraState [
         label="target/position/offset/up/distance/orientation",
         color="#16a34a"
+    ];
+    TransferPreviewCameraOwner -> CameraTransaction [
+        label="creates transaction",
+        color="#16a34a",
+        penwidth=2
+    ];
+    TransferPreviewCameraOwner -> CameraState [
+        label="commits transactions",
+        color="#16a34a",
+        penwidth=2
     ];
     CameraState -> SnapshotProvider [
         label="canonical camera variables + revision",
@@ -325,8 +383,12 @@ digraph CurrentGitChangesDependencies {
         label="ticks route navigation; reads controlsCamera",
         color="#ea580c"
     ];
+    MetalRenderer -> TransferOrbitController [
+        label="ticks preview; reads render/projection state",
+        color="#ea580c"
+    ];
     MetalRenderer -> CameraProjectionParameters [
-        label="composes base + navigation projection",
+        label="composes base + preview + navigation projection",
         color="#7c3aed",
         penwidth=2
     ];
@@ -353,8 +415,7 @@ digraph CurrentGitChangesDependencies {
     ];
     SceneRouteRenderState -> TransferPreview [
         label="contains",
-        color="#9ca3af",
-        style=dashed
+        color="#ea580c"
     ];
     MetalRenderer -> DrawFirstPass [
         label="passes SceneRenderState",
@@ -375,44 +436,9 @@ digraph CurrentGitChangesDependencies {
         color="#9ca3af",
         style=dashed
     ];
-    MetalRenderer -> TransferPreview [
-        label="retained renderer ownership",
-        color="#9ca3af",
-        style=dashed
-    ];
     LegacyFollowCamera -> CameraState [
         label="legacy setters still used",
         color="#9ca3af",
         style=dashed
-    ];
-    TransferPreview -> CameraState [
-        label="legacy transition state still used",
-        color="#9ca3af",
-        style=dashed
-    ];
-
-    NavigationControllerTests -> NavigationController [
-        label="exercises route lifecycle",
-        color="#4b5563"
-    ];
-    NavigationControllerTests -> NavigationCameraOwner [
-        label="asserts camera ownership via coordinator",
-        color="#4b5563"
-    ];
-    NavigationControllerTests -> CameraState [
-        label="asserts transaction commits",
-        color="#4b5563"
-    ];
-    NavigationControllerTests -> CameraProjectionParameters [
-        label="asserts route projection adjustment",
-        color="#4b5563"
-    ];
-    SnapshotProviderTests -> SnapshotProvider [
-        label="asserts mode-independent projection input",
-        color="#4b5563"
-    ];
-    MetalModuleResourcesNavigationTests -> MetalModuleResources [
-        label="asserts observable navigation facade",
-        color="#4b5563"
     ];
 }

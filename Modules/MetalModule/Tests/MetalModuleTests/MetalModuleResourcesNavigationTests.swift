@@ -15,3 +15,17 @@ import Testing
     #expect(resources.navigationCameraFollowEnabled == false)
     #expect(navigation.navigationCameraFollowEnabled == false)
 }
+
+@MainActor
+@Test func metalModuleResourcesTransferOrbitFacadeDelegatesWithoutRenderer() throws {
+    _ = try #require(MTLCreateSystemDefaultDevice())
+    let resources = MetalModuleResources()
+    let transferOrbit = resources.transferOrbit
+
+    #expect(ObjectIdentifier(transferOrbit) == ObjectIdentifier(resources))
+
+    transferOrbit.showTransferOrbit(to: "Mars")
+    transferOrbit.clearTransferOrbit()
+
+    #expect(!resources.transferOrbitController.isTransferPreviewActive)
+}

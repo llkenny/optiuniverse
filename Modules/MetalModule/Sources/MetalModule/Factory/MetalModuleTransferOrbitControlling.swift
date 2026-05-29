@@ -8,4 +8,5 @@
 @MainActor
 public protocol MetalModuleTransferOrbitControlling: AnyObject {
     func showTransferOrbit(to destinationName: String)
+    func clearTransferOrbit()
 }
