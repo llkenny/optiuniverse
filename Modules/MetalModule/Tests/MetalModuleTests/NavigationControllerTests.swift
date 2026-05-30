@@ -135,7 +135,8 @@ private struct NavigationControllerFixture {
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
                                     snapshotSource: source)
-        cameraCoordinator = CameraCoordinator(cameraState: cameraState)
+        cameraCoordinator = CameraCoordinator(cameraState: cameraState,
+                                              snapshotProvider: provider)
         controller = NavigationController(snapshotProvider: provider,
                                           cameraCoordinator: cameraCoordinator,
                                           planets: testPlanets,

@@ -4,26 +4,27 @@ import UIKit
 @MainActor
 final class CameraController: NSObject, UIGestureRecognizerDelegate {
 
-    weak var renderer: MetalRenderer?
     private let cameraCoordniator: CameraCoordinator
+    private let beginManualCameraControl: () -> Void
+    private let isTrajectoryModeActive: () -> Bool
 
     init(cameraCoordinator: CameraCoordinator,
-         renderer: MetalRenderer?) {
+         beginManualCameraControl: @escaping () -> Void,
+         isTrajectoryModeActive: @escaping () -> Bool) {
 
-        self.renderer = renderer
         cameraCoordniator = cameraCoordinator
+        self.beginManualCameraControl = beginManualCameraControl
+        self.isTrajectoryModeActive = isTrajectoryModeActive
         super.init()
     }
 
     func dismantle() {
-        cameraCoordniator.deactivate(renderer: renderer)
-        renderer = nil
+        cameraCoordniator.deactivate()
     }
 
     // MARK: - Gesture handling
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let renderer = renderer else { return }
-        renderer.beginManualCameraControl()
+        beginManualCameraControl()
         let translation = gesture.translation(in: gesture.view)
         let velocity = gesture.velocity(in: gesture.view)
         cameraCoordniator.makeRotation(with: translation, velocity: velocity)
@@ -31,8 +32,7 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     }
 
     @objc func handleTrajectoryPan(_ gesture: UIPanGestureRecognizer) {
-        guard let renderer = renderer else { return }
-        renderer.beginManualCameraControl()
+        beginManualCameraControl()
 
         let translation = gesture.translation(in: gesture.view)
         cameraCoordniator.makeTranslation(with: translation)
@@ -40,8 +40,7 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
     }
 
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        guard let renderer = renderer else { return }
-        renderer.beginManualCameraControl()
+        beginManualCameraControl()
         let gestureScale = max(Float(gesture.scale), 0.01)
         cameraCoordniator.makeScale(with: gestureScale, velocity: gesture.velocity)
         gesture.scale = 1.0
@@ -57,6 +56,6 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
             return true
         }
 
-        return renderer?.isTrajectoryModeActive == true
+        return isTrajectoryModeActive()
     }
 }

@@ -31,9 +31,10 @@ public final class MetalModuleResources {
         renderPreparationPipeline = RenderPreparationPipeline(modelLoader: meshProvider.modelLoader,
                                                               planets: planets)
         cameraState = CameraState()
-        cameraCoordinator = CameraCoordinator(cameraState: cameraState)
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
                                             snapshotSource: renderPreparationPipeline)
+        cameraCoordinator = CameraCoordinator(cameraState: cameraState,
+                                              snapshotProvider: snapshotProvider)
         transferOrbitController = TransferOrbitController(
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
@@ -70,7 +71,7 @@ public final class MetalModuleResources {
         guard let renderer = MetalRenderer(metalView: metalView,
                                            device: meshProvider.device,
                                            commandQueue: commandQueue,
-                                           cameraState: cameraState,
+                                           cameraCoordinator: cameraCoordinator,
                                            planets: planets,
                                            snapshotProvider: snapshotProvider,
                                            navigationController: navigationController,
@@ -78,13 +79,35 @@ public final class MetalModuleResources {
             return nil
         }
         self.renderer = renderer
-        navigationController.followPlanet = { [weak renderer] name in
-            renderer?.followNavigationDestination(named: name)
+        navigationController.followPlanet = { [weak self, weak renderer] name in
+            guard let self else { return }
+            self.cameraCoordinator.followNavigationDestination(named: name,
+                                                               viewportSize: renderer?.metalView.bounds.size ?? .zero)
         }
-        transferOrbitController.followPlanet = { [weak renderer] name in
-            renderer?.followNavigationDestination(named: name)
+        transferOrbitController.followPlanet = { [weak self, weak renderer] name in
+            guard let self else { return }
+            self.cameraCoordinator.followNavigationDestination(named: name,
+                                                               viewportSize: renderer?.metalView.bounds.size ?? .zero)
         }
-        cameraCoordinator.activate(renderer: renderer)
+        cameraCoordinator.activate()
         return renderer
+    }
+
+    var isTrajectoryModeActive: Bool {
+        transferOrbitController.isTransferPreviewActive ||
+        navigationController.isNavigationActive
+    }
+
+    func followPlanet(named name: String) {
+        transferOrbitController.clearTransferOrbit()
+        navigationController.cancelNavigation(followDestination: false)
+        cameraCoordinator.followPlanet(named: name,
+                                       viewportSize: renderer?.metalView.bounds.size ?? .zero)
+    }
+
+    func beginManualCameraControl() {
+        navigationController.beginManualCameraControl()
+        transferOrbitController.beginManualCameraControl()
+        cameraCoordinator.beginManualCameraControl()
     }
 }

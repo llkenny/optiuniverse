@@ -246,17 +246,8 @@ final class TransferOrbitController {
     }
 
     private func distanceToFitPlanet(radius: Float) -> Float {
-        guard radius > 0 else { return max(cameraCoordinator.cameraDistance, CameraFit.defaultNearPlane) }
-
-        let size = viewportSize()
-        let width = max(Float(size.width), 1)
-        let height = max(Float(size.height), 1)
-        let aspect = width / height
-        let horizontalFieldOfView = 2 * atan(tan(CameraFit.verticalFieldOfView / 2) * aspect)
-        let limitingHalfFOV = min(CameraFit.verticalFieldOfView, horizontalFieldOfView) / 2
-        let targetHalfAngle = atan(CameraFit.viewportFill * tan(limitingHalfFOV))
-        let fittedDistance = radius / max(sin(targetHalfAngle), 0.001)
-
-        return max(fittedDistance, radius * 1.05)
+        CameraFit.distanceToFit(radius: radius,
+                                currentDistance: cameraCoordinator.cameraDistance,
+                                viewportSize: viewportSize())
     }
 }

@@ -10,6 +10,7 @@ import UIKit
 @MainActor
 public final class RendererCoordinator: NSObject, PlanetLabelDelegate {
     var renderer: MetalRenderer?
+    weak var resources: MetalModuleResources?
     private var labels: [String: UILabel] = [:]
     var currentSelectedPlanet: String?
     var cameraController: CameraController?
@@ -54,6 +55,6 @@ public final class RendererCoordinator: NSObject, PlanetLabelDelegate {
     @objc func handleLabelTap(_ gesture: UITapGestureRecognizer) {
         guard let label = gesture.view as? UILabel,
               let name = label.text else { return }
-        renderer?.followPlanet(named: name)
+        resources?.followPlanet(named: name)
     }
 }
