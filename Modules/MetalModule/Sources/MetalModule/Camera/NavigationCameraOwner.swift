@@ -65,22 +65,17 @@ final class NavigationCameraOwner {
                           frame: CameraTransition.Frame) {
         self.routeID = routeID
         let cameraOrientation = simd_normalize(cameraState.cameraOrientation)
-        let cameraOffset = cameraOrientation.act(SIMD3<Float>(0, 0, frame.distance))
-        let cameraPosition = cameraOffset + frame.target
-        let cameraUp = cameraOrientation.act(SIMD3<Float>(0, 1, 0))
 
         cameraState.commit(CameraState.Transaction(cameraTarget: frame.target,
-                                                   cameraPosition: cameraPosition,
                                                    cameraDistance: frame.distance,
-                                                   cameraUp: cameraUp,
-                                                   cameraOffset: cameraOffset,
                                                    cameraOrientation: cameraOrientation))
     }
 
     func commitDestination(destinationPosition: SIMD3<Float>) {
+        let pose = cameraState.pose
         guard let transaction = navigationMode.makeDestinationTransaction(destinationPosition: destinationPosition,
-                                                                         cameraPosition: cameraState.cameraPosition,
-                                                                         cameraUp: cameraState.cameraUp) else {
+                                                                         cameraPosition: pose.position,
+                                                                         cameraUp: pose.upVector) else {
             return
         }
         cameraState.commit(transaction)

@@ -16,8 +16,8 @@ import simd
 @MainActor
 protocol NavigationCameraCoordinating: AnyObject {
     var currentCameraTransitionFrame: CameraTransition.Frame { get }
+    var currentCameraPose: CameraPose { get }
     var cameraFollowTransitionDuration: Float { get }
-    var cameraPosition: SIMD3<Float> { get }
     var cameraTarget: SIMD3<Float> { get }
     var cameraDistance: Float { get }
 

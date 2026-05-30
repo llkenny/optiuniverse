@@ -92,13 +92,14 @@ extension NavigationController {
         let arrivalDistance = distanceToFitPlanet(radius: destinationRadius)
         * navigationArrivalDistanceMultiplier
         if navigationArrivalRouteID != route.id {
-            let currentOffset = cameraCoordinator.cameraPosition - destinationPosition
+            let currentPose = cameraCoordinator.currentCameraPose
+            let currentOffset = currentPose.position - destinationPosition
             let existingDirection = simd_length_squared(currentOffset) > 0.000001
             ? normalize(currentOffset)
             : SIMD3<Float>(0, 0, 1)
 
             navigationArrivalRouteID = route.id
-            navigationArrivalStartCameraPosition = cameraCoordinator.cameraPosition
+            navigationArrivalStartCameraPosition = currentPose.position
             navigationArrivalStartTarget = cameraCoordinator.cameraTarget
             navigationArrivalTargetOffset = existingDirection * arrivalDistance
             navigationArrivalProgress = 0
