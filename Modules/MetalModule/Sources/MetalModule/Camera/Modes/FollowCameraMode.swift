@@ -8,8 +8,18 @@
 import CoreGraphics
 import simd
 
-/// Computes camera transactions for the current planet-follow behavior.
+/// Computes transactions for the current planet-follow camera mode.
+///
+/// This type is intentionally stateless. `FollowCameraOwner` stores the selected planet, pending
+/// requests, and transition lifecycle; `FollowCameraMode` only translates a prepared scene snapshot,
+/// viewport, and current camera values into transaction-ready camera data.
+///
+/// The mode preserves the existing follow behavior:
+/// - smoothly transition to a selected planet using its framing radius
+/// - keep the camera target locked to the followed planet as simulation time advances
+/// - tighten minimum distance and near plane around the followed planet
 final class FollowCameraMode {
+    /// Returns the per-frame target update for a followed planet.
     func makeSteadyFollowTransaction(named name: String,
                                      snapshot: PreparedRenderSnapshot) -> CameraState.Transaction? {
         guard let position = snapshot.worldPosition(ofPlanetNamed: name) else {
@@ -19,6 +29,7 @@ final class FollowCameraMode {
         return CameraState.Transaction(cameraTarget: position)
     }
 
+    /// Resolves a transition destination for a planet follow animation.
     func makeTransitionFrame(named name: String,
                              snapshot: PreparedRenderSnapshot,
                              currentDistance: Float,
@@ -36,6 +47,7 @@ final class FollowCameraMode {
         )
     }
 
+    /// Converts an eased transition frame into canonical camera variables.
     func makeTransitionTransaction(frame: CameraTransition.Frame,
                                    cameraOrientation: simd_quatf) -> CameraState.Transaction {
         let orientation = simd_normalize(cameraOrientation)
@@ -51,6 +63,7 @@ final class FollowCameraMode {
                                        cameraOrientation: orientation)
     }
 
+    /// Keeps zoom outside the followed planet's visual radius.
     func minimumDistance(followingPlanetName: String?,
                          snapshot: PreparedRenderSnapshot?,
                          baseMinimumDistance: Float) -> Float {
@@ -62,6 +75,7 @@ final class FollowCameraMode {
         return max(baseMinimumDistance, framingRadius * 1.05)
     }
 
+    /// Applies follow-specific near-plane policy while preserving the caller's far plane.
     func projectionParameters(followingPlanetName: String?,
                               snapshot: PreparedRenderSnapshot?,
                               cameraDistance: Float,

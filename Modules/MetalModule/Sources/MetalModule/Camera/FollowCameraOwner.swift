@@ -7,6 +7,19 @@
 
 import CoreGraphics
 
+/// Owns lifecycle state for the current planet-follow camera mode.
+///
+/// `FollowCameraOwner` is the stateful companion to `FollowCameraMode`. It retains the current
+/// followed planet, retries follow requests that arrive before a prepared snapshot is available,
+/// and advances follow transitions over render frames.
+///
+/// Ownership rules:
+/// - user follow commands are routed here by `MetalModuleResources` after clearing/cancelling
+///   higher-level modes such as transfer preview and route navigation
+/// - navigation/transfer fallback handoffs can reuse the same follow path without recursively
+///   cancelling navigation
+/// - manual control clears pending/active follow transitions, but keeps the selected follow target
+///   so steady follow can resume when the camera is not suppressed
 @MainActor
 final class FollowCameraOwner {
     private unowned let cameraState: CameraState
@@ -46,6 +59,10 @@ final class FollowCameraOwner {
         cameraTransition = nil
     }
 
+    /// Advances pending follow resolution, active transitions, or steady target tracking.
+    ///
+    /// Suppression is used while navigation or transfer preview owns the camera. In that state, the
+    /// owner keeps follow intent but avoids committing camera transactions.
     func update(snapshot: PreparedRenderSnapshot?,
                 delta: Float,
                 viewportSize: CGSize,

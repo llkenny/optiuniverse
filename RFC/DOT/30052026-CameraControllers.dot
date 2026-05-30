@@ -34,7 +34,7 @@ digraph CurrentGitChangesDependencies {
         LegendCommit [label="camera commit path", fillcolor="#dcfce7"];
         LegendSnapshot [label="snapshot derivation", fillcolor="#ede9fe"];
         LegendRender [label="render consumption", fillcolor="#ffedd5"];
-        LegendLegacy [label="legacy retained / out of scope", fillcolor="#f3f4f6"];
+        LegendMode [label="current camera mode", fillcolor="#dcfce7"];
     }
 
     subgraph cluster_composition {
@@ -131,6 +131,14 @@ digraph CurrentGitChangesDependencies {
             label="TransferPreviewCameraOwner\ncommits preview transactions",
             fillcolor="#dcfce7"
         ];
+        FollowCameraOwner [
+            label="FollowCameraOwner\nowns current follow lifecycle",
+            fillcolor="#dcfce7"
+        ];
+        FollowCameraMode [
+            label="FollowCameraMode\ncomputes follow transactions",
+            fillcolor="#dcfce7"
+        ];
         NavigationCameraMode [
             label="NavigationCameraMode\ncomputes transactions",
             fillcolor="#dcfce7"
@@ -163,7 +171,7 @@ digraph CurrentGitChangesDependencies {
         style="rounded";
 
         MetalRenderer [
-            label="MetalRenderer\nticks nav + composes render state",
+            label="MetalRenderer\nticks controllers + composes render state",
             fillcolor="#ffedd5"
         ];
         DrawFirstPass [
@@ -186,10 +194,6 @@ digraph CurrentGitChangesDependencies {
             label="TransferOrbitRenderState\ncontroller-owned preview handoff",
             fillcolor="#ffedd5"
         ];
-        LegacyFollowCamera [
-            label="legacy follow camera\nrenderer-owned, retained",
-            fillcolor="#f3f4f6"
-        ];
     }
 
     MetalModuleResources -> CameraState [
@@ -197,7 +201,7 @@ digraph CurrentGitChangesDependencies {
         color="#2563eb"
     ];
     MetalModuleResources -> CameraCoordinator [
-        label="creates with CameraState",
+        label="creates with CameraState + SnapshotProvider",
         color="#2563eb"
     ];
     MetalModuleResources -> SnapshotProvider [
@@ -213,8 +217,13 @@ digraph CurrentGitChangesDependencies {
         color="#2563eb"
     ];
     MetalModuleResources -> MetalRenderer [
-        label="injects NavigationController + TransferOrbitController",
+        label="injects controllers + CameraCoordinator",
         color="#2563eb"
+    ];
+    MetalModuleResources -> CameraCoordinator [
+        label="routes follow/manual commands",
+        color="#16a34a",
+        penwidth=2
     ];
     MetalModuleResources -> MetalModuleNavigationControlling [
         label="implements public facade",
@@ -323,8 +332,32 @@ digraph CurrentGitChangesDependencies {
         penwidth=2
     ];
     CameraCoordinator -> CameraState [
-        label="coordinates legacy camera updates",
+        label="refreshes derived camera values",
         color="#16a34a"
+    ];
+    CameraCoordinator -> FollowCameraOwner [
+        label="delegates follow lifecycle",
+        color="#16a34a",
+        penwidth=2
+    ];
+    FollowCameraOwner -> FollowCameraMode [
+        label="owns mode math",
+        color="#16a34a",
+        penwidth=2
+    ];
+    FollowCameraMode -> CameraTransaction [
+        label="returns transactions",
+        color="#16a34a",
+        penwidth=2
+    ];
+    FollowCameraOwner -> CameraState [
+        label="commits follow transactions",
+        color="#16a34a",
+        penwidth=2
+    ];
+    FollowCameraOwner -> SnapshotProvider [
+        label="reads latest scene snapshot",
+        color="#7c3aed"
     ];
     NavigationCameraOwner -> NavigationCameraMode [
         label="owns mode math",
@@ -388,8 +421,13 @@ digraph CurrentGitChangesDependencies {
         color="#ea580c"
     ];
     MetalRenderer -> CameraProjectionParameters [
-        label="composes base + preview + navigation projection",
+        label="composes base + follow + preview + navigation projection",
         color="#7c3aed",
+        penwidth=2
+    ];
+    MetalRenderer -> CameraCoordinator [
+        label="ticks follow mode; reads follow projection policy",
+        color="#16a34a",
         penwidth=2
     ];
     MetalRenderer -> SnapshotProvider [
@@ -429,16 +467,5 @@ digraph CurrentGitChangesDependencies {
     DrawFirstPass -> RouteRenderer [
         label="passes navigation route state",
         color="#ea580c"
-    ];
-
-    MetalRenderer -> LegacyFollowCamera [
-        label="retained non-navigation camera behavior",
-        color="#9ca3af",
-        style=dashed
-    ];
-    LegacyFollowCamera -> CameraState [
-        label="legacy setters still used",
-        color="#9ca3af",
-        style=dashed
     ];
 }

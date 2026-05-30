@@ -11,23 +11,17 @@ import Foundation
 import QuartzCore
 import simd
 
-/*
- Owns camera mode priority, ownership, cancellation, and ticking.
- It decides which mode receives a command or time update,
- whether a command cancels or suspends another mode, and which transactional camera mutation is committed.
- Camera mode priority becomes explicit.
- Conflicts such as manual control cancelling follow, navigation owning the camera while active,
- or trajectory pan only applying in trajectory mode should be resolved by the camera mode layer or a camera coordinator,
- not by renderer branches.
-
- The coordinator must stay focused on routing and ownership.
- It should not perform matrix math or directly encode mode-specific camera behavior.
- Mode-specific transformations belong in the modes, and matrix derivation belongs in the snapshot provider.
-
- The implementation should avoid letting every mode freely mutate state in incompatible ways.
- Modes should emit camera commands or transactional mutations through `CameraCoordinator`
- so ownership and cancellation rules remain visible.
- */
+/// Routes camera commands to the active camera mode owners.
+///
+/// `CameraCoordinator` is the camera-layer entry point used by UI gestures, navigation, transfer
+/// preview, and the renderer frame loop. It owns mode priority and lifecycle routing, then delegates
+/// mode-specific math to owners/modes that commit `CameraState.Transaction` values.
+///
+/// ADR 0003 boundary:
+/// - UI and feature controllers call this coordinator instead of mutating renderer camera fields.
+/// - Follow, navigation, transfer preview, orbit, zoom, and trajectory behavior stay in camera modes.
+/// - `SnapshotProvider` derives render-ready matrices from committed `CameraState`; the coordinator
+///   only refreshes derived state needed by the current mode before snapshots are requested.
 @MainActor
 final class CameraCoordinator {
 
@@ -120,6 +114,10 @@ final class CameraCoordinator {
         followCameraOwner.beginManualCameraControl()
     }
 
+    /// Advances the follow camera when no higher-priority mode currently owns the camera.
+    ///
+    /// `isSuppressed` is true while navigation controls the camera or transfer preview is active.
+    /// Pending follow requests are preserved while suppressed and resolve on a later frame.
     func updateFollowCamera(snapshot: PreparedRenderSnapshot?,
                             delta: Float,
                             viewportSize: CGSize,
@@ -139,6 +137,10 @@ final class CameraCoordinator {
                                                baseProjection: baseProjection)
     }
 
+    /// Rebuilds derived camera values after mode transactions or gesture inertia.
+    ///
+    /// This replaces the old renderer-owned `updateCamera()` path while keeping matrix derivation
+    /// centralized in `CameraState`/`SnapshotProvider`.
     func refreshCamera(snapshot: PreparedRenderSnapshot? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
         cameraState.refreshDerivedCameraValues(
