@@ -112,7 +112,7 @@ digraph CurrentGitChangesDependencies {
         style="rounded";
 
         CameraCoordinator [
-            label="CameraCoordinator\nroutes camera ownership",
+            label="CameraCoordinator\nroutes camera ownership\ncommits manual transactions",
             fillcolor="#dcfce7"
         ];
         NavigationCameraCoordinating [
@@ -139,12 +139,24 @@ digraph CurrentGitChangesDependencies {
             label="FollowCameraMode\ncomputes follow transactions",
             fillcolor="#dcfce7"
         ];
+        OrbitCameraMode [
+            label="OrbitCameraMode\ncomputes orientation transactions",
+            fillcolor="#dcfce7"
+        ];
+        ZoomCameraMode [
+            label="ZoomCameraMode\ncomputes distance transactions",
+            fillcolor="#dcfce7"
+        ];
+        TrajectoryCameraMode [
+            label="TrajectoryCameraMode\ncomputes target transactions",
+            fillcolor="#dcfce7"
+        ];
         NavigationCameraMode [
             label="NavigationCameraMode\ncomputes transactions",
             fillcolor="#dcfce7"
         ];
         CameraState [
-            label="CameraState\ncanonical camera variables + revision",
+            label="CameraState\ncanonical camera variables + revision\ncommit is mutation boundary",
             fillcolor="#dcfce7"
         ];
         CameraTransaction [
@@ -332,8 +344,39 @@ digraph CurrentGitChangesDependencies {
         penwidth=2
     ];
     CameraCoordinator -> CameraState [
-        label="refreshes derived camera values",
-        color="#16a34a"
+        label="commits manual transactions\n+ refreshes derived values",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> OrbitCameraMode [
+        label="routes pan / inertia",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> ZoomCameraMode [
+        label="routes pinch / inertia",
+        color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> TrajectoryCameraMode [
+        label="routes trajectory pan",
+        color="#16a34a",
+        penwidth=2
+    ];
+    OrbitCameraMode -> CameraTransaction [
+        label="returns orientation transaction",
+        color="#16a34a",
+        penwidth=2
+    ];
+    ZoomCameraMode -> CameraTransaction [
+        label="returns distance transaction",
+        color="#16a34a",
+        penwidth=2
+    ];
+    TrajectoryCameraMode -> CameraTransaction [
+        label="returns target transaction",
+        color="#16a34a",
+        penwidth=2
     ];
     CameraCoordinator -> FollowCameraOwner [
         label="delegates follow lifecycle",

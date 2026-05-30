@@ -44,9 +44,9 @@ final class CameraCoordinator {
          snapshotProvider: SnapshotProvider) {
         self.cameraState = cameraState
         self.snapshotProvider = snapshotProvider
-        zoomMode = .init(cameraState: cameraState)
-        orbitMode = .init(cameraState: cameraState)
-        trajectoryMode = .init(cameraState: cameraState)
+        zoomMode = .init()
+        orbitMode = .init()
+        trajectoryMode = .init()
         followCameraOwner = .init(cameraState: cameraState,
                                   snapshotProvider: snapshotProvider)
         navigationCameraOwner = .init(cameraState: cameraState)
@@ -82,18 +82,31 @@ final class CameraCoordinator {
     }
 
     func makeTranslation(with value: CGPoint) {
-        trajectoryMode.apply(translation: value)
+        let camera = TrajectoryCameraMode.CameraInput(distance: cameraState.cameraDistance,
+                                                      orientation: cameraState.cameraOrientation,
+                                                      target: cameraState.cameraTarget)
+        commitManualCameraTransaction(
+            trajectoryMode.makePanTransaction(translation: value,
+                                              camera: camera)
+        )
     }
 
     func makeRotation(with value: CGPoint, velocity: CGPoint) {
-        orbitMode.apply(horizontal: Float(value.x) * orbitSpeed,
-                        vertical: -Float(value.y) * orbitSpeed)
+        commitManualCameraTransaction(
+            orbitMode.makeOrbitTransaction(horizontal: Float(value.x) * orbitSpeed,
+                                           vertical: -Float(value.y) * orbitSpeed,
+                                           cameraOrientation: cameraState.cameraOrientation)
+        )
         orbitMode.addInertia(velocity: velocity)
     }
 
     func makeScale(with value: Float, velocity: CGFloat) {
-        zoomMode.apply(value: value)
-        zoomMode.addInertia(velocity: velocity)
+        commitManualCameraTransaction(
+            zoomMode.makeZoomTransaction(value: value,
+                                         currentDistance: cameraState.cameraDistance)
+        )
+        zoomMode.addInertia(velocity: velocity,
+                            currentDistance: cameraState.cameraDistance)
     }
 
     func followPlanet(named name: String,
@@ -149,12 +162,23 @@ final class CameraCoordinator {
     }
 
     private func update(delta: Float) {
-        zoomMode.update(delta: delta)
-        orbitMode.update(delta: delta)
+        commitManualCameraTransaction(
+            zoomMode.update(delta: delta,
+                            currentDistance: cameraState.cameraDistance)
+        )
+        commitManualCameraTransaction(
+            orbitMode.update(delta: delta,
+                             cameraOrientation: cameraState.cameraOrientation)
+        )
 
         if !isNavigationCameraActive {
             refreshCamera()
         }
+    }
+
+    private func commitManualCameraTransaction(_ transaction: CameraState.Transaction?) {
+        guard let transaction else { return }
+        cameraState.commit(transaction)
     }
 
     // MARK: Update loop

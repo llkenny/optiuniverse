@@ -11,29 +11,23 @@ import CoreFoundation
 /// Orbit camera mode
 final class OrbitCameraMode {
 
-    private unowned var cameraState: CameraState
-
     // Inertia
     private let orbitSpeed: Float = 0.01
     private var yawVelocity: Float = 0
     private var pitchVelocity: Float = 0
     private let damping: Float = 0.9
 
-    init(cameraState: CameraState) {
-        self.cameraState = cameraState
-    }
-
-    func apply(horizontal horizontalAngle: Float, vertical verticalAngle: Float) {
-        cameraState.normalizeCameraOrientation()
-
-        var cameraOrientation = cameraState.cameraOrientation
+    func makeOrbitTransaction(horizontal horizontalAngle: Float,
+                              vertical verticalAngle: Float,
+                              cameraOrientation currentOrientation: simd_quatf) -> CameraState.Transaction {
+        var cameraOrientation = simd_normalize(currentOrientation)
         let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
         let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
         let horizontalRotation = simd_quatf(angle: horizontalAngle, axis: upVector)
         let verticalRotation = simd_quatf(angle: verticalAngle, axis: rightVector)
 
         cameraOrientation = simd_normalize(verticalRotation * horizontalRotation * cameraOrientation)
-        cameraState.set(cameraOrientation: cameraOrientation)
+        return CameraState.Transaction(cameraOrientation: cameraOrientation)
     }
 
     // MARK: Inertia
@@ -42,12 +36,14 @@ final class OrbitCameraMode {
         pitchVelocity = Float(velocity.y) * orbitSpeed * 0.1
     }
 
-    func update(delta: Float) {
+    func update(delta: Float,
+                cameraOrientation: simd_quatf) -> CameraState.Transaction? {
         guard yawVelocity != 0 || pitchVelocity != 0 else {
-            return
+            return nil
         }
-        apply(horizontal: yawVelocity * delta,
-              vertical: -pitchVelocity * delta)
+        let transaction = makeOrbitTransaction(horizontal: yawVelocity * delta,
+                                               vertical: -pitchVelocity * delta,
+                                               cameraOrientation: cameraOrientation)
 
         let factor = pow(damping, delta * 60)
         yawVelocity *= factor
@@ -55,5 +51,7 @@ final class OrbitCameraMode {
 
         if abs(yawVelocity) < 0.0001 { yawVelocity = 0 }
         if abs(pitchVelocity) < 0.0001 { pitchVelocity = 0 }
+
+        return transaction
     }
 }

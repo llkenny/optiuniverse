@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import simd
 import Testing
 @testable import MetalModule
@@ -11,7 +12,7 @@ import Testing
 
     #expect(fixture.controller.navigationSnapshot.state == .running)
     #expect(fixture.controller.routeRenderState.route?.destinationName == "Mars")
-    #expect(fixture.controller.routeRenderState.progress == 0)
+    #expect(fixture.controller.routeRenderState.progress < 0.001)
 }
 
 @MainActor

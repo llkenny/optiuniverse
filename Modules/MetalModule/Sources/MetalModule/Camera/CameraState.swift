@@ -57,40 +57,6 @@ final class CameraState {
               distance: cameraDistance)
     }
 
-    // MARK: Setters
-
-    func set(cameraTarget: SIMD3<Float>) {
-        self.cameraTarget = cameraTarget
-        revision += 1
-    }
-
-    func set(cameraPosition: SIMD3<Float>) {
-        self.cameraPosition = cameraPosition
-        revision += 1
-    }
-
-    // MARK: Derivatives
-    func set(cameraDistance: Float) {
-        self.cameraDistance = cameraDistance
-        revision += 1
-    }
-
-    func set(cameraUp: SIMD3<Float>) {
-        self.cameraUp = cameraUp
-        revision += 1
-    }
-
-    func set(cameraOffset: SIMD3<Float>) {
-        self.cameraOffset = cameraOffset
-        revision += 1
-    }
-
-    // Probable deriative too
-    func set(cameraOrientation: simd_quatf) {
-        self.cameraOrientation = cameraOrientation
-        revision += 1
-    }
-
     func commit(_ transaction: Transaction) {
         if let cameraTarget = transaction.cameraTarget {
             self.cameraTarget = cameraTarget
@@ -108,14 +74,14 @@ final class CameraState {
             self.cameraOffset = cameraOffset
         }
         if let cameraOrientation = transaction.cameraOrientation {
-            self.cameraOrientation = cameraOrientation
+            self.cameraOrientation = simd_normalize(cameraOrientation)
         }
         revision += 1
     }
 
     // MARK: Common
 
-    func normalizeCameraOrientation() {
+    private func normalizeCameraOrientation() {
         cameraOrientation = simd_normalize(cameraOrientation)
     }
 
@@ -141,10 +107,12 @@ final class CameraState {
 
     /// Keeps zoom inside available range and outside of the followed planet
     /// - Parameter minDistance: Minimum allowed camera distance
-    func checkDistance(minDistance: Float) {
+    private func checkDistance(minDistance: Float) {
         let distance = cameraDistance
         let fixedDinstance = max(minDistance, min(distance, maxDistance))
-        set(cameraDistance: fixedDinstance)
+        guard fixedDinstance != distance else { return }
+
+        commit(Transaction(cameraDistance: fixedDinstance))
     }
 
     @discardableResult
