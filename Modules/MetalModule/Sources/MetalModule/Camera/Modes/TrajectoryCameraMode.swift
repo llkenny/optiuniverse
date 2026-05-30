@@ -11,28 +11,25 @@ import CoreFoundation
 /// Transformations for the trajectory camera mode
 final class TrajectoryCameraMode {
 
-    private unowned var cameraState: CameraState
+    struct CameraInput {
+        let distance: Float
+        let orientation: simd_quatf
+        let target: SIMD3<Float>
+    }
 
     private let trajectoryPanSpeed: Float = 1.0
 
-    init(cameraState: CameraState) {
-        self.cameraState = cameraState
-    }
-
-    func updateForPanTrajectory(width: Float,
-                                height: Float,
-                                translation: CGPoint,
-                                speed: Float) {
-        cameraState.normalizeCameraOrientation()
-
-        let cameraDistance = cameraState.cameraDistance
-        let cameraOrientation = cameraState.cameraOrientation
-
+    func makePanTransaction(width: Float,
+                            height: Float,
+                            translation: CGPoint,
+                            speed: Float,
+                            camera: CameraInput) -> CameraState.Transaction {
+        let cameraOrientation = simd_normalize(camera.orientation)
         let width = max(width, 1)
         let height = max(height, 1)
         let aspect = width / height
         let visibleHeight = (
-            2 * max(cameraDistance, CameraFit.minimumNearPlane)
+            2 * max(camera.distance, CameraFit.minimumNearPlane)
             * tan(CameraFit.verticalFieldOfView / 2)
         )
         let visibleWidth = visibleHeight * aspect
@@ -41,17 +38,19 @@ final class TrajectoryCameraMode {
         let rightVector = normalize(cameraOrientation.act(SIMD3<Float>(1, 0, 0)))
         let upVector = normalize(cameraOrientation.act(SIMD3<Float>(0, 1, 0)))
 
-        var cameraTarget = cameraState.cameraTarget
+        var cameraTarget = camera.target
         cameraTarget += (rightVector * horizontal) + (upVector * vertical)
-        cameraState.set(cameraTarget: cameraTarget)
+        return CameraState.Transaction(cameraTarget: cameraTarget)
     }
 
-    func apply(translation: CGPoint) {
-        updateForPanTrajectory(
+    func makePanTransaction(translation: CGPoint,
+                            camera: CameraInput) -> CameraState.Transaction {
+        makePanTransaction(
             width: Float(300),
             height: Float(400),
             translation: translation,
-            speed: trajectoryPanSpeed
+            speed: trajectoryPanSpeed,
+            camera: camera
         )
     }
 }

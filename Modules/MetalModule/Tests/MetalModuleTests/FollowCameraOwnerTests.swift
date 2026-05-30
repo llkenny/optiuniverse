@@ -73,6 +73,7 @@ import Testing
     let fixture = FollowCameraOwnerFixture()
     fixture.owner.followPlanet(named: "Mars",
                                viewportSize: fixture.viewportSize)
+    fixture.cameraState.commit(CameraState.Transaction(cameraDistance: 0.08))
     let projection = fixture.owner.projectionParameters(
         snapshot: fixture.source.latestSnapshot,
         baseProjection: CameraProjectionParameters(nearPlane: 0.1,
