@@ -57,12 +57,12 @@ final class CameraCoordinator {
         cameraState.currentCameraTransitionFrame
     }
 
-    var cameraFollowTransitionDuration: Float {
-        cameraState.cameraFollowTransitionDuration
+    var currentCameraPose: CameraPose {
+        cameraState.pose
     }
 
-    var cameraPosition: SIMD3<Float> {
-        cameraState.cameraPosition
+    var cameraFollowTransitionDuration: Float {
+        cameraState.cameraFollowTransitionDuration
     }
 
     var cameraTarget: SIMD3<Float> {
@@ -156,7 +156,7 @@ final class CameraCoordinator {
     /// centralized in `CameraState`/`SnapshotProvider`.
     func refreshCamera(snapshot: PreparedRenderSnapshot? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
-        cameraState.refreshDerivedCameraValues(
+        cameraState.enforceCameraConstraints(
             minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)
         )
     }

@@ -45,6 +45,130 @@ import Testing
 }
 
 @MainActor
+@Test func snapshotProviderReusesEquivalentSnapshotForUnchangedDependencies() {
+    let cameraState = CameraState()
+    let source = FakePreparedRenderSnapshotSource(
+        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+                                               simulationTime: 0,
+                                               planets: [])
+    )
+    let provider = SnapshotProvider(cameraState: cameraState,
+                                    snapshotSource: source)
+    let projection = CameraProjectionParameters(nearPlane: 0.1,
+                                                farPlane: 100)
+
+    let firstSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                    projection: projection)
+    let secondSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                     projection: projection)
+
+    expectCameraSnapshot(secondSnapshot,
+                         equals: firstSnapshot)
+}
+
+@MainActor
+@Test func snapshotProviderInvalidatesCacheWhenCameraRevisionChanges() {
+    let cameraState = CameraState()
+    let source = FakePreparedRenderSnapshotSource(
+        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+                                               simulationTime: 0,
+                                               planets: [])
+    )
+    let provider = SnapshotProvider(cameraState: cameraState,
+                                    snapshotSource: source)
+    let projection = CameraProjectionParameters(nearPlane: 0.1,
+                                                farPlane: 100)
+    let firstSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                    projection: projection)
+
+    cameraState.commit(CameraState.Transaction(cameraDistance: 4))
+    let secondSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                     projection: projection)
+
+    #expect(secondSnapshot.cameraRevision == firstSnapshot.cameraRevision + 1)
+    #expect(secondSnapshot.cameraDirtyFields == [.distance])
+    expectVector(secondSnapshot.cameraPosition,
+                 equals: SIMD3<Float>(0, 0, 4))
+}
+
+@MainActor
+@Test func snapshotProviderInvalidatesCacheWhenSceneFrameChanges() {
+    let source = FakePreparedRenderSnapshotSource(
+        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+                                               simulationTime: 0,
+                                               planets: [])
+    )
+    let provider = SnapshotProvider(snapshotSource: source)
+    let projection = CameraProjectionParameters(nearPlane: 0.1,
+                                                farPlane: 100)
+    let firstSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                    projection: projection)
+
+    source.latestSnapshot = PreparedRenderSnapshot(frameID: 2,
+                                                   simulationTime: 1,
+                                                   planets: [])
+    let secondSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                     projection: projection)
+
+    #expect(firstSnapshot.sceneFrameID == 1)
+    #expect(secondSnapshot.sceneFrameID == 2)
+}
+
+@MainActor
+@Test func snapshotProviderInvalidatesCacheWhenViewportOrProjectionChanges() {
+    let provider = SnapshotProvider(snapshotSource: FakePreparedRenderSnapshotSource())
+    let projection = CameraProjectionParameters(nearPlane: 0.1,
+                                                farPlane: 100)
+    let firstSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 200, height: 100),
+                                                    projection: projection)
+
+    let viewportSnapshot = provider.makeCameraSnapshot(viewportSize: CGSize(width: 100, height: 100),
+                                                       projection: projection)
+    let nearPlaneSnapshot = provider.makeCameraSnapshot(
+        viewportSize: CGSize(width: 100, height: 100),
+        projection: CameraProjectionParameters(nearPlane: 0.2,
+                                               farPlane: 100)
+    )
+    let farPlaneSnapshot = provider.makeCameraSnapshot(
+        viewportSize: CGSize(width: 100, height: 100),
+        projection: CameraProjectionParameters(nearPlane: 0.2,
+                                               farPlane: 200)
+    )
+
+    #expect(viewportSnapshot.viewportSize == CGSize(width: 100, height: 100))
+    #expect(viewportSnapshot.projectionMatrix[0][0] != firstSnapshot.projectionMatrix[0][0])
+    #expect(nearPlaneSnapshot.projectionMatrix[2][2] != viewportSnapshot.projectionMatrix[2][2])
+    #expect(farPlaneSnapshot.projectionMatrix[2][2] != nearPlaneSnapshot.projectionMatrix[2][2])
+}
+
+@MainActor
+@Test func snapshotProviderDerivesSnapshotFromCanonicalCameraPose() {
+    let cameraState = CameraState()
+    let source = FakePreparedRenderSnapshotSource()
+    let provider = SnapshotProvider(cameraState: cameraState,
+                                    snapshotSource: source)
+    let orientation = simd_quatf(angle: .pi / 2,
+                                 axis: SIMD3<Float>(0, 1, 0))
+    cameraState.commit(CameraState.Transaction(cameraTarget: SIMD3<Float>(1, 2, 3),
+                                               cameraDistance: 5,
+                                               cameraOrientation: orientation))
+
+    let cameraSnapshot = provider.makeCameraSnapshot(
+        viewportSize: CGSize(width: 200, height: 100),
+        projection: CameraProjectionParameters(nearPlane: 0.1,
+                                               farPlane: 100)
+    )
+    let expectedPose = cameraState.pose
+
+    expectVector(cameraSnapshot.sceneOrigin,
+                 equals: expectedPose.target)
+    expectVector(cameraSnapshot.cameraPosition,
+                 equals: expectedPose.offset)
+    expectMatrix(cameraSnapshot.renderViewMatrix,
+                 equals: expectedPose.makeRenderViewMatrix())
+}
+
+@MainActor
 private final class FakePreparedRenderSnapshotSource: PreparedRenderSnapshotProviding {
     var latestSnapshot: PreparedRenderSnapshot?
     var requestedSimulationTimes: [Float] = []
@@ -66,4 +190,33 @@ private func expectMatrix(_ lhs: float4x4,
             #expect(abs(lhs[column][row] - rhs[column][row]) <= tolerance)
         }
     }
+}
+
+private func expectCameraSnapshot(_ lhs: SnapshotProvider.CameraSnapshot,
+                                  equals rhs: SnapshotProvider.CameraSnapshot,
+                                  tolerance: Float = 0.000001) {
+    expectMatrix(lhs.renderViewMatrix,
+                 equals: rhs.renderViewMatrix,
+                 tolerance: tolerance)
+    expectMatrix(lhs.projectionMatrix,
+                 equals: rhs.projectionMatrix,
+                 tolerance: tolerance)
+    expectVector(lhs.sceneOrigin,
+                 equals: rhs.sceneOrigin,
+                 tolerance: tolerance)
+    expectVector(lhs.cameraPosition,
+                 equals: rhs.cameraPosition,
+                 tolerance: tolerance)
+    #expect(lhs.viewportSize == rhs.viewportSize)
+    #expect(lhs.cameraRevision == rhs.cameraRevision)
+    #expect(lhs.cameraDirtyFields == rhs.cameraDirtyFields)
+    #expect(lhs.sceneFrameID == rhs.sceneFrameID)
+}
+
+private func expectVector(_ lhs: SIMD3<Float>,
+                          equals rhs: SIMD3<Float>,
+                          tolerance: Float = 0.000001) {
+    #expect(abs(lhs.x - rhs.x) <= tolerance)
+    #expect(abs(lhs.y - rhs.y) <= tolerance)
+    #expect(abs(lhs.z - rhs.z) <= tolerance)
 }

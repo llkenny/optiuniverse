@@ -51,15 +51,9 @@ final class FollowCameraMode {
     func makeTransitionTransaction(frame: CameraTransition.Frame,
                                    cameraOrientation: simd_quatf) -> CameraState.Transaction {
         let orientation = simd_normalize(cameraOrientation)
-        let cameraOffset = orientation.act(SIMD3<Float>(0, 0, frame.distance))
-        let cameraPosition = cameraOffset + frame.target
-        let cameraUp = orientation.act(SIMD3<Float>(0, 1, 0))
 
         return CameraState.Transaction(cameraTarget: frame.target,
-                                       cameraPosition: cameraPosition,
                                        cameraDistance: frame.distance,
-                                       cameraUp: cameraUp,
-                                       cameraOffset: cameraOffset,
                                        cameraOrientation: orientation)
     }
 

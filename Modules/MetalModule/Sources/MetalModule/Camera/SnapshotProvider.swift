@@ -8,7 +8,7 @@
 import CoreGraphics
 import simd
 
-struct CameraProjectionParameters {
+struct CameraProjectionParameters: Equatable {
     let nearPlane: Float
     let farPlane: Float
 }
@@ -21,9 +21,19 @@ final class SnapshotProvider {
     // Input
     private let cameraState: CameraState
     private let snapshotSource: PreparedRenderSnapshotProviding
+    private var cachedCameraSnapshot: CameraSnapshot?
+    private var cachedDependencyKey: CameraSnapshotDependencyKey?
 
     var latestSnapshot: PreparedRenderSnapshot? {
         snapshotSource.latestSnapshot
+    }
+
+    private struct CameraSnapshotDependencyKey: Equatable {
+        let cameraRevision: Int
+        let cameraDirtyFields: CameraState.DirtyFields
+        let sceneFrameID: UInt64?
+        let viewportSize: CGSize
+        let projection: CameraProjectionParameters
     }
 
     struct CameraSnapshot {
@@ -33,6 +43,8 @@ final class SnapshotProvider {
         let cameraPosition: SIMD3<Float>
         let viewportSize: CGSize
         let cameraRevision: Int
+        let cameraDirtyFields: CameraState.DirtyFields
+        let sceneFrameID: UInt64?
     }
 
     init(cameraState: CameraState,
@@ -52,6 +64,20 @@ final class SnapshotProvider {
 
     func makeCameraSnapshot(viewportSize: CGSize,
                             projection: CameraProjectionParameters) -> CameraSnapshot {
+        let sceneFrameID = latestSnapshot?.frameID
+        let dependencyKey = CameraSnapshotDependencyKey(
+            cameraRevision: cameraState.revision,
+            cameraDirtyFields: cameraState.lastDirtyFields,
+            sceneFrameID: sceneFrameID,
+            viewportSize: viewportSize,
+            projection: projection
+        )
+        if dependencyKey == cachedDependencyKey,
+           let cachedCameraSnapshot {
+            return cachedCameraSnapshot
+        }
+
+        let cameraPose = cameraState.pose
         let aspect = Float(viewportSize.width / max(viewportSize.height, 1))
         let projectionMatrix = float4x4.perspective(
             fov: CameraFit.verticalFieldOfView,
@@ -60,11 +86,16 @@ final class SnapshotProvider {
             far: max(projection.farPlane, projection.nearPlane + CameraFit.minimumNearPlane)
         )
 
-        return CameraSnapshot(renderViewMatrix: cameraState.makeRenderViewMatrix(),
-                              projectionMatrix: projectionMatrix,
-                              sceneOrigin: cameraState.cameraTarget,
-                              cameraPosition: cameraState.cameraOffset,
-                              viewportSize: viewportSize,
-                              cameraRevision: cameraState.revision)
+        let cameraSnapshot = CameraSnapshot(renderViewMatrix: cameraPose.makeRenderViewMatrix(),
+                                            projectionMatrix: projectionMatrix,
+                                            sceneOrigin: cameraPose.target,
+                                            cameraPosition: cameraPose.offset,
+                                            viewportSize: viewportSize,
+                                            cameraRevision: cameraState.revision,
+                                            cameraDirtyFields: cameraState.lastDirtyFields,
+                                            sceneFrameID: sceneFrameID)
+        cachedDependencyKey = dependencyKey
+        cachedCameraSnapshot = cameraSnapshot
+        return cameraSnapshot
     }
 }
