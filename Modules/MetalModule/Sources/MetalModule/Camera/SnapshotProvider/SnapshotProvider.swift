@@ -9,54 +9,6 @@ import CoreGraphics
 import Foundation
 import simd
 
-struct CameraProjectionParameters: Equatable {
-    let nearPlane: Float
-    let farPlane: Float
-}
-
-struct CameraFollowSnapshotDependency: Equatable {
-    let planetName: String
-    let worldPosition: SIMD3<Float>?
-    let framingRadius: Float?
-    let hasActiveTransition: Bool
-}
-
-struct CameraNavigationSnapshotDependency: Equatable {
-    let routeID: UUID?
-    let destinationName: String?
-    let progress: Float
-    let state: NavigationRouteState
-    let hasActiveTransition: Bool
-    let arrivalProgress: Float
-}
-
-struct CameraTransferSnapshotDependency: Equatable {
-    let destinationName: String?
-    let hasActiveTransition: Bool
-}
-
-struct CameraFrameModeState: Equatable {
-    let navigationControlsCamera: Bool
-    let navigation: CameraNavigationSnapshotDependency?
-    let transferPreviewActive: Bool
-    let transfer: CameraTransferSnapshotDependency?
-
-    var hasActiveExternalCameraMotion: Bool {
-        navigation?.hasActiveTransition == true ||
-        transfer?.hasActiveTransition == true
-    }
-}
-
-struct CameraSnapshotDependencies: Equatable {
-    let followedObject: CameraFollowSnapshotDependency?
-    let navigation: CameraNavigationSnapshotDependency?
-    let transfer: CameraTransferSnapshotDependency?
-    let activeCameraMotionRevision: Int
-    let sceneFrameID: UInt64?
-    let viewportSize: CGSize
-    let projection: CameraProjectionParameters
-}
-
 /// Reads committed camera state, scene snapshots, viewport data, and explicit projection requirements.
 /// It produces immutable camera snapshots containing render-ready matrices and derived camera values.
 @MainActor

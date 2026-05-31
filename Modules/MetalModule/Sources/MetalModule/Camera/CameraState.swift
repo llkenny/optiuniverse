@@ -7,37 +7,6 @@
 
 import simd
 
-struct CameraPose: Equatable {
-    let target: SIMD3<Float>
-    let distance: Float
-    let orientation: simd_quatf
-
-    var offset: SIMD3<Float> {
-        orientation.act(SIMD3<Float>(0, 0, distance))
-    }
-
-    var position: SIMD3<Float> {
-        target + offset
-    }
-
-    var upVector: SIMD3<Float> {
-        orientation.act(SIMD3<Float>(0, 1, 0))
-    }
-
-    var transitionFrame: CameraTransition.Frame {
-        .init(target: target,
-              distance: distance)
-    }
-
-    func makeRenderViewMatrix() -> float4x4 {
-        float4x4.lookAt(
-            eye: offset,
-            target: .zero,
-            upVector: upVector
-        )
-    }
-}
-
 /// Owns canonical camera variables and camera revision metadata
 final class CameraState {
     struct DirtyFields: OptionSet, Equatable {
@@ -67,9 +36,9 @@ final class CameraState {
     let minDistance: Float = 0.001
     private let maxDistance: Float = 10000.0
 
-    private(set) var cameraDistance: Float = 3 // !
-    private(set) var cameraTarget = SIMD3<Float>(0, 0, 0) // !
-    private(set) var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0)) // !
+    private(set) var cameraDistance: Float = 3
+    private(set) var cameraTarget = SIMD3<Float>(0, 0, 0)
+    private(set) var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
     private(set) var revision = 0
     private(set) var lastDirtyFields: DirtyFields = []
 

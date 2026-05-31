@@ -39,19 +39,6 @@ final class CameraCoordinator {
 
     private var activeCameraMotionRevision = 0
 
-    init(cameraState: CameraState,
-         snapshotProvider: SnapshotProvider) {
-        self.cameraState = cameraState
-        self.snapshotProvider = snapshotProvider
-        zoomMode = .init()
-        orbitMode = .init()
-        trajectoryMode = .init()
-        followCameraOwner = .init(cameraState: cameraState,
-                                  snapshotProvider: snapshotProvider)
-        navigationCameraOwner = .init(cameraState: cameraState)
-        transferPreviewCameraOwner = .init(cameraState: cameraState)
-    }
-
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
     }
@@ -72,10 +59,17 @@ final class CameraCoordinator {
         cameraState.cameraDistance
     }
 
-    func activate() {
-    }
-
-    func deactivate() {
+    init(cameraState: CameraState,
+         snapshotProvider: SnapshotProvider) {
+        self.cameraState = cameraState
+        self.snapshotProvider = snapshotProvider
+        zoomMode = .init()
+        orbitMode = .init()
+        trajectoryMode = .init()
+        followCameraOwner = .init(cameraState: cameraState,
+                                  snapshotProvider: snapshotProvider)
+        navigationCameraOwner = .init(cameraState: cameraState)
+        transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
     func makeTranslation(with value: CGPoint) {

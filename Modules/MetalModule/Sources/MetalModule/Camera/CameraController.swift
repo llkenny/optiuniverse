@@ -18,10 +18,6 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         super.init()
     }
 
-    func dismantle() {
-        cameraCoordinator.deactivate()
-    }
-
     // MARK: - Gesture handling
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
         beginManualCameraControl()
