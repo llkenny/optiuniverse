@@ -17,6 +17,6 @@ extension MetalModuleResources: MetalModuleTransferOrbitControlling {
     }
 
     public func clearTransferOrbit() {
-        transferOrbitController.clearTransferOrbit()
+        transferOrbitController.cancelTransferOrbit()
     }
 }

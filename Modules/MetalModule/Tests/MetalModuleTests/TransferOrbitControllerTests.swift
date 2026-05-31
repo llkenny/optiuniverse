@@ -67,6 +67,35 @@ import Testing
 }
 
 @MainActor
+@Test func transferOrbitControllerCancelRestoresDestinationFollowCamera() throws {
+    let fixture = TransferOrbitControllerFixture()
+    fixture.controller.followPlanet = { name in
+        fixture.cameraCoordinator.followNavigationDestination(named: name,
+                                                              viewportSize: fixture.viewportSize)
+    }
+
+    fixture.controller.showTransferOrbit(to: "Mars")
+    fixture.controller.update(snapshot: fixture.source.latestSnapshot,
+                              delta: 0.1)
+    #expect(fixture.cameraState.cameraTarget != SIMD3<Float>(1.52, 0, 0))
+
+    fixture.controller.cancelTransferOrbit()
+    fixture.cameraCoordinator.updateFrameCamera(
+        snapshot: fixture.source.latestSnapshot,
+        delta: 1.2,
+        viewportSize: fixture.viewportSize,
+        modeState: CameraFrameModeState(navigationControlsCamera: false,
+                                        navigation: nil,
+                                        transferPreviewActive: false,
+                                        transfer: nil)
+    )
+
+    #expect(!fixture.controller.isTransferPreviewActive)
+    #expect(fixture.controller.renderState == .inactive)
+    #expect(fixture.cameraState.cameraTarget == SIMD3<Float>(1.52, 0, 0))
+}
+
+@MainActor
 @Test func sceneRouteRenderStateUsesTransferPreviewRenderState() throws {
     let fixture = TransferOrbitControllerFixture()
 
@@ -83,6 +112,7 @@ import Testing
 
 @MainActor
 private struct TransferOrbitControllerFixture {
+    let viewportSize = CGSize(width: 390, height: 844)
     let source: FakeTransferSnapshotSource
     let provider: SnapshotProvider
     let cameraState: CameraState
@@ -90,6 +120,7 @@ private struct TransferOrbitControllerFixture {
     let controller: TransferOrbitController
 
     init(latestSnapshot: PreparedRenderSnapshot? = .transferOrbitControllerTestSnapshot) {
+        let viewportSize = self.viewportSize
         source = FakeTransferSnapshotSource(latestSnapshot: latestSnapshot)
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
@@ -99,7 +130,7 @@ private struct TransferOrbitControllerFixture {
         controller = TransferOrbitController(snapshotProvider: provider,
                                              cameraCoordinator: cameraCoordinator,
                                              planets: testPlanets,
-                                             viewportSize: { CGSize(width: 390, height: 844) })
+                                             viewportSize: { viewportSize })
     }
 }
 

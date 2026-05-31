@@ -40,6 +40,35 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerCancelRestoresDestinationFollowCamera() {
+    let fixture = NavigationControllerFixture()
+    fixture.controller.followPlanet = { name in
+        fixture.cameraCoordinator.followNavigationDestination(named: name,
+                                                              viewportSize: fixture.viewportSize)
+    }
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.cancelNavigation()
+    #expect(!fixture.cameraCoordinator.isNavigationCameraActive)
+
+    fixture.cameraCoordinator.updateFrameCamera(
+        snapshot: fixture.snapshot,
+        delta: 1.2,
+        viewportSize: fixture.viewportSize,
+        modeState: CameraFrameModeState(navigationControlsCamera: false,
+                                        navigation: nil,
+                                        transferPreviewActive: false,
+                                        transfer: nil)
+    )
+
+    let expectedDistance = CameraFit.distanceToFit(radius: 0.05,
+                                                   currentDistance: fixture.cameraState.cameraDistance,
+                                                   viewportSize: fixture.viewportSize)
+    #expect(fixture.cameraState.cameraTarget == SIMD3<Float>(1.52, 0, 0))
+    #expect(abs(fixture.cameraState.cameraDistance - expectedDistance) < 0.000001)
+}
+
+@MainActor
 @Test func navigationControllerDisablingFollowUsesOverviewCameraTransition() {
     let fixture = NavigationControllerFixture()
 
@@ -124,6 +153,7 @@ import Testing
 
 @MainActor
 private struct NavigationControllerFixture {
+    let viewportSize = CGSize(width: 390, height: 844)
     let snapshot = PreparedRenderSnapshot.navigationControllerTestSnapshot
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
@@ -132,6 +162,7 @@ private struct NavigationControllerFixture {
     let controller: NavigationController
 
     init(routePlayback: RoutePlayback = RoutePlaybackController()) {
+        let viewportSize = self.viewportSize
         source = FakeNavigationSnapshotSource(latestSnapshot: snapshot)
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
@@ -141,7 +172,7 @@ private struct NavigationControllerFixture {
         controller = NavigationController(snapshotProvider: provider,
                                           cameraCoordinator: cameraCoordinator,
                                           planets: testPlanets,
-                                          viewportSize: { CGSize(width: 390, height: 844) },
+                                          viewportSize: { viewportSize },
                                           routePlayback: routePlayback)
     }
 }
