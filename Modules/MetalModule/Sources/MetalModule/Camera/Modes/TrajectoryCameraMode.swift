@@ -6,7 +6,7 @@
 //
 
 import simd
-import CoreFoundation
+import CoreGraphics
 
 /// Transformations for the trajectory camera mode
 final class TrajectoryCameraMode {
@@ -44,10 +44,11 @@ final class TrajectoryCameraMode {
     }
 
     func makePanTransaction(translation: CGPoint,
+                            viewportSize: CGSize,
                             camera: CameraInput) -> CameraState.Transaction {
         makePanTransaction(
-            width: Float(300),
-            height: Float(400),
+            width: Float(viewportSize.width),
+            height: Float(viewportSize.height),
             translation: translation,
             speed: trajectoryPanSpeed,
             camera: camera
