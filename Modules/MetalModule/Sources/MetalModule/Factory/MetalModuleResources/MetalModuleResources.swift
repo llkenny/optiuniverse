@@ -18,6 +18,7 @@ public final class MetalModuleResources {
     let cameraState: CameraState
     let cameraCoordinator: CameraCoordinator
     let snapshotProvider: SnapshotProvider
+    let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
     public internal(set) var navigationCameraFollowEnabled = true
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
@@ -35,6 +36,7 @@ public final class MetalModuleResources {
                                             snapshotSource: renderPreparationPipeline)
         cameraCoordinator = CameraCoordinator(cameraState: cameraState,
                                               snapshotProvider: snapshotProvider)
+        objectInfoOverlayFramingState = ObjectInfoOverlayFramingState()
         transferOrbitController = TransferOrbitController(
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
@@ -74,6 +76,7 @@ public final class MetalModuleResources {
                                            cameraCoordinator: cameraCoordinator,
                                            planets: planets,
                                            snapshotProvider: snapshotProvider,
+                                           objectInfoOverlayFramingState: objectInfoOverlayFramingState,
                                            navigationController: navigationController,
                                            transferOrbitController: transferOrbitController) else {
             return nil
@@ -108,5 +111,13 @@ public final class MetalModuleResources {
         navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
         cameraCoordinator.beginManualCameraControl()
+    }
+
+    public func setObjectInfoOverlayFraming(isPresented: Bool,
+                                            bottomInset: CGFloat,
+                                            viewportHeight: CGFloat) {
+        objectInfoOverlayFramingState.setPresentation(isPresented: isPresented,
+                                                      bottomInset: bottomInset,
+                                                      viewportHeight: viewportHeight)
     }
 }

@@ -15,9 +15,15 @@ extension MetalRenderer {
         )
     }
 
-    func makeCameraProjection(snapshot: PreparedRenderSnapshot?) -> CameraProjectionParameters {
-        let baseProjection = CameraProjectionParameters(nearPlane: CameraFit.defaultNearPlane,
-                                                        farPlane: farPlaneDistance())
+    func makeCameraProjection(snapshot: PreparedRenderSnapshot?,
+                              objectInfoOverlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment)
+    -> CameraProjectionParameters {
+        let baseProjection = CameraProjectionParameters(
+            nearPlane: CameraFit.defaultNearPlane,
+            farPlane: farPlaneDistance(),
+            verticalFieldOfView: objectInfoOverlayAdjustment.verticalFieldOfView,
+            verticalCenterOffset: objectInfoOverlayAdjustment.verticalCenterOffset
+        )
         let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
                                                                             baseProjection: baseProjection)
         let transferProjection = transferOrbitController.projectionParameters(snapshot: snapshot,

@@ -31,17 +31,51 @@ extension RootContainerView {
 
     @ViewBuilder
     func makeInfoOverlay(entity: ObjectInfoViewEntity) -> some View {
-        ZStack(alignment: .bottom) {
-            Color.clear
-                .contentShape(Rectangle())
-                .ignoresSafeArea()
-                .onTapGesture {
-                    objectsViewState = .raw
-                }
+        GeometryReader { containerProxy in
+            ZStack(alignment: .bottom) {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        metalResources.setObjectInfoOverlayFraming(isPresented: false,
+                                                                    bottomInset: 0,
+                                                                    viewportHeight: containerProxy.size.height)
+                        objectsViewState = .raw
+                    }
 
-            ObjectInfoView(entity: entity)
+                ObjectInfoView(entity: entity)
+                    .background {
+                        GeometryReader { overlayProxy in
+                            Color.clear
+                                .onAppear {
+                                    setObjectInfoOverlayFraming(overlayHeight: overlayProxy.size.height,
+                                                                viewportHeight: containerProxy.size.height)
+                                }
+                                .onChange(of: overlayProxy.size.height) { _, newHeight in
+                                    setObjectInfoOverlayFraming(overlayHeight: newHeight,
+                                                                viewportHeight: containerProxy.size.height)
+                                }
+                                .onChange(of: containerProxy.size.height) { _, newHeight in
+                                    setObjectInfoOverlayFraming(overlayHeight: overlayProxy.size.height,
+                                                                viewportHeight: newHeight)
+                                }
+                        }
+                    }
+            }
+            .onDisappear {
+                metalResources.setObjectInfoOverlayFraming(isPresented: false,
+                                                            bottomInset: 0,
+                                                            viewportHeight: containerProxy.size.height)
+            }
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private func setObjectInfoOverlayFraming(overlayHeight: CGFloat,
+                                             viewportHeight: CGFloat) {
+        metalResources.setObjectInfoOverlayFraming(isPresented: true,
+                                                    bottomInset: overlayHeight,
+                                                    viewportHeight: viewportHeight)
     }
 
     private func makeObjectInfo(selectedPlanet: String) async {
@@ -66,6 +100,9 @@ extension RootContainerView {
                                           navigationButtonTitle: "🎯 Route",
                                           isNavigable: destination.isNavigable,
                                           navigationButtonAction: {
+            metalResources.setObjectInfoOverlayFraming(isPresented: false,
+                                                        bottomInset: 0,
+                                                        viewportHeight: 0)
             metalResources.transferOrbit.showTransferOrbit(to: selectedPlanet)
             objectsViewState = .orbit
         })

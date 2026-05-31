@@ -101,10 +101,11 @@ final class TransferOrbitController {
             return baseProjection
         }
 
-        return CameraProjectionParameters(nearPlane: baseProjection.nearPlane,
-                                          farPlane: max(baseProjection.farPlane,
-                                                        CameraFit.defaultFarPlane,
-                                                        cameraCoordinator.cameraDistance + transferRadius * 1.15))
+        return baseProjection.withClippingPlanes(
+            farPlane: max(baseProjection.farPlane,
+                          CameraFit.defaultFarPlane,
+                          cameraCoordinator.cameraDistance + transferRadius * 1.15)
+        )
     }
 
     private func applyTransferOrbit(destinationName: String,

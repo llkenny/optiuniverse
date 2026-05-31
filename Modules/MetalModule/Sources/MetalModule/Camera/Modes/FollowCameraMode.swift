@@ -79,10 +79,9 @@ final class FollowCameraMode {
         }
 
         let framingRadius = snapshot?.framingRadius(ofPlanetNamed: followingPlanetName)
-        return CameraProjectionParameters(
+        return baseProjection.withClippingPlanes(
             nearPlane: CameraFit.nearPlaneDistance(cameraDistance: cameraDistance,
-                                                   framingRadius: framingRadius),
-            farPlane: baseProjection.farPlane
+                                                   framingRadius: framingRadius)
         )
     }
 }

@@ -30,6 +30,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let transferOrbitRenderer: TransferOrbitRenderer
     let routeRenderer: RouteRenderer
     let snapshotProvider: SnapshotProvider
+    let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     let navigationController: NavigationController
     let transferOrbitController: TransferOrbitController
     let metalView: MTKView
@@ -63,12 +64,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
           cameraCoordinator: CameraCoordinator,
           planets: [Planet],
           snapshotProvider: SnapshotProvider,
+          objectInfoOverlayFramingState: ObjectInfoOverlayFramingState,
           navigationController: NavigationController,
           transferOrbitController: TransferOrbitController) {
 
         self.metalView = metalView
         self.cameraCoordinator = cameraCoordinator
         self.snapshotProvider = snapshotProvider
+        self.objectInfoOverlayFramingState = objectInfoOverlayFramingState
         self.navigationController = navigationController
         self.transferOrbitController = transferOrbitController
 
@@ -173,7 +176,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                             delta: delta,
                                             viewportSize: metalView.bounds.size,
                                             modeState: modeState)
-        let projection = makeCameraProjection(snapshot: snapshot)
+        let objectInfoOverlayAdjustment = objectInfoOverlayFramingState.advance(delta: delta)
+        let projection = makeCameraProjection(snapshot: snapshot,
+                                              objectInfoOverlayAdjustment: objectInfoOverlayAdjustment)
         let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
                                                 projection: projection,
                                                 modeState: modeState)
