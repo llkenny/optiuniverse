@@ -72,11 +72,12 @@ final class SnapshotProvider {
         let cameraPose = cameraState.pose
         let aspect = Float(dependencies.viewportSize.width / max(dependencies.viewportSize.height, 1))
         let projectionMatrix = float4x4.perspective(
-            fov: CameraFit.verticalFieldOfView,
+            fov: dependencies.projection.verticalFieldOfView,
             aspect: aspect,
             near: dependencies.projection.nearPlane,
             far: max(dependencies.projection.farPlane,
-                     dependencies.projection.nearPlane + CameraFit.minimumNearPlane)
+                     dependencies.projection.nearPlane + CameraFit.minimumNearPlane),
+            verticalCenterOffset: dependencies.projection.verticalCenterOffset
         )
 
         let cameraSnapshot = CameraSnapshot(renderViewMatrix: cameraPose.makeRenderViewMatrix(),

@@ -99,7 +99,11 @@ extension float4x4 {
         return rotation * translation
     }
 
-    nonisolated static func perspective(fov: Float, aspect: Float, near: Float, far: Float) -> float4x4 {
+    nonisolated static func perspective(fov: Float,
+                                        aspect: Float,
+                                        near: Float,
+                                        far: Float,
+                                        verticalCenterOffset: Float = 0) -> float4x4 {
         let yValue = 1 / tan(fov * 0.5)
         let xValue = yValue / aspect
         let zValue = far / (far - near)
@@ -112,7 +116,7 @@ extension float4x4 {
         return float4x4(
             [xValue, 0, 0, 0],
             [0, -yValue, 0, 0],
-            [0, 0, zValue, 1],  // ← Should be 1 in 4th column
+            [0, verticalCenterOffset, zValue, 1],  // ← Should be 1 in 4th column
             [0, 0, wValue, 0]   // ← Should be 0 in 4th column
         )
     }

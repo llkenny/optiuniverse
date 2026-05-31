@@ -30,8 +30,8 @@ extension NavigationController {
                            cameraCoordinator.cameraDistance + routeProjectionRadius * 1.15)
         }
 
-        return CameraProjectionParameters(nearPlane: nearPlane,
-                                          farPlane: farPlane)
+        return baseProjection.withClippingPlanes(nearPlane: nearPlane,
+                                                 farPlane: farPlane)
     }
 
     func routeProjectionRadius(snapshot: PreparedRenderSnapshot) -> Float? {
