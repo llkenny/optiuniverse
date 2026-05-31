@@ -14,6 +14,10 @@ final class ZoomCameraMode {
     private let zoomSpeed: Float = 1.0
     private let damping: Float = 0.9
 
+    var hasActiveInertia: Bool {
+        zoomVelocity != 0
+    }
+
     func makeZoomTransaction(value: Float,
                              currentDistance: Float) -> CameraState.Transaction {
         let zoomFactor = pow(value, zoomSpeed)
@@ -27,9 +31,13 @@ final class ZoomCameraMode {
         zoomVelocity = -Float(velocity) * currentDistance * 0.15
     }
 
+    func cancelInertia() {
+        zoomVelocity = 0
+    }
+
     func update(delta: Float,
                 currentDistance: Float) -> CameraState.Transaction? {
-        guard zoomVelocity != 0 else {
+        guard hasActiveInertia else {
             return nil
         }
         let cameraDistance = currentDistance + zoomVelocity * delta

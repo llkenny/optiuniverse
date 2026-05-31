@@ -4,7 +4,7 @@ import UIKit
 @MainActor
 final class CameraController: NSObject, UIGestureRecognizerDelegate {
 
-    private let cameraCoordniator: CameraCoordinator
+    private let cameraCoordinator: CameraCoordinator
     private let beginManualCameraControl: () -> Void
     private let isTrajectoryModeActive: () -> Bool
 
@@ -12,14 +12,10 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
          beginManualCameraControl: @escaping () -> Void,
          isTrajectoryModeActive: @escaping () -> Bool) {
 
-        cameraCoordniator = cameraCoordinator
+        self.cameraCoordinator = cameraCoordinator
         self.beginManualCameraControl = beginManualCameraControl
         self.isTrajectoryModeActive = isTrajectoryModeActive
         super.init()
-    }
-
-    func dismantle() {
-        cameraCoordniator.deactivate()
     }
 
     // MARK: - Gesture handling
@@ -27,7 +23,7 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         beginManualCameraControl()
         let translation = gesture.translation(in: gesture.view)
         let velocity = gesture.velocity(in: gesture.view)
-        cameraCoordniator.makeRotation(with: translation, velocity: velocity)
+        cameraCoordinator.makeRotation(with: translation, velocity: velocity)
         gesture.setTranslation(.zero, in: gesture.view)
     }
 
@@ -35,14 +31,14 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         beginManualCameraControl()
 
         let translation = gesture.translation(in: gesture.view)
-        cameraCoordniator.makeTranslation(with: translation)
+        cameraCoordinator.makeTranslation(with: translation)
         gesture.setTranslation(.zero, in: gesture.view)
     }
 
     @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
         beginManualCameraControl()
         let gestureScale = max(Float(gesture.scale), 0.01)
-        cameraCoordniator.makeScale(with: gestureScale, velocity: gesture.velocity)
+        cameraCoordinator.makeScale(with: gestureScale, velocity: gesture.velocity)
         gesture.scale = 1.0
     }
 

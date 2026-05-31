@@ -89,7 +89,6 @@ public final class MetalModuleResources {
             self.cameraCoordinator.followNavigationDestination(named: name,
                                                                viewportSize: renderer?.metalView.bounds.size ?? .zero)
         }
-        cameraCoordinator.activate()
         return renderer
     }
 

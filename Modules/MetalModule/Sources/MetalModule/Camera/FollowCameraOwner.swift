@@ -38,6 +38,10 @@ final class FollowCameraOwner {
         self.followMode = followMode
     }
 
+    var hasActiveTransition: Bool {
+        cameraTransition != nil
+    }
+
     func followPlanet(named name: String,
                       viewportSize: CGSize) {
         followingPlanetName = name
@@ -102,6 +106,19 @@ final class FollowCameraOwner {
                                         snapshot: snapshot,
                                         cameraDistance: cameraState.cameraDistance,
                                         baseProjection: baseProjection)
+    }
+
+    func snapshotDependency(snapshot: PreparedRenderSnapshot?) -> CameraFollowSnapshotDependency? {
+        guard let planetName = pendingFollowPlanetName ?? followingPlanetName else {
+            return nil
+        }
+
+        return CameraFollowSnapshotDependency(
+            planetName: planetName,
+            worldPosition: snapshot?.worldPosition(ofPlanetNamed: planetName),
+            framingRadius: snapshot?.framingRadius(ofPlanetNamed: planetName),
+            hasActiveTransition: hasActiveTransition
+        )
     }
 
     private func startFollowAnimation(named name: String,

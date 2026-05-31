@@ -52,7 +52,7 @@ extension MetalRenderer {
                                                       renderEncoder: renderEncoder,
                                                       viewMatrix: renderViewMatrix,
                                                       projectionMatrix: state.cameraSnapshot.projectionMatrix,
-                                                      cameraPosition: state.cameraSnapshot.cameraPosition,
+                                                      cameraOffset: state.cameraSnapshot.cameraOffset,
                                                       sceneOrigin: renderOrigin,
                                                       viewportSize: state.cameraSnapshot.viewportSize,
                                                       cartoonShaderIntensity: min(max(cartoonShaderIntensity, 0), 1))

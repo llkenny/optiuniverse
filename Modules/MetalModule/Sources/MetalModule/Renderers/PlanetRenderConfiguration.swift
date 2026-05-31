@@ -13,7 +13,7 @@ struct PlanetRenderConfiguration {
     let renderEncoder: MTLRenderCommandEncoder
     let viewMatrix: float4x4
     let projectionMatrix: float4x4
-    let cameraPosition: SIMD3<Float>
+    let cameraOffset: SIMD3<Float>
     let sceneOrigin: SIMD3<Float>
     let viewportSize: CGSize
     let cartoonShaderIntensity: Float

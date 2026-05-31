@@ -6,12 +6,8 @@
 //
 
 import CoreGraphics
+import Foundation
 import simd
-
-struct CameraProjectionParameters: Equatable {
-    let nearPlane: Float
-    let farPlane: Float
-}
 
 /// Reads committed camera state, scene snapshots, viewport data, and explicit projection requirements.
 /// It produces immutable camera snapshots containing render-ready matrices and derived camera values.
@@ -31,20 +27,20 @@ final class SnapshotProvider {
     private struct CameraSnapshotDependencyKey: Equatable {
         let cameraRevision: Int
         let cameraDirtyFields: CameraState.DirtyFields
-        let sceneFrameID: UInt64?
-        let viewportSize: CGSize
-        let projection: CameraProjectionParameters
+        let dependencies: CameraSnapshotDependencies
     }
 
     struct CameraSnapshot {
         let renderViewMatrix: float4x4
         let projectionMatrix: float4x4
         let sceneOrigin: SIMD3<Float>
-        let cameraPosition: SIMD3<Float>
+        let cameraOffset: SIMD3<Float>
+        let cameraWorldPosition: SIMD3<Float>
         let viewportSize: CGSize
         let cameraRevision: Int
         let cameraDirtyFields: CameraState.DirtyFields
         let sceneFrameID: UInt64?
+        let dependencies: CameraSnapshotDependencies
     }
 
     init(cameraState: CameraState,
@@ -62,15 +58,11 @@ final class SnapshotProvider {
         snapshotSource.requestPreparation(simulationTime: simulationTime)
     }
 
-    func makeCameraSnapshot(viewportSize: CGSize,
-                            projection: CameraProjectionParameters) -> CameraSnapshot {
-        let sceneFrameID = latestSnapshot?.frameID
+    func makeCameraSnapshot(dependencies: CameraSnapshotDependencies) -> CameraSnapshot {
         let dependencyKey = CameraSnapshotDependencyKey(
             cameraRevision: cameraState.revision,
             cameraDirtyFields: cameraState.lastDirtyFields,
-            sceneFrameID: sceneFrameID,
-            viewportSize: viewportSize,
-            projection: projection
+            dependencies: dependencies
         )
         if dependencyKey == cachedDependencyKey,
            let cachedCameraSnapshot {
@@ -78,22 +70,25 @@ final class SnapshotProvider {
         }
 
         let cameraPose = cameraState.pose
-        let aspect = Float(viewportSize.width / max(viewportSize.height, 1))
+        let aspect = Float(dependencies.viewportSize.width / max(dependencies.viewportSize.height, 1))
         let projectionMatrix = float4x4.perspective(
             fov: CameraFit.verticalFieldOfView,
             aspect: aspect,
-            near: projection.nearPlane,
-            far: max(projection.farPlane, projection.nearPlane + CameraFit.minimumNearPlane)
+            near: dependencies.projection.nearPlane,
+            far: max(dependencies.projection.farPlane,
+                     dependencies.projection.nearPlane + CameraFit.minimumNearPlane)
         )
 
         let cameraSnapshot = CameraSnapshot(renderViewMatrix: cameraPose.makeRenderViewMatrix(),
                                             projectionMatrix: projectionMatrix,
                                             sceneOrigin: cameraPose.target,
-                                            cameraPosition: cameraPose.offset,
-                                            viewportSize: viewportSize,
+                                            cameraOffset: cameraPose.offset,
+                                            cameraWorldPosition: cameraPose.position,
+                                            viewportSize: dependencies.viewportSize,
                                             cameraRevision: cameraState.revision,
                                             cameraDirtyFields: cameraState.lastDirtyFields,
-                                            sceneFrameID: sceneFrameID)
+                                            sceneFrameID: dependencies.sceneFrameID,
+                                            dependencies: dependencies)
         cachedDependencyKey = dependencyKey
         cachedCameraSnapshot = cameraSnapshot
         return cameraSnapshot

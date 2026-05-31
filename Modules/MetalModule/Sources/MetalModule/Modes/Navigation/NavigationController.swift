@@ -87,6 +87,30 @@ final class NavigationController {
         isNavigationActive || cameraTransition != nil
     }
 
+    var cameraSnapshotDependency: CameraNavigationSnapshotDependency? {
+        let routeSnapshot = navigationSnapshot
+        let activeRoute = navigationRouteCoordinator.activeRouteForRendering
+
+        guard activeRoute != nil ||
+              routeSnapshot.routeID != nil ||
+              pendingNavigationDestinationName != nil ||
+              cameraTransition != nil else {
+            return nil
+        }
+
+        return CameraNavigationSnapshotDependency(
+            routeID: activeRoute?.id ?? routeSnapshot.routeID,
+            destinationName: activeRoute?.destinationName ??
+            routeSnapshot.destinationName ??
+            pendingNavigationDestinationName,
+            progress: navigationRouteCoordinator.renderProgress,
+            state: navigationRouteCoordinator.state,
+            hasActiveTransition: cameraTransition != nil ||
+            (navigationArrivalRouteID != nil && navigationArrivalProgress < 1),
+            arrivalProgress: navigationArrivalProgress
+        )
+    }
+
     init(snapshotProvider: SnapshotProvider,
          cameraCoordinator: any NavigationCameraCoordinating,
          planets: [Planet],

@@ -8,7 +8,6 @@
 import CoreFoundation
 import CoreGraphics
 import Foundation
-import QuartzCore
 import simd
 
 /// Routes camera commands to the active camera mode owners.
@@ -38,20 +37,7 @@ final class CameraCoordinator {
     let navigationCameraOwner: NavigationCameraOwner
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
-    private var displayLink: CADisplayLink?
-
-    init(cameraState: CameraState,
-         snapshotProvider: SnapshotProvider) {
-        self.cameraState = cameraState
-        self.snapshotProvider = snapshotProvider
-        zoomMode = .init()
-        orbitMode = .init()
-        trajectoryMode = .init()
-        followCameraOwner = .init(cameraState: cameraState,
-                                  snapshotProvider: snapshotProvider)
-        navigationCameraOwner = .init(cameraState: cameraState)
-        transferPreviewCameraOwner = .init(cameraState: cameraState)
-    }
+    private var activeCameraMotionRevision = 0
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
@@ -73,12 +59,17 @@ final class CameraCoordinator {
         cameraState.cameraDistance
     }
 
-    func activate() {
-        startLoop()
-    }
-
-    func deactivate() {
-        stopLoop()
+    init(cameraState: CameraState,
+         snapshotProvider: SnapshotProvider) {
+        self.cameraState = cameraState
+        self.snapshotProvider = snapshotProvider
+        zoomMode = .init()
+        orbitMode = .init()
+        trajectoryMode = .init()
+        followCameraOwner = .init(cameraState: cameraState,
+                                  snapshotProvider: snapshotProvider)
+        navigationCameraOwner = .init(cameraState: cameraState)
+        transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
     func makeTranslation(with value: CGPoint) {
@@ -124,17 +115,23 @@ final class CameraCoordinator {
     }
 
     func beginManualCameraControl() {
+        zoomMode.cancelInertia()
+        orbitMode.cancelInertia()
         followCameraOwner.beginManualCameraControl()
     }
 
-    /// Advances the follow camera when no higher-priority mode currently owns the camera.
+    /// Advances all camera-layer per-frame work for the current render iteration.
     ///
-    /// `isSuppressed` is true while navigation controls the camera or transfer preview is active.
-    /// Pending follow requests are preserved while suppressed and resolve on a later frame.
-    func updateFollowCamera(snapshot: PreparedRenderSnapshot?,
-                            delta: Float,
-                            viewportSize: CGSize,
-                            isSuppressed: Bool) {
+    /// Route playback and transfer-orbit geometry remain owned by their controllers. This entry point
+    /// owns camera priority for manual inertia and follow behavior before `SnapshotProvider` derives
+    /// immutable matrices.
+    func updateFrameCamera(snapshot: PreparedRenderSnapshot?,
+                           delta: Float,
+                           viewportSize: CGSize,
+                           modeState: CameraFrameModeState) {
+        updateManualCameraInertia(delta: delta)
+
+        let isSuppressed = modeState.navigationControlsCamera || modeState.transferPreviewActive
         followCameraOwner.update(snapshot: snapshot,
                                  delta: delta,
                                  viewportSize: viewportSize,
@@ -142,12 +139,31 @@ final class CameraCoordinator {
         if !isSuppressed {
             refreshCamera(snapshot: snapshot)
         }
+
+        if hasActiveCameraMotion(modeState: modeState) {
+            activeCameraMotionRevision += 1
+        }
     }
 
     func followProjectionParameters(snapshot: PreparedRenderSnapshot?,
                                     baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         followCameraOwner.projectionParameters(snapshot: snapshot,
                                                baseProjection: baseProjection)
+    }
+
+    func makeSnapshotDependencies(snapshot: PreparedRenderSnapshot?,
+                                  viewportSize: CGSize,
+                                  projection: CameraProjectionParameters,
+                                  modeState: CameraFrameModeState) -> CameraSnapshotDependencies {
+        CameraSnapshotDependencies(
+            followedObject: followCameraOwner.snapshotDependency(snapshot: snapshot),
+            navigation: modeState.navigation,
+            transfer: modeState.transfer,
+            activeCameraMotionRevision: activeCameraMotionRevision,
+            sceneFrameID: snapshot?.frameID,
+            viewportSize: viewportSize,
+            projection: projection
+        )
     }
 
     /// Rebuilds derived camera values after mode transactions or gesture inertia.
@@ -161,7 +177,7 @@ final class CameraCoordinator {
         )
     }
 
-    private func update(delta: Float) {
+    private func updateManualCameraInertia(delta: Float) {
         commitManualCameraTransaction(
             zoomMode.update(delta: delta,
                             currentDistance: cameraState.cameraDistance)
@@ -176,27 +192,15 @@ final class CameraCoordinator {
         }
     }
 
+    private func hasActiveCameraMotion(modeState: CameraFrameModeState) -> Bool {
+        zoomMode.hasActiveInertia ||
+        orbitMode.hasActiveInertia ||
+        followCameraOwner.hasActiveTransition ||
+        modeState.hasActiveExternalCameraMotion
+    }
+
     private func commitManualCameraTransaction(_ transaction: CameraState.Transaction?) {
         guard let transaction else { return }
         cameraState.commit(transaction)
-    }
-
-    // MARK: Update loop
-
-    private func startLoop() {
-        guard displayLink == nil else { return }
-
-        displayLink = CADisplayLink(target: self, selector: #selector(step(_:)))
-        displayLink?.add(to: .main, forMode: .common)
-    }
-
-    private func stopLoop() {
-        displayLink?.invalidate()
-        displayLink = nil
-    }
-
-    @objc private func step(_ link: CADisplayLink) {
-        let delta = Float(link.duration)
-        update(delta: delta)
     }
 }

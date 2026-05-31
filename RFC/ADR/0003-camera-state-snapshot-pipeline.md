@@ -1,6 +1,6 @@
 # ADR 0003: Camera State Snapshot Pipeline
 
-Status: Proposed
+Status: Accepted
 Date: 21/05/26
 
 ## Context

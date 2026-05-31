@@ -159,8 +159,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        // Advance simulation time and update camera before rendering so that
-        // the view matches the planets' latest positions within the same frame.
+        // Advance simulation time and publish route/transfer state before camera snapshot derivation.
         let delta = planetsRenderer.advanceTime()
         snapshotProvider.requestPreparation(simulationTime: planetsRenderer.currentTime)
         let snapshot = snapshotProvider.latestSnapshot
@@ -169,22 +168,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                        delta: delta)
         navigationController.update(snapshot: snapshot,
                                     delta: delta)
-        let suppressFollowCamera = navigationController.controlsCamera ||
-        transferOrbitController.isTransferPreviewActive
-        cameraCoordinator.updateFollowCamera(snapshot: snapshot,
-                                             delta: delta,
-                                             viewportSize: metalView.bounds.size,
-                                             isSuppressed: suppressFollowCamera)
-        let baseProjection = CameraProjectionParameters(nearPlane: CameraFit.defaultNearPlane,
-                                                        farPlane: farPlaneDistance())
-        let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
-                                                                            baseProjection: baseProjection)
-        let transferProjection = transferOrbitController.projectionParameters(snapshot: snapshot,
-                                                                             baseProjection: followProjection)
-        let projection = navigationController.projectionParameters(snapshot: snapshot,
-                                                                  baseProjection: transferProjection)
-        let cameraSnapshot = snapshotProvider.makeCameraSnapshot(viewportSize: metalView.bounds.size,
-                                                                 projection: projection)
+        let modeState = makeCameraFrameModeState()
+        cameraCoordinator.updateFrameCamera(snapshot: snapshot,
+                                            delta: delta,
+                                            viewportSize: metalView.bounds.size,
+                                            modeState: modeState)
+        let projection = makeCameraProjection(snapshot: snapshot)
+        let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
+                                                projection: projection,
+                                                modeState: modeState)
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,
@@ -206,7 +198,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
     }
 
-    private func farPlaneDistance() -> Float {
+    func farPlaneDistance() -> Float {
         return CameraFit.defaultFarPlane
     }
 
