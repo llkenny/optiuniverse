@@ -72,6 +72,15 @@ final class TransferOrbitController {
         cameraTransition = nil
     }
 
+    func cancelTransferOrbit() {
+        let destinationName = activeDestinationName ?? pendingDestinationName
+
+        clearTransferOrbit()
+
+        guard let destinationName else { return }
+        followPlanet?(destinationName)
+    }
+
     func beginManualCameraControl() {
         cameraTransition = nil
     }
