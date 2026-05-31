@@ -33,7 +33,7 @@ extension PlanetsRenderer: PlanetsRendererProtocol {
                          configuration: configuration)
         }
 
-        let cameraWorldPosition = configuration.sceneOrigin + configuration.cameraPosition
+        let cameraWorldPosition = configuration.sceneOrigin + configuration.cameraOffset
         let transparentPlanets = snapshot.planets
             .filter { planet in
                 hasTransparentSubmesh(in: planet)

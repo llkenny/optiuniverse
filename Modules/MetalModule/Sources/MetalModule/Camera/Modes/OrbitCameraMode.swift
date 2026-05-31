@@ -17,6 +17,10 @@ final class OrbitCameraMode {
     private var pitchVelocity: Float = 0
     private let damping: Float = 0.9
 
+    var hasActiveInertia: Bool {
+        yawVelocity != 0 || pitchVelocity != 0
+    }
+
     func makeOrbitTransaction(horizontal horizontalAngle: Float,
                               vertical verticalAngle: Float,
                               cameraOrientation currentOrientation: simd_quatf) -> CameraState.Transaction {
@@ -36,9 +40,14 @@ final class OrbitCameraMode {
         pitchVelocity = Float(velocity.y) * orbitSpeed * 0.1
     }
 
+    func cancelInertia() {
+        yawVelocity = 0
+        pitchVelocity = 0
+    }
+
     func update(delta: Float,
                 cameraOrientation: simd_quatf) -> CameraState.Transaction? {
-        guard yawVelocity != 0 || pitchVelocity != 0 else {
+        guard hasActiveInertia else {
             return nil
         }
         let transaction = makeOrbitTransaction(horizontal: yawVelocity * delta,

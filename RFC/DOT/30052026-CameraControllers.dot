@@ -3,7 +3,7 @@ digraph CurrentGitChangesDependencies {
         rankdir=LR,
         bgcolor="white",
         fontname="Helvetica",
-        label="Current Git Changes: Route Navigation ADR 0003 Dependency Graph",
+        label="ADR 0003 Accepted: Camera State Snapshot Pipeline Dependency Graph",
         labelloc=t,
         fontsize=20
     ];
@@ -35,6 +35,7 @@ digraph CurrentGitChangesDependencies {
         LegendSnapshot [label="snapshot derivation", fillcolor="#ede9fe"];
         LegendRender [label="render consumption", fillcolor="#ffedd5"];
         LegendMode [label="current camera mode", fillcolor="#dcfce7"];
+        LegendDependency [label="snapshot dependency key", fillcolor="#f3e8ff"];
     }
 
     subgraph cluster_composition {
@@ -93,6 +94,10 @@ digraph CurrentGitChangesDependencies {
             label="CameraProjectionParameters\ngeneric near/far input",
             fillcolor="#ede9fe"
         ];
+        CameraNavigationSnapshotDependency [
+            label="CameraNavigationSnapshotDependency\nroute id/progress/state/transition",
+            fillcolor="#f3e8ff"
+        ];
     }
 
     subgraph cluster_transfer_preview {
@@ -104,6 +109,10 @@ digraph CurrentGitChangesDependencies {
             label="TransferOrbitController\npreview lifecycle owner",
             fillcolor="#ede9fe"
         ];
+        CameraTransferSnapshotDependency [
+            label="CameraTransferSnapshotDependency\ndestination + transition flag",
+            fillcolor="#f3e8ff"
+        ];
     }
 
     subgraph cluster_camera {
@@ -112,7 +121,7 @@ digraph CurrentGitChangesDependencies {
         style="rounded";
 
         CameraCoordinator [
-            label="CameraCoordinator\nroutes camera ownership\ncommits manual transactions",
+            label="CameraCoordinator\nroutes ownership + frame camera tick\nbuilds snapshot dependencies",
             fillcolor="#dcfce7"
         ];
         NavigationCameraCoordinating [
@@ -134,6 +143,10 @@ digraph CurrentGitChangesDependencies {
         FollowCameraOwner [
             label="FollowCameraOwner\nowns current follow lifecycle",
             fillcolor="#dcfce7"
+        ];
+        CameraFollowSnapshotDependency [
+            label="CameraFollowSnapshotDependency\nfollow target position/radius/transition",
+            fillcolor="#f3e8ff"
         ];
         FollowCameraMode [
             label="FollowCameraMode\ncomputes follow transactions",
@@ -164,12 +177,20 @@ digraph CurrentGitChangesDependencies {
             fillcolor="#dcfce7"
         ];
         SnapshotProvider [
-            label="SnapshotProvider\nmode-independent camera snapshot producer",
+            label="SnapshotProvider\nfull dependency-keyed snapshot producer",
             fillcolor="#ede9fe"
         ];
         CameraSnapshot [
-            label="SnapshotProvider.CameraSnapshot\nimmutable render camera",
+            label="SnapshotProvider.CameraSnapshot\nimmutable render camera\nmatrices + origin + camera offset/world position",
             fillcolor="#ede9fe"
+        ];
+        CameraSnapshotDependencies [
+            label="CameraSnapshotDependencies\nfollow + nav + transfer + motion revision\nscene frame + viewport + projection",
+            fillcolor="#f3e8ff"
+        ];
+        CameraFrameModeState [
+            label="CameraFrameModeState\nlightweight per-frame controller state",
+            fillcolor="#f3e8ff"
         ];
         PreparedRenderSnapshotProvider [
             label="PreparedRenderSnapshotProviding\nscene snapshot source",
@@ -183,7 +204,11 @@ digraph CurrentGitChangesDependencies {
         style="rounded";
 
         MetalRenderer [
-            label="MetalRenderer\nticks controllers + composes render state",
+            label="MetalRenderer\nticks route/preview controllers\nrequests camera snapshot + composes render state",
+            fillcolor="#ffedd5"
+        ];
+        MetalRendererCameraFrame [
+            label="MetalRenderer+CameraFrame\nmode state + projection + snapshot assembly",
             fillcolor="#ffedd5"
         ];
         DrawFirstPass [
@@ -280,6 +305,11 @@ digraph CurrentGitChangesDependencies {
         label="exposes routeRenderState",
         color="#ea580c"
     ];
+    NavigationController -> CameraNavigationSnapshotDependency [
+        label="exposes cameraSnapshotDependency",
+        color="#7c3aed",
+        penwidth=2
+    ];
     NavigationControllerRoute -> NavigationRouteCoordinator [
         label="start/pause/resume/cancel/done",
         color="#2563eb"
@@ -322,6 +352,11 @@ digraph CurrentGitChangesDependencies {
         color="#7c3aed",
         penwidth=2
     ];
+    TransferOrbitController -> CameraTransferSnapshotDependency [
+        label="exposes cameraSnapshotDependency",
+        color="#7c3aed",
+        penwidth=2
+    ];
     TransferOrbitController -> TransferPreview [
         label="publishes renderState",
         color="#ea580c",
@@ -344,8 +379,18 @@ digraph CurrentGitChangesDependencies {
         penwidth=2
     ];
     CameraCoordinator -> CameraState [
-        label="commits manual transactions\n+ refreshes derived values",
+        label="commits manual transactions\n+ enforces constraints",
         color="#16a34a",
+        penwidth=2
+    ];
+    CameraCoordinator -> CameraFrameModeState [
+        label="receives updateFrameCamera mode state",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    CameraCoordinator -> CameraSnapshotDependencies [
+        label="makeSnapshotDependencies()",
+        color="#7c3aed",
         penwidth=2
     ];
     CameraCoordinator -> OrbitCameraMode [
@@ -402,6 +447,11 @@ digraph CurrentGitChangesDependencies {
         label="reads latest scene snapshot",
         color="#7c3aed"
     ];
+    FollowCameraOwner -> CameraFollowSnapshotDependency [
+        label="publishes follow dependency signature",
+        color="#7c3aed",
+        penwidth=2
+    ];
     NavigationCameraOwner -> NavigationCameraMode [
         label="owns mode math",
         color="#16a34a",
@@ -445,7 +495,32 @@ digraph CurrentGitChangesDependencies {
         color="#7c3aed"
     ];
     CameraProjectionParameters -> SnapshotProvider [
-        label="explicit mode-agnostic near/far",
+        label="included in dependency key",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    CameraFollowSnapshotDependency -> CameraSnapshotDependencies [
+        label="included",
+        color="#7c3aed"
+    ];
+    CameraNavigationSnapshotDependency -> CameraSnapshotDependencies [
+        label="included",
+        color="#7c3aed"
+    ];
+    CameraTransferSnapshotDependency -> CameraSnapshotDependencies [
+        label="included",
+        color="#7c3aed"
+    ];
+    CameraFrameModeState -> CameraSnapshotDependencies [
+        label="nav/transfer dependencies",
+        color="#7c3aed"
+    ];
+    CameraProjectionParameters -> CameraSnapshotDependencies [
+        label="projection dependency",
+        color="#7c3aed"
+    ];
+    CameraSnapshotDependencies -> SnapshotProvider [
+        label="full cache key with camera revision/dirty fields",
         color="#7c3aed",
         penwidth=2
     ];
@@ -456,24 +531,38 @@ digraph CurrentGitChangesDependencies {
     ];
 
     MetalRenderer -> NavigationController [
-        label="ticks route navigation; reads controlsCamera",
+        label="ticks route navigation",
         color="#ea580c"
     ];
     MetalRenderer -> TransferOrbitController [
-        label="ticks preview; reads render/projection state",
+        label="ticks preview",
         color="#ea580c"
     ];
-    MetalRenderer -> CameraProjectionParameters [
+    MetalRenderer -> MetalRendererCameraFrame [
+        label="delegates camera-frame assembly",
+        color="#ea580c",
+        penwidth=2
+    ];
+    MetalRendererCameraFrame -> CameraFrameModeState [
+        label="builds from controller state",
+        color="#7c3aed",
+        penwidth=2
+    ];
+    MetalRendererCameraFrame -> CameraProjectionParameters [
         label="composes base + follow + preview + navigation projection",
         color="#7c3aed",
         penwidth=2
     ];
     MetalRenderer -> CameraCoordinator [
-        label="ticks follow mode; reads follow projection policy",
+        label="updateFrameCamera()",
         color="#16a34a",
         penwidth=2
     ];
-    MetalRenderer -> SnapshotProvider [
+    MetalRendererCameraFrame -> CameraCoordinator [
+        label="requests dependencies",
+        color="#16a34a"
+    ];
+    MetalRendererCameraFrame -> SnapshotProvider [
         label="requests CameraSnapshot",
         color="#7c3aed",
         penwidth=2

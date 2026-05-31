@@ -36,6 +36,19 @@ final class TransferOrbitController {
         activeTransferOrbit != nil
     }
 
+    var cameraSnapshotDependency: CameraTransferSnapshotDependency? {
+        guard activeDestinationName != nil ||
+              pendingDestinationName != nil ||
+              cameraTransition != nil else {
+            return nil
+        }
+
+        return CameraTransferSnapshotDependency(
+            destinationName: activeDestinationName ?? pendingDestinationName,
+            hasActiveTransition: cameraTransition != nil
+        )
+    }
+
     var renderState: TransferOrbitRenderState {
         TransferOrbitRenderState(transferOrbit: activeTransferOrbit)
     }

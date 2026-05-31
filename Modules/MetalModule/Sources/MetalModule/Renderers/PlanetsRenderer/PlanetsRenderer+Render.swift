@@ -47,7 +47,7 @@ extension PlanetsRenderer {
         // Set buffers
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
-            cameraPosition: configuration.cameraPosition,
+            cameraPosition: configuration.cameraOffset,
             lightPosition: -configuration.sceneOrigin,
             cartoonShaderIntensity: min(max(configuration.cartoonShaderIntensity, 0), 1)
         )
@@ -57,7 +57,7 @@ extension PlanetsRenderer {
 
         let renderSubmeshes = submeshes(for: planet,
                                         renderPass: renderPass,
-                                        cameraPosition: configuration.cameraPosition,
+                                        cameraPosition: configuration.cameraOffset,
                                         sceneOrigin: configuration.sceneOrigin)
 
         render(renderSubmeshes: renderSubmeshes,

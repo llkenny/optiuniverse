@@ -6,11 +6,55 @@
 //
 
 import CoreGraphics
+import Foundation
 import simd
 
 struct CameraProjectionParameters: Equatable {
     let nearPlane: Float
     let farPlane: Float
+}
+
+struct CameraFollowSnapshotDependency: Equatable {
+    let planetName: String
+    let worldPosition: SIMD3<Float>?
+    let framingRadius: Float?
+    let hasActiveTransition: Bool
+}
+
+struct CameraNavigationSnapshotDependency: Equatable {
+    let routeID: UUID?
+    let destinationName: String?
+    let progress: Float
+    let state: NavigationRouteState
+    let hasActiveTransition: Bool
+    let arrivalProgress: Float
+}
+
+struct CameraTransferSnapshotDependency: Equatable {
+    let destinationName: String?
+    let hasActiveTransition: Bool
+}
+
+struct CameraFrameModeState: Equatable {
+    let navigationControlsCamera: Bool
+    let navigation: CameraNavigationSnapshotDependency?
+    let transferPreviewActive: Bool
+    let transfer: CameraTransferSnapshotDependency?
+
+    var hasActiveExternalCameraMotion: Bool {
+        navigation?.hasActiveTransition == true ||
+        transfer?.hasActiveTransition == true
+    }
+}
+
+struct CameraSnapshotDependencies: Equatable {
+    let followedObject: CameraFollowSnapshotDependency?
+    let navigation: CameraNavigationSnapshotDependency?
+    let transfer: CameraTransferSnapshotDependency?
+    let activeCameraMotionRevision: Int
+    let sceneFrameID: UInt64?
+    let viewportSize: CGSize
+    let projection: CameraProjectionParameters
 }
 
 /// Reads committed camera state, scene snapshots, viewport data, and explicit projection requirements.
@@ -31,20 +75,20 @@ final class SnapshotProvider {
     private struct CameraSnapshotDependencyKey: Equatable {
         let cameraRevision: Int
         let cameraDirtyFields: CameraState.DirtyFields
-        let sceneFrameID: UInt64?
-        let viewportSize: CGSize
-        let projection: CameraProjectionParameters
+        let dependencies: CameraSnapshotDependencies
     }
 
     struct CameraSnapshot {
         let renderViewMatrix: float4x4
         let projectionMatrix: float4x4
         let sceneOrigin: SIMD3<Float>
-        let cameraPosition: SIMD3<Float>
+        let cameraOffset: SIMD3<Float>
+        let cameraWorldPosition: SIMD3<Float>
         let viewportSize: CGSize
         let cameraRevision: Int
         let cameraDirtyFields: CameraState.DirtyFields
         let sceneFrameID: UInt64?
+        let dependencies: CameraSnapshotDependencies
     }
 
     init(cameraState: CameraState,
@@ -62,15 +106,11 @@ final class SnapshotProvider {
         snapshotSource.requestPreparation(simulationTime: simulationTime)
     }
 
-    func makeCameraSnapshot(viewportSize: CGSize,
-                            projection: CameraProjectionParameters) -> CameraSnapshot {
-        let sceneFrameID = latestSnapshot?.frameID
+    func makeCameraSnapshot(dependencies: CameraSnapshotDependencies) -> CameraSnapshot {
         let dependencyKey = CameraSnapshotDependencyKey(
             cameraRevision: cameraState.revision,
             cameraDirtyFields: cameraState.lastDirtyFields,
-            sceneFrameID: sceneFrameID,
-            viewportSize: viewportSize,
-            projection: projection
+            dependencies: dependencies
         )
         if dependencyKey == cachedDependencyKey,
            let cachedCameraSnapshot {
@@ -78,22 +118,25 @@ final class SnapshotProvider {
         }
 
         let cameraPose = cameraState.pose
-        let aspect = Float(viewportSize.width / max(viewportSize.height, 1))
+        let aspect = Float(dependencies.viewportSize.width / max(dependencies.viewportSize.height, 1))
         let projectionMatrix = float4x4.perspective(
             fov: CameraFit.verticalFieldOfView,
             aspect: aspect,
-            near: projection.nearPlane,
-            far: max(projection.farPlane, projection.nearPlane + CameraFit.minimumNearPlane)
+            near: dependencies.projection.nearPlane,
+            far: max(dependencies.projection.farPlane,
+                     dependencies.projection.nearPlane + CameraFit.minimumNearPlane)
         )
 
         let cameraSnapshot = CameraSnapshot(renderViewMatrix: cameraPose.makeRenderViewMatrix(),
                                             projectionMatrix: projectionMatrix,
                                             sceneOrigin: cameraPose.target,
-                                            cameraPosition: cameraPose.offset,
-                                            viewportSize: viewportSize,
+                                            cameraOffset: cameraPose.offset,
+                                            cameraWorldPosition: cameraPose.position,
+                                            viewportSize: dependencies.viewportSize,
                                             cameraRevision: cameraState.revision,
                                             cameraDirtyFields: cameraState.lastDirtyFields,
-                                            sceneFrameID: sceneFrameID)
+                                            sceneFrameID: dependencies.sceneFrameID,
+                                            dependencies: dependencies)
         cachedDependencyKey = dependencyKey
         cachedCameraSnapshot = cameraSnapshot
         return cameraSnapshot
