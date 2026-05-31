@@ -132,9 +132,41 @@ import Testing
     let fixture = ManualCameraCoordinatorFixture()
     let initialRevision = fixture.cameraState.revision
 
-    fixture.cameraCoordinator.makeTranslation(with: CGPoint(x: 30, y: 40))
+    fixture.cameraCoordinator.makeTranslation(with: CGPoint(x: 30, y: 40),
+                                              viewportSize: CGSize(width: 900, height: 1200))
 
     #expect(fixture.cameraState.revision == initialRevision + 1)
+}
+
+@MainActor
+@Test func cameraCoordinatorTrajectoryPanUsesViewportSize() {
+    let fixture = ManualCameraCoordinatorFixture()
+    let viewportSize = CGSize(width: 900, height: 1200)
+
+    fixture.cameraCoordinator.makeTranslation(with: CGPoint(x: 30, y: 40),
+                                              viewportSize: viewportSize)
+
+    let visibleHeight = 2 * fixture.cameraState.cameraDistance * tan(CameraFit.verticalFieldOfView / 2)
+    let visibleWidth = visibleHeight * Float(viewportSize.width / viewportSize.height)
+    let expectedTarget = SIMD3<Float>(
+        Float(30) / Float(viewportSize.width) * visibleWidth,
+        Float(40) / Float(viewportSize.height) * visibleHeight,
+        0
+    )
+
+    #expect(simd_length(fixture.cameraState.cameraTarget - expectedTarget) < 0.000001)
+}
+
+@MainActor
+@Test func cameraCoordinatorTrajectoryPanSkipsInvalidViewportSize() {
+    let fixture = ManualCameraCoordinatorFixture()
+    let initialRevision = fixture.cameraState.revision
+
+    fixture.cameraCoordinator.makeTranslation(with: CGPoint(x: 30, y: 40),
+                                              viewportSize: .zero)
+
+    #expect(fixture.cameraState.revision == initialRevision)
+    #expect(fixture.cameraState.cameraTarget == .zero)
 }
 
 @MainActor

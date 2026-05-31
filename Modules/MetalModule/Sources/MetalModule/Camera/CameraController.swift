@@ -31,7 +31,9 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         beginManualCameraControl()
 
         let translation = gesture.translation(in: gesture.view)
-        cameraCoordinator.makeTranslation(with: translation)
+        let viewportSize = gesture.view?.bounds.size ?? .zero
+        cameraCoordinator.makeTranslation(with: translation,
+                                          viewportSize: viewportSize)
         gesture.setTranslation(.zero, in: gesture.view)
     }
 

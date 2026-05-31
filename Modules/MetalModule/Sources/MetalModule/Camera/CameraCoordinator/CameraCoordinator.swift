@@ -72,12 +72,21 @@ final class CameraCoordinator {
         transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
-    func makeTranslation(with value: CGPoint) {
+    func makeTranslation(with value: CGPoint,
+                         viewportSize: CGSize) {
+        guard viewportSize.width.isFinite,
+              viewportSize.height.isFinite,
+              viewportSize.width > 0,
+              viewportSize.height > 0 else {
+            return
+        }
+
         let camera = TrajectoryCameraMode.CameraInput(distance: cameraState.cameraDistance,
                                                       orientation: cameraState.cameraOrientation,
                                                       target: cameraState.cameraTarget)
         commitManualCameraTransaction(
             trajectoryMode.makePanTransaction(translation: value,
+                                              viewportSize: viewportSize,
                                               camera: camera)
         )
     }
