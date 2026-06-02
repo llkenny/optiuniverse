@@ -38,7 +38,12 @@ struct ObjectInfoView: View {
             Text(entity.description)
                 .foregroundStyle(OptiColor.overlayTextSecondary)
                 .font(Typography.overlayBody)
-                .padding(.bottom, 32)
+                .padding(.bottom, 8)
+
+            if let orbitInfo = entity.orbitInfo {
+                ObjectInfoOrbitView(model: orbitInfo)
+                    .padding(.bottom, 8)
+            }
 
             if entity.isNavigable {
                 Button(action: entity.navigationButtonAction) {
@@ -48,7 +53,8 @@ struct ObjectInfoView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.top)
         .background(LinearGradient(colors: [.clear, OptiColor.overlaySurface],
                                    startPoint: .top, endPoint: .bottom))
     }
@@ -69,9 +75,17 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                                 .init(title: "surface temp", value: "-180 to 430", dimension: "°C")],
                                       navigationButtonTitle: "🎯 Route",
                                       isNavigable: true,
+                                      orbitInfo: .init(
+                                        description: "Mercury completes one orbit around the Sun every 87.97 days",
+                                        properties: [
+                                            .axis: "0.39 AU",
+                                            .eccentricity: "0.206",
+                                            .inclination: "7.00°"
+                                        ]
+                                      ),
                                       navigationButtonAction: {
         print("Navigate to Mercury")
     })
     ObjectInfoView(entity: entity)
-        .background(OptiColor.screenBackground)
+        .background(.black)
 }

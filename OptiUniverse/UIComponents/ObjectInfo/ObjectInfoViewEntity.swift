@@ -15,5 +15,6 @@ struct ObjectInfoViewEntity: Identifiable {
     let details: [ObjectInfoDetailCardEntity]
     let navigationButtonTitle: String
     let isNavigable: Bool
+    let orbitInfo: ObjectInfoOrbitView.Model?
     let navigationButtonAction: () -> Void
 }

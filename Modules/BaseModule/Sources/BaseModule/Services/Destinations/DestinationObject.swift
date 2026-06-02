@@ -14,6 +14,17 @@ public nonisolated struct DestinationObject: Decodable, Sendable {
         public let dimension: String
     }
 
+    public struct OrbitProperties: Decodable, Sendable {
+        public let axis: String
+        public let eccentricity: String
+        public let inclination: String
+    }
+
+    public struct OrbitInfo: Decodable, Sendable {
+        public let description: String
+        public let properties: OrbitProperties
+    }
+
     public let id: UUID
     public let object: String
     public let title: String
@@ -23,4 +34,5 @@ public nonisolated struct DestinationObject: Decodable, Sendable {
     public let tag: String
     public let isNavigable: Bool
     public let details: [Detail]
+    public let orbitInfo: OrbitInfo?
 }
