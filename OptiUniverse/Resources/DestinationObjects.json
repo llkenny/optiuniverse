@@ -10,9 +10,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "0",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.6B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -20,9 +20,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "230M",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "SOLAR MASS"
             },
             {
                 "title": "Surface temp",
@@ -50,9 +50,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "0.39",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -60,9 +60,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "88",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.055",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -90,9 +90,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "0.72",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -100,9 +100,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "225",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.815",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -130,9 +130,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "1.00",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -140,9 +140,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "365.25",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "EARTH MASS"
             },
             {
                 "title": "Surface temp",
@@ -170,9 +170,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "384,400",
-                "dimension": "KM"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -180,9 +180,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "27.3",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.0123",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -210,9 +210,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "1.52",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -220,9 +220,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "687",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.107",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -250,9 +250,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "5.20",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -260,9 +260,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "11.86",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "JUPITER MASS"
             },
             {
                 "title": "Surface temp",
@@ -290,9 +290,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "9.58",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -300,9 +300,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "29.45",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "0.299",
+                "dimension": "JUPITER MASSES"
             },
             {
                 "title": "Surface temp",
@@ -330,9 +330,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "19.2",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -340,9 +340,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "84",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "14.5",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -370,9 +370,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "30.1",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -380,9 +380,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "164.8",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "17.1",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
@@ -410,9 +410,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "39",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -420,9 +420,9 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "248",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "0.00218",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",

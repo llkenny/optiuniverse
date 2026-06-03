@@ -6,7 +6,7 @@ Features:
 - Explore a real-time 3D solar-system scene
 - Discover planets, moons, gas giants, ice giants, and distant worlds
 - Pan, pinch, rotate, and follow celestial objects with smooth camera controls
-- View destination cards with distance, diameter, orbital period, temperature, and short descriptions
+- View destination cards with age, diameter, mass, temperature, and short descriptions
 - Visualize transfer-orbit routes for supported destinations
 - Enjoy detailed textured materials, HDR rendering, bloom, tone mapping, and star-field visuals
 

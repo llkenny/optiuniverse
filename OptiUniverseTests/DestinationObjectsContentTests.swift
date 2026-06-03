@@ -27,9 +27,9 @@ struct DestinationObjectsContentTests {
             #expect(UIImage(named: destination.imageName) != nil)
 
             let detailTitles = Set(destination.details.map(\.title))
-            #expect(detailTitles.contains("Distance"))
+            #expect(detailTitles.contains("Age"))
             #expect(detailTitles.contains("Diameter"))
-            #expect(detailTitles.contains("Orbital period"))
+            #expect(detailTitles.contains("Mass"))
             #expect(detailTitles.contains("Surface temp"))
 
             for detail in destination.details {
