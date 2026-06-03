@@ -10,9 +10,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "0",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.6B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -20,16 +20,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "230M",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "SOLAR MASS"
             },
             {
                 "title": "Surface temp",
                 "value": "5,500",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "The Sun completes one orbit around the Milky Way's galactic center roughly every 230 million years.",
+            "properties": {
+                "axis": "~26,000 ly",
+                "eccentricity": "N/A",
+                "inclination": "N/A"
+            }
+        }
     },
     {
         "id": "2F2B045C-4C7C-4797-A423-BAC3665F67AF",
@@ -42,9 +50,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "0.39",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -52,16 +60,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "88",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.055",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-180 to 430",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Mercury completes one orbit around the Sun every 88 days.",
+            "properties": {
+                "axis": "0.387 AU",
+                "eccentricity": "0.206",
+                "inclination": "7.00°"
+            }
+        }
     },
     {
         "id": "65759265-BD0F-43F8-BE5C-BD877D0EE4F6",
@@ -74,9 +90,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "0.72",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -84,16 +100,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "225",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.815",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "465",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Venus completes one orbit around the Sun every 225 days.",
+            "properties": {
+                "axis": "0.723 AU",
+                "eccentricity": "0.0068",
+                "inclination": "3.39°"
+            }
+        }
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB94F",
@@ -106,9 +130,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "1.00",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -116,16 +140,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "365.25",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "EARTH MASS"
             },
             {
                 "title": "Surface temp",
                 "value": "15",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Earth completes one orbit around the Sun every 365.25 days.",
+            "properties": {
+                "axis": "1.000 AU",
+                "eccentricity": "0.0167",
+                "inclination": "0.00005°"
+            }
+        }
     },
     {
         "id": "C8D6C926-C315-45FC-8916-4A1457CEB95F",
@@ -138,9 +170,9 @@
         "isNavigable": false,
         "details": [
             {
-                "title": "Distance",
-                "value": "384,400",
-                "dimension": "KM"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -148,16 +180,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "27.3",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.0123",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-173 to 127",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Moon completes one orbit around Earth every 27.3 days.",
+            "properties": {
+                "axis": "384,400 km",
+                "eccentricity": "0.0549",
+                "inclination": "5.15°"
+            }
+        }
     },
     {
         "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
@@ -170,9 +210,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "1.52",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -180,16 +220,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "687",
-                "dimension": "DAYS"
+                "title": "Mass",
+                "value": "0.107",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-65",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Mars completes one orbit around the Sun every 687 days.",
+            "properties": {
+                "axis": "1.524 AU",
+                "eccentricity": "0.0934",
+                "inclination": "1.85°"
+            }
+        }
     },
     {
         "id": "B09A3752-957D-4B27-AB40-C237B7CBEAD0",
@@ -202,9 +250,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "5.20",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -212,16 +260,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "11.86",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "1",
+                "dimension": "JUPITER MASS"
             },
             {
                 "title": "Surface temp",
                 "value": "-110",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Jupiter completes one orbit around the Sun every 11.86 years.",
+            "properties": {
+                "axis": "5.20 AU",
+                "eccentricity": "0.0484",
+                "inclination": "1.30°"
+            }
+        }
     },
     {
         "id": "9E86DC33-347C-48FD-8FB7-EC952E184418",
@@ -234,9 +290,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "9.58",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -244,16 +300,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "29.45",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "0.299",
+                "dimension": "JUPITER MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-140",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Saturn completes one orbit around the Sun every 29.45 years.",
+            "properties": {
+                "axis": "9.58 AU",
+                "eccentricity": "0.0539",
+                "inclination": "2.49°"
+            }
+        }
     },
     {
         "id": "BCE5A337-2F76-498F-BFC0-DEED598C933A",
@@ -266,9 +330,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "19.2",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -276,16 +340,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "84",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "14.5",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-195",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Uranus completes one orbit around the Sun every 84 years.",
+            "properties": {
+                "axis": "19.19 AU",
+                "eccentricity": "0.0473",
+                "inclination": "0.77°"
+            }
+        }
     },
     {
         "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
@@ -298,9 +370,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "30.1",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -308,16 +380,24 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "164.8",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "17.1",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-200",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Neptune completes one orbit around the Sun every 164.8 years.",
+            "properties": {
+                "axis": "30.07 AU",
+                "eccentricity": "0.0086",
+                "inclination": "1.77°"
+            }
+        }
     },
     {
         "id": "16ED9A2A-BC78-4D2E-8B9C-E70C25C3F532",
@@ -330,9 +410,9 @@
         "isNavigable": true,
         "details": [
             {
-                "title": "Distance",
-                "value": "39",
-                "dimension": "AU"
+                "title": "Age",
+                "value": "4.5B",
+                "dimension": "YEARS"
             },
             {
                 "title": "Diameter",
@@ -340,15 +420,23 @@
                 "dimension": "KM"
             },
             {
-                "title": "Orbital period",
-                "value": "248",
-                "dimension": "YEARS"
+                "title": "Mass",
+                "value": "0.00218",
+                "dimension": "EARTH MASSES"
             },
             {
                 "title": "Surface temp",
                 "value": "-232",
                 "dimension": "C"
             }
-        ]
+        ],
+        "orbitInfo": {
+            "description": "Pluto completes one orbit around the Sun every 248 years.",
+            "properties": {
+                "axis": "39.48 AU",
+                "eccentricity": "0.249",
+                "inclination": "17.14°"
+            }
+        }
     }
 ]

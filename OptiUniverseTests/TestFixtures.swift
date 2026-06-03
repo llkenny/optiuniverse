@@ -79,7 +79,7 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         "tag": "Hot",
         "isNavigable": true,
         "details": [
-          { "title": "Distance", "value": "0.39", "dimension": "AU" }
+          { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
         ]
       },
       {
@@ -92,7 +92,7 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         "tag": "Inhabited",
         "isNavigable": false,
         "details": [
-          { "title": "Distance", "value": "1.00", "dimension": "AU" }
+          { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
         ]
       },
       {
@@ -105,7 +105,7 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         "tag": "Hot",
         "isNavigable": true,
         "details": [
-          { "title": "Distance", "value": "1.52", "dimension": "AU" }
+          { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
         ]
       }
     ]

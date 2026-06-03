@@ -91,6 +91,16 @@ extension RootContainerView {
                                        value: $0.value,
                                        dimension: $0.dimension)
         }
+        let orbitInfo = destination.orbitInfo.map {
+            ObjectInfoOrbitView.Model(
+                description: $0.description,
+                properties: [
+                    .axis: $0.properties.axis,
+                    .eccentricity: $0.properties.eccentricity,
+                    .inclination: $0.properties.inclination
+                ]
+            )
+        }
 
         let entity = ObjectInfoViewEntity(id: destination.id,
                                           title: selectedPlanet,
@@ -99,6 +109,7 @@ extension RootContainerView {
                                           details: details,
                                           navigationButtonTitle: "🎯 Route",
                                           isNavigable: destination.isNavigable,
+                                          orbitInfo: orbitInfo,
                                           navigationButtonAction: {
             metalResources.setObjectInfoOverlayFraming(isPresented: false,
                                                         bottomInset: 0,

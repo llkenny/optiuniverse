@@ -27,9 +27,9 @@ struct DestinationObjectsContentTests {
             #expect(UIImage(named: destination.imageName) != nil)
 
             let detailTitles = Set(destination.details.map(\.title))
-            #expect(detailTitles.contains("Distance"))
+            #expect(detailTitles.contains("Age"))
             #expect(detailTitles.contains("Diameter"))
-            #expect(detailTitles.contains("Orbital period"))
+            #expect(detailTitles.contains("Mass"))
             #expect(detailTitles.contains("Surface temp"))
 
             for detail in destination.details {
@@ -37,6 +37,14 @@ struct DestinationObjectsContentTests {
                 #expect(!detail.value.isEmpty)
                 #expect(!detail.dimension.isEmpty)
             }
+        }
+
+        for destination in destinations {
+            let orbitInfo = try #require(destination.orbitInfo)
+            #expect(!orbitInfo.description.isEmpty)
+            #expect(!orbitInfo.properties.axis.isEmpty)
+            #expect(!orbitInfo.properties.eccentricity.isEmpty)
+            #expect(!orbitInfo.properties.inclination.isEmpty)
         }
 
         let nonNavigableV1Objects = ["Sun", "Earth", "Moon"]
