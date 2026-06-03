@@ -13,12 +13,12 @@ struct ObjectInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(entity.title)
-                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .foregroundStyle(OptiColor.objectInfoTextPrimary)
                 .font(Typography.overlayTitle)
                 .padding(.bottom, 2)
 
             Text(entity.subtitle)
-                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
                 .font(Typography.overlayBody)
                 .padding(.bottom, 12)
 
@@ -31,12 +31,12 @@ struct ObjectInfoView: View {
             .padding(.bottom, 12)
 
             Text("About \(entity.title)")
-                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .foregroundStyle(OptiColor.objectInfoTextPrimary)
                 .font(Typography.overlayHeading)
                 .padding(.bottom, 2)
 
             Text(entity.description)
-                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
                 .font(Typography.overlayBody)
                 .padding(.bottom, 8)
 
@@ -55,7 +55,7 @@ struct ObjectInfoView: View {
         }
         .padding(.horizontal)
         .padding(.top)
-        .background(LinearGradient(colors: [.clear, OptiColor.overlaySurface],
+        .background(LinearGradient(colors: [.clear, OptiColor.objectInfoSurface],
                                    startPoint: .top, endPoint: .bottom))
     }
 }

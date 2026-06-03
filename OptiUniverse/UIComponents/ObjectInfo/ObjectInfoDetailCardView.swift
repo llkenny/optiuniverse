@@ -20,22 +20,22 @@ struct ObjectInfoDetailCardView: View {
         VStack {
             Text(entity.title.uppercased())
                 .font(Typography.overlayCaption)
-                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
             Text(entity.value.uppercased())
                 .font(Typography.overlayValue)
-                .foregroundStyle(OptiColor.overlayTextPrimary)
+                .foregroundStyle(OptiColor.objectInfoTextPrimary)
             Text(entity.dimension.uppercased())
                 .font(Typography.overlayCaption)
-                .foregroundStyle(OptiColor.overlayTextSecondary)
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
         }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(OptiColor.overlaySurface.opacity(0.5))
+        .background(OptiColor.objectInfoSurface.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
         .overlay(
             RoundedRectangle(cornerRadius: CornerRadius.detailCard)
-                .stroke(OptiColor.overlayBorder, lineWidth: 1)
+                .stroke(OptiColor.objectInfoBorder, lineWidth: 1)
         )
     }
 }

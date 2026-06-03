@@ -31,11 +31,11 @@ struct ObjectInfoOrbitView: View {
                 .padding(.trailing, 8)
             VStack(alignment: .leading) {
                 Text("Orbit")
-                    .foregroundStyle(OptiColor.overlayTextPrimary)
+                    .foregroundStyle(OptiColor.objectInfoTextPrimary)
                     .font(Typography.overlayHeading)
                     .padding(.bottom, 2)
                 Text(model.description)
-                    .foregroundStyle(OptiColor.overlayTextSecondary)
+                    .foregroundStyle(OptiColor.objectInfoTextSecondary)
                     .font(Typography.overlayBody)
                     .padding(.bottom, 8)
 
@@ -44,26 +44,26 @@ struct ObjectInfoOrbitView: View {
                         HStack {
                             Text(item.key.rawValue)
                                 .font(Typography.overlayValue)
-                                .foregroundStyle(OptiColor.overlayTextSecondary)
+                                .foregroundStyle(OptiColor.objectInfoTextSecondary)
                             Spacer()
                             Text(item.value)
                                 .font(Typography.overlayBody)
-                                .foregroundStyle(OptiColor.overlayTextSecondary)
+                                .foregroundStyle(OptiColor.objectInfoTextSecondary)
                         }
                         if index < orderedProperties.count - 1 {
                             Divider()
-                                .background(OptiColor.overlayBorder)
+                                .background(OptiColor.objectInfoBorder)
                         }
                     }
                 }
             }
         }
         .padding()
-        .background(OptiColor.overlaySurface.opacity(0.1))
+        .background(OptiColor.objectInfoSurface.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
         .overlay(
             RoundedRectangle(cornerRadius: CornerRadius.detailCard)
-                .stroke(OptiColor.overlayBorder, lineWidth: 1)
+                .stroke(OptiColor.objectInfoBorder, lineWidth: 1)
         )
     }
 
