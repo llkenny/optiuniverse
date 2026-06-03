@@ -39,7 +39,7 @@ struct ObjectInfoOrbitView: View {
                     .font(Typography.overlayBody)
                     .padding(.bottom, 8)
 
-                VStack {
+                VStack(spacing: 4) {
                     ForEach(Array(orderedProperties.enumerated()), id: \.offset) { index, item in
                         HStack {
                             Text(item.key.rawValue)
