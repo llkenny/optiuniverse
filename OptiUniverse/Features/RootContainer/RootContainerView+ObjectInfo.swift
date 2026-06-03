@@ -37,13 +37,12 @@ extension RootContainerView {
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
                     .onTapGesture {
-                        metalResources.setObjectInfoOverlayFraming(isPresented: false,
-                                                                    bottomInset: 0,
-                                                                    viewportHeight: containerProxy.size.height)
-                        objectsViewState = .raw
+                        hideObjectInfoOverlay(viewportHeight: containerProxy.size.height)
                     }
 
                 ObjectInfoView(entity: entity)
+                    .offset(y: objectInfoDragOffset)
+                    .gesture(makeObjectInfoDismissGesture(viewportHeight: containerProxy.size.height))
                     .background {
                         GeometryReader { overlayProxy in
                             Color.clear
@@ -69,6 +68,7 @@ extension RootContainerView {
             }
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.default, value: objectInfoDragOffset)
     }
 
     private func setObjectInfoOverlayFraming(overlayHeight: CGFloat,
@@ -76,6 +76,30 @@ extension RootContainerView {
         metalResources.setObjectInfoOverlayFraming(isPresented: true,
                                                     bottomInset: overlayHeight,
                                                     viewportHeight: viewportHeight)
+    }
+
+    private func hideObjectInfoOverlay(viewportHeight: CGFloat) {
+        metalResources.setObjectInfoOverlayFraming(isPresented: false,
+                                                    bottomInset: 0,
+                                                    viewportHeight: viewportHeight)
+        objectsViewState = .raw
+    }
+
+    private func makeObjectInfoDismissGesture(viewportHeight: CGFloat) -> some Gesture {
+        DragGesture()
+            .updating($objectInfoDragOffset) { value, state, _ in
+                state = max(value.translation.height, 0)
+            }
+            .onEnded { value in
+                let translationThreshold: CGFloat = 80
+                let predictedTranslationThreshold: CGFloat = 140
+                let shouldDismiss = value.translation.height > translationThreshold ||
+                    value.predictedEndTranslation.height > predictedTranslationThreshold
+
+                if shouldDismiss {
+                    hideObjectInfoOverlay(viewportHeight: viewportHeight)
+                }
+            }
     }
 
     private func makeObjectInfo(selectedPlanet: String) async {
