@@ -25,6 +25,11 @@ enum OptiColor {
     static let overlaySurface = asset("Neon Section Fill")
     static let overlayBorder = asset("Neon Section Border")
 
+    static let objectInfoTextPrimary = asset("Object Info Text Primary")
+    static let objectInfoTextSecondary = asset("Object Info Text Secondary")
+    static let objectInfoSurface = asset("Object Info Text Surface")
+    static let objectInfoBorder = asset("Object Info Text Border")
+
     static let buttonSurface = asset("Neon Button Fill")
     static let buttonBorder = asset("Neon Button Border")
 
