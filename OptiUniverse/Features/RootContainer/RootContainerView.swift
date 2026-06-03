@@ -15,6 +15,7 @@ struct RootContainerView: View {
     @Environment(AppEnvironment.self) var appEnvironment
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
+    @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
     @GestureState var objectInfoDragOffset: CGFloat = 0
     let metalResources: MetalModuleResources
 
@@ -86,9 +87,11 @@ struct RootContainerView: View {
         .overlay(alignment: .bottom) {
             if case .info(let selectedObjectInfo) = objectsViewState {
                 makeInfoOverlay(entity: selectedObjectInfo)
+                    .id(objectInfoOverlayPresentationID)
             }
         }
         .animation(.default, value: objectsViewState)
+        .animation(.default, value: objectInfoOverlayPresentationID)
     }
 }
 

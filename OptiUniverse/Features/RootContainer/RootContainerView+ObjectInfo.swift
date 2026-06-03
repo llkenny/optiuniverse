@@ -43,28 +43,14 @@ extension RootContainerView {
                 ObjectInfoView(entity: entity)
                     .offset(y: objectInfoDragOffset)
                     .gesture(makeObjectInfoDismissGesture(viewportHeight: containerProxy.size.height))
-                    .background {
-                        GeometryReader { overlayProxy in
-                            Color.clear
-                                .onAppear {
-                                    setObjectInfoOverlayFraming(overlayHeight: overlayProxy.size.height,
-                                                                viewportHeight: containerProxy.size.height)
-                                }
-                                .onChange(of: overlayProxy.size.height) { _, newHeight in
-                                    setObjectInfoOverlayFraming(overlayHeight: newHeight,
-                                                                viewportHeight: containerProxy.size.height)
-                                }
-                                .onChange(of: containerProxy.size.height) { _, newHeight in
-                                    setObjectInfoOverlayFraming(overlayHeight: overlayProxy.size.height,
-                                                                viewportHeight: newHeight)
-                                }
-                        }
+                    .onGeometryChange(for: CGSize.self) { proxy in
+                        proxy.size
+                    } action: { size in
+                        setObjectInfoOverlayFraming(
+                            overlayHeight: size.height,
+                            viewportHeight: containerProxy.size.height
+                        )
                     }
-            }
-            .onDisappear {
-                metalResources.setObjectInfoOverlayFraming(isPresented: false,
-                                                            bottomInset: 0,
-                                                            viewportHeight: containerProxy.size.height)
             }
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -74,14 +60,14 @@ extension RootContainerView {
     private func setObjectInfoOverlayFraming(overlayHeight: CGFloat,
                                              viewportHeight: CGFloat) {
         metalResources.setObjectInfoOverlayFraming(isPresented: true,
-                                                    bottomInset: overlayHeight,
-                                                    viewportHeight: viewportHeight)
+                                                   bottomInset: overlayHeight,
+                                                   viewportHeight: viewportHeight)
     }
 
     private func hideObjectInfoOverlay(viewportHeight: CGFloat) {
         metalResources.setObjectInfoOverlayFraming(isPresented: false,
-                                                    bottomInset: 0,
-                                                    viewportHeight: viewportHeight)
+                                                   bottomInset: 0,
+                                                   viewportHeight: viewportHeight)
         objectsViewState = .raw
     }
 
@@ -136,11 +122,12 @@ extension RootContainerView {
                                           orbitInfo: orbitInfo,
                                           navigationButtonAction: {
             metalResources.setObjectInfoOverlayFraming(isPresented: false,
-                                                        bottomInset: 0,
-                                                        viewportHeight: 0)
+                                                       bottomInset: 0,
+                                                       viewportHeight: 0)
             metalResources.transferOrbit.showTransferOrbit(to: selectedPlanet)
             objectsViewState = .orbit
         })
+        objectInfoOverlayPresentationID = UUID()
         objectsViewState = .info(entity)
     }
 }
