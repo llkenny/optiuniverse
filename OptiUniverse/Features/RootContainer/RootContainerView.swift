@@ -15,6 +15,7 @@ struct RootContainerView: View {
     @Environment(AppEnvironment.self) var appEnvironment
     @State private var isDataLoaded: Bool = false
     @State var objectsViewState: ObjectsViewState = .raw
+    @GestureState var objectInfoDragOffset: CGFloat = 0
     let metalResources: MetalModuleResources
 
     init(metalResources: MetalModuleResources) {
