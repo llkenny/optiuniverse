@@ -11,12 +11,6 @@ import QuartzCore
 import simd
 
 @MainActor
-protocol PlanetLabelDelegate: AnyObject {
-    /// Updates label positions in screen space for each planet.
-    func updatePlanetLabels(_ positions: [String: SIMD2<Float>])
-}
-
-@MainActor
 final class MetalRenderer: NSObject, MTKViewDelegate {
     enum PostFXStyle: UInt32 {
         case standard = 0
@@ -35,8 +29,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let transferOrbitController: TransferOrbitController
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
-
-    weak var labelDelegate: PlanetLabelDelegate?
 
     private var hdrTexture: MTLTexture?
     private var msaaColorTexture: MTLTexture?
@@ -98,7 +90,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func dismantle() {
         metalView.isPaused = true
         metalView.delegate = nil
-        labelDelegate = nil
     }
 
     private func prepare(viewSampleCount: Int) {

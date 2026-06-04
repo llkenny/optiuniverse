@@ -41,8 +41,6 @@ public struct UniverseView: UIViewRepresentable {
 
         let renderer = resources.makeRenderer(for: mtkView)
         context.coordinator.renderer = renderer
-        context.coordinator.resources = resources
-        renderer?.labelDelegate = context.coordinator
 
         let cameraController = CameraController(cameraCoordinator: resources.cameraCoordinator,
                                                 beginManualCameraControl: { [resources] in
@@ -82,10 +80,6 @@ public struct UniverseView: UIViewRepresentable {
             target: cameraController,
             action: #selector(CameraController.handleRotation(_:)))
         mtkView.addGestureRecognizer(rotationGesture)
-        let tapGesture = UITapGestureRecognizer(
-            target: coordinator,
-            action: #selector(Coordinator.handleTap(_:)))
-        mtkView.addGestureRecognizer(tapGesture)
     }
 
     public func updateUIView(_ uiView: UIView, context: Context) {

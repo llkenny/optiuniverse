@@ -80,10 +80,6 @@ extension MetalRenderer {
         makeBlit(hdrTexture: hdrTexture, geometryCommandBuffer: geometryCommandBuffer)
 
         geometryCommandBuffer.commit()
-
-        // Update any label overlays with the latest planet positions
-        let positions = planetsRenderer.planetScreenPositions
-        labelDelegate?.updatePlanetLabels(positions)
     }
 
     private func makeHdrDescriptor(msaaColorTexture: MTLTexture,
