@@ -66,6 +66,34 @@ struct LegalCreditsView: View {
             ]
         ),
         LegalCreditSection(
+            title: "Moon Base Images",
+            body: """
+            NASA media resources related to the Moon Base.
+            """,
+            links: [
+                LegalCreditLink(
+                    title: "Concept for Sustained Lunar Surface Operations at the Moon Base",
+                    url: URL(
+                        string: "https://www.nasa.gov/image-detail/stmd-exteriorlunarbase-hdlandscapeversion-2026-0521/"
+                    )!
+                ),
+                LegalCreditLink(
+                    title: "Lunar South Pole Region",
+                    url: URL(string: "https://www.nasa.gov/image-detail/moon-background/")!
+                ),
+                LegalCreditLink(
+                    title: "Concept for Base at the Lunar South Pole",
+                    url: URL(string: "https://www.nasa.gov/image-detail/liveenable-im4-craterlogistics-1/")!
+                ),
+                LegalCreditLink(
+                    title: "Concept for Lunar Surface Logistics and Infrastructure",
+                    url: URL(
+                        string: "https://www.nasa.gov/image-detail/liveenable-im3-sustainabilitylogistics-withastros-3/"
+                    )!
+                )
+            ]
+        ),
+        LegalCreditSection(
             title: "Destination Thumbnails",
             body: """
             Destination thumbnails use NASA, ESA/Hubble, JPL, STScI, and Wikimedia Commons source material.
