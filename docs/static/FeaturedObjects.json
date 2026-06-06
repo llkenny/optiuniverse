@@ -1,24 +1,5 @@
 [
     {
-        "id": "C4C4ACBB-B588-4E47-9ED1-F76B1507DADA",
-        "name": "Moon",
-        "description": "First lunar outpost",
-        "imageName": "Moon_Base_4",
-        "accentColor":
-        [
-            {
-                "red": 0.01,
-                "green": 0.01,
-                "blue": 0.01
-            },
-            {
-                "red": 0.09,
-                "green": 0.09,
-                "blue": 0.11
-            }
-        ]
-    },
-    {
         "id": "0E40ED4E-A635-41D3-974B-32C1FD2225DB",
         "name": "Saturn",
         "description": "Ringed giant",
