@@ -27,6 +27,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     let navigationController: NavigationController
     let transferOrbitController: TransferOrbitController
+    let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
 
@@ -173,6 +174,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
                                                 projection: projection,
                                                 modeState: modeState)
+        logSurfaceCoordinateDebug(snapshot: snapshot,
+                                  cameraSnapshot: cameraSnapshot,
+                                  modeState: modeState)
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,

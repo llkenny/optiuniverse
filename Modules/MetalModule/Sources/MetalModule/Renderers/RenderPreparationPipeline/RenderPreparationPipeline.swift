@@ -91,6 +91,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
                     normalizedScale: normalizedScale,
                     primaryMeshRadius: primaryMeshRadius,
                     framingRadius: framingRadius,
+                    surfaceRadius: framingRadius,
                     worldPosition: worldPosition
                 )
             )
