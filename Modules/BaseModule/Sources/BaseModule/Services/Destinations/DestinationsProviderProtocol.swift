@@ -5,7 +5,7 @@
 //  Created by max on 28.04.2026.
 //
 
-public protocol DestinationsProviderProtocol: Actor {
+public protocol DestinationsProviderProtocol: AnyObject {
     var destinations: [DestinationObject] { get }
-    func fetch() async
+    func fetch()
 }

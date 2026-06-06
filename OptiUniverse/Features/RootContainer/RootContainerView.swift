@@ -80,8 +80,8 @@ struct RootContainerView: View {
         }
         .task {
             await metalResources.prepare()
-            await appEnvironment.destinationsProvider.fetch()
-            await appEnvironment.featuredObjectProvider.fetch()
+            appEnvironment.destinationsProvider.fetch()
+            appEnvironment.featuredObjectProvider.fetch()
             isDataLoaded = true
         }
         .overlay(alignment: .bottom) {

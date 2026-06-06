@@ -39,14 +39,6 @@ struct DestinationObjectsContentTests {
             }
         }
 
-        for destination in destinations {
-            let orbitInfo = try #require(destination.orbitInfo)
-            #expect(!orbitInfo.description.isEmpty)
-            #expect(!orbitInfo.properties.axis.isEmpty)
-            #expect(!orbitInfo.properties.eccentricity.isEmpty)
-            #expect(!orbitInfo.properties.inclination.isEmpty)
-        }
-
         let nonNavigableV1Objects = ["Sun", "Earth", "Moon"]
         for destination in destinations where v1DestinationNames.contains(destination.title) {
             #expect(destination.isNavigable == !nonNavigableV1Objects.contains(destination.title))

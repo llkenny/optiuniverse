@@ -116,24 +116,24 @@ private enum FixtureError: Error {
     case missingResource(String)
 }
 
-actor MockFeaturedObjectProvider: FeaturedObjectProviderProtocol {
+final class MockFeaturedObjectProvider: FeaturedObjectProviderProtocol {
     let featuredObjects: [FeaturedObject]
 
     init(featuredObjects: [FeaturedObject]) {
         self.featuredObjects = featuredObjects
     }
 
-    func fetch() async {
+    func fetch() {
     }
 }
 
-actor MockDestinationsProvider: DestinationsProviderProtocol {
+final class MockDestinationsProvider: DestinationsProviderProtocol {
     let destinations: [DestinationObject]
 
     init(destinations: [DestinationObject]) {
         self.destinations = destinations
     }
 
-    func fetch() async {
+    func fetch() {
     }
 }

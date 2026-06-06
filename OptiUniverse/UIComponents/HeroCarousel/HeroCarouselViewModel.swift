@@ -28,22 +28,11 @@ final class HeroCarouselViewModel {
             return
         }
 
-        if let inFlightTask {
-            _ = await inFlightTask.value
-            return
-        }
-
-        let inFlightTask = Task.detached {
-            let featuredObjects = await featuredObjectProvider.featuredObjects
-            let cards = self.map(featuredObjects: featuredObjects)
-            return cards
-        }
-        self.inFlightTask = inFlightTask
-        cards = await inFlightTask.value
-        self.inFlightTask = nil
+        let featuredObjects = featuredObjectProvider.featuredObjects
+        cards = map(featuredObjects: featuredObjects)
     }
 
-    private nonisolated func map(featuredObjects: [FeaturedObject]) -> [HeroCard] {
+    private func map(featuredObjects: [FeaturedObject]) -> [HeroCard] {
         featuredObjects.map {
             HeroCard(
                 id: $0.id,

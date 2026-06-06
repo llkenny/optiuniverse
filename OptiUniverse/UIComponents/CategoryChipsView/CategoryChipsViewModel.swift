@@ -13,8 +13,8 @@ final class CategoryChipsViewModel {
     var tags: [String] = []
     var destinationsProvider: DestinationsProviderProtocol?
 
-    func loadTags() async {
-        let tags: [String] = await destinationsProvider?
+    func loadTags() {
+        let tags: [String] = destinationsProvider?
             .destinations
             .map { $0.tag } ?? []
         var seenTags = Set<String>()

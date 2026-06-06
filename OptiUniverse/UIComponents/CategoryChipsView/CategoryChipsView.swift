@@ -36,7 +36,7 @@ struct CategoryChipsView: View {
         }
         .task {
             viewModel.destinationsProvider = appEnvironment.destinationsProvider
-            await viewModel.loadTags()
+            viewModel.loadTags()
         }
     }
 }
