@@ -15,5 +15,6 @@ struct PreparedPlanetRenderPacket: Sendable {
     let normalizedScale: Float
     let primaryMeshRadius: Float
     let framingRadius: Float
+    let surfaceRadius: Float
     let worldPosition: SIMD3<Float>
 }

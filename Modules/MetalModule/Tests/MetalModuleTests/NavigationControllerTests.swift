@@ -245,6 +245,7 @@ private extension PreparedRenderSnapshot {
                                    normalizedScale: 1,
                                    primaryMeshRadius: framingRadius,
                                    framingRadius: framingRadius,
+                                   surfaceRadius: framingRadius,
                                    worldPosition: worldPosition)
     }
 }
