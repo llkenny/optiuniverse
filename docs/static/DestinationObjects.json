@@ -438,37 +438,5 @@
                 "inclination": "17.14°"
             }
         }
-    },
-    {
-        "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
-        "object": "Moon",
-        "title": "Moon Base",
-        "subtitle": "First lunar outpost",
-        "description": "The Moon Base is home base for Artemis astronauts who will live and work at humanity’s first lunar outpost. NASA is leading global teams of innovators across international space agencies, industry, and academia to build the Moon Base and establish an enduring human presence near the lunar South Pole for the benefit of all.",
-        "imageName": "dst-Moon_Base",
-        "tag": "⛺️ Base",
-        "isNavigable": true,
-        "details": [
-            {
-                "title": "Habitats",
-                "value": "540",
-                "dimension": "m3"
-            },
-            {
-                "title": "Occupancy",
-                "value": "4-8",
-                "dimension": "astronauts"
-            },
-            {
-                "title": "Life Span",
-                "value": "~10",
-                "dimension": "years"
-            },
-            {
-                "title": "Cargo",
-                "value": "38",
-                "dimension": "tons"
-            }
-        ]
     }
 ]
