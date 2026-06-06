@@ -8,32 +8,16 @@
 import Foundation
 internal import CommonTools
 
-actor DestinationsProvider: DestinationsProviderProtocol {
+final class DestinationsProvider: DestinationsProviderProtocol {
 
     enum Constants {
         static let filename = "DestinationObjects"
-        static let urlString = "https://llkenny.github.io/optiuniverse/static/DestinationObjects.json"
     }
 
-    var destinations: [DestinationObject] = []
-    private var inFlightTask: Task<(), Never>?
+    private(set) var destinations: [DestinationObject] = []
 
-    func fetch() async {
+    func fetch() {
         guard destinations.isEmpty else { return }
-        if let inFlightTask { return await inFlightTask.value }
-
-        inFlightTask = Task {
-            let destinations = try? await [DestinationObject]
-                .loadFromRemoteConfig(from: Constants.urlString)
-
-            if let destinations, !destinations.isEmpty {
-                self.destinations = destinations
-            } else {
-                self.destinations = Bundle.main.loadConfig(filename: Constants.filename)
-            }
-
-            inFlightTask = nil
-        }
-        await inFlightTask?.value
+        destinations = Bundle.main.loadConfig(filename: Constants.filename)
     }
 }

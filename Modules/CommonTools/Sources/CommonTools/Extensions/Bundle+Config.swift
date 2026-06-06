@@ -1,6 +1,6 @@
 //
 //  Bundle+Config.swift
-//  OptiUniverse
+//  CommonTools
 //
 //  Created by max on 09.04.2026.
 //

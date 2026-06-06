@@ -30,7 +30,7 @@ struct DestinationListView: View {
         }
         .task {
             viewModel.destinationsProvider = appEnvironment.destinationsProvider
-            await viewModel.loadCards()
+            viewModel.loadCards()
         }
         .animation(.easeInOut, value: selectedTag)
     }

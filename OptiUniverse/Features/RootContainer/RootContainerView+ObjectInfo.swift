@@ -14,9 +14,7 @@ extension RootContainerView {
     @ViewBuilder
     func makeInfoButton(selectedPlanet: String) -> some View {
         Button {
-            Task {
-                await makeObjectInfo(selectedPlanet: selectedPlanet)
-            }
+            makeObjectInfo(selectedPlanet: selectedPlanet)
         } label: {
             Text("🔭")
                 .foregroundStyle(.neonTextPrimary)
@@ -88,8 +86,8 @@ extension RootContainerView {
             }
     }
 
-    private func makeObjectInfo(selectedPlanet: String) async {
-        guard let destination = await appEnvironment.destinationsProvider
+    private func makeObjectInfo(selectedPlanet: String) {
+        guard let destination = appEnvironment.destinationsProvider
             .destinations
             .first(where: {
                 $0.title == selectedPlanet
