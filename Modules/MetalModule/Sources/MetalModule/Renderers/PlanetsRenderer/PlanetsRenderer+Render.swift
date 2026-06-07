@@ -16,8 +16,17 @@ extension PlanetsRenderer {
 
     private struct FragmentUniforms {
         var cameraPosition: SIMD3<Float>
+        var exposureScale: Float
         var lightPosition: SIMD3<Float>
         var cartoonShaderIntensity: Float
+        var keyLightColor: SIMD3<Float>
+        var terminatorSoftness: Float
+        var fillLightColor: SIMD3<Float>
+        var rimStrength: Float
+        var ambientLightColor: SIMD3<Float>
+        var limbDarkening: Float
+        var rimLightColor: SIMD3<Float>
+        var padding: Float
     }
 
     func renderPlanet(_ planet: PreparedPlanetRenderPacket,
@@ -48,8 +57,17 @@ extension PlanetsRenderer {
         renderEncoder.setFragmentSamplerState(samplerState, index: 0)
         var fragmentUniforms = FragmentUniforms(
             cameraPosition: configuration.cameraOffset,
+            exposureScale: 1.08,
             lightPosition: -configuration.sceneOrigin,
-            cartoonShaderIntensity: min(max(configuration.cartoonShaderIntensity, 0), 1)
+            cartoonShaderIntensity: min(max(configuration.cartoonShaderIntensity, 0), 1),
+            keyLightColor: SIMD3<Float>(1.0, 0.86, 0.66),
+            terminatorSoftness: 0.24,
+            fillLightColor: SIMD3<Float>(0.38, 0.48, 0.72),
+            rimStrength: 0.18,
+            ambientLightColor: SIMD3<Float>(0.045, 0.055, 0.08),
+            limbDarkening: 0.16,
+            rimLightColor: SIMD3<Float>(0.42, 0.62, 1.0),
+            padding: 0
         )
         renderEncoder.setFragmentBytes(&fragmentUniforms,
                                        length: MemoryLayout<FragmentUniforms>.stride,

@@ -29,6 +29,29 @@ struct LegalCreditsView: View {
             ]
         ),
         LegalCreditSection(
+            title: "Milky Way Environment",
+            body: """
+            "The Milky Way panorama".
+            Credit: ESO/S. Brunier.
+            Licensed under Creative Commons Attribution 4.0 International.
+            Used as the live Metal renderer deep-space environment.
+            """,
+            links: [
+                LegalCreditLink(
+                    title: "Source",
+                    url: URL(string: "https://www.eso.org/public/images/eso0932a/")!
+                ),
+                LegalCreditLink(
+                    title: "License",
+                    url: URL(string: "https://creativecommons.org/licenses/by/4.0/")!
+                ),
+                LegalCreditLink(
+                    title: "ESO Usage Terms",
+                    url: URL(string: "https://www.eso.org/public/outreach/copyright/")!
+                )
+            ]
+        ),
+        LegalCreditSection(
             title: "Planet Imagery",
             body: """
             Planet imagery is courtesy of NASA, ESA, STScI, JPL, and listed source agencies.

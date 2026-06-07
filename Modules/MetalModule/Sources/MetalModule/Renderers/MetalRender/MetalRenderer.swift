@@ -15,11 +15,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     enum PostFXStyle: UInt32 {
         case standard = 0
         case dreamy = 1
+        case filmic = 2
     }
 
     private let device: MTLDevice
     let commandQueue: MTLCommandQueue
     let planetsRenderer: PlanetsRendererProtocol
+    let environmentRenderer: EnvironmentRenderer
     let starsRenderer: StarsRenderer
     let transferOrbitRenderer: TransferOrbitRenderer
     let routeRenderer: RouteRenderer
@@ -36,15 +38,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var depthTexture: MTLTexture?
     private var postfxMsaaTexture: MTLTexture?
     private(set) var postfxPipelineState: MTLRenderPipelineState!
-    private(set) var lensDirtTexture: MTLTexture?
-    var postFXParams = PostFXParams(bloomThreshold: 0.55,
-                                    bloomRadius: 1.35,
-                                    lensDirtOpacity: 0.2,
+    var postFXParams = PostFXParams(bloomThreshold: 0.72,
+                                    bloomRadius: 1.22,
                                     style: PostFXStyle.standard.rawValue,
                                     dreamyIntensity: 0.0,
-                                    softFocusRadius: 1.9,
-                                    hazeStrength: 0.3,
-                                    saturationBoost: 1.08)
+                                    softFocusRadius: 0.85,
+                                    hazeStrength: 0.0,
+                                    saturationBoost: 1.06,
+                                    vignetteStrength: 0.18,
+                                    contrast: 1.06)
     var cartoonShaderIntensity: Float = 0
 
     let cameraCoordinator: CameraCoordinator
@@ -80,6 +82,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
         self.planets = planets
         planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
+        environmentRenderer = EnvironmentRenderer(device: device, sampleCount: viewSampleCount)
         starsRenderer = StarsRenderer(device: device, sampleCount: viewSampleCount)
         transferOrbitRenderer = TransferOrbitRenderer(device: device, sampleCount: viewSampleCount)
         routeRenderer = RouteRenderer(device: device, sampleCount: viewSampleCount)
@@ -109,14 +112,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                                                                 depthPixelFormat: .invalid,
                                                                 sampleCount: metalView.sampleCount)
 
-        let textureLoader = MTKTextureLoader(device: device)
-        if let url = Bundle.main.url(forResource: "lens_dirt_1024", withExtension: "png") {
-            lensDirtTexture = try? textureLoader
-                .newTexture(URL: url,
-                            options: [.origin: MTKTextureLoader.Origin.topLeft.rawValue])
-        }
-
-        applyPostFXStyle(.standard)
+        applyPostFXStyle(.filmic)
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -209,20 +205,32 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         case .standard:
             postFXParams.bloomThreshold = 1.0
             postFXParams.bloomRadius = 1.0
-            postFXParams.lensDirtOpacity = 0.0
             postFXParams.dreamyIntensity = 0.0
             postFXParams.softFocusRadius = 0.75
             postFXParams.hazeStrength = 0.0
             postFXParams.saturationBoost = 1.0
+            postFXParams.vignetteStrength = 0.15
+            postFXParams.contrast = 1.0
 
         case .dreamy:
             postFXParams.bloomThreshold = 0.55
             postFXParams.bloomRadius = 1.35
-            postFXParams.lensDirtOpacity = 0.2
             postFXParams.dreamyIntensity = 0.5
             postFXParams.softFocusRadius = 1.9
             postFXParams.hazeStrength = 0.3
             postFXParams.saturationBoost = 1.08
+            postFXParams.vignetteStrength = 0.08
+            postFXParams.contrast = 0.96
+
+        case .filmic:
+            postFXParams.bloomThreshold = 0.72
+            postFXParams.bloomRadius = 1.22
+            postFXParams.dreamyIntensity = 0.0
+            postFXParams.softFocusRadius = 0.85
+            postFXParams.hazeStrength = 0.0
+            postFXParams.saturationBoost = 1.06
+            postFXParams.vignetteStrength = 0.18
+            postFXParams.contrast = 1.06
         }
     }
 

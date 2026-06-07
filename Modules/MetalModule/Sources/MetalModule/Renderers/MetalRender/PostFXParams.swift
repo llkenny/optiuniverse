@@ -8,10 +8,11 @@
 struct PostFXParams {
     var bloomThreshold: Float
     var bloomRadius: Float
-    var lensDirtOpacity: Float
     var style: UInt32
     var dreamyIntensity: Float
     var softFocusRadius: Float
     var hazeStrength: Float
     var saturationBoost: Float
+    var vignetteStrength: Float
+    var contrast: Float
 }

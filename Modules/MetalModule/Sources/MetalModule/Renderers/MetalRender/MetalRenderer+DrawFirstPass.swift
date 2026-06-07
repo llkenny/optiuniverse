@@ -48,6 +48,10 @@ extension MetalRenderer {
         let renderOrigin = state.cameraSnapshot.sceneOrigin
         let renderViewMatrix = state.cameraSnapshot.renderViewMatrix
 
+        environmentRenderer.render(renderEncoder: renderEncoder,
+                                   viewMatrix: renderViewMatrix,
+                                   projectionMatrix: state.cameraSnapshot.projectionMatrix)
+
         let configuration = PlanetRenderConfiguration(snapshot: state.snapshot,
                                                       renderEncoder: renderEncoder,
                                                       viewMatrix: renderViewMatrix,
@@ -59,7 +63,8 @@ extension MetalRenderer {
         starsRenderer.render(renderEncoder: renderEncoder,
                              viewMatrix: renderViewMatrix,
                              projectionMatrix: state.cameraSnapshot.projectionMatrix,
-                             sceneOrigin: renderOrigin)
+                             sceneOrigin: renderOrigin,
+                             time: planetsRenderer.currentTime)
         transferOrbitRenderer.render(state: state.routes.transfer,
                                      renderEncoder: renderEncoder,
                                      viewMatrix: renderViewMatrix,

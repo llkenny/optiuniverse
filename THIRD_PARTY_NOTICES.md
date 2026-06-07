@@ -12,6 +12,16 @@ This file tracks attribution and release-review source material for assets bundl
 - License URL: https://creativecommons.org/licenses/by/4.0/
 - App use: Converted and optimized for use in OptiUniverse.
 
+## Milky Way Environment Texture
+
+- Asset: `Modules/MetalModule/Sources/MetalModule/Assets/Environment/milky_way_environment.jpg`
+- Title: The Milky Way panorama
+- Credit: ESO/S. Brunier
+- Source: https://www.eso.org/public/images/eso0932a/
+- License: Creative Commons Attribution 4.0 International
+- License URL: https://creativecommons.org/licenses/by/4.0/
+- App use: Equirectangular deep-space background for the live Metal renderer.
+
 ## NASA, ESA, STScI, and JPL Imagery
 
 NASA content is generally available for educational or informational uses when used factually and without implying endorsement. NASA should be acknowledged as a source, and NASA logos, insignia, identifiers, or protected third-party materials should not be used unless separately cleared.
