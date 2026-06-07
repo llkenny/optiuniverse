@@ -53,7 +53,7 @@ final class SurfaceCameraMode {
         ? simd_normalize(upSeed)
         : fallbackUp
         let candidateUp = abs(simd_dot(forward, normalizedUpSeed)) > 0.94
-        ? SIMD3<Float>(1, 0, 0)
+        ? fallbackUpVector(forward: forward)
         : normalizedUpSeed
         let right = simd_normalize(simd_cross(candidateUp, forward))
         let cameraUpDirection = simd_normalize(simd_cross(forward, right))
@@ -61,5 +61,17 @@ final class SurfaceCameraMode {
         return simd_normalize(simd_quatf(
             float3x3(columns: (right, cameraUpDirection, forward))
         ))
+    }
+
+    private func fallbackUpVector(forward: SIMD3<Float>) -> SIMD3<Float> {
+        let candidates = [
+            SIMD3<Float>(1, 0, 0),
+            SIMD3<Float>(0, 1, 0),
+            SIMD3<Float>(0, 0, 1)
+        ]
+
+        return candidates.min {
+            abs(simd_dot(forward, $0)) < abs(simd_dot(forward, $1))
+        } ?? SIMD3<Float>(0, 1, 0)
     }
 }

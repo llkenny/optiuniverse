@@ -24,9 +24,9 @@ import Testing
     ))
 
     expectSurfaceVector(frame.target,
-                 equals: planet.worldPosition)
+                        equals: planet.worldPosition)
     expectSurfaceEqual(frame.distance,
-                currentPose.distance)
+                       currentPose.distance)
 }
 
 @Test func surfaceCameraModeAlignsCameraSurfacePointAndBodyCenter() throws {
@@ -58,10 +58,42 @@ import Testing
     let surfaceToCenter = planet.worldPosition - surfacePoint
 
     expectSurfaceEqual(simd_length(simd_cross(cameraToSurface, surfaceToCenter)),
-                0,
-                tolerance: 0.00001)
+                       0,
+                       tolerance: 0.00001)
     #expect(simd_dot(simd_normalize(cameraToSurface),
                     simd_normalize(surfaceToCenter)) > 0.999)
+}
+
+@Test func surfaceCameraModeUsesNonparallelFallbackUpVector() throws {
+    let mode = SurfaceCameraMode()
+    let planet = surfaceCameraTestPacket(name: "Moon",
+                                         worldPosition: .zero,
+                                         radius: 1)
+    let snapshot = PreparedRenderSnapshot(frameID: 1,
+                                          simulationTime: 0,
+                                          planets: [planet])
+    let currentPose = CameraPose(
+        target: .zero,
+        distance: 4,
+        orientation: simd_quatf(angle: -.pi / 2,
+                                axis: SIMD3<Float>(0, 0, 1))
+    )
+
+    let frame = try #require(mode.makeSurfaceFrame(
+        bodyName: "Moon",
+        coordinate: SurfaceCoordinate(latitudeDegrees: 0,
+                                      longitudeDegrees: 0),
+        snapshot: snapshot,
+        currentPose: currentPose
+    ))
+    let cameraOffset = frame.orientation.act(SIMD3<Float>(0, 0, frame.distance))
+
+    #expect(frame.orientation.vector.x.isFinite)
+    #expect(frame.orientation.vector.y.isFinite)
+    #expect(frame.orientation.vector.z.isFinite)
+    #expect(frame.orientation.vector.w.isFinite)
+    expectSurfaceVector(simd_normalize(cameraOffset),
+                        equals: SIMD3<Float>(1, 0, 0))
 }
 
 @Test func surfaceCameraModeReturnsNilForMissingHostBody() {
