@@ -448,7 +448,7 @@
         "imageName": "dst-Moon_Base",
         "infoImageName": "Moon_Base_Info",
         "tag": "⛺️ Base",
-        "isNavigable": true,
+        "isNavigable": false,
         "surfaceLocation": {
             "latitudeDegrees": -90,
             "longitudeDegrees": 0
