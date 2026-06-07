@@ -1,5 +1,5 @@
 # Surface Coordinate Camera Positioning
-Status: Draft [Draft, In Review, Accepted, Rejected, Superseded]
+Status: Accepted [Draft, In Review, Accepted, Rejected, Superseded]
 Date Created: 06/06/26
 
 ## Overview
@@ -13,12 +13,15 @@ logging, and animated camera positioning.
 The camera should move to a surface coordinate in two visible steps:
 
 1. Show the selected Solar System body.
-2. Rotate and position the camera so the view ray passes through the target surface point and the
-   center of the selected body.
+2. Rotate the camera around the selected body center so the view ray passes through the target
+   surface point and the center of the selected body.
+
+After the surface rotation completes, the camera may apply a framing zoom that preserves the same
+body-centered target and surface alignment.
 
 ## Public Interfaces
-Extend content models with optional surface-location data. This type belongs to `BaseModule` content
-models and must not depend on `MetalModule`:
+Extend destination content models with optional surface-location data. This type belongs to
+`BaseModule` content models and must not depend on `MetalModule`:
 
 ```json
 {
@@ -30,27 +33,18 @@ models and must not depend on `MetalModule`:
 }
 ```
 
-Add a focused Metal module facade:
+Featured objects are lightweight proxies for destination objects. A featured card may resolve
+surface-location data from the matching destination object, but the featured JSON does not own
+surface coordinates.
 
-```swift
-@MainActor
-public protocol MetalModuleSurfacePositioningControlling: AnyObject {
-    func focusSurfaceCoordinates(
-        on bodyName: String,
-        latitudeDegrees: Float,
-        longitudeDegrees: Float,
-        animated: Bool
-    )
-}
-```
-
-Future content-facing helpers can wrap this API without exposing renderer internals to the app
-target.
+App-level selection remains passive. Card models expose an `ObjectFollowTarget` containing the body
+name and optional `SurfaceLocation`; views assign that model-provided target to app state and switch
+to the objects screen.
 
 Do not add a public `SurfaceCoordinate` value in v1. The coordinate value used by math helpers should
 stay internal to `MetalModule` unless a future public API needs to pass it across the module boundary.
-The public facade can accept primitive latitude/longitude values, while `BaseModule` owns its own
-decodable content DTO.
+`BaseModule` owns its decodable content DTO, and `MetalModuleResources.followPlanet` converts that
+DTO into the internal coordinate value.
 
 ## ADR Compatibility
 This RFC must preserve the architecture accepted in ADR 0002 and ADR 0003.
@@ -58,17 +52,18 @@ This RFC must preserve the architecture accepted in ADR 0002 and ADR 0003.
 - ADR 0002: Public rendering integration continues to flow through `MetalModuleResources` and focused
   protocols. The app target should not depend on renderer internals, `MeshProvider`, `ModelLoader`,
   `CameraState`, or prepared snapshot types.
-- ADR 0003: Surface positioning is a camera mode, not renderer behavior. UI and content commands enter
-  through the facade, route through `CameraCoordinator`, and are executed by `SurfaceCameraOwner` /
-  `SurfaceCameraMode`.
+- ADR 0003: Surface positioning is part of the follow camera path, not renderer behavior. UI and
+  content commands enter through model-derived follow targets, route through `MetalModuleResources`
+  and `CameraCoordinator.followPlanet`, and are executed by `FollowCameraOwner` with
+  `SurfaceCameraOwner` / `SurfaceCameraMode` as follow-only implementation details.
 - `SurfaceCameraOwner` commits only `CameraState.Transaction` values. It must not mutate matrices,
   bypass `CameraState`, or write camera fields directly.
 - `MetalRenderer` remains a consumer of immutable camera snapshots. It may call surface-coordinate
   debug helpers with the current snapshot, but it must not own surface camera priority or perform
   camera arbitration.
-- `FeaturedObject.surfaceLocation` is a `BaseModule` content DTO. It should be converted at the app
-  integration boundary into a `MetalModuleSurfacePositioningControlling` call by passing primitive
-  body/latitude/longitude values.
+- `DestinationObject.surfaceLocation` is a `BaseModule` content DTO. It is carried through
+  destination and hero card models into an `ObjectFollowTarget`, then converted to Metal's internal
+  `SurfaceCoordinate` at the resource boundary.
 
 ## Coordinate Model
 V1 uses model-frame planetocentric coordinates on a spherical reference surface.
@@ -124,31 +119,39 @@ Add the first surface-bound content and the camera positioning mechanism.
 
 Key changes:
 
-- Extend `FeaturedObject` with optional `surfaceLocation`.
-- Add Moon Base coordinates to `FeaturedObjects.json`:
+- Add `SurfaceLocation` to `BaseModule`.
+- Extend `DestinationObject` with optional `surfaceLocation`.
+- Add Moon Base coordinates to the `Moon Base` entry in `DestinationObjects.json`:
   - `bodyName: "Moon"`
   - `latitudeDegrees: -90`
   - `longitudeDegrees: 0`
-- Add `SurfaceCameraMode` and `SurfaceCameraOwner` behind `CameraCoordinator`.
-- Add facade routing through `MetalModuleResources.surfacePositioning`.
-- On `focusSurfaceCoordinates(...)`:
+- Keep `FeaturedObjects.json` as lightweight feature-card content. Its `Moon Base` item resolves
+  surface coordinates from the matching destination object.
+- Carry model-derived follow targets through `HeroCard` and `DestinationCardModel`.
+- Keep view tap handling generic: assign the model-provided follow target, assign the selected body,
+  and switch to `.objects`.
+- Add `SurfaceCameraMode` and `SurfaceCameraOwner` inside the follow camera pipeline.
+- On `MetalModuleResources.followPlanet(named:surfaceLocation:)`:
   - clear transfer preview
   - cancel route navigation without starting route completion behavior
   - phase 1: focus/show the host body using existing fit/follow behavior
-  - phase 2: animate to the surface point
-- Extend `CameraTransition.Frame` to optionally carry orientation:
-  - existing target/distance transitions keep their behavior
-  - surface transitions interpolate orientation with quaternion slerp
+  - phase 2: rotate around the host-body center until the surface coordinate is front-facing
+  - phase 3: apply a distance-only 2x zoom while preserving the same body-centered surface alignment
+- Keep `CameraTransition` target/distance behavior unchanged for non-surface transitions. Surface
+  orientation interpolation is handled inside `SurfaceCameraOwner` with quaternion slerp.
 - Final surface-focus pose:
-  - `cameraTarget = computed surface point`
+  - `cameraTarget = host body center`
   - camera view ray passes through surface point and body center
-  - distance uses body-fit/current distance policy with minimum clearance above the body reference
-    surface
-- Wire the Moon Base content action to the surface-positioning facade.
+  - body follow distance is preserved during surface rotation
+  - the post-rotation zoom reduces distance by 2x without retargeting or changing alignment
+  - steady surface follow recomputes orientation from the latest prepared snapshot so the coordinate
+    follows the rotating body
+- Repeatedly selecting the same surface object skips a redundant body-to-body transition and reruns
+  only the surface alignment / zoom sequence.
 
 Verification:
 
-- Unit tests that existing featured-object JSON without `surfaceLocation` still decodes.
+- Unit tests that existing destination JSON without `surfaceLocation` still decodes.
 - Unit test fixture for Moon Base with `surfaceLocation`.
 - Camera tests for final collinearity:
   `cameraWorldPosition -> surfacePoint -> bodyCenter`.
