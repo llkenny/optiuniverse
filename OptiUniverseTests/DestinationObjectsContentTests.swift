@@ -44,4 +44,15 @@ struct DestinationObjectsContentTests {
             #expect(destination.isNavigable == !nonNavigableV1Objects.contains(destination.title))
         }
     }
+
+    @Test func bundledMoonBaseDestinationCarriesSurfaceLocation() throws {
+        let destinations: [DestinationObject] = try loadMainBundleJSON(named: "DestinationObjects")
+        let moonBase = try #require(destinations.first { $0.title == "Moon Base" })
+        let surfaceLocation = try #require(moonBase.surfaceLocation)
+
+        #expect(moonBase.object == "Moon")
+        #expect(surfaceLocation.bodyName == "Moon")
+        #expect(surfaceLocation.latitudeDegrees == -90)
+        #expect(surfaceLocation.longitudeDegrees == 0)
+    }
 }

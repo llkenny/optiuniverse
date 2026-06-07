@@ -10,6 +10,6 @@ struct CategoryChipsViewModelTests {
 
         await viewModel.loadTags()
 
-        #expect(viewModel.tags == ["Hot", "Inhabited"])
+        #expect(viewModel.tags == ["Base", "Hot", "Inhabited"])
     }
 }

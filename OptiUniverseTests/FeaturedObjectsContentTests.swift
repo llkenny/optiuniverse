@@ -13,6 +13,7 @@ struct FeaturedObjectsContentTests {
         #expect(featuredNames.contains("Saturn"))
         #expect(featuredNames.contains("Neptune"))
         #expect(featuredNames.contains("Mars"))
+        #expect(featuredNames.contains("Moon Base"))
         #expect(Set(ids).count == ids.count)
 
         for featuredObject in featuredObjects {
@@ -28,5 +29,16 @@ struct FeaturedObjectsContentTests {
                 #expect((0...1).contains(color.blue))
             }
         }
+    }
+
+    @Test func bundledMoonBaseFeaturedObjectIsDestinationProxy() throws {
+        let featuredObjects: [FeaturedObject] = try loadMainBundleJSON(named: "FeaturedObjects")
+        let moonBase = try #require(featuredObjects.first { $0.name == "Moon Base" })
+        let rawObjects = try loadMainBundleJSONArray(named: "FeaturedObjects")
+        let rawMoonBase = try #require(rawObjects.first { object in
+            object["name"] as? String == moonBase.name
+        })
+
+        #expect(rawMoonBase["surfaceLocation"] == nil)
     }
 }
