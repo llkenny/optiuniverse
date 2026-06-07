@@ -83,16 +83,16 @@ public struct UniverseView: UIViewRepresentable {
     }
 
     public func updateUIView(_ uiView: UIView, context: Context) {
-        let selectedPlanet = appEnvironment.selectedPlanet
-        let selectedSurfaceLocation = appEnvironment.selectedSurfaceLocation
+        let selectedFollowTarget = appEnvironment.selectedFollowTarget
+        let selectedPlanet = selectedFollowTarget?.bodyName ?? appEnvironment.selectedPlanet
 
         if context.coordinator.currentSelectedPlanet != selectedPlanet ||
-            context.coordinator.currentSelectedSurfaceLocation != selectedSurfaceLocation {
+            context.coordinator.currentSelectedFollowTarget != selectedFollowTarget {
             context.coordinator.currentSelectedPlanet = selectedPlanet
-            context.coordinator.currentSelectedSurfaceLocation = selectedSurfaceLocation
+            context.coordinator.currentSelectedFollowTarget = selectedFollowTarget
             if let name = selectedPlanet {
                 resources.followPlanet(named: name,
-                                       surfaceLocation: selectedSurfaceLocation)
+                                       surfaceLocation: selectedFollowTarget?.surfaceLocation)
             }
         }
     }

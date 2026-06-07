@@ -4,11 +4,6 @@
         "name": "Moon Base",
         "description": "First lunar outpost",
         "imageName": "Moon_Base_4",
-        "surfaceLocation": {
-            "bodyName": "Moon",
-            "latitudeDegrees": -90,
-            "longitudeDegrees": 0
-        },
         "accentColor":
         [
             {

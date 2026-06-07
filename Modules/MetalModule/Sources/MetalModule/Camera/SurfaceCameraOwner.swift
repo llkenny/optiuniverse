@@ -7,6 +7,12 @@
 
 import simd
 
+/// Drives the surface-location portion of the follow camera pipeline.
+///
+/// The owner waits for the parent body follow transition to finish, then rotates the camera around
+/// that body's center until the requested surface coordinate is front-facing. It keeps the camera
+/// target body-centered and preserves the body-follow distance, so surface focus does not add a
+/// second target/distance transition after selecting a destination such as Moon Base.
 @MainActor
 final class SurfaceCameraOwner {
     private enum Phase: Equatable {

@@ -17,7 +17,7 @@ public final class AppEnvironment {
     public var username: String = "Stranger"
     public var currentScreen: Screen = .home
     public var selectedPlanet: String?
-    public var selectedSurfaceLocation: SurfaceLocation?
+    public var selectedFollowTarget: ObjectFollowTarget?
     public var location: String {
         "\(selectedPlanet ?? "Unknown"), Solar System, Milky Way"
     }

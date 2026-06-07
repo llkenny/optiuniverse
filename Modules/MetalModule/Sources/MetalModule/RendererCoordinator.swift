@@ -11,6 +11,6 @@ internal import BaseModule
 public final class RendererCoordinator {
     var renderer: MetalRenderer?
     var currentSelectedPlanet: String?
-    var currentSelectedSurfaceLocation: SurfaceLocation?
+    var currentSelectedFollowTarget: ObjectFollowTarget?
     var cameraController: CameraController?
 }
