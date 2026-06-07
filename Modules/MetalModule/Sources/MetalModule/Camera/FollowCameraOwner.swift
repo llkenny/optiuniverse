@@ -25,6 +25,7 @@ final class FollowCameraOwner {
     private unowned let cameraState: CameraState
     private unowned let snapshotProvider: SnapshotProvider
     private let followMode: FollowCameraMode
+    private let surfaceCameraOwner: SurfaceCameraOwner
 
     private(set) var followingPlanetName: String? = "Sun"
     private var pendingFollowPlanetName: String?
@@ -36,15 +37,18 @@ final class FollowCameraOwner {
         self.cameraState = cameraState
         self.snapshotProvider = snapshotProvider
         self.followMode = followMode
+        surfaceCameraOwner = .init(cameraState: cameraState)
     }
 
     var hasActiveTransition: Bool {
-        cameraTransition != nil
+        cameraTransition != nil || surfaceCameraOwner.hasActiveMotion
     }
 
     func followPlanet(named name: String,
+                      surfaceCoordinate: SurfaceCoordinate? = nil,
                       viewportSize: CGSize) {
         followingPlanetName = name
+        surfaceCameraOwner.cancel()
 
         guard let snapshot = snapshotProvider.latestSnapshot,
               startFollowAnimation(named: name,
@@ -52,15 +56,24 @@ final class FollowCameraOwner {
                                    viewportSize: viewportSize) else {
             pendingFollowPlanetName = name
             cameraTransition = nil
+            if let surfaceCoordinate {
+                surfaceCameraOwner.focus(on: name,
+                                         coordinate: surfaceCoordinate)
+            }
             return
         }
 
         pendingFollowPlanetName = nil
+        if let surfaceCoordinate {
+            surfaceCameraOwner.focus(on: name,
+                                     coordinate: surfaceCoordinate)
+        }
     }
 
     func beginManualCameraControl() {
         pendingFollowPlanetName = nil
         cameraTransition = nil
+        surfaceCameraOwner.cancel()
     }
 
     /// Advances pending follow resolution, active transitions, or steady target tracking.
@@ -83,15 +96,24 @@ final class FollowCameraOwner {
 
         guard !isSuppressed else { return }
 
+        let suppressSteadyFollowForSurface = surfaceCameraOwner.controlsCamera &&
+            !surfaceCameraOwner.requiresBodyFollow
+
         if cameraTransition != nil {
             updateCameraTransition(snapshot: snapshot,
                                    delta: delta,
                                    viewportSize: viewportSize)
-        } else if let name = followingPlanetName,
+        } else if !suppressSteadyFollowForSurface,
+                  let name = followingPlanetName,
                   let transaction = followMode.makeSteadyFollowTransaction(named: name,
                                                                            snapshot: snapshot) {
             cameraState.commit(transaction)
         }
+
+        surfaceCameraOwner.update(snapshot: snapshot,
+                                  delta: delta,
+                                  isSuppressed: isSuppressed,
+                                  bodyFollowTransitionActive: cameraTransition != nil)
     }
 
     func minimumAllowedCameraDistance(snapshot: PreparedRenderSnapshot?) -> Float {

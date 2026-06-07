@@ -110,8 +110,10 @@ final class CameraCoordinator {
     }
 
     func followPlanet(named name: String,
+                      surfaceCoordinate: SurfaceCoordinate? = nil,
                       viewportSize: CGSize) {
         followCameraOwner.followPlanet(named: name,
+                                       surfaceCoordinate: surfaceCoordinate,
                                        viewportSize: viewportSize)
         refreshCamera()
     }

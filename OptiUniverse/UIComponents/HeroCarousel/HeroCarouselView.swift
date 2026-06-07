@@ -55,7 +55,8 @@ struct HeroCarouselView: View {
                             }
                             .id(card.id)
                             .onTapGesture {
-                                appEnvironment.selectedPlanet = card.title
+                                appEnvironment.selectedPlanet = card.followTarget.bodyName
+                                appEnvironment.selectedSurfaceLocation = card.followTarget.surfaceLocation
                                 appEnvironment.currentScreen = .objects
                             }
                     }

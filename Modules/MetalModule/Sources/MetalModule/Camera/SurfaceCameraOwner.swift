@@ -1,0 +1,166 @@
+//
+//  SurfaceCameraOwner.swift
+//  MetalModule
+//
+//  Created by Codex on 06.06.2026.
+//
+
+import simd
+
+@MainActor
+final class SurfaceCameraOwner {
+    private enum Phase: Equatable {
+        case idle
+        case waitingForBody
+        case surfaceTransition
+        case steady
+    }
+
+    private struct ActiveTransition {
+        let startOrientation: simd_quatf
+        let duration: Float
+        var elapsed: Float = 0
+
+        var progress: Float {
+            guard duration > 0 else { return 1 }
+            return min(max(elapsed / duration, 0), 1)
+        }
+
+        var isComplete: Bool {
+            progress >= 1
+        }
+    }
+
+    private unowned let cameraState: CameraState
+    private let surfaceMode: SurfaceCameraMode
+
+    private var bodyName: String?
+    private var coordinate: SurfaceCoordinate?
+    private var phase: Phase = .idle
+    private var cameraTransition: ActiveTransition?
+
+    init(cameraState: CameraState,
+         surfaceMode: SurfaceCameraMode = SurfaceCameraMode()) {
+        self.cameraState = cameraState
+        self.surfaceMode = surfaceMode
+    }
+
+    var controlsCamera: Bool {
+        phase != .idle
+    }
+
+    var requiresBodyFollow: Bool {
+        phase == .waitingForBody
+    }
+
+    var hasActiveMotion: Bool {
+        phase == .waitingForBody || phase == .surfaceTransition
+    }
+
+    func focus(on bodyName: String,
+               coordinate: SurfaceCoordinate) {
+        self.bodyName = bodyName
+        self.coordinate = coordinate
+        self.cameraTransition = nil
+        self.phase = .waitingForBody
+    }
+
+    func cancel() {
+        bodyName = nil
+        coordinate = nil
+        phase = .idle
+        cameraTransition = nil
+    }
+
+    func update(snapshot: PreparedRenderSnapshot?,
+                delta: Float,
+                isSuppressed: Bool,
+                bodyFollowTransitionActive: Bool) {
+        guard !isSuppressed else { return }
+        guard let snapshot,
+              let bodyName,
+              let coordinate else {
+            return
+        }
+
+        switch phase {
+        case .idle:
+            return
+        case .waitingForBody:
+            guard !bodyFollowTransitionActive else { return }
+            startSurfaceTransition(bodyName: bodyName,
+                                   coordinate: coordinate,
+                                   snapshot: snapshot)
+        case .surfaceTransition:
+            if cameraTransition == nil {
+                startSurfaceTransition(bodyName: bodyName,
+                                       coordinate: coordinate,
+                                       snapshot: snapshot)
+            }
+            updateCameraTransition(snapshot: snapshot,
+                                   delta: delta)
+        case .steady:
+            commitSteadySurfaceFrame(bodyName: bodyName,
+                                     coordinate: coordinate,
+                                     snapshot: snapshot)
+        }
+    }
+
+    private func startSurfaceTransition(bodyName: String,
+                                        coordinate: SurfaceCoordinate,
+                                        snapshot: PreparedRenderSnapshot) {
+        guard surfaceMode.makeSurfaceFrame(bodyName: bodyName,
+                                           coordinate: coordinate,
+                                           snapshot: snapshot,
+                                           currentPose: cameraState.pose) != nil else {
+            return
+        }
+
+        cameraTransition = ActiveTransition(startOrientation: cameraState.cameraOrientation,
+                                            duration: cameraState.cameraFollowTransitionDuration)
+        phase = .surfaceTransition
+    }
+
+    private func updateCameraTransition(snapshot: PreparedRenderSnapshot,
+                                        delta: Float) {
+        guard var transition = cameraTransition else { return }
+        guard let bodyName,
+              let coordinate,
+              let destinationFrame = surfaceMode.makeSurfaceFrame(bodyName: bodyName,
+                                                                  coordinate: coordinate,
+                                                                  snapshot: snapshot,
+                                                                  currentPose: cameraState.pose) else {
+            return
+        }
+
+        transition.elapsed = min(max(transition.elapsed + max(delta, 0), 0),
+                                 transition.duration)
+        let orientation = simd_slerp(
+            transition.startOrientation,
+            destinationFrame.orientation,
+            CameraTransition.easeInOutCubic(transition.progress)
+        )
+        let frame = SurfaceCameraMode.Frame(target: destinationFrame.target,
+                                            distance: destinationFrame.distance,
+                                            orientation: orientation)
+
+        cameraTransition = transition.isComplete ? nil : transition
+        if transition.isComplete {
+            phase = .steady
+        }
+        cameraState.commit(surfaceMode.makeSurfaceTransaction(frame: frame))
+    }
+
+    private func commitSteadySurfaceFrame(bodyName: String,
+                                          coordinate: SurfaceCoordinate,
+                                          snapshot: PreparedRenderSnapshot) {
+        guard let frame = surfaceMode.makeSurfaceFrame(bodyName: bodyName,
+                                                       coordinate: coordinate,
+                                                       snapshot: snapshot,
+                                                       currentPose: cameraState.pose) else {
+            return
+        }
+
+        cameraState.commit(surfaceMode.makeSurfaceTransaction(frame: frame))
+    }
+}

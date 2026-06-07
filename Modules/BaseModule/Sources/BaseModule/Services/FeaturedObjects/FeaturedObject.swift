@@ -20,4 +20,5 @@ public nonisolated struct FeaturedObject: Decodable, Sendable {
     public let description: String
     public let imageName: String
     public let accentColor: [AccentColor]
+    public let surfaceLocation: SurfaceLocation?
 }

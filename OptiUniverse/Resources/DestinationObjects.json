@@ -448,6 +448,11 @@
         "imageName": "dst-Moon_Base",
         "tag": "⛺️ Base",
         "isNavigable": true,
+        "surfaceLocation": {
+            "bodyName": "Moon",
+            "latitudeDegrees": -90,
+            "longitudeDegrees": 0
+        },
         "details": [
             {
                 "title": "Habitats",

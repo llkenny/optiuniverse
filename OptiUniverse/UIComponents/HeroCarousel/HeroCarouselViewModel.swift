@@ -41,7 +41,8 @@ final class HeroCarouselViewModel {
                 subtitle: $0.description,
                 accentColors: $0.accentColor.map { color in
                     Color(red: color.red, green: color.green, blue: color.blue)
-                }
+                },
+                surfaceLocation: $0.surfaceLocation
             )
         }
     }
