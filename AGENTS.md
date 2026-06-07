@@ -15,6 +15,12 @@ This repository hosts **OptiUniverse**, an iOS 3D universe navigator focused on 
   `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' build CODE_SIGNING_ALLOWED=NO`
 - Run unit tests when available:
   `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' test CODE_SIGNING_ALLOWED=NO`
+  
+## Package Test Notes
+- `BaseModule` and `MetalModule` schemes in `OptiUniverse.xcodeproj` may not be configured for the `test` action. To run module tests, invoke Xcode from the package directory:
+  `xcodebuild -scheme BaseModule -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' test CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation`
+  `xcodebuild -scheme MetalModule -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' test CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation`
+- Package-directory test runs may generate `Modules/*/Package.resolved`; remove it unless it is intentionally part of the change.
 
 ## Release Hygiene
 - Check the repository for credentials or private material before publishing.

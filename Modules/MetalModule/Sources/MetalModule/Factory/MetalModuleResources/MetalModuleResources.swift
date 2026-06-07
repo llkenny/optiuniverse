@@ -5,6 +5,7 @@
 //  Created by Codex on 24.05.2026.
 //
 
+internal import BaseModule
 import Metal
 import MetalKit
 import Observation
@@ -100,10 +101,15 @@ public final class MetalModuleResources {
         navigationController.isNavigationActive
     }
 
-    func followPlanet(named name: String) {
+    func followPlanet(named name: String,
+                      surfaceLocation: SurfaceLocation? = nil) {
         transferOrbitController.clearTransferOrbit()
         navigationController.cancelNavigation(followDestination: false)
         cameraCoordinator.followPlanet(named: name,
+                                       surfaceCoordinate: surfaceLocation.map {
+            SurfaceCoordinate(latitudeDegrees: $0.latitudeDegrees,
+                              longitudeDegrees: $0.longitudeDegrees)
+        },
                                        viewportSize: renderer?.metalView.bounds.size ?? .zero)
     }
 

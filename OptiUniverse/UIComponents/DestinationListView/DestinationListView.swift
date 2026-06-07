@@ -21,7 +21,9 @@ struct DestinationListView: View {
                 ForEach(viewModel.cards(filteredBy: selectedTag)) { model in
                     DestinationCardView(model: model)
                         .onTapGesture {
-                            appEnvironment.selectedPlanet = model.object
+                            let followTarget = model.followTarget
+                            appEnvironment.selectedPlanet = followTarget.bodyName
+                            appEnvironment.selectedFollowTarget = followTarget
                             appEnvironment.currentScreen = .objects
                         }
                 }

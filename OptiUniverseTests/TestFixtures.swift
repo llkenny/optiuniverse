@@ -1,5 +1,6 @@
 import BaseModule
 import Foundation
+import Testing
 
 let v1DestinationNames = [
     "Sun",
@@ -23,6 +24,15 @@ func loadMainBundleJSON<T: Decodable>(named filename: String) throws -> [T] {
     return try JSONDecoder().decode([T].self, from: data)
 }
 
+func loadMainBundleJSONArray(named filename: String) throws -> [[String: Any]] {
+    guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
+        throw FixtureError.missingResource(filename)
+    }
+
+    let data = try Data(contentsOf: url)
+    return try #require(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+}
+
 func isHomeScreen(_ screen: AppEnvironment.Screen) -> Bool {
     if case .home = screen {
         return true
@@ -34,6 +44,16 @@ func isHomeScreen(_ screen: AppEnvironment.Screen) -> Bool {
 func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
     try JSONDecoder().decode([FeaturedObject].self, from: Data("""
     [
+      {
+        "id": "C4C4ACBB-B588-4E47-9ED1-F76B1507DADA",
+        "name": "Moon Base",
+        "description": "First lunar outpost",
+        "imageName": "Moon_Base_4",
+        "accentColor": [
+          { "red": 0.01, "green": 0.01, "blue": 0.01 },
+          { "red": 0.09, "green": 0.09, "blue": 0.11 }
+        ]
+      },
       {
         "id": "0E40ED4E-A635-41D3-974B-32C1FD2225DB",
         "name": "Saturn",
@@ -69,6 +89,24 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
 func decodeDestinationsFixture() throws -> [DestinationObject] {
     try JSONDecoder().decode([DestinationObject].self, from: Data("""
     [
+      {
+        "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
+        "object": "Moon",
+        "title": "Moon Base",
+        "subtitle": "First lunar outpost",
+        "description": "A south pole surface destination.",
+        "imageName": "dst-Moon_Base",
+        "tag": "Base",
+        "isNavigable": true,
+        "surfaceLocation": {
+          "bodyName": "Moon",
+          "latitudeDegrees": -90,
+          "longitudeDegrees": 0
+        },
+        "details": [
+          { "title": "Habitats", "value": "540", "dimension": "m3" }
+        ]
+      },
       {
         "id": "2F2B045C-4C7C-4797-A423-BAC3665F67AF",
         "object": "Mercury",

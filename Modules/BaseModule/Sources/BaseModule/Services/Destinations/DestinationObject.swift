@@ -35,4 +35,5 @@ public nonisolated struct DestinationObject: Decodable, Sendable {
     public let isNavigable: Bool
     public let details: [Detail]
     public let orbitInfo: OrbitInfo?
+    public let surfaceLocation: SurfaceLocation?
 }

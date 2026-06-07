@@ -31,7 +31,8 @@ final class DestinationListViewModel {
                 title: $0.title,
                 subtitle: $0.subtitle,
                 imageResource: ImageResource(name: $0.imageName, bundle: .main),
-                tag: $0.tag
+                tag: $0.tag,
+                surfaceLocation: $0.surfaceLocation
             )
         }
     }
