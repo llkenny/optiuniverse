@@ -70,6 +70,14 @@ struct RootContainerView: View {
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
         .animation(.default, value: metalResources.navigation.navigationSnapshot)
+        .onChange(of: appEnvironment.currentScreen) { _, newScreen in
+            guard newScreen == .home else { return }
+
+            cancelObjectPresentationModes()
+        }
+        .onChange(of: appEnvironment.selectedFollowTarget) { _, _ in
+            objectsViewState = .raw
+        }
         .onChange(of: metalResources.navigation.navigationSnapshot.state) { _, newState in
             guard objectsViewState == .navigation,
                   newState == .cancelled else {
@@ -92,6 +100,15 @@ struct RootContainerView: View {
         }
         .animation(.default, value: objectsViewState)
         .animation(.default, value: objectInfoOverlayPresentationID)
+    }
+
+    private func cancelObjectPresentationModes() {
+        metalResources.setObjectInfoOverlayFraming(isPresented: false,
+                                                   bottomInset: 0,
+                                                   viewportHeight: 0)
+        metalResources.transferOrbit.clearTransferOrbit()
+        metalResources.navigation.cancelNavigation()
+        objectsViewState = .raw
     }
 }
 
