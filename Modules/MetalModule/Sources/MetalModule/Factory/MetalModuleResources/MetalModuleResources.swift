@@ -6,6 +6,7 @@
 //
 
 internal import BaseModule
+import Foundation
 import Metal
 import MetalKit
 import Observation
@@ -26,6 +27,11 @@ public final class MetalModuleResources {
     @ObservationIgnored private(set) var navigationController: NavigationController!
 
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
+
+    var isTrajectoryModeActive: Bool {
+        transferOrbitController.isTransferPreviewActive ||
+        navigationController.isNavigationActive
+    }
 
     init() {
         meshProvider = MeshProvider()
@@ -96,9 +102,25 @@ public final class MetalModuleResources {
         return renderer
     }
 
-    var isTrajectoryModeActive: Bool {
-        transferOrbitController.isTransferPreviewActive ||
-        navigationController.isNavigationActive
+    func followTarget(for destinationID: UUID,
+                      destinations: [DestinationObject]) -> ObjectFollowTarget? {
+        guard let destination = destinations.first(where: { $0.id == destinationID }) else {
+            return nil
+        }
+
+        return ObjectFollowTarget(bodyName: destination.object,
+                                  surfaceLocation: destination.surfaceLocation)
+    }
+
+    func followDestination(identifiedBy destinationID: UUID,
+                           destinations: [DestinationObject]) {
+        guard let followTarget = followTarget(for: destinationID,
+                                              destinations: destinations) else {
+            return
+        }
+
+        followPlanet(named: followTarget.bodyName,
+                     surfaceLocation: followTarget.surfaceLocation)
     }
 
     func followPlanet(named name: String,

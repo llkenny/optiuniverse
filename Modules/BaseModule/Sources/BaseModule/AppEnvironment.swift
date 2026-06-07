@@ -5,6 +5,7 @@
 //  Created by Codex on 08.04.2026.
 //
 
+import Foundation
 import Observation
 
 @Observable
@@ -16,8 +17,8 @@ public final class AppEnvironment {
 
     public var username: String = "Stranger"
     public var currentScreen: Screen = .home
+    public var selectedDestinationID: UUID?
     public var selectedPlanet: String?
-    public var selectedFollowTarget: ObjectFollowTarget?
     public var location: String {
         "\(selectedPlanet ?? "Unknown"), Solar System, Milky Way"
     }

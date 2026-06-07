@@ -45,6 +45,14 @@ struct ObjectInfoView: View {
                     .padding(.bottom, 8)
             }
 
+            if let imageName = entity.imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxHeight: 200)
+                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
+            }
+
             if entity.isNavigable {
                 Button(action: entity.navigationButtonAction) {
                     NeonButtonView(title: entity.navigationButtonTitle)
@@ -60,12 +68,13 @@ struct ObjectInfoView: View {
     }
 }
 
-#Preview {
+#Preview("Planet") {
     let description = """
 Mercury is the smallest planet in our solar system and the closest to the Sun.
 It has a rocky surface covered in craters and experiences extreme temperature variations.
 """
     let entity = ObjectInfoViewEntity(id: .init(),
+                                      imageName: nil,
                                       title: "Mercury",
                                       subtitle: "Swift Cratered World",
                                       description: description,
@@ -83,6 +92,30 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                             .inclination: "7.00°"
                                         ]
                                       ),
+                                      navigationButtonAction: {
+        print("Navigate to Mercury")
+    })
+    ObjectInfoView(entity: entity)
+        .background(.black)
+}
+
+#Preview("Base") {
+    let description = """
+Mercury is the smallest planet in our solar system and the closest to the Sun.
+It has a rocky surface covered in craters and experiences extreme temperature variations.
+"""
+    let entity = ObjectInfoViewEntity(id: .init(),
+                                      imageName: "Moon_Base_Info",
+                                      title: "Mercury",
+                                      subtitle: "Swift Cratered World",
+                                      description: description,
+                                      details: [.init(title: "age", value: "4.5B", dimension: "years"),
+                                                .init(title: "diameter", value: "4,879", dimension: "km"),
+                                                .init(title: "mass", value: "0.055", dimension: "earth masses"),
+                                                .init(title: "surface temp", value: "-180 to 430", dimension: "°C")],
+                                      navigationButtonTitle: "🎯 Route",
+                                      isNavigable: true,
+                                      orbitInfo: nil,
                                       navigationButtonAction: {
         print("Navigate to Mercury")
     })

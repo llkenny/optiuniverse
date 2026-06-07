@@ -6,7 +6,6 @@
 //
 
 public nonisolated struct SurfaceLocation: Decodable, Equatable, Sendable {
-    public let bodyName: String
     public let latitudeDegrees: Float
     public let longitudeDegrees: Float
 }

@@ -7,13 +7,20 @@
 
 import SwiftUI
 import MetalModule
+import BaseModule
 
 extension RootContainerView {
 
     @ViewBuilder
-    func makeStartNavigationButton(destinationName: String) -> some View {
+    func makeStartNavigationButton(destinationID: UUID) -> some View {
         Button {
-            metalResources.navigation.startNavigation(to: destinationName)
+            guard let destination = appEnvironment.destinationsProvider
+                .destinations
+                .first(where: { $0.id == destinationID }) else {
+                return
+            }
+
+            metalResources.navigation.startNavigation(to: destination.object)
             objectsViewState = .navigation
         } label: {
             Image(systemName: "paperplane")

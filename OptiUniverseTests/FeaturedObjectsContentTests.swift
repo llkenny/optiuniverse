@@ -34,11 +34,24 @@ struct FeaturedObjectsContentTests {
     @Test func bundledMoonBaseFeaturedObjectIsDestinationProxy() throws {
         let featuredObjects: [FeaturedObject] = try loadMainBundleJSON(named: "FeaturedObjects")
         let moonBase = try #require(featuredObjects.first { $0.name == "Moon Base" })
+        let destinations: [DestinationObject] = try loadMainBundleJSON(named: "DestinationObjects")
+        let moonBaseDestination = try #require(destinations.first { $0.title == "Moon Base" })
         let rawObjects = try loadMainBundleJSONArray(named: "FeaturedObjects")
         let rawMoonBase = try #require(rawObjects.first { object in
             object["name"] as? String == moonBase.name
         })
 
+        #expect(moonBase.id == moonBaseDestination.id)
         #expect(rawMoonBase["surfaceLocation"] == nil)
+    }
+
+    @Test func bundledFeaturedObjectIDsMatchDestinations() throws {
+        let featuredObjects: [FeaturedObject] = try loadMainBundleJSON(named: "FeaturedObjects")
+        let destinations: [DestinationObject] = try loadMainBundleJSON(named: "DestinationObjects")
+        let destinationIDs = Set(destinations.map(\.id))
+
+        for featuredObject in featuredObjects {
+            #expect(destinationIDs.contains(featuredObject.id))
+        }
     }
 }

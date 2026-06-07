@@ -7,10 +7,8 @@ import Testing
 struct HeroCarouselViewModelTests {
     @Test func mapsFeaturedObjectsAndClampsIndexes() async throws {
         let featuredObjects = try decodeFeaturedObjectsFixture()
-        let destinations = try decodeDestinationsFixture()
         let viewModel = HeroCarouselViewModel()
         viewModel.featuredObjectProvider = MockFeaturedObjectProvider(featuredObjects: featuredObjects)
-        viewModel.destinationsProvider = MockDestinationsProvider(destinations: destinations)
 
         #expect(viewModel.clampedIndex(for: 0) == nil)
         #expect(viewModel.cardID(for: 0) == nil)
@@ -33,39 +31,31 @@ struct HeroCarouselViewModelTests {
         #expect(viewModel.index(for: secondID) == 1)
     }
 
-    @Test func featuredMoonBaseResolvesSurfaceLocationFromDestination() async throws {
+    @Test func featuredMoonBaseUsesDestinationID() async throws {
         let viewModel = HeroCarouselViewModel()
         viewModel.featuredObjectProvider = MockFeaturedObjectProvider(
             featuredObjects: try decodeFeaturedObjectsFixture()
-        )
-        viewModel.destinationsProvider = MockDestinationsProvider(
-            destinations: try decodeDestinationsFixture()
         )
 
         await viewModel.loadCards()
 
         let card = try #require(viewModel.cards.first { $0.title == "Moon Base" })
-        let surfaceLocation = try #require(card.surfaceLocation)
-        let followTarget = card.followTarget
+        let destination = try #require(try decodeDestinationsFixture().first { $0.title == "Moon Base" })
 
-        #expect(surfaceLocation.bodyName == "Moon")
-        #expect(surfaceLocation.latitudeDegrees == -90)
-        #expect(surfaceLocation.longitudeDegrees == 0)
-        #expect(followTarget.bodyName == "Moon")
-        #expect(followTarget.surfaceLocation == surfaceLocation)
+        #expect(card.id == destination.id)
     }
 
-    @Test func nonSurfaceHeroCardFollowsItsTitle() {
-        let card = HeroCard(
-            id: UUID(),
-            imageResource: .dstMars,
-            title: "Mars",
-            subtitle: "Red world",
-            accentColors: [.red]
+    @Test func nonSurfaceHeroCardUsesDestinationID() async throws {
+        let viewModel = HeroCarouselViewModel()
+        viewModel.featuredObjectProvider = MockFeaturedObjectProvider(
+            featuredObjects: try decodeFeaturedObjectsFixture()
         )
-        let followTarget = card.followTarget
 
-        #expect(followTarget.bodyName == "Mars")
-        #expect(followTarget.surfaceLocation == nil)
+        await viewModel.loadCards()
+
+        let card = try #require(viewModel.cards.first { $0.title == "Mars" })
+        let destination = try #require(try decodeDestinationsFixture().first { $0.title == "Mars" })
+
+        #expect(card.id == destination.id)
     }
 }

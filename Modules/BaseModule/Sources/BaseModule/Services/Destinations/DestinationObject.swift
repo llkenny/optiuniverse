@@ -31,6 +31,7 @@ public nonisolated struct DestinationObject: Decodable, Sendable {
     public let subtitle: String
     public let description: String
     public let imageName: String
+    public let infoImageName: String?
     public let tag: String
     public let isNavigable: Bool
     public let details: [Detail]

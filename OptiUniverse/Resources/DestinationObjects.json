@@ -446,10 +446,10 @@
         "subtitle": "First lunar outpost",
         "description": "The Moon Base is home base for Artemis astronauts who will live and work at humanity’s first lunar outpost. NASA is leading global teams of innovators across international space agencies, industry, and academia to build the Moon Base and establish an enduring human presence near the lunar South Pole for the benefit of all.",
         "imageName": "dst-Moon_Base",
+        "infoImageName": "Moon_Base_Info",
         "tag": "⛺️ Base",
-        "isNavigable": true,
+        "isNavigable": false,
         "surfaceLocation": {
-            "bodyName": "Moon",
             "latitudeDegrees": -90,
             "longitudeDegrees": 0
         },

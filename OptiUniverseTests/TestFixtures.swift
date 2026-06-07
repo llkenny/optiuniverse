@@ -45,7 +45,7 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
     try JSONDecoder().decode([FeaturedObject].self, from: Data("""
     [
       {
-        "id": "C4C4ACBB-B588-4E47-9ED1-F76B1507DADA",
+        "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
         "name": "Moon Base",
         "description": "First lunar outpost",
         "imageName": "Moon_Base_4",
@@ -55,7 +55,7 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
         ]
       },
       {
-        "id": "0E40ED4E-A635-41D3-974B-32C1FD2225DB",
+        "id": "9E86DC33-347C-48FD-8FB7-EC952E184418",
         "name": "Saturn",
         "description": "Ringed giant",
         "imageName": "Saturn_3",
@@ -65,7 +65,7 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
         ]
       },
       {
-        "id": "83855A92-302D-46E5-87BC-A0DBA6748EF7",
+        "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
         "name": "Neptune",
         "description": "Deep blue frontier",
         "imageName": "Neptune_1",
@@ -74,7 +74,7 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
         ]
       },
       {
-        "id": "E2232F82-868D-4F95-9BC8-CEFE50999A0E",
+        "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
         "name": "Mars",
         "description": "Red world",
         "imageName": "Mars_1",
@@ -99,7 +99,6 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         "tag": "Base",
         "isNavigable": true,
         "surfaceLocation": {
-          "bodyName": "Moon",
           "latitudeDegrees": -90,
           "longitudeDegrees": 0
         },
@@ -134,13 +133,39 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         ]
       },
       {
-        "id": "E2232F82-868D-4F95-9BC8-CEFE50999A0E",
+        "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
         "object": "Mars",
         "title": "Mars",
         "subtitle": "Red Planet",
         "description": "Dusty world.",
         "imageName": "dst-Mars",
         "tag": "Hot",
+        "isNavigable": true,
+        "details": [
+          { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
+        ]
+      },
+      {
+        "id": "9E86DC33-347C-48FD-8FB7-EC952E184418",
+        "object": "Saturn",
+        "title": "Saturn",
+        "subtitle": "Ringed giant",
+        "description": "Ringed world.",
+        "imageName": "dst-Saturn",
+        "tag": "Outer",
+        "isNavigable": true,
+        "details": [
+          { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
+        ]
+      },
+      {
+        "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
+        "object": "Neptune",
+        "title": "Neptune",
+        "subtitle": "Deep blue frontier",
+        "description": "Distant world.",
+        "imageName": "dst-Neptune",
+        "tag": "Outer",
         "isNavigable": true,
         "details": [
           { "title": "Age", "value": "4.5B", "dimension": "YEARS" }
