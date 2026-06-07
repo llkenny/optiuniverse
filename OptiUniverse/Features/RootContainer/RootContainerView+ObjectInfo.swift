@@ -111,6 +111,7 @@ extension RootContainerView {
         }
 
         let entity = ObjectInfoViewEntity(id: destination.id,
+                                          imageName: destination.infoImageName,
                                           title: destination.title,
                                           subtitle: destination.subtitle,
                                           description: destination.description,
