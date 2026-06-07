@@ -47,6 +47,9 @@ final class FollowCameraOwner {
     func followPlanet(named name: String,
                       surfaceCoordinate: SurfaceCoordinate? = nil,
                       viewportSize: CGSize) {
+        let canUseCurrentBodyFrame = followingPlanetName == name &&
+            pendingFollowPlanetName == nil &&
+            cameraTransition == nil
         followingPlanetName = name
         surfaceCameraOwner.cancel()
 
@@ -60,6 +63,15 @@ final class FollowCameraOwner {
                 surfaceCameraOwner.focus(on: name,
                                          coordinate: surfaceCoordinate)
             }
+            return
+        }
+
+        if let surfaceCoordinate,
+           canUseCurrentBodyFrame {
+            pendingFollowPlanetName = nil
+            cameraTransition = nil
+            surfaceCameraOwner.focus(on: name,
+                                     coordinate: surfaceCoordinate)
             return
         }
 
