@@ -449,7 +449,6 @@
         "tag": "⛺️ Base",
         "isNavigable": true,
         "surfaceLocation": {
-            "bodyName": "Moon",
             "latitudeDegrees": -90,
             "longitudeDegrees": 0
         },

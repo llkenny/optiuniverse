@@ -12,7 +12,6 @@ import BaseModule
 final class HeroCarouselViewModel {
 
     var featuredObjectProvider: FeaturedObjectProviderProtocol?
-    var destinationsProvider: DestinationsProviderProtocol?
 
     var activeCardID: HeroCard.ID?
     var cards: [HeroCard] = []
@@ -30,26 +29,19 @@ final class HeroCarouselViewModel {
         }
 
         let featuredObjects = featuredObjectProvider.featuredObjects
-        cards = map(featuredObjects: featuredObjects,
-                    destinations: destinationsProvider?.destinations ?? [])
+        cards = map(featuredObjects: featuredObjects)
     }
 
-    private func map(featuredObjects: [FeaturedObject],
-                     destinations: [DestinationObject]) -> [HeroCard] {
+    private func map(featuredObjects: [FeaturedObject]) -> [HeroCard] {
         featuredObjects.map { featuredObject in
-            let matchingDestination = destinations.first {
-                $0.title == featuredObject.name || $0.object == featuredObject.name
-            }
-
-            return HeroCard(
+            HeroCard(
                 id: featuredObject.id,
                 imageResource: ImageResource(name: featuredObject.imageName, bundle: .main),
                 title: featuredObject.name,
                 subtitle: featuredObject.description,
                 accentColors: featuredObject.accentColor.map { color in
                     Color(red: color.red, green: color.green, blue: color.blue)
-                },
-                surfaceLocation: matchingDestination?.surfaceLocation
+                }
             )
         }
     }

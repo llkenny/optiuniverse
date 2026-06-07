@@ -12,9 +12,9 @@ import MetalModule
 extension RootContainerView {
 
     @ViewBuilder
-    func makeInfoButton(selectedPlanet: String) -> some View {
+    func makeInfoButton(selectedDestinationID: UUID) -> some View {
         Button {
-            makeObjectInfo(selectedPlanet: selectedPlanet)
+            makeObjectInfo(selectedDestinationID: selectedDestinationID)
         } label: {
             Text("🔭")
                 .foregroundStyle(.neonTextPrimary)
@@ -86,11 +86,11 @@ extension RootContainerView {
             }
     }
 
-    private func makeObjectInfo(selectedPlanet: String) {
+    private func makeObjectInfo(selectedDestinationID: UUID) {
         guard let destination = appEnvironment.destinationsProvider
             .destinations
             .first(where: {
-                $0.title == selectedPlanet
+                $0.id == selectedDestinationID
             }) else {
             return
         }
@@ -111,7 +111,7 @@ extension RootContainerView {
         }
 
         let entity = ObjectInfoViewEntity(id: destination.id,
-                                          title: selectedPlanet,
+                                          title: destination.title,
                                           subtitle: destination.subtitle,
                                           description: destination.description,
                                           details: details,
@@ -122,7 +122,7 @@ extension RootContainerView {
             metalResources.setObjectInfoOverlayFraming(isPresented: false,
                                                        bottomInset: 0,
                                                        viewportHeight: 0)
-            metalResources.transferOrbit.showTransferOrbit(to: selectedPlanet)
+            metalResources.transferOrbit.showTransferOrbit(to: destination.object)
             objectsViewState = .orbit
         })
         objectInfoOverlayPresentationID = UUID()

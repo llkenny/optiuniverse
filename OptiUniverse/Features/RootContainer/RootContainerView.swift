@@ -44,13 +44,13 @@ struct RootContainerView: View {
 
                             switch objectsViewState {
                             case .raw:
-                                if let selectedPlanet = appEnvironment.selectedPlanet {
-                                    makeInfoButton(selectedPlanet: selectedPlanet)
+                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
+                                    makeInfoButton(selectedDestinationID: selectedDestinationID)
                                 }
                             case .orbit:
                                 makeOrbitBackButton()
-                                if let selectedPlanet = appEnvironment.selectedPlanet {
-                                    makeStartNavigationButton(destinationName: selectedPlanet)
+                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
+                                    makeStartNavigationButton(destinationID: selectedDestinationID)
                                 }
                             case .navigation:
                                 makeNavigationControls(snapshot: metalResources.navigation.navigationSnapshot)
@@ -75,7 +75,7 @@ struct RootContainerView: View {
 
             cancelObjectPresentationModes()
         }
-        .onChange(of: appEnvironment.selectedFollowTarget) { _, _ in
+        .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
             objectsViewState = .raw
         }
         .onChange(of: metalResources.navigation.navigationSnapshot.state) { _, newState in

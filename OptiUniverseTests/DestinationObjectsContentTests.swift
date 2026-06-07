@@ -51,7 +51,6 @@ struct DestinationObjectsContentTests {
         let surfaceLocation = try #require(moonBase.surfaceLocation)
 
         #expect(moonBase.object == "Moon")
-        #expect(surfaceLocation.bodyName == "Moon")
         #expect(surfaceLocation.latitudeDegrees == -90)
         #expect(surfaceLocation.longitudeDegrees == 0)
     }

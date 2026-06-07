@@ -61,7 +61,6 @@ import Testing
         "tag": "Base",
         "isNavigable": true,
         "surfaceLocation": {
-          "bodyName": "Moon",
           "latitudeDegrees": -90,
           "longitudeDegrees": 0
         },
@@ -76,7 +75,6 @@ import Testing
 
     #expect(destination.object == "Moon")
     #expect(destination.title == "Moon Base")
-    #expect(surfaceLocation.bodyName == "Moon")
     #expect(surfaceLocation.latitudeDegrees == -90)
     #expect(surfaceLocation.longitudeDegrees == 0)
 }

@@ -55,9 +55,8 @@ struct HeroCarouselView: View {
                             }
                             .id(card.id)
                             .onTapGesture {
-                                let followTarget = card.followTarget
-                                appEnvironment.selectedPlanet = followTarget.bodyName
-                                appEnvironment.selectedFollowTarget = followTarget
+                                appEnvironment.selectedDestinationID = card.id
+                                appEnvironment.selectedPlanet = card.title
                                 appEnvironment.currentScreen = .objects
                             }
                     }
@@ -73,7 +72,6 @@ struct HeroCarouselView: View {
         .frame(height: Constants.cardHeight)
         .task {
             viewModel.featuredObjectProvider = appEnvironment.featuredObjectProvider
-            viewModel.destinationsProvider = appEnvironment.destinationsProvider
             await viewModel.loadCards()
         }
         .onChange(of: currentIndex) { _, _ in

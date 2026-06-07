@@ -8,8 +8,8 @@ struct AppEnvironmentTests {
 
         #expect(environment.username == "Stranger")
         #expect(isHomeScreen(environment.currentScreen))
+        #expect(environment.selectedDestinationID == nil)
         #expect(environment.selectedPlanet == nil)
-        #expect(environment.selectedFollowTarget == nil)
         #expect(environment.location == "Unknown, Solar System, Milky Way")
 
         environment.selectedPlanet = "Mars"
