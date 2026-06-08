@@ -18,7 +18,6 @@ extension PlanetsRenderer {
         var cameraPosition: SIMD3<Float>
         var exposureScale: Float
         var lightPosition: SIMD3<Float>
-        var cartoonShaderIntensity: Float
         var keyLightColor: SIMD3<Float>
         var terminatorSoftness: Float
         var fillLightColor: SIMD3<Float>
@@ -59,7 +58,6 @@ extension PlanetsRenderer {
             cameraPosition: configuration.cameraOffset,
             exposureScale: 1.08,
             lightPosition: -configuration.sceneOrigin,
-            cartoonShaderIntensity: min(max(configuration.cartoonShaderIntensity, 0), 1),
             keyLightColor: SIMD3<Float>(1.0, 0.86, 0.66),
             terminatorSoftness: 0.24,
             fillLightColor: SIMD3<Float>(0.38, 0.48, 0.72),

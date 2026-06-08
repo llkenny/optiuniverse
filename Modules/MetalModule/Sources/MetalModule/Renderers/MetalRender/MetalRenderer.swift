@@ -39,7 +39,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var postfxMsaaTexture: MTLTexture?
     private(set) var postfxPipelineState: MTLRenderPipelineState!
     var postFXParams = PostFXParams.filmic
-    var cartoonShaderIntensity: Float = 0
 
     let cameraCoordinator: CameraCoordinator
 

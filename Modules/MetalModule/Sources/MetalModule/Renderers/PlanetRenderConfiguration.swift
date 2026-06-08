@@ -16,5 +16,4 @@ struct PlanetRenderConfiguration {
     let cameraOffset: SIMD3<Float>
     let sceneOrigin: SIMD3<Float>
     let viewportSize: CGSize
-    let cartoonShaderIntensity: Float
 }
