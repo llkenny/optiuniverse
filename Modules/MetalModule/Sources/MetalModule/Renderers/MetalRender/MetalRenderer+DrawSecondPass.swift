@@ -48,7 +48,6 @@ extension MetalRenderer {
         }
         quadEncoder.setRenderPipelineState(postfxPipelineState)
         quadEncoder.setFragmentTexture(hdrTexture, index: 0)
-        quadEncoder.setFragmentTexture(lensDirtTexture, index: 1)
         quadEncoder.setFragmentBytes(&postFXParams, length: MemoryLayout<PostFXParams>.stride, index: 0)
         quadEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         quadEncoder.endEncoding()

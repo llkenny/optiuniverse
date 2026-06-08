@@ -9,7 +9,32 @@ import SwiftUI
 
 struct LegalCreditsView: View {
 
-    private let credits: [LegalCreditSection] = [
+    private let credits = LegalCreditsCatalog.sections
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Legal & Credits")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(OptiColor.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    ForEach(credits) { credit in
+                        LegalCreditCard(section: credit)
+                    }
+                }
+                .padding()
+            }
+            .background(OptiColor.screenBackground.ignoresSafeArea())
+            .navigationTitle("Credits")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+enum LegalCreditsCatalog {
+    static let sections: [LegalCreditSection] = [
         LegalCreditSection(
             title: "3D Solar System Model",
             body: """
@@ -25,6 +50,29 @@ struct LegalCreditsView: View {
                 LegalCreditLink(
                     title: "License",
                     url: URL(string: "https://creativecommons.org/licenses/by/4.0/")!
+                )
+            ]
+        ),
+        LegalCreditSection(
+            title: "Milky Way Environment",
+            body: """
+            "The Milky Way panorama".
+            Credit: ESO/S. Brunier.
+            Licensed under Creative Commons Attribution 4.0 International.
+            Used as the live Metal renderer deep-space environment.
+            """,
+            links: [
+                LegalCreditLink(
+                    title: "Source",
+                    url: URL(string: "https://www.eso.org/public/images/eso0932a/")!
+                ),
+                LegalCreditLink(
+                    title: "License",
+                    url: URL(string: "https://creativecommons.org/licenses/by/4.0/")!
+                ),
+                LegalCreditLink(
+                    title: "ESO Usage Terms",
+                    url: URL(string: "https://www.eso.org/public/outreach/copyright/")!
                 )
             ]
         ),
@@ -146,27 +194,6 @@ struct LegalCreditsView: View {
             ]
         )
     ]
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Legal & Credits")
-                        .font(Typography.screenTitle)
-                        .foregroundStyle(OptiColor.textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    ForEach(credits) { credit in
-                        LegalCreditCard(section: credit)
-                    }
-                }
-                .padding()
-            }
-            .background(OptiColor.screenBackground.ignoresSafeArea())
-            .navigationTitle("Credits")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
 }
 
 private struct LegalCreditCard: View {
@@ -212,14 +239,14 @@ private struct LegalCreditCard: View {
     }
 }
 
-private struct LegalCreditSection: Identifiable {
+struct LegalCreditSection: Identifiable {
     let id = UUID()
     let title: String
     let body: String
     let links: [LegalCreditLink]
 }
 
-private struct LegalCreditLink: Identifiable {
+struct LegalCreditLink: Identifiable {
     let id = UUID()
     let title: String
     let url: URL

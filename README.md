@@ -9,7 +9,7 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI, MetalKit, a
 - USDZ-based model loading through Model I/O and MetalKit.
 - JSON-driven object metadata for destination lists, featured objects, and planet simulation parameters.
 - Orbital camera controls with pan, pinch, rotation, planet-follow transitions, and dynamic near-plane fitting.
-- HDR render target, MSAA, ACES-style tone mapping, bloom, vignette, lens dirt support, and optional dreamy post-processing.
+- HDR render target, MSAA, ACES-style tone mapping, bloom, vignette, filmic color grading, and optional dreamy post-processing.
 - Physically inspired material shading with texture, normal, roughness, metallic, ambient occlusion, emissive, opacity, and transparent-pass handling.
 - Render preparation pipeline that keeps async model lookup outside Metal command encoding.
 - Supporting RFC/ADR documentation for rendering architecture decisions.

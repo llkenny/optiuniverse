@@ -4,12 +4,13 @@ using namespace metal;
 struct PostFXParams {
     float bloomThreshold;
     float bloomRadius;
-    float lensDirtOpacity;
     uint style;
     float dreamyIntensity;
     float softFocusRadius;
     float hazeStrength;
     float saturationBoost;
+    float vignetteStrength;
+    float contrast;
 };
 
 struct FullscreenOut {
@@ -19,7 +20,6 @@ struct FullscreenOut {
 
 fragment float4 postfx_fragment(FullscreenOut in [[stage_in]],
                                 texture2d<float> hdrTexture [[texture(0)]],
-                                texture2d<float> lensDirtTexture [[texture(1)]],
                                 constant PostFXParams &params [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_edge);
 
@@ -48,10 +48,8 @@ fragment float4 postfx_fragment(FullscreenOut in [[stage_in]],
         softFocus /= 9.0;
     }
 
-    float dirt = lensDirtTexture.sample(s, in.uv).r;
-    bloom *= mix(1.0, dirt, params.lensDirtOpacity);
-
-    float3 color = hdr + bloom;
+    float bloomStrength = params.style == 2 ? 0.52 : 1.0;
+    float3 color = hdr + bloom * bloomStrength;
 
     if (params.style == 1 && params.dreamyIntensity > 0.0) {
         float dreamyAmount = saturate(params.dreamyIntensity);
@@ -62,6 +60,11 @@ fragment float4 postfx_fragment(FullscreenOut in [[stage_in]],
         color = mix(color, softFocus + bloom * 1.35, 0.45 * dreamyAmount);
         color += warmHaze * dreamyAmount * hazeMask;
         color = mix(color, sqrt(max(color, 0.0)), 0.18 * dreamyAmount);
+    }
+    if (params.style == 2) {
+        float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
+        float highlightProtection = smoothstep(1.6, 4.0, luminance);
+        color = mix(color * 1.05, color, highlightProtection * 0.45);
     }
 
     const float a = 2.51;
@@ -81,11 +84,20 @@ fragment float4 postfx_fragment(FullscreenOut in [[stage_in]],
         color = mix(gray, color, params.saturationBoost);
         color = mix(color, smoothstep(0.0, 1.0, color), 0.12 * dreamyAmount);
     }
+    if (params.style == 2) {
+        float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
+        float3 highlightTint = float3(1.025, 0.998, 0.965);
+        float3 shadowTint = float3(0.955, 0.975, 1.035);
+        color *= mix(shadowTint, highlightTint, saturate(luminance * 1.35));
+        float3 gray = float3(dot(color, float3(0.299, 0.587, 0.114)));
+        color = mix(gray, color, params.saturationBoost);
+        color = (color - 0.5) * params.contrast + 0.5;
+        color = saturate(color);
+    }
 
     float2 centered = in.uv - 0.5;
     float vignette = smoothstep(0.8, 1.0, length(centered) * 1.4142);
-    float vignetteStrength = params.style == 1 ? 0.08 : 0.15;
-    color *= (1.0 - vignetteStrength * vignette);
+    color *= (1.0 - params.vignetteStrength * vignette);
 
     return float4(color, 1.0);
 }

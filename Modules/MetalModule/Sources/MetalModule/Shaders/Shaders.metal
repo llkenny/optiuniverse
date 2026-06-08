@@ -53,6 +53,7 @@ struct StarUniforms {
     float4x4 viewMatrix;
     float4x4 projectionMatrix;
     float3 sceneOrigin;
+    float time;
 };
 
 struct StarVertexOut {
@@ -77,8 +78,17 @@ struct MaterialUniforms {
 
 struct FragmentUniforms {
     float3 cameraPosition;
+    float exposureScale;
     float3 lightPosition;
     float cartoonShaderIntensity;
+    float3 keyLightColor;
+    float terminatorSoftness;
+    float3 fillLightColor;
+    float rimStrength;
+    float3 ambientLightColor;
+    float limbDarkening;
+    float3 rimLightColor;
+    float padding;
 };
 
 float distributionGGX(float3 normal, float3 halfVector, float roughness) {
@@ -208,7 +218,9 @@ vertex StarVertexOut star_vertex(const device StarVertexIn *stars [[buffer(0)]],
 
     StarVertexOut out;
     out.position = uniforms.projectionMatrix * viewPosition;
-    out.color = star.colorAndBrightness.rgb * star.colorAndBrightness.a;
+    float twinklePhase = hash(star.positionAndSize.xyz * 0.013);
+    float twinkle = 0.97 + 0.03 * sin(uniforms.time * 0.42 + twinklePhase * 6.2831853);
+    out.color = star.colorAndBrightness.rgb * star.colorAndBrightness.a * twinkle;
     out.pointSize = star.positionAndSize.w;
     return out;
 }
@@ -389,7 +401,8 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     }
 
     float3 halfVector = normalize(lightDir + viewDir);
-    float nDotL = saturate(dot(lightingNormal, lightDir));
+    float signedNDotL = dot(lightingNormal, lightDir);
+    float nDotL = saturate(signedNDotL);
     float nDotV = saturate(dot(lightingNormal, viewDir));
     float cloudLight = 1.0;
     if (materialUniforms.whiteAlbedo > 0.5) {
@@ -425,15 +438,20 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     float3 kS = fresnel;
     float3 kD = (1.0 - kS) * (1.0 - metallic);
     float3 diffuse = kD * albedo / 3.14159265;
-    float3 directLight = (diffuse + specular) * nDotL * 2.0;
-    float3 ambient = albedo * 0.05 * ambientOcclusion;
+    float keyLight = smoothstep(-fragmentUniforms.terminatorSoftness,
+                                1.0,
+                                signedNDotL);
+    float3 directLight = (diffuse + specular) * keyLight * 2.25 * fragmentUniforms.keyLightColor;
+    float fillAmount = (1.0 - keyLight) * saturate(0.25 + nDotV * 0.75);
+    float3 fillLight = albedo * fragmentUniforms.fillLightColor * fillAmount * 0.16;
+    float3 ambient = albedo * fragmentUniforms.ambientLightColor * ambientOcclusion;
 
     float3 emissive = float3(0.0);
     if (emissiveTexture.get_width() > 0) {
         emissive = emissiveTexture.sample(textureSampler, uv).rgb;
     }
 
-    float3 litColor = ambient + directLight + emissive;
+    float3 litColor = ambient + directLight + fillLight * ambientOcclusion + emissive;
     if (materialUniforms.unlit > 0.5) {
         litColor = albedo + emissive;
     }
@@ -451,6 +469,15 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
                                 ambientOcclusion,
                                 textureLine,
                                 cartoonIntensity);
+    }
+    if (materialUniforms.unlit <= 0.5) {
+        float limb = pow(1.0 - nDotV, 2.0);
+        litColor *= 1.0 - fragmentUniforms.limbDarkening * limb;
+
+        float rimVisibility = smoothstep(-0.35, 0.55, signedNDotL);
+        float rim = pow(1.0 - nDotV, 2.6) * fragmentUniforms.rimStrength * rimVisibility;
+        litColor += fragmentUniforms.rimLightColor * rim;
+        litColor *= fragmentUniforms.exposureScale;
     }
     return float4(litColor, alpha);
 }
@@ -559,6 +586,39 @@ vertex AxesVertexOut axes_vertex(
         out.position = float4(pos[vid], 0.0, 1.0);
         out.uv = pos[vid] * 0.5 + 0.5;
         return out;
+    }
+
+    struct EnvironmentUniforms {
+        float4x4 inverseProjectionMatrix;
+        float4x4 inverseViewRotationMatrix;
+        float exposure;
+        float saturation;
+        float2 padding;
+    };
+
+    fragment float4 environment_fragment(FullscreenOut in [[stage_in]],
+                                         texture2d<float> environmentTexture [[texture(0)]],
+                                         constant EnvironmentUniforms &uniforms [[buffer(0)]]) {
+        constexpr sampler environmentSampler(filter::linear,
+                                             mip_filter::linear,
+                                             address::repeat);
+
+        float2 ndc = in.uv * 2.0 - 1.0;
+        float4 viewPosition = uniforms.inverseProjectionMatrix * float4(ndc, 1.0, 1.0);
+        float3 viewDirection = normalize(viewPosition.xyz / max(abs(viewPosition.w), 1e-4));
+        float3 worldDirection = normalize((uniforms.inverseViewRotationMatrix * float4(viewDirection, 0.0)).xyz);
+
+        float longitude = atan2(worldDirection.z, worldDirection.x);
+        float latitude = acos(clamp(worldDirection.y, -1.0, 1.0));
+        float2 uv = float2(longitude / (2.0 * 3.14159265) + 0.5,
+                           latitude / 3.14159265);
+
+        float3 color = environmentTexture.sample(environmentSampler, uv).rgb;
+        float3 gray = float3(dot(color, float3(0.299, 0.587, 0.114)));
+        color = mix(gray, color, uniforms.saturation);
+        color *= uniforms.exposure;
+
+        return float4(color, 1.0);
     }
 
     fragment float4 tonemap_fragment(FullscreenOut in [[stage_in]],

@@ -36,13 +36,15 @@ final class StarsRenderer {
     func render(renderEncoder: MTLRenderCommandEncoder,
                 viewMatrix: float4x4,
                 projectionMatrix: float4x4,
-                sceneOrigin: SIMD3<Float>) {
+                sceneOrigin: SIMD3<Float>,
+                time: Float) {
         guard let starBuffer, starCount > 0 else { return }
 
         var uniforms = StarUniforms(
             viewMatrix: viewMatrix,
             projectionMatrix: projectionMatrix,
-            sceneOrigin: sceneOrigin
+            sceneOrigin: sceneOrigin,
+            time: time
         )
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setDepthStencilState(depthStencilState)
@@ -100,4 +102,5 @@ private struct StarUniforms {
     var viewMatrix: float4x4
     var projectionMatrix: float4x4
     var sceneOrigin: SIMD3<Float>
+    var time: Float
 }
