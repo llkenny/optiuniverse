@@ -34,7 +34,7 @@ final class EnvironmentRenderer {
             inverseProjectionMatrix: simd_inverse(projectionMatrix),
             inverseViewRotationMatrix: simd_inverse(viewRotationMatrix),
             exposure: 0.3,
-            saturation: 0.9,
+            saturation: 0.7,
             padding: SIMD2<Float>(repeating: 0)
         )
 
