@@ -38,15 +38,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var depthTexture: MTLTexture?
     private var postfxMsaaTexture: MTLTexture?
     private(set) var postfxPipelineState: MTLRenderPipelineState!
-    var postFXParams = PostFXParams(bloomThreshold: 0.72,
-                                    bloomRadius: 1.22,
-                                    style: PostFXStyle.standard.rawValue,
-                                    dreamyIntensity: 0.0,
-                                    softFocusRadius: 0.85,
-                                    hazeStrength: 0.0,
-                                    saturationBoost: 1.06,
-                                    vignetteStrength: 0.18,
-                                    contrast: 1.06)
+    var postFXParams = PostFXParams.filmic
     var cartoonShaderIntensity: Float = 0
 
     let cameraCoordinator: CameraCoordinator
@@ -199,38 +191,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func applyPostFXStyle(_ style: PostFXStyle) {
-        postFXParams.style = style.rawValue
-
         switch style {
         case .standard:
-            postFXParams.bloomThreshold = 1.0
-            postFXParams.bloomRadius = 1.0
-            postFXParams.dreamyIntensity = 0.0
-            postFXParams.softFocusRadius = 0.75
-            postFXParams.hazeStrength = 0.0
-            postFXParams.saturationBoost = 1.0
-            postFXParams.vignetteStrength = 0.15
-            postFXParams.contrast = 1.0
+            postFXParams = .standard
 
         case .dreamy:
-            postFXParams.bloomThreshold = 0.55
-            postFXParams.bloomRadius = 1.35
-            postFXParams.dreamyIntensity = 0.5
-            postFXParams.softFocusRadius = 1.9
-            postFXParams.hazeStrength = 0.3
-            postFXParams.saturationBoost = 1.08
-            postFXParams.vignetteStrength = 0.08
-            postFXParams.contrast = 0.96
+            postFXParams = .dreamy
 
         case .filmic:
-            postFXParams.bloomThreshold = 0.72
-            postFXParams.bloomRadius = 1.22
-            postFXParams.dreamyIntensity = 0.0
-            postFXParams.softFocusRadius = 0.85
-            postFXParams.hazeStrength = 0.0
-            postFXParams.saturationBoost = 1.06
-            postFXParams.vignetteStrength = 0.18
-            postFXParams.contrast = 1.06
+            postFXParams = .filmic
         }
     }
 

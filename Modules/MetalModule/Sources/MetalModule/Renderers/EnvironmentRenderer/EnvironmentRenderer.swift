@@ -50,11 +50,7 @@ final class EnvironmentRenderer {
     }
 
     private static func makeEnvironmentTexture(device: MTLDevice) -> MTLTexture? {
-        guard let url = Bundle.module.url(forResource: "milky_way_environment",
-                                          withExtension: "jpg") ??
-                Bundle.module.url(forResource: "milky_way_environment",
-                                  withExtension: "jpg",
-                                  subdirectory: "Assets/Environment") else {
+        guard let url = MetalModuleAssets.milkyWayEnvironmentURL() else {
             return nil
         }
 

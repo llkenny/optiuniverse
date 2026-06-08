@@ -9,7 +9,32 @@ import SwiftUI
 
 struct LegalCreditsView: View {
 
-    private let credits: [LegalCreditSection] = [
+    private let credits = LegalCreditsCatalog.sections
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Legal & Credits")
+                        .font(Typography.screenTitle)
+                        .foregroundStyle(OptiColor.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    ForEach(credits) { credit in
+                        LegalCreditCard(section: credit)
+                    }
+                }
+                .padding()
+            }
+            .background(OptiColor.screenBackground.ignoresSafeArea())
+            .navigationTitle("Credits")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+enum LegalCreditsCatalog {
+    static let sections: [LegalCreditSection] = [
         LegalCreditSection(
             title: "3D Solar System Model",
             body: """
@@ -169,27 +194,6 @@ struct LegalCreditsView: View {
             ]
         )
     ]
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Legal & Credits")
-                        .font(Typography.screenTitle)
-                        .foregroundStyle(OptiColor.textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    ForEach(credits) { credit in
-                        LegalCreditCard(section: credit)
-                    }
-                }
-                .padding()
-            }
-            .background(OptiColor.screenBackground.ignoresSafeArea())
-            .navigationTitle("Credits")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
 }
 
 private struct LegalCreditCard: View {
@@ -235,14 +239,14 @@ private struct LegalCreditCard: View {
     }
 }
 
-private struct LegalCreditSection: Identifiable {
+struct LegalCreditSection: Identifiable {
     let id = UUID()
     let title: String
     let body: String
     let links: [LegalCreditLink]
 }
 
-private struct LegalCreditLink: Identifiable {
+struct LegalCreditLink: Identifiable {
     let id = UUID()
     let title: String
     let url: URL
