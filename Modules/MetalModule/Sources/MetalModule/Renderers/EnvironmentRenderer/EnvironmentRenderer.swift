@@ -8,6 +8,10 @@
 import MetalKit
 import simd
 
+/// Draws the equirectangular deep-space background as the first HDR pass.
+///
+/// The renderer strips camera translation from the view matrix so the Milky Way
+/// behaves like an infinite environment while still rotating with the camera.
 final class EnvironmentRenderer {
     private static let colorPixelFormat: MTLPixelFormat = .rgba16Float
     private static let depthPixelFormat: MTLPixelFormat = .depth32Float
