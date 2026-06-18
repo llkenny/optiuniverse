@@ -48,9 +48,11 @@ extension MetalRenderer {
         let renderOrigin = state.cameraSnapshot.sceneOrigin
         let renderViewMatrix = state.cameraSnapshot.renderViewMatrix
 
-        environmentRenderer.render(renderEncoder: renderEncoder,
-                                   viewMatrix: renderViewMatrix,
-                                   projectionMatrix: state.cameraSnapshot.projectionMatrix)
+        if sceneOwnershipControls.renders(.environment) {
+            environmentRenderer.render(renderEncoder: renderEncoder,
+                                       viewMatrix: renderViewMatrix,
+                                       projectionMatrix: state.cameraSnapshot.projectionMatrix)
+        }
 
         let configuration = PlanetRenderConfiguration(snapshot: state.snapshot,
                                                       renderEncoder: renderEncoder,
@@ -59,16 +61,20 @@ extension MetalRenderer {
                                                       cameraOffset: state.cameraSnapshot.cameraOffset,
                                                       sceneOrigin: renderOrigin,
                                                       viewportSize: state.cameraSnapshot.viewportSize)
-        starsRenderer.render(renderEncoder: renderEncoder,
-                             viewMatrix: renderViewMatrix,
-                             projectionMatrix: state.cameraSnapshot.projectionMatrix,
-                             sceneOrigin: renderOrigin,
-                             time: planetsRenderer.currentTime)
-        transferOrbitRenderer.render(state: state.routes.transfer,
-                                     renderEncoder: renderEncoder,
-                                     viewMatrix: renderViewMatrix,
-                                     projectionMatrix: state.cameraSnapshot.projectionMatrix,
-                                     sceneOrigin: renderOrigin)
+        if sceneOwnershipControls.renders(.starField) {
+            starsRenderer.render(renderEncoder: renderEncoder,
+                                 viewMatrix: renderViewMatrix,
+                                 projectionMatrix: state.cameraSnapshot.projectionMatrix,
+                                 sceneOrigin: renderOrigin,
+                                 time: planetsRenderer.currentTime)
+        }
+        if sceneOwnershipControls.renders(.transferOrbit) {
+            transferOrbitRenderer.render(state: state.routes.transfer,
+                                         renderEncoder: renderEncoder,
+                                         viewMatrix: renderViewMatrix,
+                                         projectionMatrix: state.cameraSnapshot.projectionMatrix,
+                                         sceneOrigin: renderOrigin)
+        }
         routeRenderer.render(configuration: RouteRenderConfiguration(
             state: state.routes.navigation,
             renderEncoder: renderEncoder,

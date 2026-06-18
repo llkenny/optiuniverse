@@ -27,14 +27,18 @@ extension PlanetsRenderer: PlanetsRendererProtocol {
 
         configuration.renderEncoder.setRenderPipelineState(pipelineState)
         configuration.renderEncoder.setDepthStencilState(opaqueDepthStencilState)
-        for planet in snapshot.planets {
+        let metalOwnedPlanets = snapshot.planets.filter {
+            sceneOwnershipControls.rendersCelestialBody(named: $0.planetName)
+        }
+
+        for planet in metalOwnedPlanets {
             renderPlanet(planet,
                          renderPass: .opaque,
                          configuration: configuration)
         }
 
         let cameraWorldPosition = configuration.sceneOrigin + configuration.cameraOffset
-        let transparentPlanets = snapshot.planets
+        let transparentPlanets = metalOwnedPlanets
             .filter { planet in
                 hasTransparentSubmesh(in: planet)
             }

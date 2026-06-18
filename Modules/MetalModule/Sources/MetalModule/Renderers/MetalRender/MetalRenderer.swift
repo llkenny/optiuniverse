@@ -29,6 +29,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     let navigationController: NavigationController
     let transferOrbitController: TransferOrbitController
+    let sceneOwnershipControls: MetalSceneOwnershipControls
     let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
@@ -47,6 +48,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     init?(metalView: MTKView,
           device: MTLDevice,
           commandQueue: MTLCommandQueue,
+          sceneOwnershipControls: MetalSceneOwnershipControls,
           cameraCoordinator: CameraCoordinator,
           planets: [Planet],
           snapshotProvider: SnapshotProvider,
@@ -60,6 +62,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.objectInfoOverlayFramingState = objectInfoOverlayFramingState
         self.navigationController = navigationController
         self.transferOrbitController = transferOrbitController
+        self.sceneOwnershipControls = sceneOwnershipControls
 
         self.device = device
         self.commandQueue = commandQueue
@@ -72,11 +75,15 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.depthStencilState = depthStencilState
         let viewSampleCount = metalView.sampleCount > 1 ? metalView.sampleCount : 4
         self.planets = planets
-        planetsRenderer = PlanetsRenderer(device: device, sampleCount: viewSampleCount)
+        planetsRenderer = PlanetsRenderer(device: device,
+                                          sampleCount: viewSampleCount,
+                                          sceneOwnershipControls: sceneOwnershipControls)
         environmentRenderer = EnvironmentRenderer(device: device, sampleCount: viewSampleCount)
         starsRenderer = StarsRenderer(device: device, sampleCount: viewSampleCount)
         transferOrbitRenderer = TransferOrbitRenderer(device: device, sampleCount: viewSampleCount)
-        routeRenderer = RouteRenderer(device: device, sampleCount: viewSampleCount)
+        routeRenderer = RouteRenderer(device: device,
+                                      sampleCount: viewSampleCount,
+                                      sceneOwnershipControls: sceneOwnershipControls)
 
         super.init()
         prepare(viewSampleCount: viewSampleCount)
