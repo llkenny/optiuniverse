@@ -35,9 +35,13 @@ final class RouteRenderer: RouteRendering {
     private let linePipelineState: MTLRenderPipelineState
     private let pipelineState: MTLRenderPipelineState
     private let depthStencilState: MTLDepthStencilState
+    private let sceneOwnershipControls: MetalSceneOwnershipControls
 
-    init(device: MTLDevice, sampleCount: Int) {
+    init(device: MTLDevice,
+         sampleCount: Int,
+         sceneOwnershipControls: MetalSceneOwnershipControls) {
         self.device = device
+        self.sceneOwnershipControls = sceneOwnershipControls
         linePipelineState = Self.makeLinePipelineState(device: device,
                                                        sampleCount: sampleCount)
         pipelineState = Self.makePipelineState(device: device,
@@ -46,13 +50,26 @@ final class RouteRenderer: RouteRendering {
     }
 
     func render(configuration: RouteRenderConfiguration) {
-        guard let route = configuration.state.route,
+        guard let route = configuration.state.route else {
+            return
+        }
+
+        if sceneOwnershipControls.renders(.navigationRoute) {
+            renderRoutePath(route: route,
+                            configuration: configuration)
+        }
+
+        guard sceneOwnershipControls.renders(.navigationMarker),
               let markerPosition = route.point(at: configuration.state.progress) else {
             return
         }
 
-        renderRoutePath(route: route,
-                        configuration: configuration)
+        renderNavigationMarker(at: markerPosition,
+                               configuration: configuration)
+    }
+
+    private func renderNavigationMarker(at markerPosition: SIMD3<Float>,
+                                        configuration: RouteRenderConfiguration) {
         var vertex = RouteMarkerVertex(positionAndProgress: SIMD4<Float>(markerPosition.x,
                                                                          markerPosition.y,
                                                                          markerPosition.z,

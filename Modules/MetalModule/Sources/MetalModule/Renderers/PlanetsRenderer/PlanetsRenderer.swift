@@ -18,14 +18,18 @@ final class PlanetsRenderer {
     private(set) var samplerState: MTLSamplerState!
     let opaqueDepthStencilState: MTLDepthStencilState
     let transparentDepthStencilState: MTLDepthStencilState
+    let sceneOwnershipControls: MetalSceneOwnershipControls
 
     var time: Float = 0
     var lastUpdateTime = CACurrentMediaTime()
 
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
-    init(device: MTLDevice, sampleCount: Int) {
+    init(device: MTLDevice,
+         sampleCount: Int,
+         sceneOwnershipControls: MetalSceneOwnershipControls) {
         self.device = device
+        self.sceneOwnershipControls = sceneOwnershipControls
         self.opaqueDepthStencilState = Self.makeDepthStencilState(device: device,
                                                                   writesDepth: true)
         self.transparentDepthStencilState = Self.makeDepthStencilState(device: device,

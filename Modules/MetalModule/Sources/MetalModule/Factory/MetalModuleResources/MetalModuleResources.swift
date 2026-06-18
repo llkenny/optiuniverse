@@ -80,6 +80,7 @@ public final class MetalModuleResources {
         guard let renderer = MetalRenderer(metalView: metalView,
                                            device: meshProvider.device,
                                            commandQueue: commandQueue,
+                                           sceneOwnershipControls: .migration,
                                            cameraCoordinator: cameraCoordinator,
                                            planets: planets,
                                            snapshotProvider: snapshotProvider,
