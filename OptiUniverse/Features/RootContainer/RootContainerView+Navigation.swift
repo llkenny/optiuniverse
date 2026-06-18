@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import MetalModule
+import UniverseModule
 import BaseModule
 
 extension RootContainerView {
@@ -20,7 +20,7 @@ extension RootContainerView {
                 return
             }
 
-            metalResources.navigation.startNavigation(to: destination.object)
+            universeResources.navigation.startNavigation(to: destination.object)
             objectsViewState = .navigation
         } label: {
             Image(systemName: "paperplane")
@@ -83,9 +83,9 @@ extension RootContainerView {
 
     private var navigationCameraFollowBinding: Binding<Bool> {
         Binding {
-            metalResources.navigation.navigationCameraFollowEnabled
+            universeResources.navigation.navigationCameraFollowEnabled
         } set: { isEnabled in
-            metalResources.navigation.setNavigationCameraFollowEnabled(isEnabled)
+            universeResources.navigation.setNavigationCameraFollowEnabled(isEnabled)
         }
     }
 
@@ -95,14 +95,14 @@ extension RootContainerView {
             switch snapshot.state {
             case .running:
                 navigationControlButton(title: "Pause") {
-                    metalResources.navigation.pauseNavigation()
+                    universeResources.navigation.pauseNavigation()
                 }
                 navigationControlButton(title: "Cancel") {
                     cancelNavigationAndDismissOverlays()
                 }
             case .paused:
                 navigationControlButton(title: "Resume") {
-                    metalResources.navigation.resumeNavigation()
+                    universeResources.navigation.resumeNavigation()
                 }
                 navigationControlButton(title: "Cancel") {
                     cancelNavigationAndDismissOverlays()
@@ -125,7 +125,7 @@ extension RootContainerView {
     }
 
     private func cancelNavigationAndDismissOverlays() {
-        metalResources.navigation.cancelNavigation()
+        universeResources.navigation.cancelNavigation()
         objectsViewState = .raw
     }
 

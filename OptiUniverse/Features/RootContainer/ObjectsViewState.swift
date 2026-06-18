@@ -5,7 +5,7 @@
 //  Created by max on 11.05.2026.
 //
 
-import MetalModule
+import UniverseModule
 
 enum ObjectsViewState: Equatable {
     case raw

@@ -34,7 +34,7 @@
             default = "YES">
          </TestPlanReference>
          <TestPlanReference
-            reference = "container:Modules/MetalModule/MetalModule.xctestplan">
+            reference = "container:Modules/UniverseModule/UniverseModule.xctestplan">
          </TestPlanReference>
          <TestPlanReference
             reference = "container:Modules/BaseModule/BaseModule.xctestplan">

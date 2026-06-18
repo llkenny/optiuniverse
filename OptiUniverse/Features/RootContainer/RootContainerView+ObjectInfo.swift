@@ -7,7 +7,7 @@
 
 import SwiftUI
 import BaseModule
-import MetalModule
+import UniverseModule
 
 extension RootContainerView {
 
@@ -57,13 +57,13 @@ extension RootContainerView {
 
     private func setObjectInfoOverlayFraming(overlayHeight: CGFloat,
                                              viewportHeight: CGFloat) {
-        metalResources.setObjectInfoOverlayFraming(isPresented: true,
+        universeResources.setObjectInfoOverlayFraming(isPresented: true,
                                                    bottomInset: overlayHeight,
                                                    viewportHeight: viewportHeight)
     }
 
     private func hideObjectInfoOverlay(viewportHeight: CGFloat) {
-        metalResources.setObjectInfoOverlayFraming(isPresented: false,
+        universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                    bottomInset: 0,
                                                    viewportHeight: viewportHeight)
         objectsViewState = .raw
@@ -120,10 +120,10 @@ extension RootContainerView {
                                           isNavigable: destination.isNavigable,
                                           orbitInfo: orbitInfo,
                                           navigationButtonAction: {
-            metalResources.setObjectInfoOverlayFraming(isPresented: false,
+            universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                        bottomInset: 0,
                                                        viewportHeight: 0)
-            metalResources.transferOrbit.showTransferOrbit(to: destination.object)
+            universeResources.transferOrbit.showTransferOrbit(to: destination.object)
             objectsViewState = .orbit
         })
         objectInfoOverlayPresentationID = UUID()
