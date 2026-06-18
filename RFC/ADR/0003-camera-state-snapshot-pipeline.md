@@ -16,7 +16,7 @@ The current camera update path mixes several responsibilities in the renderer:
 
 This makes `updateCamera(snapshot:delta:)` difficult to reason about because each branch can mutate different pieces of camera state or bypass the state object by writing matrices directly. It also makes the renderer responsible for knowing when camera variables have changed and when an existing matrix snapshot can be reused.
 
-The desired architecture separates camera ownership from rendering. Camera modes and inputs should update canonical camera variables, a snapshot provider should derive immutable matrices from those variables, and `MetalRenderer` should consume matrices without owning camera behavior.
+The desired architecture separates camera ownership from rendering. Camera modes and inputs should update canonical camera variables, a snapshot provider should derive immutable matrices from those variables, and the scene integration layer should consume matrices without owning camera behavior.
 
 ## Decision
 
@@ -38,7 +38,7 @@ CameraState transaction commit
 SnapshotProvider
         |
         v
-MetalRenderer
+Scene integration layer
 ```
 
 1. `CameraState`
@@ -53,8 +53,8 @@ MetalRenderer
 4. `SnapshotProvider`
    Reads committed camera state, scene snapshots, viewport data, and time-dependent mode requirements. It produces immutable camera snapshots containing render-ready matrices and derived camera values.
 
-5. `MetalRenderer`
-   Reads the latest camera snapshot and uses its matrices during command encoding. It does not arbitrate camera modes or mutate camera state as part of rendering.
+5. Scene integration layer
+   Reads the latest camera snapshot and applies its pose and projection to the active renderer. It does not arbitrate camera modes or mutate camera state as part of rendering. In the RealityKit target architecture, `UniverseSceneCoordinator` applies the snapshot to the RealityView camera entity.
 
 Camera state changes must be committed through an explicit transaction/version mechanism. A transaction can batch multiple variable changes and commit them once. On commit, `CameraState` increments a camera revision and records enough dirty metadata for the snapshot provider to decide whether a new snapshot is required.
 
@@ -71,7 +71,7 @@ The renderer should receive an immutable camera snapshot for the current render 
 
 ## Consequences
 
-`MetalRenderer` becomes a consumer of camera matrices instead of the owner of camera behavior. This narrows the renderer's responsibility to rendering and command encoding.
+The scene integration layer becomes a consumer of camera matrices instead of the owner of camera behavior. This narrows renderer responsibility to applying camera state and presenting the scene.
 
 Camera mode priority becomes explicit. Conflicts such as manual control cancelling follow, navigation owning the camera while active, or trajectory pan only applying in trajectory mode should be resolved by the camera mode layer or a camera coordinator, not by renderer branches.
 

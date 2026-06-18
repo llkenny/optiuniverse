@@ -1,7 +1,8 @@
 # ADR 0001: Render Pipeline MainActor Isolation
 
-Status: Accepted
+Status: Superseded
 Date: 25/04/26
+Superseded By: [Complete Metal-to-RealityKit Migration](../Features/Complete%20RealityKit%20Migration.md)
 
 ## Context
 

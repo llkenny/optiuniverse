@@ -1,7 +1,8 @@
 # ADR 0002: Metal Module Factory Resource Facade
 
-Status: Accepted
+Status: Superseded
 Date: 19/05/26
+Superseded By: [Complete Metal-to-RealityKit Migration](../Features/Complete%20RealityKit%20Migration.md)
 
 ## Context
 
