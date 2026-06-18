@@ -25,12 +25,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let starsRenderer: StarsRenderer
     let transferOrbitRenderer: TransferOrbitRenderer
     let routeRenderer: RouteRenderer
-    let snapshotProvider: SnapshotProvider
-    let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
-    let navigationController: NavigationController
-    let transferOrbitController: TransferOrbitController
+    let sceneCoordinator: UniverseSceneCoordinator
     let sceneOwnershipControls: MetalSceneOwnershipControls
-    let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     let metalView: MTKView
     let depthStencilState: MTLDepthStencilState
 
@@ -41,27 +37,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private(set) var postfxPipelineState: MTLRenderPipelineState!
     var postFXParams = PostFXParams.filmic
 
-    let cameraCoordinator: CameraCoordinator
-
     let planets: [Planet]
 
     init?(metalView: MTKView,
           device: MTLDevice,
           commandQueue: MTLCommandQueue,
           sceneOwnershipControls: MetalSceneOwnershipControls,
-          cameraCoordinator: CameraCoordinator,
           planets: [Planet],
-          snapshotProvider: SnapshotProvider,
-          objectInfoOverlayFramingState: ObjectInfoOverlayFramingState,
-          navigationController: NavigationController,
-          transferOrbitController: TransferOrbitController) {
+          sceneCoordinator: UniverseSceneCoordinator) {
 
         self.metalView = metalView
-        self.cameraCoordinator = cameraCoordinator
-        self.snapshotProvider = snapshotProvider
-        self.objectInfoOverlayFramingState = objectInfoOverlayFramingState
-        self.navigationController = navigationController
-        self.transferOrbitController = transferOrbitController
+        self.sceneCoordinator = sceneCoordinator
         self.sceneOwnershipControls = sceneOwnershipControls
 
         self.device = device
@@ -148,41 +134,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             return
         }
 
-        // Advance simulation time and publish route/transfer state before camera snapshot derivation.
-        let delta = planetsRenderer.advanceTime()
-        snapshotProvider.requestPreparation(simulationTime: planetsRenderer.currentTime)
-        let snapshot = snapshotProvider.latestSnapshot
-
-        transferOrbitController.update(snapshot: snapshot,
-                                       delta: delta)
-        navigationController.update(snapshot: snapshot,
-                                    delta: delta)
-        let modeState = makeCameraFrameModeState()
-        cameraCoordinator.updateFrameCamera(snapshot: snapshot,
-                                            delta: delta,
-                                            viewportSize: metalView.bounds.size,
-                                            modeState: modeState)
-        let objectInfoOverlayAdjustment = objectInfoOverlayFramingState.advance(delta: delta)
-        let projection = makeCameraProjection(snapshot: snapshot,
-                                              objectInfoOverlayAdjustment: objectInfoOverlayAdjustment)
-        let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
-                                                projection: projection,
-                                                modeState: modeState)
-        logSurfaceCoordinateDebug(snapshot: snapshot,
-                                  cameraSnapshot: cameraSnapshot,
-                                  modeState: modeState)
+        guard let frameState = sceneCoordinator.latestFrameState else { return }
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,
                               hdrTexture: hdrTexture,
                               depthTexture: depthTexture,
                               state: SceneRenderState(
-                                cameraSnapshot: cameraSnapshot,
-                                snapshot: snapshot,
-                                routes: SceneRouteRenderState(
-                                    transfer: transferOrbitController.renderState,
-                                    navigation: navigationController.routeRenderState
-                                )
+                                simulationTime: frameState.simulationTime,
+                                cameraSnapshot: frameState.cameraSnapshot,
+                                snapshot: frameState.snapshot,
+                                routes: frameState.routes
                               ))
             drawSecondPass(postfxMsaaTexture: postfxMsaaTexture,
                            drawable: drawable,

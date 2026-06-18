@@ -9,12 +9,8 @@ import Metal
 import simd
 import UIKit
 
-struct SceneRouteRenderState {
-    let transfer: TransferOrbitRenderState
-    let navigation: NavigationRouteRenderState
-}
-
 struct SceneRenderState {
+    let simulationTime: Float
     let cameraSnapshot: SnapshotProvider.CameraSnapshot
     let snapshot: PreparedRenderSnapshot?
     let routes: SceneRouteRenderState
@@ -66,23 +62,10 @@ extension MetalRenderer {
                                  viewMatrix: renderViewMatrix,
                                  projectionMatrix: state.cameraSnapshot.projectionMatrix,
                                  sceneOrigin: renderOrigin,
-                                 time: planetsRenderer.currentTime)
+                                 time: state.simulationTime)
         }
-        if sceneOwnershipControls.renders(.transferOrbit) {
-            transferOrbitRenderer.render(state: state.routes.transfer,
-                                         renderEncoder: renderEncoder,
-                                         viewMatrix: renderViewMatrix,
-                                         projectionMatrix: state.cameraSnapshot.projectionMatrix,
-                                         sceneOrigin: renderOrigin)
-        }
-        routeRenderer.render(configuration: RouteRenderConfiguration(
-            state: state.routes.navigation,
-            renderEncoder: renderEncoder,
-            viewMatrix: renderViewMatrix,
-            projectionMatrix: state.cameraSnapshot.projectionMatrix,
-            sceneOrigin: renderOrigin,
-            viewportSize: state.cameraSnapshot.viewportSize
-        ))
+        renderRoutes(state: state,
+                     renderEncoder: renderEncoder)
         // Render the remaining planets.
         planetsRenderer.renderPlanets(configuration: configuration)
         renderEncoder.endEncoding()
@@ -90,6 +73,26 @@ extension MetalRenderer {
         makeBlit(hdrTexture: hdrTexture, geometryCommandBuffer: geometryCommandBuffer)
 
         geometryCommandBuffer.commit()
+    }
+
+    private func renderRoutes(state: SceneRenderState,
+                              renderEncoder: MTLRenderCommandEncoder) {
+        let cameraSnapshot = state.cameraSnapshot
+        if sceneOwnershipControls.renders(.transferOrbit) {
+            transferOrbitRenderer.render(state: state.routes.transfer,
+                                         renderEncoder: renderEncoder,
+                                         viewMatrix: cameraSnapshot.renderViewMatrix,
+                                         projectionMatrix: cameraSnapshot.projectionMatrix,
+                                         sceneOrigin: cameraSnapshot.sceneOrigin)
+        }
+        routeRenderer.render(configuration: RouteRenderConfiguration(
+            state: state.routes.navigation,
+            renderEncoder: renderEncoder,
+            viewMatrix: cameraSnapshot.renderViewMatrix,
+            projectionMatrix: cameraSnapshot.projectionMatrix,
+            sceneOrigin: cameraSnapshot.sceneOrigin,
+            viewportSize: cameraSnapshot.viewportSize
+        ))
     }
 
     private func makeHdrDescriptor(msaaColorTexture: MTLTexture,
