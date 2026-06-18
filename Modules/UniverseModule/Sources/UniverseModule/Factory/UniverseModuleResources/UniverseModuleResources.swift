@@ -21,12 +21,23 @@ public final class UniverseModuleResources {
     let cameraCoordinator: CameraCoordinator
     let snapshotProvider: SnapshotProvider
     let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
+    let assetRepository: RealityAssetRepository
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
     public internal(set) var navigationCameraFollowEnabled = true
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
     @ObservationIgnored private(set) var navigationController: NavigationController!
+    @ObservationIgnored private(set) lazy var sceneCoordinator = UniverseSceneCoordinator(
+        planets: planets,
+        snapshotProvider: snapshotProvider,
+        cameraCoordinator: cameraCoordinator,
+        objectInfoOverlayFramingState: objectInfoOverlayFramingState,
+        navigationController: navigationController,
+        transferOrbitController: transferOrbitController,
+        assetRepository: assetRepository
+    )
 
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
+    @ObservationIgnored private(set) var viewportSize: CGSize = .zero
 
     var isTrajectoryModeActive: Bool {
         transferOrbitController.isTransferPreviewActive ||
@@ -44,12 +55,13 @@ public final class UniverseModuleResources {
         cameraCoordinator = CameraCoordinator(cameraState: cameraState,
                                               snapshotProvider: snapshotProvider)
         objectInfoOverlayFramingState = ObjectInfoOverlayFramingState()
+        assetRepository = RealityAssetRepository()
         transferOrbitController = TransferOrbitController(
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
             planets: planets,
             viewportSize: { [weak self] in
-                self?.renderer?.metalView.bounds.size ?? .zero
+                self?.viewportSize ?? .zero
             }
         )
         navigationController = NavigationController(
@@ -57,7 +69,7 @@ public final class UniverseModuleResources {
             cameraCoordinator: cameraCoordinator,
             planets: planets,
             viewportSize: { [weak self] in
-                self?.renderer?.metalView.bounds.size ?? .zero
+                self?.viewportSize ?? .zero
             }
         )
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
@@ -81,26 +93,33 @@ public final class UniverseModuleResources {
                                            device: meshProvider.device,
                                            commandQueue: commandQueue,
                                            sceneOwnershipControls: .migration,
-                                           cameraCoordinator: cameraCoordinator,
                                            planets: planets,
-                                           snapshotProvider: snapshotProvider,
-                                           objectInfoOverlayFramingState: objectInfoOverlayFramingState,
-                                           navigationController: navigationController,
-                                           transferOrbitController: transferOrbitController) else {
+                                           sceneCoordinator: sceneCoordinator) else {
             return nil
         }
         self.renderer = renderer
-        navigationController.followPlanet = { [weak self, weak renderer] name in
+        navigationController.followPlanet = { [weak self] name in
             guard let self else { return }
             self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: renderer?.metalView.bounds.size ?? .zero)
+                                                               viewportSize: self.viewportSize)
         }
-        transferOrbitController.followPlanet = { [weak self, weak renderer] name in
+        transferOrbitController.followPlanet = { [weak self] name in
             guard let self else { return }
             self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: renderer?.metalView.bounds.size ?? .zero)
+                                                               viewportSize: self.viewportSize)
         }
         return renderer
+    }
+
+    func setViewportSize(_ size: CGSize) {
+        guard size.width.isFinite,
+              size.height.isFinite,
+              size.width > 0,
+              size.height > 0 else {
+            return
+        }
+        viewportSize = size
+        sceneCoordinator.setViewportSize(size)
     }
 
     func followTarget(for destinationID: UUID,
@@ -133,7 +152,7 @@ public final class UniverseModuleResources {
             SurfaceCoordinate(latitudeDegrees: $0.latitudeDegrees,
                               longitudeDegrees: $0.longitudeDegrees)
         },
-                                       viewportSize: renderer?.metalView.bounds.size ?? .zero)
+                                       viewportSize: viewportSize)
     }
 
     func beginManualCameraControl() {

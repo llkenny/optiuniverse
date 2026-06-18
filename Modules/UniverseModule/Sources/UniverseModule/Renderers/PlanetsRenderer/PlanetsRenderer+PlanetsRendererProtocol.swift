@@ -6,20 +6,8 @@
 //
 
 import simd
-import QuartzCore
 
 extension PlanetsRenderer: PlanetsRendererProtocol {
-
-    var currentTime: Float { time }
-
-    func advanceTime() -> Float {
-        let currentTime = CACurrentMediaTime()
-        let delta = Float(currentTime - lastUpdateTime)
-        lastUpdateTime = currentTime
-        time += delta
-        return delta
-    }
-
     func renderPlanets(configuration: PlanetRenderConfiguration) {
         planetScreenPositions.removeAll()
 

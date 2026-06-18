@@ -20,9 +20,6 @@ final class PlanetsRenderer {
     let transparentDepthStencilState: MTLDepthStencilState
     let sceneOwnershipControls: MetalSceneOwnershipControls
 
-    var time: Float = 0
-    var lastUpdateTime = CACurrentMediaTime()
-
     var planetScreenPositions: [String: SIMD2<Float>] = [:]
 
     init(device: MTLDevice,
