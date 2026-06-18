@@ -21,7 +21,7 @@ body-centered target and surface alignment.
 
 ## Public Interfaces
 Extend destination content models with optional surface-location data. This type belongs to
-`BaseModule` content models and must not depend on `MetalModule`:
+`BaseModule` content models and must not depend on `UniverseModule`:
 
 ```json
 {
@@ -42,28 +42,30 @@ name and optional `SurfaceLocation`; views assign that model-provided target to 
 to the objects screen.
 
 Do not add a public `SurfaceCoordinate` value in v1. The coordinate value used by math helpers should
-stay internal to `MetalModule` unless a future public API needs to pass it across the module boundary.
-`BaseModule` owns its decodable content DTO, and `MetalModuleResources.followPlanet` converts that
+stay internal to `UniverseModule` unless a future public API needs to pass it across the module
+boundary.
+`BaseModule` owns its decodable content DTO, and `UniverseModuleResources.followPlanet` converts that
 DTO into the internal coordinate value.
 
 ## ADR Compatibility
-This RFC must preserve the architecture accepted in ADR 0002 and ADR 0003.
+This RFC must preserve the facade boundary carried forward from superseded ADR 0002 and the camera
+architecture accepted in ADR 0003.
 
-- ADR 0002: Public rendering integration continues to flow through `MetalModuleResources` and focused
-  protocols. The app target should not depend on renderer internals, `MeshProvider`, `ModelLoader`,
-  `CameraState`, or prepared snapshot types.
+- Facade boundary: Public rendering integration continues to flow through `UniverseModuleResources`
+  and focused protocols. The app target should not depend on renderer internals, asset repositories,
+  `CameraState`, RealityKit entities, or scene snapshot types.
 - ADR 0003: Surface positioning is part of the follow camera path, not renderer behavior. UI and
-  content commands enter through model-derived follow targets, route through `MetalModuleResources`
+  content commands enter through model-derived follow targets, route through `UniverseModuleResources`
   and `CameraCoordinator.followPlanet`, and are executed by `FollowCameraOwner` with
   `SurfaceCameraOwner` / `SurfaceCameraMode` as follow-only implementation details.
 - `SurfaceCameraOwner` commits only `CameraState.Transaction` values. It must not mutate matrices,
   bypass `CameraState`, or write camera fields directly.
-- `MetalRenderer` remains a consumer of immutable camera snapshots. It may call surface-coordinate
-  debug helpers with the current snapshot, but it must not own surface camera priority or perform
-  camera arbitration.
+- `UniverseSceneCoordinator` remains a consumer of immutable camera snapshots. It may call
+  surface-coordinate debug helpers with the current snapshot, but it must not own surface camera
+  priority or perform camera arbitration.
 - `DestinationObject.surfaceLocation` is a `BaseModule` content DTO. It is carried through
-  destination and hero card models into an `ObjectFollowTarget`, then converted to Metal's internal
-  `SurfaceCoordinate` at the resource boundary.
+  destination and hero card models into an `ObjectFollowTarget`, then converted to
+  `UniverseModule`'s internal `SurfaceCoordinate` at the resource boundary.
 
 ## Coordinate Model
 V1 uses model-frame planetocentric coordinates on a spherical reference surface.
@@ -76,7 +78,7 @@ V1 uses model-frame planetocentric coordinates on a spherical reference surface.
 - The reference surface is spherical. Terrain height and mesh-accurate picking are out of scope.
 - Coordinates are stable in the body's local model frame, not IAU-accurate body-fixed coordinates.
 
-Use the current prepared body transform from `PreparedPlanetRenderPacket` so coordinates follow the
+Use the current immutable body transform from the universe scene snapshot so coordinates follow the
 rotating rendered body. Add prepared `surfaceRadius`, initially equal to the render/framing sphere
 radius unless implementation shows a better existing radius.
 
@@ -87,12 +89,12 @@ behavior.
 Key changes:
 
 - Add pure coordinate math helpers:
-  - internal `SurfaceCoordinate` value in `MetalModule`
+  - internal `SurfaceCoordinate` value in `UniverseModule`
   - planetocentric lat/lon degrees to local unit vector
   - local unit vector to planetocentric lat/lon
-  - world surface point from `PreparedPlanetRenderPacket`
+  - world surface point from immutable prepared body state
   - camera ray to selected-body reference-sphere intersection
-- Use `PreparedPlanetRenderPacket.baseModelMatrix` or equivalent body transform so coordinates stay
+- Use the prepared body's base model matrix or equivalent body transform so coordinates stay
   stable in the rotating body frame.
 - Add prepared `surfaceRadius`.
 - Add throttled private `OSLog` debug output for the currently selected or followed body:
@@ -131,7 +133,7 @@ Key changes:
 - Keep view tap handling generic: assign the model-provided follow target, assign the selected body,
   and switch to `.objects`.
 - Add `SurfaceCameraMode` and `SurfaceCameraOwner` inside the follow camera pipeline.
-- On `MetalModuleResources.followPlanet(named:surfaceLocation:)`:
+- On `UniverseModuleResources.followPlanet(named:surfaceLocation:)`:
   - clear transfer preview
   - cancel route navigation without starting route completion behavior
   - phase 1: focus/show the host body using existing fit/follow behavior

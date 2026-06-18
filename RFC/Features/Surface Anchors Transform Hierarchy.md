@@ -43,7 +43,7 @@ Content can continue to describe surface destinations with the existing shape:
 }
 ```
 
-MetalModule should convert that content DTO into an internal anchor description:
+`UniverseModule` should convert that content DTO into an internal anchor description:
 
 ```swift
 struct SurfaceAnchorDescriptor {
@@ -53,7 +53,7 @@ struct SurfaceAnchorDescriptor {
 }
 ```
 
-Render preparation resolves the descriptor against the latest prepared parent body packet:
+Scene preparation resolves the descriptor against the latest immutable parent body state:
 
 ```swift
 struct ResolvedSurfaceAnchor {
@@ -66,7 +66,7 @@ struct ResolvedSurfaceAnchor {
 ```
 
 Exact type names can change. The important boundary is that `BaseModule` owns decodable content,
-while `MetalModule` owns internal coordinate math, transform composition, and render-ready anchor
+while `UniverseModule` owns internal coordinate math, transform composition, and scene-ready anchor
 resolution.
 
 ## Camera Integration
@@ -96,13 +96,13 @@ Later, renderers can attach optional visuals to anchors:
 - a small model
 - an interaction hit target
 
-The renderer should consume resolved anchor packets from prepared snapshots, just like it consumes
-prepared planet packets. It should not query content providers or perform coordinate conversion
-during command encoding.
+The scene coordinator should consume resolved anchors from immutable scene snapshots, just like it
+consumes prepared body state. It should not query content providers or perform coordinate conversion
+during entity application.
 
 ## Implementation Plan
-1. Add internal anchor descriptors and resolved-anchor packets in `MetalModule`.
-2. Extend render preparation to resolve surface anchors from destination content and prepared parent
+1. Add internal anchor descriptors and resolved-anchor values in `UniverseModule`.
+2. Extend scene preparation to resolve surface anchors from destination content and prepared parent
    body transforms.
 3. Move surface-coordinate world-point calculation out of `SurfaceCameraMode` into an anchor
    resolver.
@@ -127,7 +127,7 @@ xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'pl
 ## Assumptions And Risks
 - V1 anchors can remain spherical-reference anchors; mesh-accurate terrain height is out of scope.
 - Anchor local coordinates are model-frame coordinates, not IAU-accurate body-fixed coordinates.
-- Destination content should keep using simple decodable data; no public Metal transform type should
+- Destination content should keep using simple decodable data; no renderer-specific transform type should
   leak into `BaseModule`.
 - The main risk is overbuilding a scene graph too early. The recommended first step is a narrow
   anchor resolver that can later grow into a fuller transform hierarchy.
