@@ -4,7 +4,7 @@ This file tracks attribution and release-review source material for assets bundl
 
 ## 3D Solar System Model
 
-- Asset: `Modules/MetalModule/Sources/MetalModule/Assets/Models/high_resolution_solar_system.usdz`
+- Asset: `Modules/UniverseModule/Sources/UniverseModule/Assets/Models/high_resolution_solar_system.usdz`
 - Title: "High Resolution Solar system"
 - Creator: pebegou
 - Source: https://www.fab.com/listings/f8e5507c-76d2-44f5-97b2-d22c264dc4ab
@@ -14,7 +14,7 @@ This file tracks attribution and release-review source material for assets bundl
 
 ## Milky Way Environment Texture
 
-- Asset: `Modules/MetalModule/Sources/MetalModule/Assets/Environment/milky_way_environment.jpg`
+- Asset: `Modules/UniverseModule/Sources/UniverseModule/Assets/Environment/milky_way_environment.jpg`
 - Title: The Milky Way panorama
 - Credit: ESO/S. Brunier
 - Source: https://www.eso.org/public/images/eso0932a/

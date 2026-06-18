@@ -1,0 +1,68 @@
+import simd
+import Testing
+@testable import UniverseModule
+
+@Test func routeBuilderCreatesMonotonicCumulativeDistances() throws {
+    let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        destinationName: "Mars",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: nil,
+        estimatedDuration: 12
+    )))
+
+    #expect(route.points.count == route.cumulativeDistances.count)
+    #expect(route.totalDistance > 0)
+    #expect(abs((route.cumulativeDistances.last ?? 0) - route.totalDistance) < 0.0001)
+
+    for index in route.cumulativeDistances.indices.dropFirst() {
+        #expect(route.cumulativeDistances[index] >= route.cumulativeDistances[index - 1])
+    }
+}
+
+@Test func routeBuilderExtendsTransferToDestinationOrbitPosition() throws {
+    let destinationPosition = SIMD3<Float>(0, -1.52, 0)
+    let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        destinationName: "Mars",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: destinationPosition,
+        estimatedDuration: 12
+    )))
+
+    let finalPoint = try #require(route.points.last)
+
+    #expect(simd_distance(finalPoint, destinationPosition) < 0.0001)
+    #expect(route.points.count > 24)
+}
+
+@Test func routeBuilderRejectsUnsupportedDestinations() {
+    let builder = RoutePathBuilder()
+
+    #expect(builder.makeRoute(input: RouteBuildInput(
+        destinationName: "Sun",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: nil,
+        estimatedDuration: 12
+    )) == nil)
+    #expect(builder.makeRoute(input: RouteBuildInput(
+        destinationName: "Moon",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: nil,
+        estimatedDuration: 12
+    )) == nil)
+    #expect(builder.makeRoute(input: RouteBuildInput(
+        destinationName: "Earth",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: nil,
+        estimatedDuration: 12
+    )) == nil)
+}

@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		502571F52FA20F05000AC26F /* BaseModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F42FA20F05000AC26F /* BaseModule */; };
 		502571F72FA20F08000AC26F /* CommonTools in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F62FA20F08000AC26F /* CommonTools */; };
-		502571F92FA20F0C000AC26F /* MetalModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F82FA20F0C000AC26F /* MetalModule */; };
+		502571F92FA20F0C000AC26F /* UniverseModule in Frameworks */ = {isa = PBXBuildFile; productRef = 502571F82FA20F0C000AC26F /* UniverseModule */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,7 +83,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				502571F52FA20F05000AC26F /* BaseModule in Frameworks */,
-				502571F92FA20F0C000AC26F /* MetalModule in Frameworks */,
+				502571F92FA20F0C000AC26F /* UniverseModule in Frameworks */,
 				502571F72FA20F08000AC26F /* CommonTools in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -196,7 +196,7 @@
 			packageProductDependencies = (
 				502571F42FA20F05000AC26F /* BaseModule */,
 				502571F62FA20F08000AC26F /* CommonTools */,
-				502571F82FA20F0C000AC26F /* MetalModule */,
+				502571F82FA20F0C000AC26F /* UniverseModule */,
 			);
 			productName = OptiUniverse;
 			productReference = 50BAAA362E30E2A800ECB7DE /* OptiUniverse.app */;
@@ -233,7 +233,7 @@
 			packageReferences = (
 				502571FA2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/BaseModule" */,
 				502571FB2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/CommonTools" */,
-				502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */,
+				502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/UniverseModule" */,
 				504655C72FA10B1A00FD69D0 /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -302,7 +302,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -324,7 +324,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = my.OptiUniverseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -482,7 +482,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -523,7 +523,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -586,9 +586,9 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/CommonTools;
 		};
-		502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */ = {
+		502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/UniverseModule" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Modules/MetalModule;
+			relativePath = Modules/UniverseModule;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -614,10 +614,10 @@
 			package = 502571FB2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/CommonTools" */;
 			productName = CommonTools;
 		};
-		502571F82FA20F0C000AC26F /* MetalModule */ = {
+		502571F82FA20F0C000AC26F /* UniverseModule */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/MetalModule" */;
-			productName = MetalModule;
+			package = 502571FC2FA20F96000AC26F /* XCLocalSwiftPackageReference "Modules/UniverseModule" */;
+			productName = UniverseModule;
 		};
 		50B54AD52FA10CEB0033669B /* SwiftLintBuildToolPlugin */ = {
 			isa = XCSwiftPackageProductDependency;

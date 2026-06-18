@@ -1,6 +1,6 @@
 # OptiUniverse
 
-OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI, MetalKit, and custom Metal shaders. The app combines a polished SwiftUI discovery interface with a real-time Metal scene for exploring celestial objects, following planets, and rendering high-fidelity space visuals on device.
+OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a technology-neutral `UniverseModule`. The current renderer uses MetalKit and custom Metal shaders to provide a real-time scene for exploring celestial objects, following planets, and rendering high-fidelity space visuals on device.
 
 ## Highlights
 
@@ -40,21 +40,23 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI, MetalKit, a
 OptiUniverse/
   Features/
     HomeScreen/        SwiftUI discovery experience
-    Metal/             Metal view, renderer, shaders, camera, model loading
     RootContainer/     Top-level app flow between home and 3D universe
-  Services/            Data providers and app-facing protocols
   UIComponents/        Reusable SwiftUI components
   Resources/           JSON metadata, asset catalogs, colors, images
+Modules/
+  BaseModule/           Shared app models and services
+  CommonTools/          Shared utilities
+  UniverseModule/       Universe facade, simulation, camera, and current Metal renderer
 RFC/                   Rendering architecture notes and ADRs
 vfx_scripts/           Experimental volume-noise export utilities
 ```
 
 ## Rendering Architecture
 
-The Metal path is organized around a clear split between preparation and command encoding:
+`UniverseModule` exposes a technology-neutral app boundary while its current Metal path is organized around a clear split between preparation and command encoding:
 
-1. `MetalModuleFactory` creates the app-owned `MetalModuleResources` facade.
-2. `MetalModuleResources` owns long-lived Metal, preparation, camera, navigation, and snapshot services.
+1. `UniverseModuleFactory` creates the app-owned `UniverseModuleResources` facade.
+2. `UniverseModuleResources` owns long-lived Metal, preparation, camera, navigation, and snapshot services.
 3. `RenderPreparationPipeline` resolves async mesh access and builds immutable per-frame render snapshots behind `SnapshotProvider`.
 4. `MetalRenderer` owns the `MTKViewDelegate` loop, HDR/MSAA targets, post-processing pass, and command encoding.
 5. `PlanetsRenderer` consumes prepared snapshots synchronously while encoding draw commands.
@@ -66,7 +68,7 @@ This avoids crossing `await` boundaries while a `MTLRenderCommandEncoder` is act
 
 The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, and Neptune. Featured-object content is driven by JSON and backed by image assets for Saturn, Neptune, and Mars.
 
-Planet simulation data lives in `OptiUniverse/Features/Metal/Models/planets.json`, while UI destination content lives in `OptiUniverse/Resources/DestinationObjects.json` and `OptiUniverse/Resources/FeaturedObjects.json`.
+Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/Models/planets.json`, while UI destination content lives in `OptiUniverse/Resources/DestinationObjects.json` and `OptiUniverse/Resources/FeaturedObjects.json`.
 
 ## Why This Project Matters
 
@@ -81,7 +83,7 @@ OptiUniverse demonstrates work across the parts of iOS development that are ofte
 ## Requirements
 
 - Xcode with iOS Simulator support
-- iOS 18.0 or newer deployment target
+- iOS 26.0 or newer deployment target
 - A Metal-capable simulator or device
 
 ## Release 1 URLs

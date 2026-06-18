@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import MetalModule
+import UniverseModule
 import BaseModule
 import Foundation
 
@@ -17,10 +17,10 @@ struct RootContainerView: View {
     @State var objectsViewState: ObjectsViewState = .raw
     @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
     @GestureState var objectInfoDragOffset: CGFloat = 0
-    let metalResources: MetalModuleResources
+    let universeResources: UniverseModuleResources
 
-    init(metalResources: MetalModuleResources) {
-        self.metalResources = metalResources
+    init(universeResources: UniverseModuleResources) {
+        self.universeResources = universeResources
     }
 
     var body: some View {
@@ -39,7 +39,7 @@ struct RootContainerView: View {
                         HomeView()
                     case .objects:
                         ZStack {
-                            UniverseView(resources: metalResources)
+                            UniverseView(resources: universeResources)
                                 .ignoresSafeArea(edges: .bottom)
 
                             switch objectsViewState {
@@ -53,7 +53,7 @@ struct RootContainerView: View {
                                     makeStartNavigationButton(destinationID: selectedDestinationID)
                                 }
                             case .navigation:
-                                makeNavigationControls(snapshot: metalResources.navigation.navigationSnapshot)
+                                makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
                             default:
                                 EmptyView()
                             }
@@ -69,7 +69,7 @@ struct RootContainerView: View {
         }
         .animation(.default, value: isDataLoaded)
         .animation(.default, value: appEnvironment.currentScreen)
-        .animation(.default, value: metalResources.navigation.navigationSnapshot)
+        .animation(.default, value: universeResources.navigation.navigationSnapshot)
         .onChange(of: appEnvironment.currentScreen) { _, newScreen in
             guard newScreen == .home else { return }
 
@@ -78,7 +78,7 @@ struct RootContainerView: View {
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
             objectsViewState = .raw
         }
-        .onChange(of: metalResources.navigation.navigationSnapshot.state) { _, newState in
+        .onChange(of: universeResources.navigation.navigationSnapshot.state) { _, newState in
             guard objectsViewState == .navigation,
                   newState == .cancelled else {
                 return
@@ -87,7 +87,7 @@ struct RootContainerView: View {
             objectsViewState = .raw
         }
         .task {
-            await metalResources.prepare()
+            await universeResources.prepare()
             appEnvironment.destinationsProvider.fetch()
             appEnvironment.featuredObjectProvider.fetch()
             isDataLoaded = true
@@ -103,16 +103,16 @@ struct RootContainerView: View {
     }
 
     private func cancelObjectPresentationModes() {
-        metalResources.setObjectInfoOverlayFraming(isPresented: false,
+        universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                    bottomInset: 0,
                                                    viewportHeight: 0)
-        metalResources.transferOrbit.clearTransferOrbit()
-        metalResources.navigation.cancelNavigation()
+        universeResources.transferOrbit.clearTransferOrbit()
+        universeResources.navigation.cancelNavigation()
         objectsViewState = .raw
     }
 }
 
 #Preview {
-    RootContainerView(metalResources: MetalModuleFactory.makeResources())
+    RootContainerView(universeResources: UniverseModuleFactory.makeResources())
         .environment(AppEnvironment())
 }

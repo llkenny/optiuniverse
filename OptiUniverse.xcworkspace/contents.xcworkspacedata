@@ -14,7 +14,7 @@
          location = "group:CommonTools">
       </FileRef>
       <FileRef
-         location = "group:MetalModule">
+         location = "group:UniverseModule">
       </FileRef>
    </Group>
 </Workspace>

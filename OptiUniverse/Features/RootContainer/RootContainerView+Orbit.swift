@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import MetalModule
+import UniverseModule
 import BaseModule
 
 extension RootContainerView {
@@ -14,7 +14,7 @@ extension RootContainerView {
     @ViewBuilder
     func makeOrbitBackButton() -> some View {
         Button {
-            metalResources.transferOrbit.clearTransferOrbit()
+            universeResources.transferOrbit.clearTransferOrbit()
             objectsViewState = .raw
         } label: {
             Image(systemName: "xmark")

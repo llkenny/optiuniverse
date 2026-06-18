@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "6B211A9E-724C-4579-A2BA-02A920988870",
+      "name" : "UniverseModule Regression",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testExecutionOrdering" : "alphabetical"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:.",
+        "identifier" : "UniverseModuleTests",
+        "name" : "UniverseModuleTests"
+      }
+    }
+  ],
+  "version" : 1
+}
