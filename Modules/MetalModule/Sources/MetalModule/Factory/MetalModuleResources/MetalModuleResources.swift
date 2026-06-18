@@ -72,7 +72,8 @@ public final class MetalModuleResources {
         await meshProvider.prepare()
     }
 
-    func makeRenderer(for metalView: MTKView) -> MetalRenderer? {
+    func makeRenderer(for metalView: MTKView,
+                      sunOverlay: RealityKitSunOverlayView?) -> MetalRenderer? {
         guard let commandQueue = meshProvider.device.makeCommandQueue() else {
             return nil
         }
@@ -88,6 +89,7 @@ public final class MetalModuleResources {
                                            transferOrbitController: transferOrbitController) else {
             return nil
         }
+        renderer.sunOverlay = sunOverlay
         self.renderer = renderer
         navigationController.followPlanet = { [weak self, weak renderer] name in
             guard let self else { return }

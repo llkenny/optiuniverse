@@ -1,7 +1,7 @@
 [
     {
         "name": "Sun",
-        "meshName": "SunLow_Sun_0",
+        "meshName": "Body",
         "diameterKm": 1392000,
         "distanceFromSunKm": 0,
         "orbitSpeed": 0,

@@ -31,6 +31,7 @@ let package = Package(
             ],
             resources: [
                 .copy("Assets/Models/high_resolution_solar_system.usdz"),
+                .copy("Assets/Models/RCP_Sun_Scene.usdz"),
                 .process("Assets/Environment"),
                 .process("Models/planets.json")
             ],

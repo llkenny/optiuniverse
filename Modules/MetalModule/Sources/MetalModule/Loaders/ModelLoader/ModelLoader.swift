@@ -18,40 +18,41 @@ struct LoadedMesh: @unchecked Sendable {
 actor ModelLoader {
 
     private let resourceName: String
-    private let vertexDescriptor: MDLVertexDescriptor
 
     var meshes: [String: LoadedMesh] = [:]
 
     init(resourceName: String) {
         self.resourceName = resourceName
-        self.vertexDescriptor = MDLVertexDescriptor.makeUSDZVertexDescriptor()
     }
 
     func loadMeshes(device: MTLDevice) async {
+        let allocator = MTKMeshBufferAllocator(device: device)
+        let mdlMeshes = loadMDLMeshes(resourceName: resourceName,
+                                      allocator: allocator)
+        meshes = makeLoadedMeshes(mdlMeshes: mdlMeshes, device: device)
+    }
+
+    private func loadMDLMeshes(resourceName: String,
+                               allocator: MTKMeshBufferAllocator) -> [MDLMesh] {
         guard let url = Bundle.module.url(forResource: resourceName, withExtension: "usdz") else {
-            fatalError("Meshes resource not found")
+            fatalError("Meshes resource not found: \(resourceName)")
         }
 
-        let allocator = MTKMeshBufferAllocator(device: device)
         let asset = MDLAsset(url: url,
-                             vertexDescriptor: vertexDescriptor,
+                             vertexDescriptor: MDLVertexDescriptor.makeUSDZVertexDescriptor(),
                              bufferAllocator: allocator)
         asset.loadTextures()
 
-        let mdlMeshes = asset
+        return asset
             .childObjects(of: MDLMesh.self)
             .compactMap { $0 as? MDLMesh }
-
-        meshes = await makeLoadedMeshes(mdlMeshes: mdlMeshes, device: device)
     }
 
     /// Creates a dictionary of meshes with loaded textures.
-    /// MainActor because of texture is using CoreGraphics implicitly.
     /// - Parameters:
     ///   - mdlMeshes: Raw meshes
     ///   - device: Device for load a texture
     /// - Returns: Prepared meshes with textures
-    @MainActor
     private func makeLoadedMeshes(mdlMeshes: [MDLMesh], device: MTLDevice) -> [String: LoadedMesh] {
         let loadedMeshes = mdlMeshes
             .compactMap { mdlMesh in
@@ -80,6 +81,10 @@ actor ModelLoader {
 
     func getMeshes(for planetName: String, primaryMeshName: String) -> [LoadedMesh] {
         let primary = meshes[primaryMeshName].map { [$0] } ?? []
+        guard planetName != "Sun" else {
+            return primary
+        }
+
         let extras = meshes
             .filter { meshName, _ in
                 meshName != primaryMeshName &&

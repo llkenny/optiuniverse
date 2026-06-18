@@ -43,6 +43,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let cameraCoordinator: CameraCoordinator
 
     let planets: [Planet]
+    weak var sunOverlay: RealityKitSunOverlayView?
 
     init?(metalView: MTKView,
           device: MTLDevice,
@@ -164,6 +165,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         logSurfaceCoordinateDebug(snapshot: snapshot,
                                   cameraSnapshot: cameraSnapshot,
                                   modeState: modeState)
+        sunOverlay?.update(cameraSnapshot: cameraSnapshot,
+                           renderSnapshot: snapshot)
 
         do {
             try drawFirstPass(msaaColorTexture: msaaColorTexture,

@@ -39,8 +39,20 @@ public struct UniverseView: UIViewRepresentable {
             mtkView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
         ])
 
-        let renderer = resources.makeRenderer(for: mtkView)
+        let sunOverlay = RealityKitSunOverlayView()
+        sunOverlay.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(sunOverlay)
+        NSLayoutConstraint.activate([
+            sunOverlay.topAnchor.constraint(equalTo: container.topAnchor),
+            sunOverlay.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            sunOverlay.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            sunOverlay.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+        ])
+
+        let renderer = resources.makeRenderer(for: mtkView,
+                                              sunOverlay: sunOverlay)
         context.coordinator.renderer = renderer
+        context.coordinator.sunOverlay = sunOverlay
 
         let cameraController = CameraController(cameraCoordinator: resources.cameraCoordinator,
                                                 beginManualCameraControl: { [resources] in
@@ -105,6 +117,8 @@ public struct UniverseView: UIViewRepresentable {
 
     public static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
         coordinator.renderer?.dismantle()
+        coordinator.sunOverlay?.dismantle()
+        coordinator.sunOverlay = nil
         coordinator.cameraController = nil
         coordinator.renderer = nil
     }
