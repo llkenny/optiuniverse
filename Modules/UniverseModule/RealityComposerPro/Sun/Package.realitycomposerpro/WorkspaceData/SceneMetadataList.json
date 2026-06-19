@@ -1,0 +1,52 @@
+{
+  "DF3F37F5-ABA6-4129-9259-285489309D7E" : {
+    "objectMetadataList" : [
+      [
+        "DF3F37F5-ABA6-4129-9259-285489309D7E",
+        "Root",
+        "Corona"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "DF3F37F5-ABA6-4129-9259-285489309D7E",
+        "Root",
+        "Material"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "DF3F37F5-ABA6-4129-9259-285489309D7E",
+        "Root",
+        "CoronaMaterial"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "DF3F37F5-ABA6-4129-9259-285489309D7E",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "DF3F37F5-ABA6-4129-9259-285489309D7E",
+        "Root",
+        "Body"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      }
+    ]
+  }
+}

@@ -1,0 +1,246 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["Body", "Material", "Corona", "CoronaMaterial"]
+    def Sphere "Body" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "Material"
+    {
+        token outputs:mtlx:surface.connect = </Root/Material/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (718.3911, 224.11961)
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 856
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor = (0, 0, 0) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:diffuseColor.connect = None
+            color3f inputs:emissiveColor.connect = </Root/Material/Multiply_3.outputs:out>
+            float inputs:ior
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity
+            float inputs:opacityThreshold
+            float inputs:roughness
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (483.26514, 109.03975)
+            int ui:nodegraph:node:stackingOrder = 856
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:roughness", "Advanced"]
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @8k_sun.jpg@
+            string inputs:filtertype
+            float2 inputs:texcoord
+            string inputs:uaddressmode
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-530.0264, 10.574149)
+            int ui:nodegraph:node:stackingOrder = 916
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+        }
+
+        def Shader "Luminance"
+        {
+            uniform token info:id = "ND_luminance_color3"
+            color3f inputs:in.connect = </Root/Material/Image.outputs:out>
+            color3f inputs:lumacoeffs = (0.2126, 0.7152, 0.0722)
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-231.41974, 459.2293)
+            int ui:nodegraph:node:stackingOrder = 1055
+        }
+
+        def Shader "Remap"
+        {
+            uniform token info:id = "ND_remap_color3"
+            color3f inputs:in.connect = </Root/Material/Luminance.outputs:out>
+            color3f inputs:inhigh
+            color3f inputs:inlow = (0.38541016, 0.38541016, 0.38541016) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:outhigh = (0.97098833, 0.9805078, 0.9805078) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:outlow = (0, 0, 0) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-45.6062, 460.67432)
+            int ui:nodegraph:node:stackingOrder = 1190
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:inhigh"]
+        }
+
+        def Shader "Multiply"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/Material/Remap.outputs:out>
+            float inputs:in2 = 11
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (116.68453, 443.9887)
+            int ui:nodegraph:node:stackingOrder = 1050
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:in2", "inputs:in2", "inputs:in2", "inputs:in2", "inputs:in2", "inputs:in2"]
+        }
+
+        def Shader "Multiply_1"
+        {
+            uniform token info:id = "ND_multiply_color3"
+            color3f inputs:in1.connect = </Root/Material/Multiply_2.outputs:out>
+            color3f inputs:in2.connect = </Root/Material/Multiply.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (234.22221, 392.2807)
+            int ui:nodegraph:node:stackingOrder = 1050
+        }
+
+        def Shader "Luminance_1"
+        {
+            uniform token info:id = "ND_luminance_color3"
+            color3f inputs:in.connect = </Root/Material/Image.outputs:out>
+            color3f inputs:lumacoeffs = (0.2126, 0.7152, 0.0722)
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-230.18883, 239.90315)
+            int ui:nodegraph:node:stackingOrder = 1230
+        }
+
+        def Shader "Multiply_2"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/Material/Remap_1.outputs:out>
+            float inputs:in2 = 1
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (105.094986, 225.70288)
+            int ui:nodegraph:node:stackingOrder = 1230
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:in2", "inputs:in2", "inputs:in2", "inputs:in2", "inputs:in2"]
+        }
+
+        def Shader "Remap_1"
+        {
+            uniform token info:id = "ND_remap_color3"
+            color3f inputs:in.connect = </Root/Material/Luminance_1.outputs:out>
+            color3f inputs:inhigh = (0.9448066, 0.96351564, 0.96351564) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:inlow = (0.07257813, 0.07257813, 0.07257813) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:outhigh = (0.99215686, 1, 0.8831147) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:outlow = (0.5411765, 0.11764706, 0.039215688) (
+                colorSpace = "lin_srgb"
+            )
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-44.37528, 241.34813)
+            int ui:nodegraph:node:stackingOrder = 1230
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:inhigh", "inputs:inhigh"]
+        }
+
+        def Shader "Multiply_3"
+        {
+            uniform token info:id = "ND_multiply_color3"
+            color3f inputs:in1.connect = </Root/Material/Image.outputs:out>
+            color3f inputs:in2.connect = </Root/Material/Multiply.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (325.48035, 142.24876)
+            int ui:nodegraph:node:stackingOrder = 954
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:out"]
+        }
+    }
+
+    def Material "CoronaMaterial"
+    {
+        token outputs:mtlx:surface.connect = </Root/CoronaMaterial/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (335.5, 100.5)
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor = (0.7569745, 0.3104313, 0.065916106) (
+                colorSpace = "lin_srgb"
+            )
+            color3f inputs:emissiveColor.connect = None
+            float inputs:ior
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity = 0.12
+            float inputs:roughness
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (70.264984, 106.25968)
+            int ui:nodegraph:node:stackingOrder = 18
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
+        }
+    }
+
+    def Sphere "Corona" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/CoronaMaterial> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1.01, 1.01, 1.01)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Corona/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+}
+

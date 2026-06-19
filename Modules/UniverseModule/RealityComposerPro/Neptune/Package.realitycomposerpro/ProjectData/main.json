@@ -1,0 +1,11 @@
+{
+  "pathsToIds" : {
+    "\/Neptune\/Sources\/Neptune\/Neptune.rkassets\/Scene.usda" : "9850C87F-E0A7-4069-AB1A-DA7D7301761C",
+    "Neptune\/Sources\/Neptune\/Neptune.rkassets\/Scene.usda" : "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8"
+  },
+  "projectID" : 5287035855352660300,
+  "uuidToIntID" : {
+    "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8" : -606364794166940191,
+    "9850C87F-E0A7-4069-AB1A-DA7D7301761C" : 592193190918392717
+  }
+}

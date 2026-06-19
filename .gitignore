@@ -5,3 +5,6 @@ DerivedData
 
 RFC/DOT/*.svg
 RFC/DOT/*.png
+
+*.rcuserdata
+.build

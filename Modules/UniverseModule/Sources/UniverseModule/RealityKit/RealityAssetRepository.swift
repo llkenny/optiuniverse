@@ -69,6 +69,11 @@ final class RealityAssetRepository {
         }
     }
 
+    func entity(for asset: CelestialAssetDescriptor) async throws -> Entity {
+        try await entity(assetName: asset.assetName,
+                         canonicalRootName: asset.canonicalRootName)
+    }
+
     func cancelPendingLoads() {
         loadingTasks.values.forEach { $0.cancel() }
         loadingTasks.removeAll()

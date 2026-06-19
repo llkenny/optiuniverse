@@ -1,0 +1,49 @@
+{
+    "assets": [
+        {
+            "identity": "sun",
+            "displayName": "Sun",
+            "filename": "Sun.usdz",
+            "canonicalRootName": "Root",
+            "modelToUniverseScale": 6.891089,
+            "referenceRadius": 0.696,
+            "pivotCorrection": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "orientationCorrection": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "renderRadius": 0.696,
+            "framingRadius": 0.696,
+            "surfaceRadius": 0.696
+        },
+        {
+            "identity": "neptune",
+            "displayName": "Neptune",
+            "filename": "Neptune.usdz",
+            "canonicalRootName": "Root",
+            "parentIdentity": "sun",
+            "modelToUniverseScale": 0.24764,
+            "referenceRadius": 0.024764,
+            "pivotCorrection": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "orientationCorrection": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+            },
+            "renderRadius": 0.024764,
+            "framingRadius": 0.024764,
+            "surfaceRadius": 0.024764
+        }
+    ]
+}
