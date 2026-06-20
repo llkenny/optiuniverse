@@ -370,7 +370,7 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
     let cameraComponent = try #require(
         coordinator.virtualCamera.components[ProjectiveTransformCameraComponent.self]
     )
-    let realityKitCameraBasis = float4x4.makeRotationX(.pi)
+    let realityKitCameraBasis = float4x4.makeRotationY(.pi)
     let expectedProjection = UniverseSceneCoordinator.makeRealityKitProjection(
         from: initialFrame.cameraSnapshot
     )

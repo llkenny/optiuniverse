@@ -5,7 +5,7 @@ import simd
 
 @MainActor
 final class UniverseSceneCoordinator {
-    private static let realityKitCameraBasis = float4x4.makeRotationX(.pi)
+    private static let realityKitCameraBasis = float4x4.makeRotationY(.pi)
 
     struct BodyEntities {
         let bodyRoot: Entity
@@ -287,12 +287,13 @@ final class UniverseSceneCoordinator {
 
         // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
         // center-offset, and W terms preserve the legacy camera's screen mapping.
-        // RealityKit and Metal use opposite clip-space Y conventions here; the
-        // camera-basis conversion already flips local Y, so retain Metal's Y
-        // coefficient to keep both composited layers moving in the same direction.
+        // Convert Metal's +Z camera into RealityKit's -Z camera without reversing
+        // its local right axis. RealityKit's screen-space Y convention remains
+        // opposite Metal's, so X is compensated for the Y-axis basis rotation
+        // while Y retains the RealityKit projection convention.
         return float4x4(
-            [legacyProjection[0][0], 0, 0, 0],
-            [0, legacyProjection[1][1], 0, 0],
+            [-legacyProjection[0][0], 0, 0, 0],
+            [0, -legacyProjection[1][1], 0, 0],
             [0, legacyProjection[2][1], reverseDepthScale, -1],
             [0, 0, reverseDepthTranslation, 0]
         )
