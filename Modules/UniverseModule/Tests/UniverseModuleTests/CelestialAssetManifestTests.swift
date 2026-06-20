@@ -66,6 +66,12 @@ import Testing
         #expect(abs(extents.y - expectedModelDiameter) < 0.0001)
         #expect(abs(extents.z - expectedModelDiameter) < 0.0001)
         #expect(!model.materials.isEmpty)
+
+        if asset.identity == "sun" {
+            let corona = try #require(root.findEntity(named: "Corona"))
+            let coronaModel = try #require(corona.components[ModelComponent.self])
+            #expect(!coronaModel.materials.isEmpty)
+        }
     }
 }
 

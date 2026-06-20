@@ -16,7 +16,11 @@ struct MetalSceneOwnershipControls: Sendable {
     }
 
     /// Migration source control. Add a subsystem here after RealityKit takes ownership of its draw.
-    static let migration = MetalSceneOwnershipControls(suppressedSubsystems: [])
+    static func migration(realityKitBodyNames: Set<String> = []) -> MetalSceneOwnershipControls {
+        MetalSceneOwnershipControls(
+            suppressedSubsystems: Set(realityKitBodyNames.map(Subsystem.celestialBody(named:)))
+        )
+    }
 
     private let suppressedSubsystems: Set<Subsystem>
 

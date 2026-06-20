@@ -1,11 +1,15 @@
 import Testing
 @testable import UniverseModule
 
-@Test func migrationControlsRenderEveryMetalSubsystemByDefault() {
-    let controls = MetalSceneOwnershipControls.migration
+@Test func migrationControlsSuppressOnlyRealityKitOwnedBodies() {
+    let controls = MetalSceneOwnershipControls.migration(
+        realityKitBodyNames: ["Sun", "Neptune"]
+    )
 
     #expect(controls.renders(.environment))
     #expect(controls.renders(.starField))
+    #expect(!controls.rendersCelestialBody(named: "Sun"))
+    #expect(!controls.rendersCelestialBody(named: "Neptune"))
     #expect(controls.rendersCelestialBody(named: "Earth"))
     #expect(controls.rendersCelestialBody(named: "Saturn"))
     #expect(controls.renders(.transferOrbit))

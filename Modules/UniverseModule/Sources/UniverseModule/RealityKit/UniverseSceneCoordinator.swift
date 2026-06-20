@@ -5,6 +5,8 @@ import simd
 
 @MainActor
 final class UniverseSceneCoordinator {
+    private static let realityKitCameraBasis = float4x4.makeRotationX(.pi)
+
     struct BodyEntities {
         let bodyRoot: Entity
         let orbitTransform: Entity
@@ -21,6 +23,7 @@ final class UniverseSceneCoordinator {
     let navigationMarkerRoot = Entity()
     let virtualCamera = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
+    private(set) var realityKitOwnedBodyNames: Set<String> = []
 
     private let snapshotProvider: SnapshotProvider
     private let cameraCoordinator: CameraCoordinator
@@ -34,6 +37,10 @@ final class UniverseSceneCoordinator {
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
     private(set) var updateCount: UInt64 = 0
+
+    enum PreparationError: Error, Equatable {
+        case missingBody(String)
+    }
 
     init(planets: [Planet],
          snapshotProvider: SnapshotProvider,
@@ -72,6 +79,34 @@ final class UniverseSceneCoordinator {
             return
         }
         viewportSize = size
+    }
+
+    func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
+        let requestedBodyNames = Set(manifest.assets.map(\.displayName))
+        guard requestedBodyNames != realityKitOwnedBodyNames else { return }
+
+        var preparedAssets: [(CelestialAssetDescriptor, Entity)] = []
+        preparedAssets.reserveCapacity(manifest.assets.count)
+
+        for descriptor in manifest.assets {
+            try Task.checkCancellation()
+            guard bodyEntities[descriptor.displayName] != nil else {
+                throw PreparationError.missingBody(descriptor.displayName)
+            }
+            let entity = try await assetRepository.entity(for: descriptor)
+            preparedAssets.append((descriptor, entity))
+        }
+
+        try Task.checkCancellation()
+        for (descriptor, assetRoot) in preparedAssets {
+            guard let entities = bodyEntities[descriptor.displayName] else {
+                throw PreparationError.missingBody(descriptor.displayName)
+            }
+            entities.visualRoot.children.removeAll()
+            entities.visualRoot.transform = descriptor.visualCorrectionTransform
+            entities.visualRoot.addChild(assetRoot)
+        }
+        realityKitOwnedBodyNames = requestedBodyNames
     }
 
     func update(deltaTime: TimeInterval) {
@@ -199,10 +234,13 @@ final class UniverseSceneCoordinator {
 
     func apply(frameState: UniverseFrameState) {
         let cameraSnapshot = frameState.cameraSnapshot
-        virtualCamera.setTransformMatrix(simd_inverse(cameraSnapshot.renderViewMatrix),
+        let cameraTransform = simd_inverse(cameraSnapshot.renderViewMatrix)
+            * Self.realityKitCameraBasis
+        let projectionMatrix = Self.makeRealityKitProjection(from: cameraSnapshot)
+        virtualCamera.setTransformMatrix(cameraTransform,
                                          relativeTo: universeRoot)
         virtualCamera.components.set(
-            ProjectiveTransformCameraComponent(projectionMatrix: cameraSnapshot.projectionMatrix)
+            ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
         )
 
         guard let snapshot = frameState.snapshot else { return }
@@ -214,6 +252,25 @@ final class UniverseSceneCoordinator {
             localModelMatrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
             entities.rotationTransform.transform = Transform(matrix: localModelMatrix)
         }
+    }
+
+    static func makeRealityKitProjection(
+        from cameraSnapshot: SnapshotProvider.CameraSnapshot
+    ) -> float4x4 {
+        let legacyProjection = cameraSnapshot.projectionMatrix
+        let near = cameraSnapshot.dependencies.projection.nearPlane
+        let far = cameraSnapshot.dependencies.projection.farPlane
+        let reverseDepthScale = near / (far - near)
+        let reverseDepthTranslation = far * reverseDepthScale
+
+        // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
+        // center-offset, and W terms preserve the legacy camera's screen mapping.
+        return float4x4(
+            [legacyProjection[0][0], 0, 0, 0],
+            [0, -legacyProjection[1][1], 0, 0],
+            [0, legacyProjection[2][1], reverseDepthScale, -1],
+            [0, 0, reverseDepthTranslation, 0]
+        )
     }
 
     private func logSurfaceCoordinateDebug(snapshot: PreparedRenderSnapshot?,
@@ -241,5 +298,25 @@ final class UniverseSceneCoordinator {
             return destinationName
         }
         return cameraSnapshot.dependencies.followedObject?.planetName
+    }
+}
+
+private extension CelestialAssetDescriptor {
+    var visualCorrectionTransform: Transform {
+        let renderScale = modelToUniverseScale * (renderRadius / referenceRadius)
+        return Transform(
+            scale: SIMD3<Float>(repeating: renderScale),
+            rotation: simd_quatf(
+                ix: orientationCorrection.xAxis,
+                iy: orientationCorrection.yAxis,
+                iz: orientationCorrection.zAxis,
+                r: orientationCorrection.real
+            ),
+            translation: SIMD3<Float>(
+                pivotCorrection.xAxis,
+                pivotCorrection.yAxis,
+                pivotCorrection.zAxis
+            )
+        )
     }
 }

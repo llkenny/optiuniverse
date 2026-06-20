@@ -182,6 +182,23 @@ flag. Every stage must build, test, and leave one clear owner for each subsystem
   and disable its Metal draw.
 - Keep camera framing and surface-radius values sourced from technology-neutral body state.
 
+The current Stage 3 rollout is intentionally limited to Sun and Neptune. Their checked-in USDZ
+assets are required scene content, are loaded before presentation, and become the exclusive
+RealityKit-owned celestial bodies after preparation succeeds. All other bodies remain Metal-owned
+until their individual assets and visual reviews are complete.
+
+Stage 3 implementation evidence recorded on 19 June 2026:
+
+- the app build and app test action passed on the documented iPhone 17 Pro, iOS 26.4 simulator
+- all 124 UniverseModule tests passed, including asset, ownership, transform, reverse-depth camera,
+  cancellation, retry, and presentation-radius coverage
+- BaseModule and CommonTools package tests passed
+- simulator reviews passed for Sun and Neptune close follow, Sun emission and corona, Neptune
+  material fidelity, single-renderer ownership, and object-info overlay framing
+
+Simulator review is diagnostic only. The RFC's physical-device visual and performance gates remain
+required before the final RealityKit-only release candidate.
+
 ### Stage 4: Routes And Effects
 - Migrate the transfer orbit, navigation route, navigation marker, environment, and stars.
 - Validate route progress, pause/resume, camera-follow toggling, arrival, cancellation, and transfer

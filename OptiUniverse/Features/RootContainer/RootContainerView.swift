@@ -12,8 +12,15 @@ import Foundation
 
 struct RootContainerView: View {
 
+    private enum LoadingState: Equatable {
+        case loading
+        case loaded
+        case failed(String)
+    }
+
     @Environment(AppEnvironment.self) var appEnvironment
-    @State private var isDataLoaded: Bool = false
+    @State private var loadingState: LoadingState = .loading
+    @State private var loadingAttempt = 0
     @State var objectsViewState: ObjectsViewState = .raw
     @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
     @GestureState var objectInfoDragOffset: CGFloat = 0
@@ -28,7 +35,8 @@ struct RootContainerView: View {
             OptiColor.screenBackground
                 .ignoresSafeArea()
 
-            if isDataLoaded {
+            switch loadingState {
+            case .loaded:
                 VStack(spacing: 0) {
                     TopBarView()
                         .padding(.horizontal)
@@ -63,11 +71,16 @@ struct RootContainerView: View {
                         }
                     }
                 }
-            } else {
+            case .loading:
                 LoadingScreenView()
+            case .failed(let message):
+                UniverseLoadingFailureView(message: message) {
+                    loadingState = .loading
+                    loadingAttempt += 1
+                }
             }
         }
-        .animation(.default, value: isDataLoaded)
+        .animation(.default, value: loadingState)
         .animation(.default, value: appEnvironment.currentScreen)
         .animation(.default, value: universeResources.navigation.navigationSnapshot)
         .onChange(of: appEnvironment.currentScreen) { _, newScreen in
@@ -86,11 +99,18 @@ struct RootContainerView: View {
 
             objectsViewState = .raw
         }
-        .task {
-            await universeResources.prepare()
-            appEnvironment.destinationsProvider.fetch()
-            appEnvironment.featuredObjectProvider.fetch()
-            isDataLoaded = true
+        .task(id: loadingAttempt) {
+            do {
+                try await universeResources.prepare()
+                try Task.checkCancellation()
+                appEnvironment.destinationsProvider.fetch()
+                appEnvironment.featuredObjectProvider.fetch()
+                loadingState = .loaded
+            } catch is CancellationError {
+                return
+            } catch {
+                loadingState = .failed(error.localizedDescription)
+            }
         }
         .overlay(alignment: .bottom) {
             if case .info(let selectedObjectInfo) = objectsViewState {
@@ -109,6 +129,38 @@ struct RootContainerView: View {
         universeResources.transferOrbit.clearTransferOrbit()
         universeResources.navigation.cancelNavigation()
         objectsViewState = .raw
+    }
+}
+
+private struct UniverseLoadingFailureView: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 40, weight: .medium))
+                .foregroundStyle(OptiColor.overlayTextPrimary)
+
+            VStack(spacing: 8) {
+                Text("Unable to Load Universe")
+                    .font(Typography.screenTitle)
+                    .foregroundStyle(OptiColor.textPrimary)
+                Text(message)
+                    .font(Typography.overlayBody)
+                    .foregroundStyle(OptiColor.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button(action: retry) {
+                NeonButtonView(title: "Try Again")
+            }
+            .buttonStyle(NeonButtonStyle())
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(OptiColor.screenBackground)
+        .accessibilityElement(children: .contain)
     }
 }
 
