@@ -17,6 +17,8 @@ public struct UniverseView: View {
 
                 RealityView { content in
                     resources.sceneCoordinator.install(in: &content)
+                } update: { content in
+                    resources.sceneCoordinator.restoreInstallationIfNeeded(in: &content)
                 }
                 .background(Color.clear)
                 .allowsHitTesting(false)

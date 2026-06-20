@@ -22,6 +22,7 @@ final class UniverseSceneCoordinator {
     let navigationRouteRoot = Entity()
     let navigationMarkerRoot = Entity()
     let virtualCamera = Entity()
+    let sunLight = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
     private(set) var realityKitOwnedBodyNames: Set<String> = []
 
@@ -60,10 +61,26 @@ final class UniverseSceneCoordinator {
 
     func install(in content: inout RealityViewCameraContent) {
         updateSubscription?.cancel()
-        content.entities.removeAll()
-        content.add(universeRoot)
+        updateSubscription = nil
+        attachSceneIfNeeded(to: &content)
+        subscribeToUpdates(in: content)
+    }
+
+    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent) {
+        attachSceneIfNeeded(to: &content)
+        guard updateSubscription == nil else { return }
+        subscribeToUpdates(in: content)
+    }
+
+    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent) {
+        if !content.entities.contains(where: { $0 === universeRoot }) {
+            content.add(universeRoot)
+        }
         content.camera = .virtual
         content.cameraTarget = virtualCamera
+    }
+
+    private func subscribeToUpdates(in content: RealityViewCameraContent) {
         updateSubscription = content.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.update(deltaTime: event.deltaTime)
@@ -162,6 +179,8 @@ final class UniverseSceneCoordinator {
         navigationRouteRoot.name = "NavigationRoute"
         navigationMarkerRoot.name = "NavigationMarker"
         virtualCamera.name = "VirtualCamera"
+        sunLight.name = CelestialLightingConfiguration.SunPointLight.entityName
+        sunLight.components.set(CelestialLightingConfiguration.SunPointLight.component)
 
         universeRoot.addChild(environmentRoot)
         universeRoot.addChild(starFieldRoot)
@@ -183,6 +202,9 @@ final class UniverseSceneCoordinator {
             bodyRoot.addChild(orbitTransform)
             orbitTransform.addChild(rotationTransform)
             rotationTransform.addChild(visualRoot)
+            if planet.name == "Sun" {
+                bodyRoot.addChild(sunLight)
+            }
             celestialSystemRoot.addChild(bodyRoot)
             bodyEntities[planet.name] = BodyEntities(bodyRoot: bodyRoot,
                                                      orbitTransform: orbitTransform,
@@ -265,9 +287,12 @@ final class UniverseSceneCoordinator {
 
         // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
         // center-offset, and W terms preserve the legacy camera's screen mapping.
+        // RealityKit and Metal use opposite clip-space Y conventions here; the
+        // camera-basis conversion already flips local Y, so retain Metal's Y
+        // coefficient to keep both composited layers moving in the same direction.
         return float4x4(
             [legacyProjection[0][0], 0, 0, 0],
-            [0, -legacyProjection[1][1], 0, 0],
+            [0, legacyProjection[1][1], 0, 0],
             [0, legacyProjection[2][1], reverseDepthScale, -1],
             [0, 0, reverseDepthTranslation, 0]
         )

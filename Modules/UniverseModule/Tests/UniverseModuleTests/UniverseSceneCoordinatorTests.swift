@@ -20,11 +20,104 @@ import Testing
     #expect(coordinator.virtualCamera.parent == coordinator.universeRoot)
     #expect(Set(coordinator.bodyEntities.keys) == Set(resources.planets.map(\.name)))
 
+    let sun = try #require(coordinator.bodyEntities["Sun"])
+    #expect(coordinator.sunLight.name == CelestialLightingConfiguration.SunPointLight.entityName)
+    #expect(coordinator.sunLight.parent == sun.bodyRoot)
+    #expect(coordinator.sunLight.position == .zero)
+    let sunLightComponent = try #require(
+        coordinator.sunLight.components[PointLightComponent.self]
+    )
+    #expect(colorsAreEquivalent(
+        sunLightComponent.__color,
+        CelestialLightingConfiguration.SunPointLight.color
+    ))
+    #expect(sunLightComponent.intensity == CelestialLightingConfiguration.SunPointLight.intensity)
+    #expect(
+        sunLightComponent.attenuationRadius
+            == CelestialLightingConfiguration.SunPointLight.attenuationRadius
+    )
+    #expect(
+        sunLightComponent.attenuationFalloffExponent
+            == CelestialLightingConfiguration.SunPointLight.attenuationFalloffExponent
+    )
+    #expect(descendantCount(
+        named: CelestialLightingConfiguration.SunPointLight.entityName,
+        in: coordinator.universeRoot
+    ) == 1)
+
     let earth = try #require(coordinator.bodyEntities["Earth"])
     #expect(earth.bodyRoot.parent == coordinator.celestialSystemRoot)
     #expect(earth.orbitTransform.parent == earth.bodyRoot)
     #expect(earth.rotationTransform.parent == earth.orbitTransform)
     #expect(earth.visualRoot.parent == earth.rotationTransform)
+}
+
+private func colorsAreEquivalent(
+    _ first: CGColor,
+    _ second: CGColor,
+    tolerance: CGFloat = 0.000_1
+) -> Bool {
+    guard let colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearDisplayP3),
+          let firstComponents = first.converted(
+              to: colorSpace,
+              intent: .defaultIntent,
+              options: nil
+          )?.components,
+          let secondComponents = second.converted(
+              to: colorSpace,
+              intent: .defaultIntent,
+              options: nil
+          )?.components,
+          firstComponents.count == secondComponents.count else {
+        return false
+    }
+
+    return zip(firstComponents, secondComponents).allSatisfy {
+        abs($0 - $1) <= tolerance
+    }
+}
+
+@MainActor
+private func descendantCount(named name: String, in entity: Entity) -> Int {
+    let matchingEntityCount = entity.name == name ? 1 : 0
+    return matchingEntityCount + entity.children.reduce(0) {
+        $0 + descendantCount(named: name, in: $1)
+    }
+}
+
+@MainActor
+@Test func sunLightFollowsRebasedSunPosition() throws {
+    _ = try #require(MTLCreateSystemDefaultDevice())
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 390, height: 844))
+    coordinator.update(deltaTime: 0.1)
+    let initialFrame = try #require(coordinator.latestFrameState)
+    let sunPosition = SIMD3<Float>(100, 20, -30)
+    let packet = PreparedPlanetRenderPacket(
+        planetName: "Sun",
+        meshes: [],
+        baseModelMatrix: matrix_identity_float4x4,
+        worldModelMatrix: matrix_identity_float4x4,
+        normalizedScale: 1,
+        primaryMeshRadius: 1,
+        framingRadius: 1,
+        surfaceRadius: 1,
+        worldPosition: sunPosition
+    )
+    let snapshot = PreparedRenderSnapshot(frameID: 1,
+                                          simulationTime: 0,
+                                          planets: [packet])
+    let frame = UniverseFrameState(simulationTime: 0,
+                                   cameraSnapshot: initialFrame.cameraSnapshot,
+                                   snapshot: snapshot,
+                                   routes: initialFrame.routes)
+
+    coordinator.apply(frameState: frame)
+
+    #expect(coordinator.sunLight.position(relativeTo: coordinator.universeRoot)
+            == sunPosition - initialFrame.cameraSnapshot.sceneOrigin)
+    #expect(coordinator.sunLight.position == .zero)
 }
 
 @MainActor
@@ -78,6 +171,10 @@ import Testing
     #expect(loadCount == 2)
     #expect(resources.sceneCoordinator.bodyEntities["Sun"]?.visualRoot.children.count == 1)
     #expect(resources.sceneCoordinator.bodyEntities["Neptune"]?.visualRoot.children.count == 1)
+    #expect(descendantCount(
+        named: CelestialLightingConfiguration.SunPointLight.entityName,
+        in: resources.sceneCoordinator.universeRoot
+    ) == 1)
 }
 
 @MainActor
@@ -293,6 +390,7 @@ import Testing
         * simd_inverse(expectedCameraTransform)
         * worldPoint
     #expect(abs(legacyClip.x - realityKitClip.x) < 0.00001)
+    #expect(abs(legacyClip.y + realityKitClip.y) < 0.00001)
     #expect(abs(legacyClip.w - realityKitClip.w) < 0.00001)
 
     let centeredClip = cameraComponent.transform * SIMD4<Float>(0, 0, -1, 1)
