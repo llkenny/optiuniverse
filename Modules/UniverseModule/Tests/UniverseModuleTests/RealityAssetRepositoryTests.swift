@@ -37,6 +37,31 @@ import Testing
 }
 
 @MainActor
+@Test func realityAssetRepositoryLoadsSharedSourceOnceForMultipleRoots() async throws {
+    var loadCount = 0
+    let repository = RealityAssetRepository { _ in
+        loadCount += 1
+        let container = Entity()
+        for name in ["Earth", "Clouds", "Mars"] {
+            let entity = Entity()
+            entity.name = name
+            container.addChild(entity)
+        }
+        return container
+    }
+
+    let earth = try await repository.entity(assetName: "high_resolution_solar_system",
+                                             rootNames: ["Earth", "Clouds"])
+    let mars = try await repository.entity(assetName: "high_resolution_solar_system",
+                                            rootNames: ["Mars"])
+
+    #expect(loadCount == 1)
+    #expect(earth.findEntity(named: "Earth") != nil)
+    #expect(earth.findEntity(named: "Clouds") != nil)
+    #expect(mars.findEntity(named: "Mars") != nil)
+}
+
+@MainActor
 @Test func realityAssetRepositoryRejectsMissingCanonicalRoot() async {
     let repository = RealityAssetRepository { _ in
         let entity = Entity()

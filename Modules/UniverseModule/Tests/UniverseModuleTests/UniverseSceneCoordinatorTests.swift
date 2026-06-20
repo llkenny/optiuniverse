@@ -4,6 +4,9 @@ import RealityKit
 import Testing
 @testable import UniverseModule
 
+// Coordinator integration coverage intentionally keeps the complete scene contract together.
+// swiftlint:disable file_length
+
 @MainActor
 @Test func sceneCoordinatorBuildsCanonicalHierarchy() throws {
     _ = try #require(MTLCreateSystemDefaultDevice())
@@ -86,6 +89,39 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
 }
 
 @MainActor
+private func makeCompleteAssetFixture() -> Entity {
+    let container = Entity()
+    container.name = "Container"
+    for name in [
+        "Root",
+        "MercuryLow_Mercury_0",
+        "VenusLow_venus_0",
+        "EarthLow_Earth_0",
+        "EarthClouds_Nuvem_0",
+        "MoonLow_Moon_0",
+        "MarsLow_Mars_0",
+        "JupiterLow_Jupiter_0",
+        "JupiterLow_JupiterAtmosphere_0",
+        "SaturnLow_Saturn_0",
+        "UranusLow_Uranus_0",
+        "PlutoLow_Pluto_0"
+    ] {
+        let entity = Entity()
+        entity.name = name
+        container.addChild(entity)
+    }
+    return container
+}
+
+@MainActor
+private func containsModelComponent(_ entity: Entity) -> Bool {
+    if entity.components[ModelComponent.self] != nil {
+        return true
+    }
+    return entity.children.contains(where: containsModelComponent)
+}
+
+@MainActor
 @Test func sunLightFollowsRebasedSunPosition() throws {
     _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
@@ -128,7 +164,15 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
 
     try await resources.prepare()
 
-    #expect(resources.sceneCoordinator.realityKitOwnedBodyNames == ["Sun", "Neptune"])
+    #expect(resources.sceneCoordinator.realityKitOwnedBodyNames == Set(resources.planets.map(\.name)))
+    #expect(resources.sceneCoordinator.isStageFourContentPrepared)
+    #expect(resources.sceneCoordinator.environmentRoot.children.count == 1)
+    #expect(resources.sceneCoordinator.starFieldRoot.children.count == 1)
+    #expect(resources.sceneCoordinator.transferOrbitRoot.children.count == 3)
+    #expect(resources.sceneCoordinator.navigationRouteRoot.children.count == 2)
+    #expect(resources.sceneCoordinator.navigationMarkerRoot.parent
+            == resources.sceneCoordinator.navigationRouteRoot)
+    #expect(resources.sceneCoordinator.navigationMarkerRoot.children.count == 1)
     for planet in resources.planets {
         let entities = try #require(resources.sceneCoordinator.bodyEntities[planet.name])
         let descriptor = manifest.assets.first { $0.displayName == planet.name }
@@ -159,16 +203,14 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
     var loadCount = 0
     let repository = RealityAssetRepository { _ in
         loadCount += 1
-        let root = Entity()
-        root.name = "Root"
-        return root
+        return makeCompleteAssetFixture()
     }
     let resources = UniverseModuleResources(assetRepository: repository)
 
     try await resources.prepare()
     try await resources.prepare()
 
-    #expect(loadCount == 2)
+    #expect(loadCount == 3)
     #expect(resources.sceneCoordinator.bodyEntities["Sun"]?.visualRoot.children.count == 1)
     #expect(resources.sceneCoordinator.bodyEntities["Neptune"]?.visualRoot.children.count == 1)
     #expect(descendantCount(
@@ -185,9 +227,7 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
         if url.lastPathComponent == "Neptune.usdz" {
             throw TestError.loadFailed
         }
-        let root = Entity()
-        root.name = "Root"
-        return root
+        return makeCompleteAssetFixture()
     }
     let resources = UniverseModuleResources(assetRepository: repository)
 
@@ -212,9 +252,7 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
                 throw TestError.loadFailed
             }
         }
-        let root = Entity()
-        root.name = "Root"
-        return root
+        return makeCompleteAssetFixture()
     }
     let resources = UniverseModuleResources(assetRepository: repository)
 
@@ -224,7 +262,7 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
     try await resources.prepare()
 
     #expect(neptuneAttempts == 2)
-    #expect(resources.sceneCoordinator.realityKitOwnedBodyNames == ["Sun", "Neptune"])
+    #expect(resources.sceneCoordinator.realityKitOwnedBodyNames == Set(resources.planets.map(\.name)))
 }
 
 @MainActor
@@ -274,6 +312,38 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
         let packet = try #require(snapshot.planet(named: descriptor.displayName))
         #expect(packet.framingRadius == descriptor.framingRadius)
         #expect(packet.surfaceRadius == descriptor.surfaceRadius)
+    }
+}
+
+@MainActor
+@Test func everyMigratedBodyHasFiniteVisibleRealityKitGeometry() async throws {
+    _ = try #require(MTLCreateSystemDefaultDevice())
+    let resources = UniverseModuleResources()
+    let manifest = try CelestialAssetManifestLoader.load()
+    try await resources.prepare()
+    resources.renderPreparationPipeline.requestPreparation(simulationTime: 0.1)
+    while resources.renderPreparationPipeline.latestSnapshot == nil {
+        await Task.yield()
+    }
+    resources.sceneCoordinator.setViewportSize(CGSize(width: 390, height: 844))
+    resources.sceneCoordinator.update(deltaTime: 0.1)
+
+    for descriptor in manifest.assets {
+        let visualRoot = try #require(
+            resources.sceneCoordinator.bodyEntities[descriptor.displayName]?.visualRoot
+        )
+        let rotationRoot = try #require(
+            resources.sceneCoordinator.bodyEntities[descriptor.displayName]?.rotationTransform
+        )
+        let bounds = visualRoot.visualBounds(relativeTo: rotationRoot)
+        #expect(!bounds.isEmpty)
+        #expect(bounds.boundingRadius.isFinite)
+        #expect(bounds.boundingRadius > 0)
+        #expect(containsModelComponent(visualRoot))
+        if descriptor.usesSnapshotScale {
+            let tolerance = max(descriptor.renderRadius * 0.2, 0.000_01)
+            #expect(abs(bounds.boundingRadius - descriptor.renderRadius) <= tolerance)
+        }
     }
 }
 
@@ -333,6 +403,7 @@ private func descendantCount(named name: String, in entity: Entity) -> Int {
 }
 
 @MainActor
+// swiftlint:disable:next function_body_length
 @Test func sceneCoordinatorAppliesSharedOriginAndProjectiveCamera() throws {
     _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()

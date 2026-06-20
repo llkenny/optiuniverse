@@ -137,7 +137,9 @@ public final class UniverseModuleResources {
                                            device: meshProvider.device,
                                            commandQueue: commandQueue,
                                            sceneOwnershipControls: .migration(
-                                            realityKitBodyNames: sceneCoordinator.realityKitOwnedBodyNames
+                                            realityKitBodyNames: sceneCoordinator.realityKitOwnedBodyNames,
+                                            stageFourContentPrepared: sceneCoordinator
+                                                .isStageFourContentPrepared
                                            ),
                                            planets: planets,
                                            sceneCoordinator: sceneCoordinator) else {

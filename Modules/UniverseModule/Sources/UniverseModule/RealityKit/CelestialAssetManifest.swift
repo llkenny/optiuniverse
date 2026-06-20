@@ -1,5 +1,35 @@
 import Foundation
 
+struct CelestialAssetVector3: Decodable, Sendable, Equatable {
+    enum CodingKeys: String, CodingKey {
+        case xAxis = "x"
+        case yAxis = "y"
+        case zAxis = "z"
+    }
+
+    let xAxis: Float
+    let yAxis: Float
+    let zAxis: Float
+
+    var values: [Float] { [xAxis, yAxis, zAxis] }
+}
+
+struct CelestialAssetQuaternion: Decodable, Sendable, Equatable {
+    enum CodingKeys: String, CodingKey {
+        case xAxis = "x"
+        case yAxis = "y"
+        case zAxis = "z"
+        case real = "w"
+    }
+
+    let xAxis: Float
+    let yAxis: Float
+    let zAxis: Float
+    let real: Float
+
+    var values: [Float] { [xAxis, yAxis, zAxis, real] }
+}
+
 struct CelestialAssetManifest: Decodable, Sendable {
     enum ValidationError: Error, Equatable {
         case emptyManifest
@@ -47,51 +77,96 @@ struct CelestialAssetManifest: Decodable, Sendable {
 }
 
 struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
-    struct Vector3: Decodable, Sendable, Equatable {
-        enum CodingKeys: String, CodingKey {
-            case xAxis = "x"
-            case yAxis = "y"
-            case zAxis = "z"
-        }
-
-        let xAxis: Float
-        let yAxis: Float
-        let zAxis: Float
-
-        var values: [Float] { [xAxis, yAxis, zAxis] }
-    }
-
-    struct Quaternion: Decodable, Sendable, Equatable {
-        enum CodingKeys: String, CodingKey {
-            case xAxis = "x"
-            case yAxis = "y"
-            case zAxis = "z"
-            case real = "w"
-        }
-
-        let xAxis: Float
-        let yAxis: Float
-        let zAxis: Float
-        let real: Float
-
-        var values: [Float] { [xAxis, yAxis, zAxis, real] }
-    }
-
     let identity: String
     let displayName: String
     let filename: String
     let canonicalRootName: String
+    let additionalRootNames: [String]
     let parentIdentity: String?
+    let usesSnapshotScale: Bool
     let modelToUniverseScale: Float
     let referenceRadius: Float
-    let pivotCorrection: Vector3
-    let orientationCorrection: Quaternion
+    let pivotCorrection: CelestialAssetVector3
+    let orientationCorrection: CelestialAssetQuaternion
     let renderRadius: Float
     let framingRadius: Float
     let surfaceRadius: Float
 
     var assetName: String {
         URL(fileURLWithPath: filename).deletingPathExtension().lastPathComponent
+    }
+
+    var rootNames: [String] {
+        [canonicalRootName] + additionalRootNames
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case identity
+        case displayName
+        case filename
+        case canonicalRootName
+        case additionalRootNames
+        case parentIdentity
+        case usesSnapshotScale
+        case modelToUniverseScale
+        case referenceRadius
+        case pivotCorrection
+        case orientationCorrection
+        case renderRadius
+        case framingRadius
+        case surfaceRadius
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        identity = try container.decode(String.self, forKey: .identity)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        filename = try container.decode(String.self, forKey: .filename)
+        canonicalRootName = try container.decode(String.self, forKey: .canonicalRootName)
+        additionalRootNames = try container.decodeIfPresent([String].self,
+                                                             forKey: .additionalRootNames) ?? []
+        parentIdentity = try container.decodeIfPresent(String.self, forKey: .parentIdentity)
+        usesSnapshotScale = try container.decodeIfPresent(Bool.self,
+                                                           forKey: .usesSnapshotScale) ?? false
+        modelToUniverseScale = try container.decode(Float.self, forKey: .modelToUniverseScale)
+        referenceRadius = try container.decode(Float.self, forKey: .referenceRadius)
+        pivotCorrection = try container.decode(CelestialAssetVector3.self,
+                                               forKey: .pivotCorrection)
+        orientationCorrection = try container.decode(CelestialAssetQuaternion.self,
+                                                      forKey: .orientationCorrection)
+        renderRadius = try container.decode(Float.self, forKey: .renderRadius)
+        framingRadius = try container.decode(Float.self, forKey: .framingRadius)
+        surfaceRadius = try container.decode(Float.self, forKey: .surfaceRadius)
+    }
+
+    init(identity: String,
+         displayName: String,
+         filename: String,
+         canonicalRootName: String,
+         additionalRootNames: [String] = [],
+         parentIdentity: String? = nil,
+         usesSnapshotScale: Bool = false,
+         modelToUniverseScale: Float,
+         referenceRadius: Float,
+         pivotCorrection: CelestialAssetVector3,
+         orientationCorrection: CelestialAssetQuaternion,
+         renderRadius: Float,
+         framingRadius: Float,
+         surfaceRadius: Float) {
+        self.identity = identity
+        self.displayName = displayName
+        self.filename = filename
+        self.canonicalRootName = canonicalRootName
+        self.additionalRootNames = additionalRootNames
+        self.parentIdentity = parentIdentity
+        self.usesSnapshotScale = usesSnapshotScale
+        self.modelToUniverseScale = modelToUniverseScale
+        self.referenceRadius = referenceRadius
+        self.pivotCorrection = pivotCorrection
+        self.orientationCorrection = orientationCorrection
+        self.renderRadius = renderRadius
+        self.framingRadius = framingRadius
+        self.surfaceRadius = surfaceRadius
     }
 
     fileprivate func validate() throws {
@@ -103,6 +178,15 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
         ]
         for (field, value) in strings where value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity, field: field)
+        }
+        for rootName in additionalRootNames
+        where rootName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity,
+                                                                    field: "additionalRootNames")
+        }
+        guard Set(rootNames).count == rootNames.count else {
+            throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity,
+                                                                    field: "additionalRootNames")
         }
 
         guard URL(fileURLWithPath: filename).pathExtension.lowercased() == "usdz" else {
