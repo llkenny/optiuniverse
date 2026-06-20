@@ -492,6 +492,23 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     #expect(coordinator.latestFrameState == nil)
 }
 
+@MainActor
+@Test func staleRealityViewTeardownDoesNotDismantleCurrentInstallation() {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    let outgoingInstallation = UUID()
+    let currentInstallation = UUID()
+
+    coordinator.registerInstallation(outgoingInstallation)
+    coordinator.registerInstallation(currentInstallation)
+    coordinator.dismantle(installationID: outgoingInstallation)
+
+    #expect(coordinator.activeInstallationID == currentInstallation)
+
+    coordinator.dismantle(installationID: currentInstallation)
+    #expect(coordinator.activeInstallationID == nil)
+}
+
 private func expectSceneMatrix(_ lhs: float4x4,
                                equals rhs: float4x4,
                                tolerance: Float = 0.00001) {

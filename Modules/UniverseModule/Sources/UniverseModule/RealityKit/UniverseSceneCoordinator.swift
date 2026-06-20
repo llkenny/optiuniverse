@@ -39,6 +39,8 @@ final class UniverseSceneCoordinator {
     private var simulationClock = UniverseSimulationClock()
     private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
     private var stageFourContent: RealityStageFourContent?
+    private var installationRoot: Entity?
+    private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
@@ -64,22 +66,42 @@ final class UniverseSceneCoordinator {
         buildHierarchy(planets: planets)
     }
 
-    func install(in content: inout RealityViewCameraContent) {
+    func install(in content: inout RealityViewCameraContent,
+                 installationID: UUID) {
+        registerInstallation(installationID)
         updateSubscription?.cancel()
         updateSubscription = nil
-        attachSceneIfNeeded(to: &content)
+        attachSceneIfNeeded(to: &content, installationID: installationID)
         subscribeToUpdates(in: content)
     }
 
-    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent) {
-        attachSceneIfNeeded(to: &content)
+    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        if activeInstallationID != installationID {
+            install(in: &content, installationID: installationID)
+            return
+        }
+        attachSceneIfNeeded(to: &content, installationID: installationID)
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
 
-    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent) {
-        if !content.entities.contains(where: { $0 === universeRoot }) {
-            content.add(universeRoot)
+    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+
+        if let installationRoot,
+           content.entities.contains(where: { $0 === installationRoot }) {
+            if universeRoot.parent !== installationRoot {
+                installationRoot.addChild(universeRoot)
+            }
+        } else {
+            universeRoot.removeFromParent()
+            let installationRoot = Entity()
+            installationRoot.name = "RealityViewInstallationRoot"
+            installationRoot.addChild(universeRoot)
+            content.add(installationRoot)
+            self.installationRoot = installationRoot
         }
         content.camera = .virtual
         content.cameraTarget = virtualCamera
@@ -176,11 +198,22 @@ final class UniverseSceneCoordinator {
         updateCount += 1
     }
 
+    func registerInstallation(_ installationID: UUID) {
+        activeInstallationID = installationID
+    }
+
+    func dismantle(installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+        dismantle()
+    }
+
     func dismantle() {
         updateSubscription?.cancel()
         updateSubscription = nil
         assetRepository.cancelPendingLoads()
         universeRoot.removeFromParent()
+        installationRoot = nil
+        activeInstallationID = nil
         latestFrameState = nil
     }
 

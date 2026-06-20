@@ -4,6 +4,7 @@ internal import BaseModule
 
 public struct UniverseView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
+    @State private var installationID = UUID()
     let resources: UniverseModuleResources
 
     public init(resources: UniverseModuleResources) {
@@ -16,9 +17,15 @@ public struct UniverseView: View {
                 LegacyMetalView(resources: resources)
 
                 RealityView { content in
-                    resources.sceneCoordinator.install(in: &content)
+                    resources.sceneCoordinator.install(
+                        in: &content,
+                        installationID: installationID
+                    )
                 } update: { content in
-                    resources.sceneCoordinator.restoreInstallationIfNeeded(in: &content)
+                    resources.sceneCoordinator.restoreInstallationIfNeeded(
+                        in: &content,
+                        installationID: installationID
+                    )
                 }
                 .background(Color.clear)
                 .allowsHitTesting(false)
@@ -37,7 +44,7 @@ public struct UniverseView: View {
                 synchronizeSelection()
             }
             .onDisappear {
-                resources.sceneCoordinator.dismantle()
+                resources.sceneCoordinator.dismantle(installationID: installationID)
             }
         }
     }
