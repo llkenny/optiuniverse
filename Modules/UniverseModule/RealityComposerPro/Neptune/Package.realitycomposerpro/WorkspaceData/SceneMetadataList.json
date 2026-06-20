@@ -50,7 +50,16 @@
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
         "Root",
-        "Material"
+        "Material_1"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
+        "Root",
+        "Material_2"
       ],
       {
         "isExpanded" : true,
