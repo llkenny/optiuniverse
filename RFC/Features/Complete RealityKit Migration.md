@@ -205,6 +205,19 @@ required before the final RealityKit-only release candidate.
   preview behavior after each owner changes.
 - Keep the legacy Metal layer only for subsystems that have not yet moved.
 
+The Stage 4 implementation also completes RealityKit ownership for the remaining celestial bodies so
+the opaque RealityKit environment cannot cover Metal-owned planets in the temporary layered renderer.
+Sun and Neptune continue to use their standalone USDZ assets. The other nine bodies are loaded by
+name from one cached `high_resolution_solar_system.usdz`; its obsolete skin bindings are removed so
+RealityKit imports the unchanged static meshes and materials. This shared runtime source is migration
+scaffolding: editable per-body Reality Composer Pro projects and standalone USDZ exports are still
+required before Stage 6 removes the monolithic asset.
+
+Stage 4 keeps the legacy view solely as Stage 5 scaffolding. Once scene preparation commits, Metal
+suppresses every visible subsystem while RealityKit owns all eleven bodies, the Milky Way environment,
+the deterministic star field, both route presentations, and the navigation marker. Whole-frame filmic
+post-processing remains disabled until Stage 5 because the two layers do not share a final color target.
+
 ### Stage 5: Single RealityKit Frame
 - Make RealityView own every visible scene subsystem.
 - Remove the legacy layer and enable the RealityView custom post-process effect for the whole frame.

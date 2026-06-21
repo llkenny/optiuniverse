@@ -1,0 +1,66 @@
+import RealityKit
+import Testing
+@testable import UniverseModule
+
+@MainActor
+@Test func realityRibbonReusesMeshAndRetainsLastCompleteGeometry() throws {
+    let ribbon = try RealityRibbon(maximumSegmentCount: 2)
+    let entityIdentity = ObjectIdentifier(ribbon.entity)
+    let points: [SIMD3<Float>] = [
+        SIMD3<Float>(0, 0, 0),
+        SIMD3<Float>(1, 0, 0),
+        SIMD3<Float>(1, 1, 0)
+    ]
+
+    ribbon.update(points: points,
+                  sceneOrigin: .zero,
+                  cameraPosition: SIMD3<Float>(0, 0, 4),
+                  cameraUp: SIMD3<Float>(0, 1, 0),
+                  color: SIMD4<Float>(0.2, 0.82, 1, 1))
+
+    let model = try #require(ribbon.entity.components[ModelComponent.self])
+    let mesh = try #require(model.mesh.lowLevelMesh)
+    #expect(ribbon.entity.isEnabled)
+    #expect(mesh.parts.count == 1)
+
+    ribbon.update(points: points + [SIMD3<Float>(2, 1, 0)],
+                  sceneOrigin: .zero,
+                  cameraPosition: SIMD3<Float>(0, 0, 4),
+                  cameraUp: SIMD3<Float>(0, 1, 0),
+                  color: SIMD4<Float>(1, 0, 0, 1))
+
+    #expect(ObjectIdentifier(ribbon.entity) == entityIdentity)
+    #expect(ribbon.entity.isEnabled)
+    #expect(mesh.parts.count == 1)
+}
+
+@MainActor
+@Test func realityRibbonHidesOnlyForExplicitInactiveState() throws {
+    let ribbon = try RealityRibbon(maximumSegmentCount: 2)
+    ribbon.update(points: [SIMD3<Float>(0, 0, 0), SIMD3<Float>(1, 0, 0)],
+                  sceneOrigin: .zero,
+                  cameraPosition: SIMD3<Float>(0, 0, 4),
+                  cameraUp: SIMD3<Float>(0, 1, 0),
+                  color: SIMD4<Float>(1, 1, 1, 1))
+    #expect(ribbon.entity.isEnabled)
+
+    ribbon.hide()
+
+    #expect(!ribbon.entity.isEnabled)
+}
+
+@MainActor
+@Test func realityStarFieldUsesOneBatchedLowLevelMesh() throws {
+    let starField = try RealityStarField(configuration: StarFieldConfiguration(density: 0.01))
+    let model = try #require(starField.entity.components[ModelComponent.self])
+    let mesh = try #require(model.mesh.lowLevelMesh)
+
+    starField.update(sceneOrigin: SIMD3<Float>(10, 20, 30),
+                     cameraPosition: .zero,
+                     cameraRight: SIMD3<Float>(1, 0, 0),
+                     cameraUp: SIMD3<Float>(0, 1, 0),
+                     simulationTime: 1)
+
+    #expect(mesh.parts.count == 1)
+    #expect(starField.entity.children.isEmpty)
+}

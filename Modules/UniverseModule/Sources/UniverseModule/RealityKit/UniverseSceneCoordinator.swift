@@ -4,6 +4,8 @@ import SwiftUI
 import simd
 
 @MainActor
+// The coordinator intentionally centralizes atomic mutation of the canonical entity hierarchy.
+// swiftlint:disable:next type_body_length
 final class UniverseSceneCoordinator {
     private static let realityKitCameraBasis = float4x4.makeRotationY(.pi)
 
@@ -25,6 +27,7 @@ final class UniverseSceneCoordinator {
     let sunLight = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
     private(set) var realityKitOwnedBodyNames: Set<String> = []
+    private(set) var isStageFourContentPrepared = false
 
     private let snapshotProvider: SnapshotProvider
     private let cameraCoordinator: CameraCoordinator
@@ -34,6 +37,10 @@ final class UniverseSceneCoordinator {
     private let assetRepository: RealityAssetRepository
     private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     private var simulationClock = UniverseSimulationClock()
+    private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
+    private var stageFourContent: RealityStageFourContent?
+    private var installationRoot: Entity?
+    private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
@@ -59,22 +66,42 @@ final class UniverseSceneCoordinator {
         buildHierarchy(planets: planets)
     }
 
-    func install(in content: inout RealityViewCameraContent) {
+    func install(in content: inout RealityViewCameraContent,
+                 installationID: UUID) {
+        registerInstallation(installationID)
         updateSubscription?.cancel()
         updateSubscription = nil
-        attachSceneIfNeeded(to: &content)
+        attachSceneIfNeeded(to: &content, installationID: installationID)
         subscribeToUpdates(in: content)
     }
 
-    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent) {
-        attachSceneIfNeeded(to: &content)
+    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        if activeInstallationID != installationID {
+            install(in: &content, installationID: installationID)
+            return
+        }
+        attachSceneIfNeeded(to: &content, installationID: installationID)
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
 
-    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent) {
-        if !content.entities.contains(where: { $0 === universeRoot }) {
-            content.add(universeRoot)
+    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+
+        if let installationRoot,
+           content.entities.contains(where: { $0 === installationRoot }) {
+            if universeRoot.parent !== installationRoot {
+                installationRoot.addChild(universeRoot)
+            }
+        } else {
+            universeRoot.removeFromParent()
+            let installationRoot = Entity()
+            installationRoot.name = "RealityViewInstallationRoot"
+            installationRoot.addChild(universeRoot)
+            content.add(installationRoot)
+            self.installationRoot = installationRoot
         }
         content.camera = .virtual
         content.cameraTarget = virtualCamera
@@ -100,7 +127,9 @@ final class UniverseSceneCoordinator {
 
     func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
         let requestedBodyNames = Set(manifest.assets.map(\.displayName))
-        guard requestedBodyNames != realityKitOwnedBodyNames else { return }
+        guard requestedBodyNames != realityKitOwnedBodyNames || !isStageFourContentPrepared else {
+            return
+        }
 
         var preparedAssets: [(CelestialAssetDescriptor, Entity)] = []
         preparedAssets.reserveCapacity(manifest.assets.count)
@@ -114,6 +143,8 @@ final class UniverseSceneCoordinator {
             preparedAssets.append((descriptor, entity))
         }
 
+        let preparedStageFourContent = try await RealityStageFourContent.prepare()
+
         try Task.checkCancellation()
         for (descriptor, assetRoot) in preparedAssets {
             guard let entities = bodyEntities[descriptor.displayName] else {
@@ -123,7 +154,12 @@ final class UniverseSceneCoordinator {
             entities.visualRoot.transform = descriptor.visualCorrectionTransform
             entities.visualRoot.addChild(assetRoot)
         }
+        install(stageFourContent: preparedStageFourContent)
+        bodyDescriptors = Dictionary(uniqueKeysWithValues: manifest.assets.map {
+            ($0.displayName, $0)
+        })
         realityKitOwnedBodyNames = requestedBodyNames
+        isStageFourContentPrepared = true
     }
 
     func update(deltaTime: TimeInterval) {
@@ -162,11 +198,22 @@ final class UniverseSceneCoordinator {
         updateCount += 1
     }
 
+    func registerInstallation(_ installationID: UUID) {
+        activeInstallationID = installationID
+    }
+
+    func dismantle(installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+        dismantle()
+    }
+
     func dismantle() {
         updateSubscription?.cancel()
         updateSubscription = nil
         assetRepository.cancelPendingLoads()
         universeRoot.removeFromParent()
+        installationRoot = nil
+        activeInstallationID = nil
         latestFrameState = nil
     }
 
@@ -265,6 +312,8 @@ final class UniverseSceneCoordinator {
             ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
         )
 
+        stageFourContent?.update(frameState: frameState)
+
         guard let snapshot = frameState.snapshot else { return }
         for packet in snapshot.planets {
             guard let entities = bodyEntities[packet.planetName] else { continue }
@@ -273,7 +322,28 @@ final class UniverseSceneCoordinator {
             var localModelMatrix = packet.baseModelMatrix
             localModelMatrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
             entities.rotationTransform.transform = Transform(matrix: localModelMatrix)
+            if bodyDescriptors[packet.planetName]?.usesSnapshotScale == true {
+                entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
+            }
         }
+    }
+
+    private func install(stageFourContent: RealityStageFourContent) {
+        environmentRoot.children.removeAll()
+        starFieldRoot.children.removeAll()
+        transferOrbitRoot.children.removeAll()
+        navigationRouteRoot.children.removeAll()
+        navigationMarkerRoot.children.removeAll()
+
+        environmentRoot.addChild(stageFourContent.environmentEntity)
+        starFieldRoot.addChild(stageFourContent.starField.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferEarthOrbit.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferDestinationOrbit.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferPath.entity)
+        navigationRouteRoot.addChild(stageFourContent.navigationPath.entity)
+        navigationRouteRoot.addChild(navigationMarkerRoot)
+        navigationMarkerRoot.addChild(stageFourContent.navigationMarker)
+        self.stageFourContent = stageFourContent
     }
 
     static func makeRealityKitProjection(

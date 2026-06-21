@@ -4,6 +4,15 @@
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
         "Root",
+        "Material_1"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
+        "Root",
         "high_resolution_solar_system",
         "SkinnedMeshes",
         "Sketchfab_model",
@@ -18,14 +27,6 @@
       {
         "disallowsFraming" : true,
         "isExpanded" : false,
-        "isLocked" : false
-      },
-      [
-        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
-        "Root"
-      ],
-      {
-        "isExpanded" : true,
         "isLocked" : false
       },
       [
@@ -50,7 +51,17 @@
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
         "Root",
-        "Material_1"
+        "Atmosphere"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
+        "Root",
+        "Material_2"
       ],
       {
         "isExpanded" : true,
@@ -58,8 +69,7 @@
       },
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
-        "Root",
-        "Material_2"
+        "Root"
       ],
       {
         "isExpanded" : true,

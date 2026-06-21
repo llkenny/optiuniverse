@@ -51,3 +51,18 @@ import Testing
     #expect(markerSuppressed.renders(.navigationRoute))
     #expect(!markerSuppressed.renders(.navigationMarker))
 }
+
+@Test func completedStageFourSuppressesEveryMigratedVisibleSubsystem() {
+    let controls = MetalSceneOwnershipControls.migration(
+        realityKitBodyNames: ["Sun", "Earth"],
+        stageFourContentPrepared: true
+    )
+
+    #expect(!controls.renders(.environment))
+    #expect(!controls.renders(.starField))
+    #expect(!controls.renders(.transferOrbit))
+    #expect(!controls.renders(.navigationRoute))
+    #expect(!controls.renders(.navigationMarker))
+    #expect(!controls.rendersCelestialBody(named: "Sun"))
+    #expect(!controls.rendersCelestialBody(named: "Earth"))
+}
