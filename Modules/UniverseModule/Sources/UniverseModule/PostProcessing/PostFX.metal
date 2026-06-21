@@ -18,20 +18,44 @@ struct FullscreenOut {
     float2 uv;
 };
 
-fragment float4 postfx_fragment(FullscreenOut in [[stage_in]],
-                                texture2d<float> hdrTexture [[texture(0)]],
-                                constant PostFXParams &params [[buffer(0)]]) {
+vertex FullscreenOut universe_postfx_vertex(uint vertexID [[vertex_id]]) {
+    const float2 positions[3] = {
+        float2(-1.0, -1.0),
+        float2( 3.0, -1.0),
+        float2(-1.0,  3.0)
+    };
+    FullscreenOut out;
+    out.position = float4(positions[vertexID], 0.0, 1.0);
+    out.uv = positions[vertexID] * 0.5 + 0.5;
+    return out;
+}
+
+fragment float4 universe_postfx_passthrough_fragment(
+    FullscreenOut in [[stage_in]],
+    texture2d<float> sourceTexture [[texture(0)]]) {
+    constexpr sampler sourceSampler(filter::linear, address::clamp_to_edge);
+    return sourceTexture.sample(sourceSampler, in.uv);
+}
+
+fragment float4 universe_postfx_fragment(FullscreenOut in [[stage_in]],
+                                         texture2d<float> hdrTexture [[texture(0)]],
+                                         constant PostFXParams &params [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_edge);
 
     float3 hdr = hdrTexture.sample(s, in.uv).rgb;
     float2 texelSize = 1.0 / float2(hdrTexture.get_width(), hdrTexture.get_height());
 
+    // RealityKit does not guarantee that its source texture contains generated
+    // mip levels, so bloom uses explicit full-resolution taps.
     float3 bloom = float3(0.0);
     for (int i = 1; i <= 4; ++i) {
-        float lod = params.bloomRadius * float(i);
-        bloom += hdrTexture.sample(s, in.uv, level(lod)).rgb;
+        float2 offset = texelSize * params.bloomRadius * float(i);
+        bloom += hdrTexture.sample(s, in.uv + float2(offset.x, 0.0)).rgb;
+        bloom += hdrTexture.sample(s, in.uv - float2(offset.x, 0.0)).rgb;
+        bloom += hdrTexture.sample(s, in.uv + float2(0.0, offset.y)).rgb;
+        bloom += hdrTexture.sample(s, in.uv - float2(0.0, offset.y)).rgb;
     }
-    bloom /= 4.0;
+    bloom /= 16.0;
     bloom = max(bloom - params.bloomThreshold, float3(0.0));
 
     float3 softFocus = hdr;

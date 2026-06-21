@@ -493,6 +493,27 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
+@Test func inactiveSceneCoordinatorDoesNotAdvanceHiddenPresentation() throws {
+    _ = try #require(MTLCreateSystemDefaultDevice())
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 200, height: 100))
+    coordinator.update(deltaTime: 0.1)
+    let visibleUpdateCount = coordinator.updateCount
+    let visibleFrame = try #require(coordinator.latestFrameState)
+
+    coordinator.setPresentationActive(false)
+    coordinator.update(deltaTime: 1)
+
+    #expect(coordinator.updateCount == visibleUpdateCount)
+    #expect(coordinator.latestFrameState?.simulationTime == visibleFrame.simulationTime)
+
+    coordinator.setPresentationActive(true)
+    coordinator.update(deltaTime: 0.1)
+    #expect(coordinator.updateCount == visibleUpdateCount + 1)
+}
+
+@MainActor
 @Test func staleRealityViewTeardownDoesNotDismantleCurrentInstallation() {
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator

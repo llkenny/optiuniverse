@@ -45,6 +45,7 @@ final class UniverseSceneCoordinator {
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
     private(set) var updateCount: UInt64 = 0
+    private(set) var isPresentationActive = true
 
     enum PreparationError: Error, Equatable {
         case missingBody(String)
@@ -125,6 +126,10 @@ final class UniverseSceneCoordinator {
         viewportSize = size
     }
 
+    func setPresentationActive(_ isActive: Bool) {
+        isPresentationActive = isActive
+    }
+
     func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
         let requestedBodyNames = Set(manifest.assets.map(\.displayName))
         guard requestedBodyNames != realityKitOwnedBodyNames || !isStageFourContentPrepared else {
@@ -163,7 +168,11 @@ final class UniverseSceneCoordinator {
     }
 
     func update(deltaTime: TimeInterval) {
-        guard viewportSize.width > 0, viewportSize.height > 0 else { return }
+        guard isPresentationActive,
+              viewportSize.width > 0,
+              viewportSize.height > 0 else {
+            return
+        }
 
         let delta = simulationClock.advance(by: deltaTime)
         snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
