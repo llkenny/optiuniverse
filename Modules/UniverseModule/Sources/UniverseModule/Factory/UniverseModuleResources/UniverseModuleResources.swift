@@ -87,6 +87,16 @@ public final class UniverseModuleResources {
         navigationController.navigationCameraFollowEnabledDidChange = { [weak self] isEnabled in
             self?.navigationCameraFollowEnabled = isEnabled
         }
+        navigationController.followPlanet = { [weak self] name in
+            guard let self else { return }
+            cameraCoordinator.followNavigationDestination(named: name,
+                                                          viewportSize: viewportSize)
+        }
+        transferOrbitController.followPlanet = { [weak self] name in
+            guard let self else { return }
+            cameraCoordinator.followNavigationDestination(named: name,
+                                                          viewportSize: viewportSize)
+        }
     }
 
     public func prepare() async throws {
@@ -146,16 +156,6 @@ public final class UniverseModuleResources {
             return nil
         }
         self.renderer = renderer
-        navigationController.followPlanet = { [weak self] name in
-            guard let self else { return }
-            self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: self.viewportSize)
-        }
-        transferOrbitController.followPlanet = { [weak self] name in
-            guard let self else { return }
-            self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: self.viewportSize)
-        }
         return renderer
     }
 
