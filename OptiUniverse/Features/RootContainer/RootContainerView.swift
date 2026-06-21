@@ -42,14 +42,20 @@ struct RootContainerView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 16)
 
-                    switch appEnvironment.currentScreen {
-                    case .home:
-                        HomeView()
-                    case .objects:
-                        ZStack {
-                            UniverseView(resources: universeResources)
-                                .ignoresSafeArea(edges: .bottom)
+                    ZStack {
+                        UniverseView(
+                            resources: universeResources,
+                            isActive: appEnvironment.currentScreen == .objects
+                        )
+                            .ignoresSafeArea(edges: .bottom)
+                            .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
+                            .allowsHitTesting(appEnvironment.currentScreen == .objects)
 
+                        switch appEnvironment.currentScreen {
+                        case .home:
+                            HomeView()
+                                .transition(.opacity)
+                        case .objects:
                             switch objectsViewState {
                             case .raw:
                                 if let selectedDestinationID = appEnvironment.selectedDestinationID {
@@ -66,9 +72,9 @@ struct RootContainerView: View {
                                 EmptyView()
                             }
                         }
-                        .onAppear {
-                            objectsViewState = .raw
-                        }
+                    }
+                    .onAppear {
+                        objectsViewState = .raw
                     }
                 }
             case .loading:

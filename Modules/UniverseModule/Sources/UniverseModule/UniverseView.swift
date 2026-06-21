@@ -6,9 +6,11 @@ public struct UniverseView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     @State private var installationID = UUID()
     let resources: UniverseModuleResources
+    let isActive: Bool
 
-    public init(resources: UniverseModuleResources) {
+    public init(resources: UniverseModuleResources, isActive: Bool = true) {
         self.resources = resources
+        self.isActive = isActive
     }
 
     public var body: some View {
@@ -33,8 +35,12 @@ public struct UniverseView: View {
                 CameraGestureView(resources: resources)
             }
             .onAppear {
+                resources.sceneCoordinator.setPresentationActive(isActive)
                 resources.setViewportSize(geometry.size)
                 synchronizeSelection()
+            }
+            .onChange(of: isActive) { _, isActive in
+                resources.sceneCoordinator.setPresentationActive(isActive)
             }
             .onChange(of: geometry.size) { _, size in
                 resources.setViewportSize(size)
@@ -46,6 +52,7 @@ public struct UniverseView: View {
                 synchronizeSelection()
             }
             .onDisappear {
+                resources.sceneCoordinator.setPresentationActive(false)
                 resources.sceneCoordinator.dismantle(installationID: installationID)
             }
         }
