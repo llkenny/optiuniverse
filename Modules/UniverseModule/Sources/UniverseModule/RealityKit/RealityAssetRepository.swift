@@ -10,15 +10,10 @@ final class RealityAssetRepository {
 
     typealias EntityLoader = @MainActor (URL) async throws -> Entity
 
-    private struct AssetKey: Hashable {
-        let assetName: String
-        let canonicalRootName: String
-    }
-
     private let bundle: Bundle
     private let entityLoader: EntityLoader
-    private var prototypes: [AssetKey: Entity] = [:]
-    private var loadingTasks: [AssetKey: Task<Entity, Error>] = [:]
+    private var sourcePrototypes: [String: Entity] = [:]
+    private var loadingTasks: [String: Task<Entity, Error>] = [:]
 
     init(bundle: Bundle = .module,
          entityLoader: @escaping EntityLoader = { try await Entity(contentsOf: $0) }) {
@@ -28,14 +23,23 @@ final class RealityAssetRepository {
 
     func entity(assetName: String,
                 canonicalRootName: String) async throws -> Entity {
-        let key = AssetKey(assetName: assetName,
-                           canonicalRootName: canonicalRootName)
-        if let prototype = prototypes[key] {
-            return prototype.clone(recursive: true)
+        try await entity(assetName: assetName, rootNames: [canonicalRootName])
+    }
+
+    func entity(assetName: String, rootNames: [String]) async throws -> Entity {
+        let source = try await sourceEntity(assetName: assetName)
+        return try extract(rootNames: rootNames,
+                           assetName: assetName,
+                           from: source)
+    }
+
+    private func sourceEntity(assetName: String) async throws -> Entity {
+        if let prototype = sourcePrototypes[assetName] {
+            return prototype
         }
 
-        if let loadingTask = loadingTasks[key] {
-            return try await loadingTask.value.clone(recursive: true)
+        if let loadingTask = loadingTasks[assetName] {
+            return try await loadingTask.value
         }
 
         guard let assetURL = bundle.url(forResource: assetName,
@@ -45,28 +49,49 @@ final class RealityAssetRepository {
 
         let entityLoader = entityLoader
         let task = Task { @MainActor in
-            let loadedEntity = try await entityLoader(assetURL)
-            if loadedEntity.name == canonicalRootName {
-                return loadedEntity
-            }
-            guard let canonicalRoot = loadedEntity.findEntity(named: canonicalRootName) else {
-                throw RepositoryError.missingCanonicalRoot(assetName: assetName,
-                                                           rootName: canonicalRootName)
-            }
-            canonicalRoot.removeFromParent(preservingWorldTransform: false)
-            return canonicalRoot
+            try await entityLoader(assetURL)
         }
-        loadingTasks[key] = task
+        loadingTasks[assetName] = task
 
         do {
             let prototype = try await task.value
-            loadingTasks[key] = nil
-            prototypes[key] = prototype
-            return prototype.clone(recursive: true)
+            loadingTasks[assetName] = nil
+            sourcePrototypes[assetName] = prototype
+            return prototype
         } catch {
-            loadingTasks[key] = nil
+            loadingTasks[assetName] = nil
             throw error
         }
+    }
+
+    private func extract(rootNames: [String],
+                         assetName: String,
+                         from source: Entity) throws -> Entity {
+        guard let canonicalRootName = rootNames.first else {
+            throw RepositoryError.missingCanonicalRoot(assetName: assetName,
+                                                       rootName: "")
+        }
+
+        if rootNames.count == 1, source.name == canonicalRootName {
+            return source.clone(recursive: true)
+        }
+
+        let container = Entity()
+        container.name = canonicalRootName
+        for rootName in rootNames {
+            guard let sourceRoot = source.findEntity(named: rootName) else {
+                throw RepositoryError.missingCanonicalRoot(assetName: assetName,
+                                                           rootName: rootName)
+            }
+            let clone = sourceRoot.clone(recursive: true)
+            container.addChild(clone)
+        }
+        return container
+    }
+
+    func entity(for asset: CelestialAssetDescriptor) async throws -> Entity {
+        try await entity(assetName: asset.assetName,
+                         rootNames: asset.rootNames)
     }
 
     func cancelPendingLoads() {

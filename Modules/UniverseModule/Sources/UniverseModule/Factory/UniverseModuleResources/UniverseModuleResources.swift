@@ -22,6 +22,7 @@ public final class UniverseModuleResources {
     let snapshotProvider: SnapshotProvider
     let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     let assetRepository: RealityAssetRepository
+    private let celestialAssetManifestLoader: () throws -> CelestialAssetManifest
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
     public internal(set) var navigationCameraFollowEnabled = true
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
@@ -38,13 +39,20 @@ public final class UniverseModuleResources {
 
     @ObservationIgnored private(set) weak var renderer: MetalRenderer?
     @ObservationIgnored private(set) var viewportSize: CGSize = .zero
+    @ObservationIgnored private var preparationTask: Task<Void, any Error>?
+    @ObservationIgnored private var isPrepared = false
 
     var isTrajectoryModeActive: Bool {
         transferOrbitController.isTransferPreviewActive ||
         navigationController.isNavigationActive
     }
 
-    init() {
+    init(
+        assetRepository: RealityAssetRepository = RealityAssetRepository(),
+        celestialAssetManifestLoader: @escaping () throws -> CelestialAssetManifest = {
+            try CelestialAssetManifestLoader.load()
+        }
+    ) {
         meshProvider = MeshProvider()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
         renderPreparationPipeline = RenderPreparationPipeline(modelLoader: meshProvider.modelLoader,
@@ -55,7 +63,8 @@ public final class UniverseModuleResources {
         cameraCoordinator = CameraCoordinator(cameraState: cameraState,
                                               snapshotProvider: snapshotProvider)
         objectInfoOverlayFramingState = ObjectInfoOverlayFramingState()
-        assetRepository = RealityAssetRepository()
+        self.assetRepository = assetRepository
+        self.celestialAssetManifestLoader = celestialAssetManifestLoader
         transferOrbitController = TransferOrbitController(
             snapshotProvider: snapshotProvider,
             cameraCoordinator: cameraCoordinator,
@@ -78,10 +87,55 @@ public final class UniverseModuleResources {
         navigationController.navigationCameraFollowEnabledDidChange = { [weak self] isEnabled in
             self?.navigationCameraFollowEnabled = isEnabled
         }
+        navigationController.followPlanet = { [weak self] name in
+            guard let self else { return }
+            cameraCoordinator.followNavigationDestination(named: name,
+                                                          viewportSize: viewportSize)
+        }
+        transferOrbitController.followPlanet = { [weak self] name in
+            guard let self else { return }
+            cameraCoordinator.followNavigationDestination(named: name,
+                                                          viewportSize: viewportSize)
+        }
     }
 
-    public func prepare() async {
-        await meshProvider.prepare()
+    public func prepare() async throws {
+        guard !isPrepared else { return }
+
+        if let preparationTask {
+            do {
+                try await preparationTask.value
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
+            }
+            return
+        }
+
+        let task = Task { @MainActor [self] in
+            let manifest = try celestialAssetManifestLoader()
+            await meshProvider.prepare()
+            try await sceneCoordinator.prepareCelestialBodies(from: manifest)
+            renderPreparationPipeline.setPresentationMetrics(
+                Dictionary(uniqueKeysWithValues: manifest.assets.map { descriptor in
+                    (descriptor.displayName, descriptor.presentationMetrics)
+                })
+            )
+        }
+        preparationTask = task
+
+        do {
+            try await task.value
+            preparationTask = nil
+            isPrepared = true
+        } catch is CancellationError {
+            preparationTask = nil
+            throw CancellationError()
+        } catch {
+            preparationTask = nil
+            throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
+        }
     }
 
     func makeRenderer(for metalView: MTKView) -> MetalRenderer? {
@@ -92,22 +146,16 @@ public final class UniverseModuleResources {
         guard let renderer = MetalRenderer(metalView: metalView,
                                            device: meshProvider.device,
                                            commandQueue: commandQueue,
-                                           sceneOwnershipControls: .migration,
+                                           sceneOwnershipControls: .migration(
+                                            realityKitBodyNames: sceneCoordinator.realityKitOwnedBodyNames,
+                                            stageFourContentPrepared: sceneCoordinator
+                                                .isStageFourContentPrepared
+                                           ),
                                            planets: planets,
                                            sceneCoordinator: sceneCoordinator) else {
             return nil
         }
         self.renderer = renderer
-        navigationController.followPlanet = { [weak self] name in
-            guard let self else { return }
-            self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: self.viewportSize)
-        }
-        transferOrbitController.followPlanet = { [weak self] name in
-            guard let self else { return }
-            self.cameraCoordinator.followNavigationDestination(named: name,
-                                                               viewportSize: self.viewportSize)
-        }
         return renderer
     }
 
@@ -167,5 +215,13 @@ public final class UniverseModuleResources {
         objectInfoOverlayFramingState.setPresentation(isPresented: isPresented,
                                                       bottomInset: bottomInset,
                                                       viewportHeight: viewportHeight)
+    }
+}
+
+private extension CelestialAssetDescriptor {
+    var presentationMetrics: CelestialBodyPresentationMetrics {
+        CelestialBodyPresentationMetrics(renderRadius: renderRadius,
+                                         framingRadius: framingRadius,
+                                         surfaceRadius: surfaceRadius)
     }
 }

@@ -1,0 +1,11 @@
+{
+  "pathsToIds" : {
+    "\/Sun\/Sources\/Sun\/Sun.rkassets\/Scene.usda" : "74CFF560-2DCF-4CF2-B978-1D5AF5F59993",
+    "Sun\/Sources\/Sun\/Sun.rkassets\/Scene.usda" : "DF3F37F5-ABA6-4129-9259-285489309D7E"
+  },
+  "projectID" : 5629819904092166809,
+  "uuidToIntID" : {
+    "74CFF560-2DCF-4CF2-B978-1D5AF5F59993" : -7748634106877308620,
+    "DF3F37F5-ABA6-4129-9259-285489309D7E" : 5660021863283523499
+  }
+}

@@ -4,7 +4,11 @@ import SwiftUI
 import simd
 
 @MainActor
+// The coordinator intentionally centralizes atomic mutation of the canonical entity hierarchy.
+// swiftlint:disable:next type_body_length
 final class UniverseSceneCoordinator {
+    private static let realityKitCameraBasis = float4x4.makeRotationY(.pi)
+
     struct BodyEntities {
         let bodyRoot: Entity
         let orbitTransform: Entity
@@ -20,7 +24,10 @@ final class UniverseSceneCoordinator {
     let navigationRouteRoot = Entity()
     let navigationMarkerRoot = Entity()
     let virtualCamera = Entity()
+    let sunLight = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
+    private(set) var realityKitOwnedBodyNames: Set<String> = []
+    private(set) var isStageFourContentPrepared = false
 
     private let snapshotProvider: SnapshotProvider
     private let cameraCoordinator: CameraCoordinator
@@ -30,10 +37,19 @@ final class UniverseSceneCoordinator {
     private let assetRepository: RealityAssetRepository
     private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     private var simulationClock = UniverseSimulationClock()
+    private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
+    private var stageFourContent: RealityStageFourContent?
+    private var installationRoot: Entity?
+    private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
     private(set) var updateCount: UInt64 = 0
+    private(set) var isPresentationActive = true
+
+    enum PreparationError: Error, Equatable {
+        case missingBody(String)
+    }
 
     init(planets: [Planet],
          snapshotProvider: SnapshotProvider,
@@ -51,12 +67,48 @@ final class UniverseSceneCoordinator {
         buildHierarchy(planets: planets)
     }
 
-    func install(in content: inout RealityViewCameraContent) {
+    func install(in content: inout RealityViewCameraContent,
+                 installationID: UUID) {
+        registerInstallation(installationID)
         updateSubscription?.cancel()
-        content.entities.removeAll()
-        content.add(universeRoot)
+        updateSubscription = nil
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        subscribeToUpdates(in: content)
+    }
+
+    func restoreInstallationIfNeeded(in content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        if activeInstallationID != installationID {
+            install(in: &content, installationID: installationID)
+            return
+        }
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        guard updateSubscription == nil else { return }
+        subscribeToUpdates(in: content)
+    }
+
+    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent,
+                                     installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+
+        if let installationRoot,
+           content.entities.contains(where: { $0 === installationRoot }) {
+            if universeRoot.parent !== installationRoot {
+                installationRoot.addChild(universeRoot)
+            }
+        } else {
+            universeRoot.removeFromParent()
+            let installationRoot = Entity()
+            installationRoot.name = "RealityViewInstallationRoot"
+            installationRoot.addChild(universeRoot)
+            content.add(installationRoot)
+            self.installationRoot = installationRoot
+        }
         content.camera = .virtual
         content.cameraTarget = virtualCamera
+    }
+
+    private func subscribeToUpdates(in content: RealityViewCameraContent) {
         updateSubscription = content.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.update(deltaTime: event.deltaTime)
@@ -74,8 +126,53 @@ final class UniverseSceneCoordinator {
         viewportSize = size
     }
 
+    func setPresentationActive(_ isActive: Bool) {
+        isPresentationActive = isActive
+    }
+
+    func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
+        let requestedBodyNames = Set(manifest.assets.map(\.displayName))
+        guard requestedBodyNames != realityKitOwnedBodyNames || !isStageFourContentPrepared else {
+            return
+        }
+
+        var preparedAssets: [(CelestialAssetDescriptor, Entity)] = []
+        preparedAssets.reserveCapacity(manifest.assets.count)
+
+        for descriptor in manifest.assets {
+            try Task.checkCancellation()
+            guard bodyEntities[descriptor.displayName] != nil else {
+                throw PreparationError.missingBody(descriptor.displayName)
+            }
+            let entity = try await assetRepository.entity(for: descriptor)
+            preparedAssets.append((descriptor, entity))
+        }
+
+        let preparedStageFourContent = try await RealityStageFourContent.prepare()
+
+        try Task.checkCancellation()
+        for (descriptor, assetRoot) in preparedAssets {
+            guard let entities = bodyEntities[descriptor.displayName] else {
+                throw PreparationError.missingBody(descriptor.displayName)
+            }
+            entities.visualRoot.children.removeAll()
+            entities.visualRoot.transform = descriptor.visualCorrectionTransform
+            entities.visualRoot.addChild(assetRoot)
+        }
+        install(stageFourContent: preparedStageFourContent)
+        bodyDescriptors = Dictionary(uniqueKeysWithValues: manifest.assets.map {
+            ($0.displayName, $0)
+        })
+        realityKitOwnedBodyNames = requestedBodyNames
+        isStageFourContentPrepared = true
+    }
+
     func update(deltaTime: TimeInterval) {
-        guard viewportSize.width > 0, viewportSize.height > 0 else { return }
+        guard isPresentationActive,
+              viewportSize.width > 0,
+              viewportSize.height > 0 else {
+            return
+        }
 
         let delta = simulationClock.advance(by: deltaTime)
         snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
@@ -110,11 +207,22 @@ final class UniverseSceneCoordinator {
         updateCount += 1
     }
 
+    func registerInstallation(_ installationID: UUID) {
+        activeInstallationID = installationID
+    }
+
+    func dismantle(installationID: UUID) {
+        guard activeInstallationID == installationID else { return }
+        dismantle()
+    }
+
     func dismantle() {
         updateSubscription?.cancel()
         updateSubscription = nil
         assetRepository.cancelPendingLoads()
         universeRoot.removeFromParent()
+        installationRoot = nil
+        activeInstallationID = nil
         latestFrameState = nil
     }
 
@@ -127,6 +235,8 @@ final class UniverseSceneCoordinator {
         navigationRouteRoot.name = "NavigationRoute"
         navigationMarkerRoot.name = "NavigationMarker"
         virtualCamera.name = "VirtualCamera"
+        sunLight.name = CelestialLightingConfiguration.SunPointLight.entityName
+        sunLight.components.set(CelestialLightingConfiguration.SunPointLight.component)
 
         universeRoot.addChild(environmentRoot)
         universeRoot.addChild(starFieldRoot)
@@ -148,6 +258,9 @@ final class UniverseSceneCoordinator {
             bodyRoot.addChild(orbitTransform)
             orbitTransform.addChild(rotationTransform)
             rotationTransform.addChild(visualRoot)
+            if planet.name == "Sun" {
+                bodyRoot.addChild(sunLight)
+            }
             celestialSystemRoot.addChild(bodyRoot)
             bodyEntities[planet.name] = BodyEntities(bodyRoot: bodyRoot,
                                                      orbitTransform: orbitTransform,
@@ -199,11 +312,16 @@ final class UniverseSceneCoordinator {
 
     func apply(frameState: UniverseFrameState) {
         let cameraSnapshot = frameState.cameraSnapshot
-        virtualCamera.setTransformMatrix(simd_inverse(cameraSnapshot.renderViewMatrix),
+        let cameraTransform = simd_inverse(cameraSnapshot.renderViewMatrix)
+            * Self.realityKitCameraBasis
+        let projectionMatrix = Self.makeRealityKitProjection(from: cameraSnapshot)
+        virtualCamera.setTransformMatrix(cameraTransform,
                                          relativeTo: universeRoot)
         virtualCamera.components.set(
-            ProjectiveTransformCameraComponent(projectionMatrix: cameraSnapshot.projectionMatrix)
+            ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
         )
+
+        stageFourContent?.update(frameState: frameState)
 
         guard let snapshot = frameState.snapshot else { return }
         for packet in snapshot.planets {
@@ -213,7 +331,51 @@ final class UniverseSceneCoordinator {
             var localModelMatrix = packet.baseModelMatrix
             localModelMatrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
             entities.rotationTransform.transform = Transform(matrix: localModelMatrix)
+            if bodyDescriptors[packet.planetName]?.usesSnapshotScale == true {
+                entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
+            }
         }
+    }
+
+    private func install(stageFourContent: RealityStageFourContent) {
+        environmentRoot.children.removeAll()
+        starFieldRoot.children.removeAll()
+        transferOrbitRoot.children.removeAll()
+        navigationRouteRoot.children.removeAll()
+        navigationMarkerRoot.children.removeAll()
+
+        environmentRoot.addChild(stageFourContent.environmentEntity)
+        starFieldRoot.addChild(stageFourContent.starField.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferEarthOrbit.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferDestinationOrbit.entity)
+        transferOrbitRoot.addChild(stageFourContent.transferPath.entity)
+        navigationRouteRoot.addChild(stageFourContent.navigationPath.entity)
+        navigationRouteRoot.addChild(navigationMarkerRoot)
+        navigationMarkerRoot.addChild(stageFourContent.navigationMarker)
+        self.stageFourContent = stageFourContent
+    }
+
+    static func makeRealityKitProjection(
+        from cameraSnapshot: SnapshotProvider.CameraSnapshot
+    ) -> float4x4 {
+        let legacyProjection = cameraSnapshot.projectionMatrix
+        let near = cameraSnapshot.dependencies.projection.nearPlane
+        let far = cameraSnapshot.dependencies.projection.farPlane
+        let reverseDepthScale = near / (far - near)
+        let reverseDepthTranslation = far * reverseDepthScale
+
+        // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
+        // center-offset, and W terms preserve the legacy camera's screen mapping.
+        // Convert Metal's +Z camera into RealityKit's -Z camera without reversing
+        // its local right axis. RealityKit's screen-space Y convention remains
+        // opposite Metal's, so X is compensated for the Y-axis basis rotation
+        // while Y retains the RealityKit projection convention.
+        return float4x4(
+            [-legacyProjection[0][0], 0, 0, 0],
+            [0, -legacyProjection[1][1], 0, 0],
+            [0, legacyProjection[2][1], reverseDepthScale, -1],
+            [0, 0, reverseDepthTranslation, 0]
+        )
     }
 
     private func logSurfaceCoordinateDebug(snapshot: PreparedRenderSnapshot?,
@@ -241,5 +403,25 @@ final class UniverseSceneCoordinator {
             return destinationName
         }
         return cameraSnapshot.dependencies.followedObject?.planetName
+    }
+}
+
+private extension CelestialAssetDescriptor {
+    var visualCorrectionTransform: Transform {
+        let renderScale = modelToUniverseScale * (renderRadius / referenceRadius)
+        return Transform(
+            scale: SIMD3<Float>(repeating: renderScale),
+            rotation: simd_quatf(
+                ix: orientationCorrection.xAxis,
+                iy: orientationCorrection.yAxis,
+                iz: orientationCorrection.zAxis,
+                r: orientationCorrection.real
+            ),
+            translation: SIMD3<Float>(
+                pivotCorrection.xAxis,
+                pivotCorrection.yAxis,
+                pivotCorrection.zAxis
+            )
+        )
     }
 }

@@ -33,6 +33,15 @@ import Testing
 }
 
 @MainActor
+@Test func universeModuleResourcesWiresFollowHandoffsWithoutRenderer() throws {
+    _ = try #require(MTLCreateSystemDefaultDevice())
+    let resources = UniverseModuleResources()
+
+    #expect(resources.navigationController.followPlanet != nil)
+    #expect(resources.transferOrbitController.followPlanet != nil)
+}
+
+@MainActor
 @Test func universeModuleResourcesResolvesSurfaceFollowTargetByDestinationID() throws {
     _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()

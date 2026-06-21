@@ -15,6 +15,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
     private var inFlightTask: Task<Void, Never>?
     private var pendingSimulationTime: Float?
     private var nextFrameID: UInt64 = 0
+    private var presentationMetricsByBodyName: [String: CelestialBodyPresentationMetrics] = [:]
 
     private(set) var latestSnapshot: PreparedRenderSnapshot?
 
@@ -35,6 +36,10 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
         inFlightTask = Task { @MainActor [weak self] in
             await self?.drainPendingPreparations()
         }
+    }
+
+    func setPresentationMetrics(_ metrics: [String: CelestialBodyPresentationMetrics]) {
+        presentationMetricsByBodyName = metrics
     }
 
     private func drainPendingPreparations() async {
@@ -73,9 +78,12 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
             let worldModelMatrix = baseModelMatrix
                 * float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
             let maxMeshRadius = meshes.map(\.boundsRadius).max() ?? primaryMeshRadius
-            let framingRadius = maxMeshRadius > 0
+            let legacyFramingRadius = maxMeshRadius > 0
                 ? maxMeshRadius * normalizedScale
                 : planet.radius
+            let presentationMetrics = presentationMetricsByBodyName[planet.name]
+            let framingRadius = presentationMetrics?.framingRadius ?? legacyFramingRadius
+            let surfaceRadius = presentationMetrics?.surfaceRadius ?? legacyFramingRadius
             let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
             let worldPosition = SIMD3<Float>(worldPosition4.x,
                                              worldPosition4.y,
@@ -91,7 +99,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
                     normalizedScale: normalizedScale,
                     primaryMeshRadius: primaryMeshRadius,
                     framingRadius: framingRadius,
-                    surfaceRadius: framingRadius,
+                    surfaceRadius: surfaceRadius,
                     worldPosition: worldPosition
                 )
             )

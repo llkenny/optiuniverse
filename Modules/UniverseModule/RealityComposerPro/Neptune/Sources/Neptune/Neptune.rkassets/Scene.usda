@@ -1,0 +1,307 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["Body", "PointLight", "Material_1", "Atmosphere", "Material_2"]
+    def Sphere "Body" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Material_1> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (1882.4822, 337.85257)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "Material_1"
+    {
+        token outputs:mtlx:surface.connect = </Root/Material_1/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:node:pos = (1882.4822, 332.35257)
+        int ui:nodegraph:node:stackingOrder = 1
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (2898.994, 908.76825)
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 1596
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor.connect = </Root/Material_1/Multiply_3.outputs:out>
+            color3f inputs:emissiveColor.connect = </Root/Material_1/Multiply_1.outputs:out>
+            float inputs:ior
+            float inputs:metallic.connect = None
+            float3 inputs:normal = (0, 0, 1)
+            float inputs:occlusion
+            float inputs:opacity = 1
+            float inputs:opacity.connect = None
+            float inputs:opacityThreshold
+            float inputs:roughness = 0.8
+            float inputs:roughness.connect = None
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (2671.3494, 833.3776)
+            int ui:nodegraph:node:stackingOrder = 1647
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced", "inputs:clearcoatRoughness", "inputs:clearcoat"]
+        }
+
+        def Shader "image_1"
+        {
+            uniform token info:id = "ND_image_color3"
+            color3f inputs:default
+            asset inputs:file = @2k_neptune.jpg@
+            string inputs:filtertype
+            float2 inputs:texcoord.connect = None
+            string inputs:uaddressmode
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (1732.4174, 476.39938)
+            int ui:nodegraph:node:stackingOrder = 1606
+        }
+
+        def Shader "TransformNormal"
+        {
+            uniform token info:id = "ND_transformnormal_vector3"
+            string inputs:fromspace = "object"
+            float3 inputs:in.connect = </Root/Material_1/Normal.outputs:out>
+            string inputs:tospace = "world"
+            float3 outputs:out
+            float2 ui:nodegraph:node:pos = (1241.2855, 661.268)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Normal"
+        {
+            uniform token info:id = "ND_normal_vector3"
+            float3 outputs:out
+            float2 ui:nodegraph:node:pos = (1059.8331, 644.68756)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Normalize"
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </Root/Material_1/TransformNormal.outputs:out>
+            float3 outputs:out
+            float2 ui:nodegraph:node:pos = (1438.3754, 663.2767)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Power"
+        {
+            uniform token info:id = "ND_power_float"
+            float inputs:in1 = 4
+            float inputs:in1.connect = None
+            float inputs:in2 = 8
+            float inputs:in2.connect = </Root/Material_1/Oneminus.outputs:out>
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (2023.2174, 1060.2537)
+            int ui:nodegraph:node:stackingOrder = 1582
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:in2"]
+        }
+
+        def Shader "Multiply_1"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/Material_1/Multiply_2.outputs:out>
+            float inputs:in2 = 0.15
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (2255.5308, 1054.4209)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Oneminus"
+        {
+            uniform token info:id = "ND_realitykit_oneminus_float"
+            float inputs:in.connect = </Root/Material_1/Abs.outputs:out>
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (1889.7589, 1070.1641)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Remap_1"
+        {
+            uniform token info:id = "ND_remap_float"
+            float inputs:in.connect = </Root/Material_1/Abs.outputs:out>
+            float inputs:inhigh = 1
+            float inputs:inlow = 0
+            float inputs:outhigh = 1
+            float inputs:outlow = 0.65
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (2058.6067, 909.81494)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Multiply_4"
+        {
+            uniform token info:id = "ND_multiply_float"
+            float inputs:in1.connect = </Root/Material_1/Remap_1.outputs:out>
+            float inputs:in2 = 1
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (2193.747, 953.63354)
+            int ui:nodegraph:node:stackingOrder = 1582
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["inputs:in2"]
+        }
+
+        def Shader "DotProduct"
+        {
+            uniform token info:id = "ND_dotproduct_vector3"
+            float3 inputs:in1.connect = </Root/Material_1/Normalize.outputs:out>
+            float3 inputs:in2.connect = </Root/Material_1/Normalize_1.outputs:out>
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (1644.8964, 816.02734)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "ViewDirection"
+        {
+            uniform token info:id = "ND_realitykit_viewdirection_vector3"
+            float3 outputs:out
+            float2 ui:nodegraph:node:pos = (1079.5016, 809.3972)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Normalize_1"
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </Root/Material_1/ViewDirection.outputs:out>
+            float3 outputs:out
+            float2 ui:nodegraph:node:pos = (1433.5138, 823.49927)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Multiply_2"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1 = (0.48892844, 0.6002271, 1) (
+                colorSpace = "srgb_texture"
+            )
+            float inputs:in2.connect = </Root/Material_1/Power.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (2155.7002, 1054.1616)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Multiply_3"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/Material_1/Multiply_5.outputs:out>
+            float inputs:in2.connect = </Root/Material_1/Multiply_4.outputs:out>
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (2293.2527, 838.9663)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Abs"
+        {
+            uniform token info:id = "ND_absval_float"
+            float inputs:in.connect = </Root/Material_1/DotProduct.outputs:out>
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (1822.0878, 817.7571)
+            int ui:nodegraph:node:stackingOrder = 1582
+        }
+
+        def Shader "Multiply_5"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </Root/Material_1/image_1.outputs:out>
+            float inputs:in2 = 0.7
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (2067.8953, 711.96765)
+            int ui:nodegraph:node:stackingOrder = 1609
+        }
+    }
+
+    def Sphere "Atmosphere" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Material_2> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (1902.4822, 357.85257)
+        int ui:nodegraph:node:stackingOrder = 2
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1.01, 1.01, 1.01)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Atmosphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "Material_2"
+    {
+        token outputs:mtlx:surface.connect = </Root/Material_2/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (214.42578, 142.03125)
+        int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 25
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            color3f inputs:diffuseColor = (0.1143947, 0.081870995, 0.49453124) (
+                colorSpace = "srgb_texture"
+            )
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:opacity = 0.3
+            float inputs:opacity.connect = </Root/Material_2/Image.outputs:out>
+            float inputs:roughness = 0.9
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (-13.5703125, 80.19531)
+            int ui:nodegraph:node:stackingOrder = 19
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_float"
+            asset inputs:file = @Neptune.tif@
+            string inputs:filtertype
+            string inputs:vaddressmode
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (-259.6914, 85.26953)
+            int ui:nodegraph:node:stackingOrder = 22
+        }
+    }
+}
+

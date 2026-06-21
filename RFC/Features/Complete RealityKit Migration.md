@@ -182,16 +182,61 @@ flag. Every stage must build, test, and leave one clear owner for each subsystem
   and disable its Metal draw.
 - Keep camera framing and surface-radius values sourced from technology-neutral body state.
 
+The current Stage 3 rollout is intentionally limited to Sun and Neptune. Their checked-in USDZ
+assets are required scene content, are loaded before presentation, and become the exclusive
+RealityKit-owned celestial bodies after preparation succeeds. All other bodies remain Metal-owned
+until their individual assets and visual reviews are complete.
+
+Stage 3 implementation evidence recorded on 19 June 2026:
+
+- the app build and app test action passed on the documented iPhone 17 Pro, iOS 26.4 simulator
+- all 124 UniverseModule tests passed, including asset, ownership, transform, reverse-depth camera,
+  cancellation, retry, and presentation-radius coverage
+- BaseModule and CommonTools package tests passed
+- simulator reviews passed for Sun and Neptune close follow, Sun emission and corona, Neptune
+  material fidelity, single-renderer ownership, and object-info overlay framing
+
+Simulator review is diagnostic only. The RFC's physical-device visual and performance gates remain
+required before the final RealityKit-only release candidate.
+
 ### Stage 4: Routes And Effects
 - Migrate the transfer orbit, navigation route, navigation marker, environment, and stars.
 - Validate route progress, pause/resume, camera-follow toggling, arrival, cancellation, and transfer
   preview behavior after each owner changes.
 - Keep the legacy Metal layer only for subsystems that have not yet moved.
 
+The Stage 4 implementation also completes RealityKit ownership for the remaining celestial bodies so
+the opaque RealityKit environment cannot cover Metal-owned planets in the temporary layered renderer.
+Sun and Neptune continue to use their standalone USDZ assets. The other nine bodies are loaded by
+name from one cached `high_resolution_solar_system.usdz`; its obsolete skin bindings are removed so
+RealityKit imports the unchanged static meshes and materials. This shared runtime source is migration
+scaffolding: editable per-body Reality Composer Pro projects and standalone USDZ exports are still
+required before Stage 6 removes the monolithic asset.
+
+Stage 4 keeps the legacy view solely as Stage 5 scaffolding. Once scene preparation commits, Metal
+suppresses every visible subsystem while RealityKit owns all eleven bodies, the Milky Way environment,
+the deterministic star field, both route presentations, and the navigation marker. Whole-frame filmic
+post-processing remains disabled until Stage 5 because the two layers do not share a final color target.
+
 ### Stage 5: Single RealityKit Frame
 - Make RealityView own every visible scene subsystem.
 - Remove the legacy layer and enable the RealityView custom post-process effect for the whole frame.
 - Run the complete parity, visual, asset, performance, build, and test gates.
+
+Stage 5 implementation evidence recorded on 21 June 2026:
+
+- `UniverseView` presents one RealityView and an input-only transparent gesture host; it no longer
+  constructs the legacy `MTKView`, and production sources contain one scene-update subscription
+- the filmic effect is installed through `RealityViewRenderingEffects.customPostProcessing`, with
+  target-format pipeline caching and an unmodified-color fallback covered by GPU tests
+- all 138 UniverseModule tests passed, including PostFX layout, library, pipeline-cache, encoding,
+  fallback-copy, gesture configuration, and trajectory-gating coverage
+- BaseModule and CommonTools package tests passed, as did the documented app build and app test action
+- an iPhone 17 Pro, iOS 26.4 simulator launch completed required asset loading without a PostFX failure
+  or blank application frame
+
+The interactive simulator visual matrix and the RFC's physical iPhone 16 performance gates remain
+pending. This evidence does not approve Stage 6 removal or a RealityKit-only release candidate.
 
 ### Stage 6: Removal
 - Delete `MTKView`, Metal renderers, Metal model-loader wrappers, Metal prepared-mesh packets,
