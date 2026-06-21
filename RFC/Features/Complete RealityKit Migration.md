@@ -223,6 +223,21 @@ post-processing remains disabled until Stage 5 because the two layers do not sha
 - Remove the legacy layer and enable the RealityView custom post-process effect for the whole frame.
 - Run the complete parity, visual, asset, performance, build, and test gates.
 
+Stage 5 implementation evidence recorded on 21 June 2026:
+
+- `UniverseView` presents one RealityView and an input-only transparent gesture host; it no longer
+  constructs the legacy `MTKView`, and production sources contain one scene-update subscription
+- the filmic effect is installed through `RealityViewRenderingEffects.customPostProcessing`, with
+  target-format pipeline caching and an unmodified-color fallback covered by GPU tests
+- all 138 UniverseModule tests passed, including PostFX layout, library, pipeline-cache, encoding,
+  fallback-copy, gesture configuration, and trajectory-gating coverage
+- BaseModule and CommonTools package tests passed, as did the documented app build and app test action
+- an iPhone 17 Pro, iOS 26.4 simulator launch completed required asset loading without a PostFX failure
+  or blank application frame
+
+The interactive simulator visual matrix and the RFC's physical iPhone 16 performance gates remain
+pending. This evidence does not approve Stage 6 removal or a RealityKit-only release candidate.
+
 ### Stage 6: Removal
 - Delete `MTKView`, Metal renderers, Metal model-loader wrappers, Metal prepared-mesh packets,
   renderer-specific ownership switches, the monolithic USDZ, and non-PostFX Metal shaders.

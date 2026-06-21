@@ -14,12 +14,13 @@ public struct UniverseView: View {
     public var body: some View {
         GeometryReader { geometry in
             ZStack {
-                LegacyMetalView(resources: resources)
-
                 RealityView { content in
                     resources.sceneCoordinator.install(
                         in: &content,
                         installationID: installationID
+                    )
+                    content.renderingEffects.customPostProcessing = .effect(
+                        FilmicPostProcessEffect()
                     )
                 } update: { content in
                     resources.sceneCoordinator.restoreInstallationIfNeeded(
@@ -27,8 +28,9 @@ public struct UniverseView: View {
                         installationID: installationID
                     )
                 }
-                .background(Color.clear)
                 .allowsHitTesting(false)
+
+                CameraGestureView(resources: resources)
             }
             .onAppear {
                 resources.setViewportSize(geometry.size)

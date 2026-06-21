@@ -182,8 +182,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             fatalError("Failed to load Metal shader library from UniverseModule bundle: \(error)")
         }
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = library.makeFunction(name: "fullscreen_vertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "postfx_fragment")
+        descriptor.vertexFunction = library.makeFunction(name: "universe_postfx_vertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "universe_postfx_fragment")
         descriptor.colorAttachments[0].pixelFormat = colorPixelFormat
         descriptor.rasterSampleCount = sampleCount
         descriptor.depthAttachmentPixelFormat = depthPixelFormat
