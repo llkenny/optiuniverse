@@ -1,0 +1,36 @@
+{
+  "7016BD9C-287F-46AE-AF89-A2E4823059D1" : {
+    "objectMetadataList" : [
+      [
+        "7016BD9C-287F-46AE-AF89-A2E4823059D1",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
+  },
+  "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27" : {
+    "objectMetadataList" : [
+      [
+        "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
+        "Root",
+        "Sphere"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      }
+    ]
+  }
+}
