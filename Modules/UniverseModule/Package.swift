@@ -34,7 +34,9 @@ let package = Package(
                 .copy("Assets/Models/Sun.usdz"),
                 .copy("Assets/Models/Mercury.usdz"),
                 .copy("Assets/Models/Moon.usdz"),
+                .copy("Assets/Models/Mars.usdz"),
                 .copy("Assets/Models/Neptune.usdz"),
+                .copy("Assets/Models/Pluto.usdz"),
                 .process("Assets/Models/celestial_assets.json"),
                 .process("Assets/Environment"),
                 .process("Models/planets.json")

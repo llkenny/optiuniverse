@@ -8,3 +8,5 @@ RFC/DOT/*.png
 
 *.rcuserdata
 .build
+
+PluginData
