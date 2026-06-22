@@ -1,0 +1,451 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["Body", "Body_Material", "PointLight", "White_Belts_Sphere", "White_Belts_Material", "Spin_White", "Loop", "Orange_Belts_Sphere", "Orange_Belts_Material", "Spin_Orange"]
+    def Sphere "Body" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Body_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "Body_Material"
+    {
+        token inputs:frame:stPrimvarName = "st" (
+            customData = {
+                dictionary realitykit = {
+                    bool hide = 1
+                }
+            }
+        )
+        token outputs:mtlx:surface
+        token outputs:realitykit:vertex
+        token outputs:surface.connect = </Root/Body_Material/UsdPreviewSurface.outputs:surface>
+
+        def Shader "UsdPreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+            color3f inputs:diffuseColor.connect = </Root/Body_Material/diffuseColor.outputs:rgb>
+            token outputs:surface
+        }
+
+        def Shader "diffuseColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @8k_jupiter.jpg@
+            float2 inputs:st.connect = </Root/Body_Material/diffuseColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Body_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def Sphere "White_Belts_Sphere" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/White_Belts_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1.003, 1.003, 1.003)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/White_Belts_Sphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "White_Belts_Material"
+    {
+        token inputs:frame:stPrimvarName = "st" (
+            customData = {
+                dictionary realitykit = {
+                    bool hide = 1
+                }
+            }
+        )
+        token outputs:mtlx:surface
+        token outputs:realitykit:vertex
+        token outputs:surface.connect = </Root/White_Belts_Material/UsdPreviewSurface.outputs:surface>
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+
+        def Shader "UsdPreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.8103923, 0.84839135, 0.8783111) (
+                colorSpace = "srgb_displayp3"
+            )
+            color3f inputs:emissiveColor = (0, 0, 0)
+            float inputs:occlusion = 1
+            float inputs:occlusion.connect = </Root/White_Belts_Material/occlusion.outputs:r>
+            float inputs:opacity = 0.3
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+
+        def Shader "diffuseColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @8k_jupiter.jpg@
+            float2 inputs:st.connect = </Root/White_Belts_Material/diffuseColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/White_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "emissiveColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @8k_jupiter.jpg@
+            float2 inputs:st.connect = </Root/White_Belts_Material/emissiveColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/White_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "opacity"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_Orange_Belts_Mask.png@
+            float2 inputs:st.connect = </Root/White_Belts_Material/opacity/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/White_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "occlusion"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_White_Belts_Mask_Edited.png@
+            float2 inputs:st.connect = </Root/White_Belts_Material/occlusion/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/White_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def RealityKitTimeline "Spin_White"
+    {
+        def RealityKitTrack "Track"
+        {
+            def RealityKitAction "Spin"
+            {
+                string actionKind = "spin"
+                int blendLayer = 400
+                double duration = 100
+                uniform token info:id = "5899C5A3-5101-46CA-992B-483E9D76BF1D"
+                double startTime = 0
+                rel target = </Root/White_Belts_Sphere>
+
+                def RealityKitStruct "timingFunction"
+                {
+                    token type = "linear"
+                }
+            }
+        }
+    }
+
+    def RealityKitTimeline "Loop"
+    {
+        reorder nameChildren = ["Track", "Track2"]
+        def RealityKitTrack "Track"
+        {
+            def RealityKitAction "Play_Timeline"
+            {
+                string actionKind = "timeline"
+                int blendLayer = 500
+                double duration = 100
+                uniform token info:id = "0A42C515-2AF9-4545-95F4-69CEEA4A857A"
+                double loopCount = 0
+                double startTime = 0
+                rel timeline = </Root/Spin_White>
+            }
+        }
+
+        def RealityKitTrack "Track2"
+        {
+            def RealityKitAction "Play_Timeline"
+            {
+                string actionKind = "timeline"
+                int blendLayer = 500
+                double duration = 200
+                uniform token info:id = "E4D412F3-9A3A-4D67-9E1D-C1B55D453113"
+                double loopCount = 0
+                double startTime = 0
+                rel timeline = </Root/Spin_Orange>
+            }
+        }
+    }
+
+    def Material "Orange_Belts_Material"
+    {
+        token inputs:frame:stPrimvarName = "st" (
+            customData = {
+                dictionary realitykit = {
+                    bool hide = 1
+                }
+            }
+        )
+        token outputs:mtlx:surface
+        token outputs:realitykit:vertex
+        token outputs:surface.connect = </Root/Orange_Belts_Material/UsdPreviewSurface.outputs:surface>
+        float2 ui:nodegraph:node:pos = (40, 40)
+        int ui:nodegraph:node:stackingOrder = 2
+
+        def Shader "UsdPreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            float inputs:clearcoat = 0
+            color3f inputs:diffuseColor = (0.87948346, 0.6683578, 0.4547756) (
+                colorSpace = "srgb_texture"
+            )
+            color3f inputs:emissiveColor = (0, 0, 0)
+            float inputs:occlusion = 1
+            float inputs:occlusion.connect = </Root/Orange_Belts_Material/occlusion.outputs:r>
+            float inputs:opacity = 0.3
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+
+        def Shader "diffuseColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @8k_jupiter.jpg@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/diffuseColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "emissiveColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_Orange_Belts_Mask.png@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/emissiveColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "opacity"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_White_Belts_Mask.png@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/opacity/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "roughness"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_White_Belts_Mask.png@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/roughness/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "occlusion"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_Orange_Belts_Mask_Edited .png@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/occlusion/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "clearcoat"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Jupiter_White_Belts_Mask.png@
+            float2 inputs:st.connect = </Root/Orange_Belts_Material/clearcoat/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Orange_Belts_Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def RealityKitTimeline "Spin_Orange"
+    {
+        def RealityKitTrack "Track"
+        {
+            def RealityKitAction "Spin"
+            {
+                string actionKind = "spin"
+                int blendLayer = 400
+                double duration = 200
+                uniform token info:id = "F1CEE789-D06F-48A8-9A4C-55DE9123123D"
+                token spinDirection = "counterclockwise"
+                double startTime = 0
+                rel target = </Root/Orange_Belts_Sphere>
+
+                def RealityKitStruct "timingFunction"
+                {
+                    token type = "linear"
+                }
+            }
+        }
+    }
+
+    def RealityKitComponent "RCP_BehaviorsContainer"
+    {
+        rel behaviors = </Root/OnAddedToScene>
+        uniform token info:id = "RCP.BehaviorsContainer"
+    }
+
+    def Preliminary_Behavior "OnAddedToScene"
+    {
+        rel actions = </Root/OnAddedToScene/Action>
+        uniform bool exclusive
+        rel triggers = </Root/OnAddedToScene/Trigger>
+
+        def Preliminary_Trigger "Trigger"
+        {
+            rel affectedObjects = </Root>
+            token info:id = "SceneTransition"
+        }
+
+        def Preliminary_Action "Action"
+        {
+            rel affectedObjects = </Root>
+            rel animationLibraryKey = </Root/Loop>
+            rel animationLibraryKeyOverrideKey = </Root/OnAddedToScene/Trigger>
+            token info:id = "PlayTimeline"
+            int loops = 0
+            int performCount = 1
+            token type = "serial"
+        }
+    }
+
+    def Sphere "Orange_Belts_Sphere" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Orange_Belts_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (40, 40)
+        int ui:nodegraph:node:stackingOrder = 2
+        quatf xformOp:orient = (0.99999994, 0, 0, 0)
+        float3 xformOp:scale = (1.006, 1.006, 1.006)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token outputs:surface.connect = </Root/Orange_Belts_Sphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+}
+
