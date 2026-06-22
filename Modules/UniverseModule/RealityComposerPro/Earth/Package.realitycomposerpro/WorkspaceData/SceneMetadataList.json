@@ -1,0 +1,72 @@
+{
+  "8423DC16-49C3-4097-86EC-D486C98439A0" : {
+    "objectMetadataList" : [
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "Clouds_External"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "Loop_SpinAnimation",
+        "Track"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "Loop_SpinAnimation"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "SpinAnimation"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "SpinAnimation",
+        "Track"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "SkySphere"
+      ],
+      {
+        "disallowsFraming" : true,
+        "isExpanded" : false,
+        "isLocked" : false
+      }
+    ]
+  }
+}
