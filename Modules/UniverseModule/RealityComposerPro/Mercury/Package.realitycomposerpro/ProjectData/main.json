@@ -1,0 +1,11 @@
+{
+  "pathsToIds" : {
+    "\/Mercury\/Sources\/Mercury\/Mercury.rkassets\/Scene.usda" : "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
+    "Mercury\/Sources\/Mercury\/Mercury.rkassets\/Scene.usda" : "7016BD9C-287F-46AE-AF89-A2E4823059D1"
+  },
+  "projectID" : -6330623870655738199,
+  "uuidToIntID" : {
+    "7016BD9C-287F-46AE-AF89-A2E4823059D1" : -8823470357351920491,
+    "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27" : -5828106184681727094
+  }
+}
