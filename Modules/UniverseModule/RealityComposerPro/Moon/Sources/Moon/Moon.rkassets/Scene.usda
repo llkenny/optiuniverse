@@ -1,0 +1,138 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    def Sphere "Sphere" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+
+        def Material "DefaultMaterial"
+        {
+            prepend token outputs:surface.connect = </Root/Sphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+    }
+
+    def Material "Material"
+    {
+        token inputs:frame:stPrimvarName = "st" (
+            customData = {
+                dictionary realitykit = {
+                    bool hide = 1
+                }
+            }
+        )
+        token outputs:mtlx:surface
+        token outputs:realitykit:vertex
+        prepend token outputs:surface.connect = </Root/Material/UsdPreviewSurface.outputs:surface>
+
+        def Shader "UsdPreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+            color3f inputs:diffuseColor.connect = </Root/Material/diffuseColor.outputs:rgb>
+            float inputs:metallic = 0
+            normal3f inputs:normal = (0, 0, 1)
+            normal3f inputs:normal.connect = </Root/Material/normal.outputs:rgb>
+            float inputs:occlusion = 1
+            float inputs:occlusion.connect = </Root/Material/occlusion.outputs:r>
+            float inputs:roughness = 0.5
+            float inputs:roughness.connect = </Root/Material/roughness.outputs:r>
+            token outputs:surface
+        }
+
+        def Shader "diffuseColor"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @8k_moon.jpg@
+            float2 inputs:st.connect = </Root/Material/diffuseColor/TexCoordReader.outputs:result>
+            color3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "normal"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @moon_normal_map_strong.png@
+            float2 inputs:st.connect = </Root/Material/normal/TexCoordReader.outputs:result>
+            normal3f outputs:rgb
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "occlusion"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @moon_ao_map_aligned.png@
+            float2 inputs:st.connect = </Root/Material/occlusion/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+
+        def Shader "roughness"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @moon_roughness_map_aligned.png@
+            float2 inputs:st.connect = </Root/Material/roughness/TexCoordReader.outputs:result>
+            float outputs:r
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def Xform "PointLight"
+    {
+        float3 xformOp:translate = (0, 0, -0.20680192)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def RealityKitComponent "PointLight"
+        {
+            token info:id = "RealityKit.PointLight"
+            float intensity = 5000
+        }
+    }
+}
+
