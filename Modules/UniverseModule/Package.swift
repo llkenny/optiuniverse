@@ -33,6 +33,7 @@ let package = Package(
                 .copy("Assets/Models/high_resolution_solar_system.usdz"),
                 .copy("Assets/Models/Sun.usdz"),
                 .copy("Assets/Models/Mercury.usdz"),
+                .copy("Assets/Models/Venus.usdz"),
                 .copy("Assets/Models/Earth.usdz"),
                 .copy("Assets/Models/Moon.usdz"),
                 .copy("Assets/Models/Mars.usdz"),

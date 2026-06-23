@@ -1,1 +1,5 @@
 *.usdz filter=lfs diff=lfs merge=lfs -text
+
+Modules/**/RealityComposerPro/**/*.png filter=lfs diff=lfs merge=lfs -text
+Modules/**/RealityComposerPro/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+Modules/**/RealityComposerPro/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
