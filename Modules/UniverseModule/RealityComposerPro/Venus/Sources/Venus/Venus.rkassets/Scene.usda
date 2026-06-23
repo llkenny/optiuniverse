@@ -1,0 +1,274 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["Body", "Body_Material", "Atmosphere", "Atmosphere_Material", "Blackout", "Blackout_Material"]
+    def Sphere "Body" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Body/Body_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+
+        def Material "Body_Material"
+        {
+            token inputs:frame:stPrimvarName = "st" (
+                customData = {
+                    dictionary realitykit = {
+                        bool hide = 1
+                    }
+                }
+            )
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Body/Body_Material/UsdPreviewSurface.outputs:surface>
+
+            def Shader "UsdPreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                color3f inputs:diffuseColor.connect = </Root/Body/Body_Material/diffuseColor.outputs:rgb>
+                float inputs:metallic = 0.2
+                normal3f inputs:normal = (0, 0, 1)
+                normal3f inputs:normal.connect = </Root/Body/Body_Material/normal.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "diffuseColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_venus_surface.jpg@
+                float2 inputs:st.connect = </Root/Body/Body_Material/diffuseColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/Body_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "normal"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_venus_normal_map.png@
+                float2 inputs:st.connect = </Root/Body/Body_Material/normal/TexCoordReader.outputs:result>
+                normal3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/Body_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+
+    def Sphere "Atmosphere" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Atmosphere/Atmosphere_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1.01, 1.01, 1.01)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "Atmosphere_Material"
+        {
+            token cullMode = "unspecified" (
+                allowedTokens = ["unspecified", "none", "front", "back"]
+            )
+            token inputs:frame:stPrimvarName = "st" (
+                customData = {
+                    dictionary realitykit = {
+                        bool hide = 1
+                    }
+                }
+            )
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Atmosphere/Atmosphere_Material/UsdPreviewSurface.outputs:surface>
+
+            def Shader "UsdPreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.813567, 0.83037364, 0.8447376) (
+                    colorSpace = "srgb_displayp3"
+                )
+                color3f inputs:emissiveColor = (0.23534481, 0.10784477, 0.03634842) (
+                    colorSpace = "srgb_texture"
+                )
+                float inputs:metallic = 0.1
+                float inputs:occlusion = 1
+                float inputs:occlusion.connect = </Root/Atmosphere/Atmosphere_Material/occlusion.outputs:r>
+                float inputs:opacity = 0.7
+                float inputs:opacity.connect = </Root/Atmosphere/Atmosphere_Material/opacity.outputs:r>
+                float inputs:roughness = 0.8
+                token outputs:surface
+            }
+
+            def Shader "opacity"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Atmosphere/Atmosphere_Material/opacity/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Atmosphere/Atmosphere_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "occlusion"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Atmosphere/Atmosphere_Material/occlusion/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Atmosphere/Atmosphere_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "diffuseColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Atmosphere/Atmosphere_Material/diffuseColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Atmosphere/Atmosphere_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+
+    def Sphere "Blackout" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Root/Blackout/Blackout_Material> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (40, 40)
+        int ui:nodegraph:node:stackingOrder = 2
+        quatf xformOp:orient = (0.99999994, 0, 0, 0)
+        float3 xformOp:scale = (1.03, 1.03, 1.03)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "Blackout_Material"
+        {
+            token cullMode = "unspecified" (
+                allowedTokens = ["unspecified", "none", "front", "back"]
+            )
+            token inputs:frame:stPrimvarName = "st" (
+                customData = {
+                    dictionary realitykit = {
+                        bool hide = 1
+                    }
+                }
+            )
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Blackout/Blackout_Material/UsdPreviewSurface.outputs:surface>
+            float2 ui:nodegraph:node:pos = (20, 20)
+            int ui:nodegraph:node:stackingOrder = 1
+
+            def Shader "UsdPreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0) (
+                    colorSpace = "srgb_texture"
+                )
+                color3f inputs:emissiveColor = (0.23534481, 0.10784477, 0.03634842) (
+                    colorSpace = "srgb_texture"
+                )
+                float inputs:metallic = 0.1
+                float inputs:occlusion = 1
+                float inputs:opacity = 0.5
+                float inputs:roughness = 0.8
+                token outputs:surface
+            }
+
+            def Shader "opacity"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Blackout/Blackout_Material/opacity/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Blackout/Blackout_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "occlusion"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Blackout/Blackout_Material/occlusion/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Blackout/Blackout_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "diffuseColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @Venus_atmosphere_opacity_2.png@
+                float2 inputs:st.connect = </Root/Blackout/Blackout_Material/diffuseColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Blackout/Blackout_Material.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+

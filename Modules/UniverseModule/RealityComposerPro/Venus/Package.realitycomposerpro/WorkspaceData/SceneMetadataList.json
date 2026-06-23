@@ -1,0 +1,24 @@
+{
+  "46F12C8E-5807-44FA-B35C-5C1B63DD4CED" : {
+    "objectMetadataList" : [
+      [
+        "46F12C8E-5807-44FA-B35C-5C1B63DD4CED",
+        "Root",
+        "Atmosphere"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "46F12C8E-5807-44FA-B35C-5C1B63DD4CED",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
+  }
+}
