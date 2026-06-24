@@ -10,5 +10,26 @@
         "isLocked" : false
       }
     ]
+  },
+  "F108AD28-2F98-48C5-B3EA-C875A319A0B5" : {
+    "objectMetadataList" : [
+      [
+        "F108AD28-2F98-48C5-B3EA-C875A319A0B5",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "F108AD28-2F98-48C5-B3EA-C875A319A0B5",
+        "Root",
+        "Body"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
   }
 }

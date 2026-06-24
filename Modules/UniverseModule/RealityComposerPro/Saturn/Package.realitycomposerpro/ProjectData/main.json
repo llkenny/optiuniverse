@@ -1,9 +1,11 @@
 {
   "pathsToIds" : {
-    "\/Saturn\/Sources\/Saturn\/Saturn.rkassets\/Scene.usda" : "AC03EE14-1E40-4844-8EED-0634A1E4272E"
+    "\/Saturn\/Sources\/Saturn\/Saturn.rkassets\/Scene.usda" : "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+    "Saturn\/Sources\/Saturn\/Saturn.rkassets\/Scene.usda" : "6E0F3522-F07C-4C16-9595-ABCDAB88AB80"
   },
   "projectID" : 8443318833077292634,
   "uuidToIntID" : {
+    "6E0F3522-F07C-4C16-9595-ABCDAB88AB80" : 6710733831757120057,
     "AC03EE14-1E40-4844-8EED-0634A1E4272E" : 6111611494057482582
   }
 }

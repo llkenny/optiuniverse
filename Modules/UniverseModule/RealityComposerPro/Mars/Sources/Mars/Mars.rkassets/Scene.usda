@@ -10,132 +10,118 @@
 
 def Xform "Root"
 {
-    def Sphere "Sphere" (
+    def Sphere "Body" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
-        rel material:binding = </Root/Material> (
+        rel material:binding = </Root/Body/DefaultMaterial> (
             bindMaterialAs = "weakerThanDescendants"
         )
         double radius = 0.1
 
         def Material "DefaultMaterial"
         {
-            prepend token outputs:surface.connect = </Root/Sphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+            token inputs:frame:stPrimvarName = "st" (
+                customData = {
+                    dictionary realitykit = {
+                        bool hide = 1
+                    }
+                }
+            )
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/UsdPreviewSurface.outputs:surface>
 
-            def Shader "DefaultSurfaceShader"
+            def Shader "UsdPreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 1, 1)
-                float inputs:roughness = 0.75
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                color3f inputs:diffuseColor.connect = </Root/Body/DefaultMaterial/diffuseColor.outputs:rgb>
+                color3f inputs:emissiveColor.connect = </Root/Body/DefaultMaterial/emissiveColor.outputs:rgb>
+                float inputs:metallic = 0.05
+                normal3f inputs:normal = (0, 0, 1)
+                normal3f inputs:normal.connect = </Root/Body/DefaultMaterial/normal.outputs:rgb>
+                float inputs:occlusion = 1
+                float inputs:occlusion.connect = </Root/Body/DefaultMaterial/occlusion.outputs:r>
+                float inputs:roughness = 1
+                float inputs:roughness.connect = </Root/Body/DefaultMaterial/roughness.outputs:r>
                 token outputs:surface
             }
-        }
-    }
 
-    def Material "Material"
-    {
-        token inputs:frame:stPrimvarName = "st" (
-            customData = {
-                dictionary realitykit = {
-                    bool hide = 1
+            def Shader "diffuseColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_mars_light.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
                 }
             }
-        )
-        token outputs:mtlx:surface
-        token outputs:realitykit:vertex
-        prepend token outputs:surface.connect = </Root/Material/UsdPreviewSurface.outputs:surface>
 
-        def Shader "UsdPreviewSurface"
-        {
-            uniform token info:id = "UsdPreviewSurface"
-            color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
-            color3f inputs:diffuseColor.connect = </Root/Material/diffuseColor.outputs:rgb>
-            color3f inputs:emissiveColor = (0, 0, 0)
-            color3f inputs:emissiveColor.connect = </Root/Material/emissiveColor.outputs:rgb>
-            float inputs:metallic = 0.1
-            normal3f inputs:normal = (0, 0, 1)
-            normal3f inputs:normal.connect = </Root/Material/normal.outputs:rgb>
-            float inputs:occlusion = 1
-            float inputs:occlusion.connect = </Root/Material/occlusion.outputs:r>
-            float inputs:roughness = 0.5
-            float inputs:roughness.connect = </Root/Material/roughness.outputs:r>
-            token outputs:surface
-        }
-
-        def Shader "diffuseColor"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_mars.jpg@
-            float2 inputs:st.connect = </Root/Material/diffuseColor/TexCoordReader.outputs:result>
-            color3f outputs:rgb
-
-            def Shader "TexCoordReader"
+            def Shader "normal"
             {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_normal.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/normal/TexCoordReader.outputs:result>
+                normal3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
             }
-        }
 
-        def Shader "normal"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @mars_normal_map_strong.png@
-            float2 inputs:st.connect = </Root/Material/normal/TexCoordReader.outputs:result>
-            normal3f outputs:rgb
-
-            def Shader "TexCoordReader"
+            def Shader "occlusion"
             {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @mars_ao_map_aligned.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
             }
-        }
 
-        def Shader "occlusion"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @mars_ao_map_aligned.png@
-            float2 inputs:st.connect = </Root/Material/occlusion/TexCoordReader.outputs:result>
-            float outputs:r
-
-            def Shader "TexCoordReader"
+            def Shader "roughness"
             {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @mars_roughness_map_aligned.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/roughness/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
             }
-        }
 
-        def Shader "roughness"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @mars_roughness_map_aligned.png@
-            float2 inputs:st.connect = </Root/Material/roughness/TexCoordReader.outputs:result>
-            float outputs:r
-
-            def Shader "TexCoordReader"
+            def Shader "emissiveColor"
             {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
-            }
-        }
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @mars_ice_emissive_map_aligned.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/emissiveColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
 
-        def Shader "emissiveColor"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @mars_ice_emissive_map_aligned.png@
-            float2 inputs:st.connect = </Root/Material/emissiveColor/TexCoordReader.outputs:result>
-            color3f outputs:rgb
-
-            def Shader "TexCoordReader"
-            {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
             }
         }
     }

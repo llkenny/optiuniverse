@@ -122,17 +122,5 @@ def Xform "Root"
             }
         }
     }
-
-    def Xform "PointLight"
-    {
-        float3 xformOp:translate = (0, 0, -0.20680192)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-        def RealityKitComponent "PointLight"
-        {
-            token info:id = "RealityKit.PointLight"
-            float intensity = 5000
-        }
-    }
 }
 

@@ -1,0 +1,11 @@
+{
+  "pathsToIds" : {
+    "\/Uranus\/Sources\/Uranus\/Uranus.rkassets\/Scene.usda" : "3D6B3191-9E75-4897-93F8-B6532FBCD59D",
+    "Uranus\/Sources\/Uranus\/Uranus.rkassets\/Scene.usda" : "DAE57FC7-1DF4-4E3C-BEB5-9DB553D1E398"
+  },
+  "projectID" : -8170522648936588340,
+  "uuidToIntID" : {
+    "3D6B3191-9E75-4897-93F8-B6532FBCD59D" : 4521843077504849604,
+    "DAE57FC7-1DF4-4E3C-BEB5-9DB553D1E398" : -7348761090709033598
+  }
+}

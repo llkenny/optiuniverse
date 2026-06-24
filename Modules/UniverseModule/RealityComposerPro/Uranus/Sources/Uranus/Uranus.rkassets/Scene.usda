@@ -10,24 +10,29 @@
 
 def Xform "Root"
 {
-    reorder nameChildren = ["Saturn_Rings_2", "Body", "Saturn", "PointLight", "Atmosphere", "Material"]
     def Sphere "Body" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
         customData = {
-            float3 rotationEulerHint = (0, 0, 0)
+            float3 rotationEulerHint = (1.5707964, 0, 0)
         }
     )
     {
         reorder nameChildren = ["Rings", "DefaultMaterial", "Atmosphere"]
         rel material:binding = </Root/Body/DefaultMaterial>
         double radius = 0.1
-        quatf xformOp:orient = (1, 0, 0, 0)
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (0.70710677, 0.70710677, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
+        float3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
         def Material "DefaultMaterial"
         {
+            token cullMode = "unspecified" (
+                allowedTokens = ["unspecified", "none", "front", "back"]
+            )
             token inputs:frame:stPrimvarName = "st" (
                 customData = {
                     dictionary realitykit = {
@@ -49,8 +54,8 @@ def Xform "Root"
                 color3f inputs:emissiveColor = (0, 0, 0) (
                     colorSpace = "srgb_texture"
                 )
+                float inputs:metallic = 0
                 normal3f inputs:normal = (0, 0, 1)
-                normal3f inputs:normal.connect = </Root/Body/DefaultMaterial/normal.outputs:rgb>
                 float inputs:occlusion = 1
                 float inputs:occlusion.connect = </Root/Body/DefaultMaterial/occlusion.outputs:r>
                 float inputs:opacity = 1
@@ -61,7 +66,7 @@ def Xform "Root"
             def Shader "diffuseColor"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @4k_Saturn_dark.png@
+                asset inputs:file = @2k_uranus.jpg@
                 float2 inputs:st.connect = </Root/Body/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
                 color3f outputs:rgb
 
@@ -91,7 +96,7 @@ def Xform "Root"
             def Shader "occlusion"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @4k_Saturn_dark.png@
+                asset inputs:file = @2k_uranus.jpg@
                 float2 inputs:st.connect = </Root/Body/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
                 float outputs:r
 
@@ -136,7 +141,7 @@ def Xform "Root"
             def Shader "normal"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @8k_saturn_normal.png@
+                asset inputs:file = @2k_normal.png@
                 float2 inputs:st.connect = </Root/Body/DefaultMaterial/normal/TexCoordReader.outputs:result>
                 normal3f outputs:rgb
 
@@ -153,17 +158,17 @@ def Xform "Root"
             active = true
             prepend apiSchemas = ["MaterialBindingAPI"]
             customData = {
-                float3 rotationEulerHint = (-1.1693707, 0, 0)
+                float3 rotationEulerHint = (1.5707964, 0, 0)
             }
-            references = @Saturn_Rings_3.usdz@
+            references = @Rings.usdz@
         )
         {
             reorder nameChildren = ["Circle", "DefaultMaterial"]
             rel material:binding = </Root/Body/Rings/DefaultMaterial> (
                 bindMaterialAs = "weakerThanDescendants"
             )
-            quatf xformOp:orient = (0.8338858, -0.551937, 0, 0)
-            float3 xformOp:scale = (0.65, 0.65, 0.65)
+            quatf xformOp:orient = (0.70710677, 0.70710677, 0, 0)
+            float3 xformOp:scale = (0.55, 0.55, 0.55)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "Circle" (
@@ -173,6 +178,8 @@ def Xform "Root"
                 rel material:binding = </Root/Body/Rings/DefaultMaterial> (
                     bindMaterialAs = "weakerThanDescendants"
                 )
+                float3 xformOp:scale = (1, 1, 1)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
                 over "Circle_002" (
                     prepend apiSchemas = ["MaterialBindingAPI"]
@@ -201,15 +208,15 @@ def Xform "Root"
                 token outputs:mtlx:surface
                 token outputs:realitykit:vertex
                 token outputs:surface.connect = </Root/Body/Rings/DefaultMaterial/UsdPreviewSurface.outputs:surface>
+                float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 110.5)
 
                 def Shader "UsdPreviewSurface"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (0.6820886, 0.6315304, 0.51749986) (
-                        colorSpace = "srgb_displayp3"
+                    color3f inputs:diffuseColor = (0.37367675, 0.67943615, 0.7572461) (
+                        colorSpace = "srgb_texture"
                     )
-                    color3f inputs:diffuseColor.connect = </Root/Body/Rings/DefaultMaterial/diffuseColor.outputs:rgb>
-                    color3f inputs:emissiveColor = (0.4853984, 0.43089688, 0.34402025) (
+                    color3f inputs:emissiveColor = (0.20111552, 0.26004216, 0.27009764) (
                         colorSpace = "srgb_texture"
                     )
                     float inputs:occlusion = 1
@@ -222,7 +229,7 @@ def Xform "Root"
                 def Shader "opacity"
                 {
                     uniform token info:id = "UsdUVTexture"
-                    asset inputs:file = @8k_saturn_ring_alpha_2.png@
+                    asset inputs:file = @rings_alpha_6.png@
                     float2 inputs:st.connect = </Root/Body/Rings/DefaultMaterial/opacity/TexCoordReader.outputs:result>
                     float outputs:r
 
@@ -286,12 +293,15 @@ def Xform "Root"
             prepend apiSchemas = ["MaterialBindingAPI"]
         )
         {
-            rel material:binding = </Root/Body/Atmosphere/DefaultMaterial>
+            reorder nameChildren = ["Material", "DefaultMaterial"]
+            rel material:binding = </Root/Body/Atmosphere/Material> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
             double radius = 0.1
             float2 ui:nodegraph:node:pos = (20, 20)
             int ui:nodegraph:node:stackingOrder = 1
             quatf xformOp:orient = (0.99999994, 0, 0, 0)
-            float3 xformOp:scale = (1.0099999, 1.0099999, 1.0099999)
+            float3 xformOp:scale = (1.003, 1.003, 1.003)
             float3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
@@ -307,20 +317,21 @@ def Xform "Root"
                 token outputs:mtlx:surface
                 token outputs:realitykit:vertex
                 token outputs:surface.connect = </Root/Body/Atmosphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+                float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 110.5)
 
                 def Shader "DefaultSurfaceShader"
                 {
                     uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor = (1, 1, 1)
-                    color3f inputs:diffuseColor.connect = </Root/Body/Atmosphere/DefaultMaterial/diffuseColor.outputs:rgb>
+                    color3f inputs:diffuseColor = (0.40463668, 0.5400981, 0.566486) (
+                        colorSpace = "srgb_texture"
+                    )
                     color3f inputs:emissiveColor = (0, 0, 0) (
                         colorSpace = "srgb_texture"
                     )
                     float inputs:metallic = 0
                     normal3f inputs:normal = (0, 0, 1)
                     float inputs:occlusion = 1
-                    float inputs:occlusion.connect = </Root/Body/Atmosphere/DefaultMaterial/occlusion.outputs:r>
-                    float inputs:opacity = 0.3
+                    float inputs:opacity = 0.4
                     float inputs:roughness = 1
                     token outputs:surface
                 }
@@ -413,6 +424,26 @@ def Xform "Root"
                         token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
                         float2 outputs:result
                     }
+                }
+            }
+
+            def Material "Material"
+            {
+                token outputs:mtlx:surface.connect = </Root/Body/Atmosphere/Material/PreviewSurface.outputs:out>
+                token outputs:realitykit:vertex
+                float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (335.5, 100.5)
+
+                def Shader "PreviewSurface"
+                {
+                    uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                    color3f inputs:diffuseColor = (0.4158182, 0.5175142, 0.54093176) (
+                        colorSpace = "srgb_displayp3"
+                    )
+                    float inputs:opacity = 0.4
+                    float inputs:roughness = 1
+                    token outputs:out
+                    float2 ui:nodegraph:node:pos = (93.5, 100.5)
+                    int ui:nodegraph:node:stackingOrder = 7
                 }
             }
         }

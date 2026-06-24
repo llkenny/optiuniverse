@@ -1,9 +1,11 @@
 {
   "pathsToIds" : {
-    "\/Moon\/Sources\/Moon\/Moon.rkassets\/Scene.usda" : "76E0FE82-64BE-4741-BAEE-20B9459B1627"
+    "\/Moon\/Sources\/Moon\/Moon.rkassets\/Scene.usda" : "76E0FE82-64BE-4741-BAEE-20B9459B1627",
+    "Moon\/Sources\/Moon\/Moon.rkassets\/Scene.usda" : "768DCAC4-3619-4A19-8364-DBFE123FF971"
   },
   "projectID" : -7401456287514985126,
   "uuidToIntID" : {
+    "768DCAC4-3619-4A19-8364-DBFE123FF971" : -6350386551422262948,
     "76E0FE82-64BE-4741-BAEE-20B9459B1627" : -2366543355885474718
   }
 }
