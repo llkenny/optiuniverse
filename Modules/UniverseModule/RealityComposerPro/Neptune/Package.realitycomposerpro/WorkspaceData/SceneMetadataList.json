@@ -3,8 +3,7 @@
     "objectMetadataList" : [
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
-        "Root",
-        "Material_1"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -13,20 +12,30 @@
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
         "Root",
-        "high_resolution_solar_system",
-        "SkinnedMeshes",
-        "Sketchfab_model",
-        "fcaa437d56b842d8a00c66191a3270f7_fbx",
-        "Object_2",
-        "RootNode",
-        "Armature",
-        "Object_5",
-        "Mestre_00",
-        "skin0"
+        "Body"
       ],
       {
-        "disallowsFraming" : true,
-        "isExpanded" : false,
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
+        "Root",
+        "Body",
+        "Atmosphere"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
+        "Root",
+        "Body",
+        "DefaultMaterial"
+      ],
+      {
+        "isExpanded" : true,
         "isLocked" : false
       },
       [
@@ -61,18 +70,20 @@
       [
         "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
         "Root",
-        "Material_2"
+        "high_resolution_solar_system",
+        "SkinnedMeshes",
+        "Sketchfab_model",
+        "fcaa437d56b842d8a00c66191a3270f7_fbx",
+        "Object_2",
+        "RootNode",
+        "Armature",
+        "Object_5",
+        "Mestre_00",
+        "skin0"
       ],
       {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "3A6E2511-56B2-4EC4-B2A0-CF4B48944EF8",
-        "Root"
-      ],
-      {
-        "isExpanded" : true,
+        "disallowsFraming" : true,
+        "isExpanded" : false,
         "isLocked" : false
       }
     ]
