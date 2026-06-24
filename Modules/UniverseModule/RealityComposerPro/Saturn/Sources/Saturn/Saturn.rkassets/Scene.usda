@@ -52,6 +52,7 @@ def Xform "Root"
                 normal3f inputs:normal = (0, 0, 1)
                 normal3f inputs:normal.connect = </Root/Body/DefaultMaterial/normal.outputs:rgb>
                 float inputs:occlusion = 1
+                float inputs:occlusion.connect = </Root/Body/DefaultMaterial/occlusion.outputs:r>
                 float inputs:opacity = 1
                 float inputs:roughness = 1
                 token outputs:surface
@@ -60,7 +61,7 @@ def Xform "Root"
             def Shader "diffuseColor"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @8k_saturn.jpg@
+                asset inputs:file = @4k_Saturn_dark.png@
                 float2 inputs:st.connect = </Root/Body/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
                 color3f outputs:rgb
 
@@ -90,7 +91,7 @@ def Xform "Root"
             def Shader "occlusion"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @4k_Saturn.png@
+                asset inputs:file = @4k_Saturn_dark.png@
                 float2 inputs:st.connect = </Root/Body/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
                 float outputs:r
 
@@ -208,8 +209,8 @@ def Xform "Root"
                         colorSpace = "srgb_displayp3"
                     )
                     color3f inputs:diffuseColor.connect = </Root/Body/Rings/DefaultMaterial/diffuseColor.outputs:rgb>
-                    color3f inputs:emissiveColor = (0.7138746, 0.6470047, 0.52535063) (
-                        colorSpace = "srgb_displayp3"
+                    color3f inputs:emissiveColor = (0.4853984, 0.43089688, 0.34402025) (
+                        colorSpace = "srgb_texture"
                     )
                     float inputs:occlusion = 1
                     float inputs:opacity = 1

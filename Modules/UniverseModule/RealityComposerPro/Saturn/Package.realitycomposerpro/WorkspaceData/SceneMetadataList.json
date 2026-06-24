@@ -22,16 +22,6 @@
         "6E0F3522-F07C-4C16-9595-ABCDAB88AB80",
         "Root",
         "Body",
-        "Rings"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "6E0F3522-F07C-4C16-9595-ABCDAB88AB80",
-        "Root",
-        "Body",
         "Atmosphere"
       ],
       {
@@ -45,17 +35,8 @@
       [
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
-        "Body",
-        "Rings",
-        "Circle"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root"
+        "Saturn_Rings",
+        "Circle_001"
       ],
       {
         "isExpanded" : true,
@@ -66,44 +47,7 @@
         "Root",
         "Saturn",
         "geom",
-        "realistic",
-        "geo",
-        "lod0",
-        "saturn_body_realistic_lod0"
-      ],
-      {
-        "disallowsFraming" : false,
-        "isExpanded" : false,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Body",
-        "Rings"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Saturn",
-        "geom"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Saturn",
-        "geom",
-        "realistic",
-        "materials",
-        "usdpreviewsurface2sg1"
+        "realistic"
       ],
       {
         "isExpanded" : true,
@@ -131,8 +75,42 @@
       [
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
-        "Saturn_Rings",
-        "Circle_001"
+        "Saturn",
+        "geom",
+        "realistic",
+        "geo",
+        "lod0",
+        "saturn_body_realistic_lod0"
+      ],
+      {
+        "disallowsFraming" : false,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
+        "Body",
+        "Rings",
+        "Circle"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
+        "Body",
+        "Rings"
       ],
       {
         "isExpanded" : true,
@@ -143,7 +121,19 @@
         "Root",
         "Saturn",
         "geom",
-        "realistic"
+        "realistic",
+        "materials",
+        "usdpreviewsurface2sg1"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
+        "Saturn",
+        "geom"
       ],
       {
         "isExpanded" : true,
