@@ -1,6 +1,7 @@
 # Render System Pipeline
-Status: Accepted [Draft, In Review, Accepted, Rejected, Superseded]
+Status: Superseded [Draft, In Review, Accepted, Rejected, Superseded]
 Date Created: 19/04/26
+Superseded By: [Complete Metal-to-RealityKit Migration](../Features/Complete%20RealityKit%20Migration.md)
 
 ## Overview
 `PlanetsRenderer` currently needs mesh data from `ModelLoader`, which is an actor. With default actor isolation set to `MainActor`, the synchronous render path hits this warning:

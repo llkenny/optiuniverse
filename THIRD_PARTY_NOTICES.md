@@ -2,12 +2,12 @@
 
 This file tracks attribution and release-review source material for assets bundled with OptiUniverse. Keep it in sync with the in-app Legal & Credits screen before each release.
 
-## 3D Solar System Model
+## Solar System Textures
 
-- Asset: `Modules/UniverseModule/Sources/UniverseModule/Assets/Models/high_resolution_solar_system.usdz`
-- Title: "High Resolution Solar system"
-- Creator: pebegou
-- Source: https://www.fab.com/listings/f8e5507c-76d2-44f5-97b2-d22c264dc4ab
+- Asset: `Modules/UniverseModule/Sources/UniverseModule/Assets/Models/*.usdz`
+- Title: "Solar Textures"
+- Creator: solarsystemscope
+- Source: https://www.solarsystemscope.com/textures/
 - License: Creative Commons Attribution 4.0 International
 - License URL: https://creativecommons.org/licenses/by/4.0/
 - App use: Converted and optimized for use in OptiUniverse.

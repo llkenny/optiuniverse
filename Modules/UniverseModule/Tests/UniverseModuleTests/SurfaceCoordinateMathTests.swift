@@ -132,11 +132,9 @@ private func testSurfacePlanet(baseModelMatrix: float4x4 = matrix_identity_float
     let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
     return PreparedPlanetRenderPacket(
         planetName: "Test",
-        meshes: [],
         baseModelMatrix: baseModelMatrix,
         worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
-        primaryMeshRadius: surfaceRadius,
         framingRadius: surfaceRadius,
         surfaceRadius: surfaceRadius,
         worldPosition: SIMD3<Float>(worldPosition4.x,

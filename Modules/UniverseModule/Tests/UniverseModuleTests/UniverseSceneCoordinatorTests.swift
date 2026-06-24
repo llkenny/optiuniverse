@@ -132,11 +132,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let sunPosition = SIMD3<Float>(100, 20, -30)
     let packet = PreparedPlanetRenderPacket(
         planetName: "Sun",
-        meshes: [],
         baseModelMatrix: matrix_identity_float4x4,
         worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
-        primaryMeshRadius: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: sunPosition
@@ -210,7 +208,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     try await resources.prepare()
     try await resources.prepare()
 
-    #expect(loadCount == 3)
+    #expect(loadCount == 11)
     #expect(resources.sceneCoordinator.bodyEntities["Sun"]?.visualRoot.children.count == 1)
     #expect(resources.sceneCoordinator.bodyEntities["Neptune"]?.visualRoot.children.count == 1)
     #expect(descendantCount(
@@ -358,11 +356,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let rotation = float4x4.makeRotationZ(.pi / 3)
     let packet = PreparedPlanetRenderPacket(
         planetName: "Sun",
-        meshes: [],
         baseModelMatrix: rotation,
         worldModelMatrix: rotation,
         normalizedScale: 1,
-        primaryMeshRadius: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: .zero
@@ -417,11 +413,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let bodyPosition = SIMD3<Float>(10, 20, 30)
     let packet = PreparedPlanetRenderPacket(
         planetName: "Earth",
-        meshes: [],
         baseModelMatrix: matrix_identity_float4x4,
         worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
-        primaryMeshRadius: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: bodyPosition

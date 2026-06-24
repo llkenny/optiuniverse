@@ -166,11 +166,9 @@ private extension PreparedRenderSnapshot {
                                    worldPosition: SIMD3<Float>,
                                    framingRadius: Float) -> PreparedPlanetRenderPacket {
         PreparedPlanetRenderPacket(planetName: name,
-                                   meshes: [],
                                    baseModelMatrix: matrix_identity_float4x4,
                                    worldModelMatrix: matrix_identity_float4x4,
                                    normalizedScale: 1,
-                                   primaryMeshRadius: framingRadius,
                                    framingRadius: framingRadius,
                                    surfaceRadius: framingRadius,
                                    worldPosition: worldPosition)

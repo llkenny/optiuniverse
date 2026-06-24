@@ -9,9 +9,7 @@ import simd
 
 @MainActor
 final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
-    private let modelLoader: ModelLoader
     private let planets: [Planet]
-    private var meshCache: [String: [LoadedMesh]] = [:]
     private var inFlightTask: Task<Void, Never>?
     private var pendingSimulationTime: Float?
     private var nextFrameID: UInt64 = 0
@@ -19,8 +17,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
 
     private(set) var latestSnapshot: PreparedRenderSnapshot?
 
-    init(modelLoader: ModelLoader, planets: [Planet]) {
-        self.modelLoader = modelLoader
+    init(planets: [Planet]) {
         self.planets = planets
     }
 
@@ -66,24 +63,16 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
         for planet in planets {
             guard !Task.isCancelled else { return }
 
-            let meshes = await loadedMeshes(for: planet)
             let parentWorldPosition = planet.parentName
                 .flatMap { worldPositionsByName[$0] }
             let baseModelMatrix = planet.modelMatrix(at: simulationTime,
                                                      parentWorldPosition: parentWorldPosition)
-            let primaryMeshRadius = meshes.first?.boundsRadius ?? 1
-            let normalizedScale = primaryMeshRadius > 0
-                ? planet.radius / primaryMeshRadius
-                : planet.radius
+            let normalizedScale = planet.radius
             let worldModelMatrix = baseModelMatrix
                 * float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
-            let maxMeshRadius = meshes.map(\.boundsRadius).max() ?? primaryMeshRadius
-            let legacyFramingRadius = maxMeshRadius > 0
-                ? maxMeshRadius * normalizedScale
-                : planet.radius
-            let presentationMetrics = presentationMetricsByBodyName[planet.name]
-            let framingRadius = presentationMetrics?.framingRadius ?? legacyFramingRadius
-            let surfaceRadius = presentationMetrics?.surfaceRadius ?? legacyFramingRadius
+            guard let presentationMetrics = presentationMetricsByBodyName[planet.name] else {
+                continue
+            }
             let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
             let worldPosition = SIMD3<Float>(worldPosition4.x,
                                              worldPosition4.y,
@@ -93,13 +82,11 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
             packets.append(
                 PreparedPlanetRenderPacket(
                     planetName: planet.name,
-                    meshes: meshes,
                     baseModelMatrix: baseModelMatrix,
                     worldModelMatrix: worldModelMatrix,
                     normalizedScale: normalizedScale,
-                    primaryMeshRadius: primaryMeshRadius,
-                    framingRadius: framingRadius,
-                    surfaceRadius: surfaceRadius,
+                    framingRadius: presentationMetrics.framingRadius,
+                    surfaceRadius: presentationMetrics.surfaceRadius,
                     worldPosition: worldPosition
                 )
             )
@@ -109,17 +96,6 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
         latestSnapshot = PreparedRenderSnapshot(frameID: frameID,
                                                 simulationTime: simulationTime,
                                                 planets: packets)
-    }
-
-    private func loadedMeshes(for planet: Planet) async -> [LoadedMesh] {
-        if let cachedMeshes = meshCache[planet.name] {
-            return cachedMeshes
-        }
-
-        let loadedMeshes = await modelLoader.getMeshes(for: planet.name,
-                                                       primaryMeshName: planet.meshName)
-        meshCache[planet.name] = loadedMeshes
-        return loadedMeshes
     }
 }
 

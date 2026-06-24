@@ -14,7 +14,6 @@ import Observation
 @MainActor
 @Observable
 public final class UniverseModuleResources {
-    let meshProvider: MeshProvider
     let planets: [Planet]
     let renderPreparationPipeline: RenderPreparationPipeline
     let cameraState: CameraState
@@ -36,8 +35,6 @@ public final class UniverseModuleResources {
         transferOrbitController: transferOrbitController,
         assetRepository: assetRepository
     )
-
-    @ObservationIgnored private(set) weak var renderer: MetalRenderer?
     @ObservationIgnored private(set) var viewportSize: CGSize = .zero
     @ObservationIgnored private var preparationTask: Task<Void, any Error>?
     @ObservationIgnored private var isPrepared = false
@@ -53,10 +50,8 @@ public final class UniverseModuleResources {
             try CelestialAssetManifestLoader.load()
         }
     ) {
-        meshProvider = MeshProvider()
         planets = SolarSystemLoader.loadPlanets(from: "planets")
-        renderPreparationPipeline = RenderPreparationPipeline(modelLoader: meshProvider.modelLoader,
-                                                              planets: planets)
+        renderPreparationPipeline = RenderPreparationPipeline(planets: planets)
         cameraState = CameraState()
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
                                             snapshotSource: renderPreparationPipeline)
@@ -115,7 +110,6 @@ public final class UniverseModuleResources {
 
         let task = Task { @MainActor [self] in
             let manifest = try celestialAssetManifestLoader()
-            await meshProvider.prepare()
             try await sceneCoordinator.prepareCelestialBodies(from: manifest)
             renderPreparationPipeline.setPresentationMetrics(
                 Dictionary(uniqueKeysWithValues: manifest.assets.map { descriptor in
@@ -136,27 +130,6 @@ public final class UniverseModuleResources {
             preparationTask = nil
             throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
         }
-    }
-
-    func makeRenderer(for metalView: MTKView) -> MetalRenderer? {
-        guard let commandQueue = meshProvider.device.makeCommandQueue() else {
-            return nil
-        }
-
-        guard let renderer = MetalRenderer(metalView: metalView,
-                                           device: meshProvider.device,
-                                           commandQueue: commandQueue,
-                                           sceneOwnershipControls: .migration(
-                                            realityKitBodyNames: sceneCoordinator.realityKitOwnedBodyNames,
-                                            stageFourContentPrepared: sceneCoordinator
-                                                .isStageFourContentPrepared
-                                           ),
-                                           planets: planets,
-                                           sceneCoordinator: sceneCoordinator) else {
-            return nil
-        }
-        self.renderer = renderer
-        return renderer
     }
 
     func setViewportSize(_ size: CGSize) {

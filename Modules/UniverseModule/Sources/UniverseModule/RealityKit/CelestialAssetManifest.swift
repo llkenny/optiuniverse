@@ -83,6 +83,7 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
     let canonicalRootName: String
     let additionalRootNames: [String]
     let parentIdentity: String?
+    // TODO: What is for? Remove?
     let usesSnapshotScale: Bool
     let modelToUniverseScale: Float
     let referenceRadius: Float

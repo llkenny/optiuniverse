@@ -122,11 +122,9 @@ func surfaceCameraTestPacket(name: String,
     let baseModelMatrix = float4x4.makeTranslation(worldPosition)
     return PreparedPlanetRenderPacket(
         planetName: name,
-        meshes: [],
         baseModelMatrix: baseModelMatrix,
         worldModelMatrix: baseModelMatrix,
         normalizedScale: 1,
-        primaryMeshRadius: radius,
         framingRadius: radius,
         surfaceRadius: radius,
         worldPosition: worldPosition
