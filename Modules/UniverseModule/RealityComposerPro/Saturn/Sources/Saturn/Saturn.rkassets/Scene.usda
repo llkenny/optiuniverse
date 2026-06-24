@@ -1,0 +1,420 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (494.100.6)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    reorder nameChildren = ["Saturn_Rings_2", "Body", "Saturn", "PointLight", "Atmosphere", "Material"]
+    def Sphere "Body" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        customData = {
+            float3 rotationEulerHint = (0, 0, 0)
+        }
+    )
+    {
+        reorder nameChildren = ["Rings", "DefaultMaterial", "Atmosphere"]
+        rel material:binding = </Root/Body/DefaultMaterial>
+        double radius = 0.1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Material "DefaultMaterial"
+        {
+            token inputs:frame:stPrimvarName = "st" (
+                customData = {
+                    dictionary realitykit = {
+                        bool hide = 1
+                    }
+                }
+            )
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+            def Shader "DefaultSurfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.43131506, 0.35701287, 0.3098399) (
+                    colorSpace = "srgb_displayp3"
+                )
+                color3f inputs:diffuseColor.connect = </Root/Body/DefaultMaterial/diffuseColor.outputs:rgb>
+                color3f inputs:emissiveColor = (0, 0, 0) (
+                    colorSpace = "srgb_texture"
+                )
+                normal3f inputs:normal = (0, 0, 1)
+                normal3f inputs:normal.connect = </Root/Body/DefaultMaterial/normal.outputs:rgb>
+                float inputs:occlusion = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+
+            def Shader "diffuseColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_saturn.jpg@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "emissiveColor"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_saturn.jpg@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/emissiveColor/TexCoordReader.outputs:result>
+                color3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "occlusion"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @4k_Saturn.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "roughness"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @4k_Saturn.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/roughness/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "opacity"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @4k_Saturn.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/opacity/TexCoordReader.outputs:result>
+                float outputs:r
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+
+            def Shader "normal"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @8k_saturn_normal.png@
+                float2 inputs:st.connect = </Root/Body/DefaultMaterial/normal/TexCoordReader.outputs:result>
+                normal3f outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </Root/Body/DefaultMaterial.inputs:frame:stPrimvarName>
+                    float2 outputs:result
+                }
+            }
+        }
+
+        def "Rings" (
+            active = true
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                float3 rotationEulerHint = (-1.1693707, 0, 0)
+            }
+            references = @Saturn_Rings_3.usdz@
+        )
+        {
+            reorder nameChildren = ["Circle", "DefaultMaterial"]
+            rel material:binding = </Root/Body/Rings/DefaultMaterial> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            quatf xformOp:orient = (0.8338858, -0.551937, 0, 0)
+            float3 xformOp:scale = (0.65, 0.65, 0.65)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "Circle" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Root/Body/Rings/DefaultMaterial> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+
+                over "Circle_002" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </Root/Body/Rings/DefaultMaterial> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    float3 xformOp:scale = (1, 1, 1)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+
+            def Material "DefaultMaterial"
+            {
+                token cullMode = "none" (
+                    allowedTokens = ["unspecified", "none", "front", "back"]
+                )
+                token inputs:frame:stPrimvarName = "st" (
+                    customData = {
+                        dictionary realitykit = {
+                            bool hide = 1
+                        }
+                    }
+                )
+                token outputs:mtlx:surface
+                token outputs:realitykit:vertex
+                token outputs:surface.connect = </Root/Body/Rings/DefaultMaterial/UsdPreviewSurface.outputs:surface>
+
+                def Shader "UsdPreviewSurface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.6820886, 0.6315304, 0.51749986) (
+                        colorSpace = "srgb_displayp3"
+                    )
+                    color3f inputs:diffuseColor.connect = </Root/Body/Rings/DefaultMaterial/diffuseColor.outputs:rgb>
+                    color3f inputs:emissiveColor = (0.7138746, 0.6470047, 0.52535063) (
+                        colorSpace = "srgb_displayp3"
+                    )
+                    float inputs:occlusion = 1
+                    float inputs:opacity = 1
+                    float inputs:opacity.connect = </Root/Body/Rings/DefaultMaterial/opacity.outputs:r>
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "opacity"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @8k_saturn_ring_alpha_2.png@
+                    float2 inputs:st.connect = </Root/Body/Rings/DefaultMaterial/opacity/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Rings/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "diffuseColor"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @8k_saturn_ring_alpha.png@
+                    float2 inputs:st.connect = </Root/Body/Rings/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                    color3f outputs:rgb
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Rings/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "occlusion"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @8k_saturn.jpg@
+                    float2 inputs:st.connect = </Root/Body/Rings/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Rings/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "roughness"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @8k_saturn_ring_alpha.png@
+                    float2 inputs:st.connect = </Root/Body/Rings/DefaultMaterial/roughness/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Rings/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+            }
+        }
+
+        def Sphere "Atmosphere" (
+            active = true
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Root/Body/Atmosphere/DefaultMaterial>
+            double radius = 0.1
+            float2 ui:nodegraph:node:pos = (20, 20)
+            int ui:nodegraph:node:stackingOrder = 1
+            quatf xformOp:orient = (0.99999994, 0, 0, 0)
+            float3 xformOp:scale = (1.0099999, 1.0099999, 1.0099999)
+            float3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def Material "DefaultMaterial"
+            {
+                token inputs:frame:stPrimvarName = "st" (
+                    customData = {
+                        dictionary realitykit = {
+                            bool hide = 1
+                        }
+                    }
+                )
+                token outputs:mtlx:surface
+                token outputs:realitykit:vertex
+                token outputs:surface.connect = </Root/Body/Atmosphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+
+                def Shader "DefaultSurfaceShader"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (1, 1, 1)
+                    color3f inputs:diffuseColor.connect = </Root/Body/Atmosphere/DefaultMaterial/diffuseColor.outputs:rgb>
+                    color3f inputs:emissiveColor = (0, 0, 0) (
+                        colorSpace = "srgb_texture"
+                    )
+                    float inputs:metallic = 0
+                    normal3f inputs:normal = (0, 0, 1)
+                    float inputs:occlusion = 1
+                    float inputs:occlusion.connect = </Root/Body/Atmosphere/DefaultMaterial/occlusion.outputs:r>
+                    float inputs:opacity = 0.3
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "diffuseColor"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @4k_Saturn.png@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                    color3f outputs:rgb
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "emissiveColor"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @4k_Saturn.png@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/emissiveColor/TexCoordReader.outputs:result>
+                    color3f outputs:rgb
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "occlusion"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @4k_Saturn.png@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/occlusion/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "roughness"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @4k_Saturn.png@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/roughness/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "opacity"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @4k_Saturn.png@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/opacity/TexCoordReader.outputs:result>
+                    float outputs:r
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+
+                def Shader "normal"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @8k_saturn.jpg@
+                    float2 inputs:st.connect = </Root/Body/Atmosphere/DefaultMaterial/normal/TexCoordReader.outputs:result>
+                    normal3f outputs:rgb
+
+                    def Shader "TexCoordReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Root/Body/Atmosphere/DefaultMaterial.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+                }
+            }
+        }
+    }
+}
+

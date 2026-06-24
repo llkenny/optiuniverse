@@ -38,6 +38,7 @@ let package = Package(
                 .copy("Assets/Models/Moon.usdz"),
                 .copy("Assets/Models/Mars.usdz"),
                 .copy("Assets/Models/Jupiter.usdz"),
+                .copy("Assets/Models/Saturn.usdz"),
                 .copy("Assets/Models/Neptune.usdz"),
                 .copy("Assets/Models/Pluto.usdz"),
                 .process("Assets/Models/celestial_assets.json"),
