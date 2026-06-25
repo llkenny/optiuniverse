@@ -82,6 +82,17 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerFollowCameraUsesCorrectedVerticalTrailingOffset() {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+
+    #expect(fixture.controller.navigationCameraTrailingOffset.z < 0)
+}
+
+@MainActor
 @Test func navigationControllerManualControlReleasesNavigationCameraOwner() {
     let fixture = NavigationControllerFixture()
 

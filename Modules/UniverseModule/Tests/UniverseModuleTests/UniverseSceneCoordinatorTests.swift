@@ -439,12 +439,12 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let realityKitClip = cameraComponent.transform
         * simd_inverse(expectedCameraTransform)
         * worldPoint
-    #expect(abs(legacyClip.x - realityKitClip.x) < 0.00001)
-    #expect(abs(legacyClip.y + realityKitClip.y) < 0.00001)
+    #expect(abs(legacyClip.x + realityKitClip.x) < 0.00001)
+    #expect(abs(legacyClip.y - realityKitClip.y) < 0.00001)
     #expect(abs(legacyClip.w - realityKitClip.w) < 0.00001)
 
     let centeredClip = cameraComponent.transform * SIMD4<Float>(0, 0, -1, 1)
-    #expect(centeredClip.y / centeredClip.w > 0)
+    #expect(centeredClip.y / centeredClip.w < 0)
 
     let near = initialFrame.cameraSnapshot.dependencies.projection.nearPlane
     let far = initialFrame.cameraSnapshot.dependencies.projection.farPlane
