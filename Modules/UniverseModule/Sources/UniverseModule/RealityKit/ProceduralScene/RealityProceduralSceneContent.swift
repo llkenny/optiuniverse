@@ -2,11 +2,11 @@ import CoreImage
 import RealityKit
 import UIKit
 
-// Stage 4's presenters share the same packed vertex format and atomic buffer publication helpers.
+// Procedural presenters share the same packed vertex format and atomic publication helpers.
 // swiftlint:disable file_length
 
 @MainActor
-final class RealityStageFourContent {
+final class RealityProceduralSceneContent {
     let environmentEntity: ModelEntity
     let starField: RealityStarField
     let transferEarthOrbit: RealityRibbon
@@ -17,9 +17,9 @@ final class RealityStageFourContent {
 
     private static let transferSampleCount = 256
 
-    static func prepare() async throws -> RealityStageFourContent {
+    static func prepare() async throws -> RealityProceduralSceneContent {
         let environmentEntity = try await makeEnvironmentEntity()
-        return try RealityStageFourContent(environmentEntity: environmentEntity)
+        return try RealityProceduralSceneContent(environmentEntity: environmentEntity)
     }
 
     private init(environmentEntity: ModelEntity) throws {
@@ -141,7 +141,7 @@ final class RealityStageFourContent {
     private static func makeEnvironmentEntity() async throws -> ModelEntity {
         guard let url = UniverseModuleAssets.milkyWayEnvironmentURL(),
               let inputImage = CIImage(contentsOf: url) else {
-            throw RealityStageFourPreparationError.missingEnvironment
+            throw RealityProceduralScenePreparationError.missingEnvironment
         }
         let filter = CIFilter(name: "CIColorControls")
         filter?.setValue(inputImage, forKey: kCIInputImageKey)
@@ -152,7 +152,7 @@ final class RealityStageFourContent {
                 outputImage,
                 from: outputImage.extent
               ) else {
-            throw RealityStageFourPreparationError.invalidEnvironment
+            throw RealityProceduralScenePreparationError.invalidEnvironment
         }
 
         let texture = try await TextureResource(
@@ -189,7 +189,7 @@ final class RealityStageFourContent {
     }
 }
 
-enum RealityStageFourPreparationError: Error {
+enum RealityProceduralScenePreparationError: Error {
     case missingEnvironment
     case invalidEnvironment
 }

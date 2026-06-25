@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 @testable import UniverseModule
 
@@ -21,18 +20,29 @@ import Testing
     #expect(configuration.maximumPointSize == 2.05)
 }
 
-@Test func starTwinkleConfigurationStaysSubtleAndShaderConstantsStayInSync() throws {
+@Test func starTwinkleConfigurationStaysSubtle() {
     #expect(StarTwinkle.angularSpeed == 0.42)
     #expect(abs(StarTwinkle.minimumFactor - 0.94) < 0.0001)
     #expect(StarTwinkle.maximumFactor == 1.0)
+}
 
-    let shaderURL = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .appendingPathComponent("Sources/UniverseModule/Shaders/Shaders.metal")
-    let shaderSource = try String(contentsOf: shaderURL, encoding: .utf8)
+@Test func generatedStarsCarryFiniteRealityKitAttributes() {
+    let configuration = StarFieldConfiguration(density: 0.01)
+    let stars = StarFieldGenerator.makeStars(configuration: configuration)
 
-    #expect(shaderSource.contains("0.97 + 0.03"))
-    #expect(shaderSource.contains("uniforms.time * 0.42"))
+    #expect(stars.count == configuration.starCount)
+    #expect(stars.allSatisfy { star in
+        let position = SIMD3<Float>(
+            star.positionAndSize.x,
+            star.positionAndSize.y,
+            star.positionAndSize.z
+        )
+        return position.x.isFinite &&
+            position.y.isFinite &&
+            position.z.isFinite &&
+            star.positionAndSize.w >= configuration.minimumPointSize &&
+            star.positionAndSize.w <= configuration.maximumPointSize &&
+            star.colorAndBrightness.w >= configuration.minimumBrightness &&
+            star.colorAndBrightness.w <= configuration.maximumBrightness
+    })
 }

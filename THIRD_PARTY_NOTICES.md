@@ -20,7 +20,7 @@ This file tracks attribution and release-review source material for assets bundl
 - Source: https://www.eso.org/public/images/eso0932a/
 - License: Creative Commons Attribution 4.0 International
 - License URL: https://creativecommons.org/licenses/by/4.0/
-- App use: Equirectangular deep-space background for the live Metal renderer.
+- App use: Equirectangular deep-space background for the live RealityKit scene.
 
 ## NASA, ESA, STScI, and JPL Imagery
 

@@ -1,17 +1,17 @@
 # OptiUniverse
 
-OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a technology-neutral `UniverseModule`. The current renderer uses MetalKit and custom Metal shaders to provide a real-time scene for exploring celestial objects, following planets, and rendering high-fidelity space visuals on device.
+OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a technology-neutral `UniverseModule`. The universe scene is rendered with RealityKit through `RealityView`, with custom post-processing used for the final filmic look.
 
 ## Highlights
 
-- Real-time 3D solar-system rendering with MetalKit and Metal Shading Language.
+- Real-time 3D solar-system rendering with RealityKit and `RealityView`.
 - SwiftUI interface with a featured-object carousel, destination cards, category filtering, and shared app state through Observation.
-- USDZ-based model loading through Model I/O and MetalKit.
+- Per-body USDZ model loading through RealityKit.
 - JSON-driven object metadata for destination lists, featured objects, and planet simulation parameters.
 - Orbital camera controls with pan, pinch, rotation, planet-follow transitions, and dynamic near-plane fitting.
-- HDR render target, MSAA, ACES-style tone mapping, bloom, vignette, filmic color grading, and optional dreamy post-processing.
-- Physically inspired material shading with texture, normal, roughness, metallic, ambient occlusion, emissive, opacity, and transparent-pass handling.
-- Render preparation pipeline that keeps async model lookup outside Metal command encoding.
+- RealityKit materials, transparent atmosphere/ring layers, deterministic stars, Milky Way environment, transfer routes, and navigation markers.
+- ACES-style tone mapping, bloom, vignette, and filmic color grading through RealityKit custom post-processing.
+- Technology-neutral scene snapshots that feed camera, route, surface, and RealityKit entity updates.
 - Supporting RFC/ADR documentation for rendering architecture decisions.
 
 ## Video and screenshots
@@ -28,10 +28,9 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 - Swift
 - SwiftUI
 - Observation
-- MetalKit
-- Metal Shading Language
-- Model I/O
+- RealityKit
 - USDZ assets
+- Metal Shading Language for the RealityKit post-processing effect only
 - Swift Testing
 
 ## Current App Structure
@@ -46,23 +45,20 @@ OptiUniverse/
 Modules/
   BaseModule/           Shared app models and services
   CommonTools/          Shared utilities
-  UniverseModule/       Universe facade, simulation, camera, and current Metal renderer
+  UniverseModule/       Universe facade, simulation, camera, RealityKit scene, and PostFX
 RFC/                   Rendering architecture notes and ADRs
 vfx_scripts/           Experimental volume-noise export utilities
 ```
 
 ## Rendering Architecture
 
-`UniverseModule` exposes a technology-neutral app boundary while its current Metal path is organized around a clear split between preparation and command encoding:
+`UniverseModule` exposes a technology-neutral app boundary while RealityKit owns the final rendered frame:
 
 1. `UniverseModuleFactory` creates the app-owned `UniverseModuleResources` facade.
-2. `UniverseModuleResources` owns long-lived Metal, preparation, camera, navigation, and snapshot services.
-3. `RenderPreparationPipeline` resolves async mesh access and builds immutable per-frame render snapshots behind `SnapshotProvider`.
-4. `MetalRenderer` owns the `MTKViewDelegate` loop, HDR/MSAA targets, post-processing pass, and command encoding.
-5. `PlanetsRenderer` consumes prepared snapshots synchronously while encoding draw commands.
-6. Metal shaders handle material lighting, texture sampling, transparency, tone mapping, bloom, and final color grading.
-
-This avoids crossing `await` boundaries while a `MTLRenderCommandEncoder` is active, which keeps the render loop predictable and compatible with Metal API validation.
+2. `UniverseModuleResources` owns preparation, camera, navigation, transfer-orbit, snapshot, and scene-coordinator services.
+3. `UniverseSceneSnapshotPipeline` builds immutable per-frame scene snapshots behind `SnapshotProvider`.
+4. `UniverseSceneCoordinator` mutates one RealityKit entity hierarchy from complete camera, simulation, route, and presentation state.
+5. `RealityView` owns the visible frame and installs the custom filmic PostFX effect.
 
 ## Content Model
 
@@ -74,8 +70,8 @@ Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/M
 
 OptiUniverse demonstrates work across the parts of iOS development that are often hard to show in small sample apps:
 
-- GPU rendering and shader authoring, not just UIKit or SwiftUI screens.
-- Swift concurrency tradeoffs in a real render loop.
+- 3D scene rendering and custom post-processing, not just UIKit or SwiftUI screens.
+- Swift concurrency tradeoffs in a real-time scene pipeline.
 - Modular UI composition with reusable SwiftUI components.
 - Asset-heavy app organization with JSON configuration and catalogs.
 - Documentation of technical decisions through RFCs and ADRs.
@@ -84,7 +80,7 @@ OptiUniverse demonstrates work across the parts of iOS development that are ofte
 
 - Xcode with iOS Simulator support
 - iOS 26.0 or newer deployment target
-- A Metal-capable simulator or device
+- An iOS 26-capable simulator or device
 
 ## Release 1 URLs
 
@@ -121,7 +117,7 @@ xcodebuild -project OptiUniverse.xcodeproj \
 
 ## Roadmap
 
-- Expand object selection in the Metal scene.
+- Expand object selection in the universe scene.
 - Add richer orbital effects such as satellites, belts, asteroids, and flyby-style transitions.
 - Continue improving planet animation, material detail, and post-processing presets.
-- Replace placeholder tests with focused coverage for data loading, view models, and render-preparation logic.
+- Continue expanding focused coverage for data loading, view models, scene snapshots, and RealityKit scene behavior.

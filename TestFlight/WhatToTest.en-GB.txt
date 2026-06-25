@@ -1,2 +1,2 @@
-- Add cinematic shader
-- Add Milky-Way environment
+- Complete the RealityKit universe renderer migration
+- Verify cinematic PostFX and Milky Way environment

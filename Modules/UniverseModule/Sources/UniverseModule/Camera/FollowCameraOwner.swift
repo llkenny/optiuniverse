@@ -10,7 +10,7 @@ import CoreGraphics
 /// Owns lifecycle state for the current planet-follow camera mode.
 ///
 /// `FollowCameraOwner` is the stateful companion to `FollowCameraMode`. It retains the current
-/// followed planet, retries follow requests that arrive before a prepared snapshot is available,
+/// followed planet, retries follow requests that arrive before a scene snapshot is available,
 /// and advances follow transitions over render frames.
 ///
 /// Ownership rules:
@@ -92,7 +92,7 @@ final class FollowCameraOwner {
     ///
     /// Suppression is used while navigation or transfer preview owns the camera. In that state, the
     /// owner keeps follow intent but avoids committing camera transactions.
-    func update(snapshot: PreparedRenderSnapshot?,
+    func update(snapshot: UniverseSceneSnapshot?,
                 delta: Float,
                 viewportSize: CGSize,
                 isSuppressed: Bool) {
@@ -128,13 +128,13 @@ final class FollowCameraOwner {
                                   bodyFollowTransitionActive: cameraTransition != nil)
     }
 
-    func minimumAllowedCameraDistance(snapshot: PreparedRenderSnapshot?) -> Float {
+    func minimumAllowedCameraDistance(snapshot: UniverseSceneSnapshot?) -> Float {
         followMode.minimumDistance(followingPlanetName: followingPlanetName,
                                    snapshot: snapshot,
                                    baseMinimumDistance: cameraState.minDistance)
     }
 
-    func projectionParameters(snapshot: PreparedRenderSnapshot?,
+    func projectionParameters(snapshot: UniverseSceneSnapshot?,
                               baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         followMode.projectionParameters(followingPlanetName: followingPlanetName,
                                         snapshot: snapshot,
@@ -142,7 +142,7 @@ final class FollowCameraOwner {
                                         baseProjection: baseProjection)
     }
 
-    func snapshotDependency(snapshot: PreparedRenderSnapshot?) -> CameraFollowSnapshotDependency? {
+    func snapshotDependency(snapshot: UniverseSceneSnapshot?) -> CameraFollowSnapshotDependency? {
         guard let planetName = pendingFollowPlanetName ?? followingPlanetName else {
             return nil
         }
@@ -156,7 +156,7 @@ final class FollowCameraOwner {
     }
 
     private func startFollowAnimation(named name: String,
-                                      snapshot: PreparedRenderSnapshot,
+                                      snapshot: UniverseSceneSnapshot,
                                       viewportSize: CGSize) -> Bool {
         guard followMode.makeTransitionFrame(named: name,
                                              snapshot: snapshot,
@@ -173,7 +173,7 @@ final class FollowCameraOwner {
         return true
     }
 
-    private func updateCameraTransition(snapshot: PreparedRenderSnapshot,
+    private func updateCameraTransition(snapshot: UniverseSceneSnapshot,
                                         delta: Float,
                                         viewportSize: CGSize) {
         guard var transition = cameraTransition else { return }
@@ -194,7 +194,7 @@ final class FollowCameraOwner {
     }
 
     private func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,
-                                                    snapshot: PreparedRenderSnapshot,
+                                                    snapshot: UniverseSceneSnapshot,
                                                     viewportSize: CGSize)
     -> CameraTransition.Frame? {
         switch destination {

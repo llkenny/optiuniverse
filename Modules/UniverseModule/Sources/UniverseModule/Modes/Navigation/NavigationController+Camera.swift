@@ -8,7 +8,7 @@
 import simd
 
 extension NavigationController {
-    func updateNavigationCamera(snapshot: PreparedRenderSnapshot,
+    func updateNavigationCamera(snapshot: UniverseSceneSnapshot,
                                 delta: Float) {
         if navigationRouteCoordinator.state == .completed {
             navigationCameraFollowEnabled = true
@@ -32,7 +32,7 @@ extension NavigationController {
     }
 
     func startNavigationOverviewAnimation(route: NavigationRoute,
-                                          snapshot: PreparedRenderSnapshot) {
+                                          snapshot: UniverseSceneSnapshot) {
         guard let framing = earthCenteredNavigationFraming(route: route,
                                                            snapshot: snapshot) else {
             return
@@ -48,7 +48,7 @@ extension NavigationController {
     }
 
     func captureNavigationCameraTrailingOffset(route: NavigationRoute,
-                                               snapshot: PreparedRenderSnapshot) {
+                                               snapshot: UniverseSceneSnapshot) {
         guard let currentPoint = route.point(at: navigationRouteCoordinator.renderProgress),
               let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
             navigationCameraTrailingOffset = SIMD3<Float>(0, 0, 0.18)
@@ -67,7 +67,7 @@ extension NavigationController {
         navigationCameraTrailingOffset = destinationDirection * trailingDistance + lift
     }
 
-    func updateNavigationFollowCamera(snapshot: PreparedRenderSnapshot) {
+    func updateNavigationFollowCamera(snapshot: UniverseSceneSnapshot) {
         guard let route = navigationRouteCoordinator.activeRouteForRendering,
               let currentPoint = navigationRouteCoordinator.currentRoutePoint,
               let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
@@ -81,7 +81,7 @@ extension NavigationController {
                                                  trailingOffset: navigationCameraTrailingOffset)
     }
 
-    func updateNavigationArrivalCamera(snapshot: PreparedRenderSnapshot,
+    func updateNavigationArrivalCamera(snapshot: UniverseSceneSnapshot,
                                        delta: Float) {
         guard let route = navigationRouteCoordinator.activeRouteForRendering,
               let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
@@ -123,7 +123,7 @@ extension NavigationController {
         navigationArrivalProgress = 1
     }
 
-    func updateCameraTransition(snapshot: PreparedRenderSnapshot?,
+    func updateCameraTransition(snapshot: UniverseSceneSnapshot?,
                                 delta: Float) {
         guard var transition = cameraTransition else { return }
         guard let frame = transition.advance(delta: delta, resolveDestination: { [weak self] destination in
@@ -141,7 +141,7 @@ extension NavigationController {
     }
 
     func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,
-                                            snapshot: PreparedRenderSnapshot?)
+                                            snapshot: UniverseSceneSnapshot?)
     -> CameraTransition.Frame? {
         switch destination {
         case .planet(let name):
@@ -155,7 +155,7 @@ extension NavigationController {
     }
 
     func resolvedPlanetTransitionFrame(named name: String,
-                                       snapshot: PreparedRenderSnapshot)
+                                       snapshot: UniverseSceneSnapshot)
     -> CameraTransition.Frame? {
         guard let position = snapshot.worldPosition(ofPlanetNamed: name),
               let framingRadius = snapshot.framingRadius(ofPlanetNamed: name) else {

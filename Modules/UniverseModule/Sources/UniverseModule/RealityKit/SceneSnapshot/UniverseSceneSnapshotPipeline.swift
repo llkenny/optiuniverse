@@ -1,6 +1,6 @@
 //
-//  RenderPreparationPipeline.swift
-//  OptiUniverse
+//  UniverseSceneSnapshotPipeline.swift
+//  UniverseModule
 //
 //  Created by Codex on 25.04.2026.
 //
@@ -8,14 +8,14 @@
 import simd
 
 @MainActor
-final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
+final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private let planets: [Planet]
     private var inFlightTask: Task<Void, Never>?
     private var pendingSimulationTime: Float?
     private var nextFrameID: UInt64 = 0
     private var presentationMetricsByBodyName: [String: CelestialBodyPresentationMetrics] = [:]
 
-    private(set) var latestSnapshot: PreparedRenderSnapshot?
+    private(set) var latestSnapshot: UniverseSceneSnapshot?
 
     init(planets: [Planet]) {
         self.planets = planets
@@ -56,7 +56,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
     }
 
     private func prepareSnapshot(frameID: UInt64, simulationTime: Float) async {
-        var packets: [PreparedPlanetRenderPacket] = []
+        var packets: [CelestialBodySnapshot] = []
         packets.reserveCapacity(planets.count)
         var worldPositionsByName: [String: SIMD3<Float>] = [:]
 
@@ -68,8 +68,6 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
             let baseModelMatrix = planet.modelMatrix(at: simulationTime,
                                                      parentWorldPosition: parentWorldPosition)
             let normalizedScale = planet.radius
-            let worldModelMatrix = baseModelMatrix
-                * float4x4.makeScale(SIMD3<Float>(repeating: normalizedScale))
             guard let presentationMetrics = presentationMetricsByBodyName[planet.name] else {
                 continue
             }
@@ -80,10 +78,9 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
             worldPositionsByName[planet.name] = worldPosition
 
             packets.append(
-                PreparedPlanetRenderPacket(
+                CelestialBodySnapshot(
                     planetName: planet.name,
                     baseModelMatrix: baseModelMatrix,
-                    worldModelMatrix: worldModelMatrix,
                     normalizedScale: normalizedScale,
                     framingRadius: presentationMetrics.framingRadius,
                     surfaceRadius: presentationMetrics.surfaceRadius,
@@ -93,7 +90,7 @@ final class RenderPreparationPipeline: PreparedRenderSnapshotProviding {
         }
 
         guard !Task.isCancelled else { return }
-        latestSnapshot = PreparedRenderSnapshot(frameID: frameID,
+        latestSnapshot = UniverseSceneSnapshot(frameID: frameID,
                                                 simulationTime: simulationTime,
                                                 planets: packets)
     }

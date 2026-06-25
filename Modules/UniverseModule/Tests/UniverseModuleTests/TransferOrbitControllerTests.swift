@@ -119,7 +119,7 @@ private struct TransferOrbitControllerFixture {
     let cameraCoordinator: CameraCoordinator
     let controller: TransferOrbitController
 
-    init(latestSnapshot: PreparedRenderSnapshot? = .transferOrbitControllerTestSnapshot) {
+    init(latestSnapshot: UniverseSceneSnapshot? = .transferOrbitControllerTestSnapshot) {
         let viewportSize = self.viewportSize
         source = FakeTransferSnapshotSource(latestSnapshot: latestSnapshot)
         cameraState = CameraState()
@@ -135,19 +135,19 @@ private struct TransferOrbitControllerFixture {
 }
 
 @MainActor
-private final class FakeTransferSnapshotSource: PreparedRenderSnapshotProviding {
-    var latestSnapshot: PreparedRenderSnapshot?
+private final class FakeTransferSnapshotSource: UniverseSceneSnapshotProviding {
+    var latestSnapshot: UniverseSceneSnapshot?
 
-    init(latestSnapshot: PreparedRenderSnapshot?) {
+    init(latestSnapshot: UniverseSceneSnapshot?) {
         self.latestSnapshot = latestSnapshot
     }
 
     func requestPreparation(simulationTime: Float) {}
 }
 
-private extension PreparedRenderSnapshot {
-    static var transferOrbitControllerTestSnapshot: PreparedRenderSnapshot {
-        PreparedRenderSnapshot(frameID: 1,
+private extension UniverseSceneSnapshot {
+    static var transferOrbitControllerTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
                                simulationTime: 0,
                                planets: [
                                 transferTestPacket(name: "Sun",
@@ -164,10 +164,9 @@ private extension PreparedRenderSnapshot {
 
     static func transferTestPacket(name: String,
                                    worldPosition: SIMD3<Float>,
-                                   framingRadius: Float) -> PreparedPlanetRenderPacket {
-        PreparedPlanetRenderPacket(planetName: name,
+                                   framingRadius: Float) -> CelestialBodySnapshot {
+        CelestialBodySnapshot(planetName: name,
                                    baseModelMatrix: matrix_identity_float4x4,
-                                   worldModelMatrix: matrix_identity_float4x4,
                                    normalizedScale: 1,
                                    framingRadius: framingRadius,
                                    surfaceRadius: framingRadius,

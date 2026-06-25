@@ -1,5 +1,5 @@
 import CoreGraphics
-import Metal
+import Foundation
 import RealityKit
 import Testing
 @testable import UniverseModule
@@ -9,7 +9,6 @@ import Testing
 
 @MainActor
 @Test func sceneCoordinatorBuildsCanonicalHierarchy() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
 
@@ -123,23 +122,21 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sunLightFollowsRebasedSunPosition() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 390, height: 844))
     coordinator.update(deltaTime: 0.1)
     let initialFrame = try #require(coordinator.latestFrameState)
     let sunPosition = SIMD3<Float>(100, 20, -30)
-    let packet = PreparedPlanetRenderPacket(
+    let packet = CelestialBodySnapshot(
         planetName: "Sun",
         baseModelMatrix: matrix_identity_float4x4,
-        worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: sunPosition
     )
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [packet])
     let frame = UniverseFrameState(simulationTime: 0,
@@ -156,14 +153,13 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorAttachesOnlyManifestBodiesWithCorrections() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let manifest = try CelestialAssetManifestLoader.load()
 
     try await resources.prepare()
 
     #expect(resources.sceneCoordinator.realityKitOwnedBodyNames == Set(resources.planets.map(\.name)))
-    #expect(resources.sceneCoordinator.isStageFourContentPrepared)
+    #expect(resources.sceneCoordinator.isProceduralSceneContentPrepared)
     #expect(resources.sceneCoordinator.environmentRoot.children.count == 1)
     #expect(resources.sceneCoordinator.starFieldRoot.children.count == 1)
     #expect(resources.sceneCoordinator.transferOrbitRoot.children.count == 3)
@@ -197,7 +193,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func celestialBodyPreparationIsIdempotent() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     var loadCount = 0
     let repository = RealityAssetRepository { _ in
         loadCount += 1
@@ -219,7 +214,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func failedCelestialBodyPreparationCommitsNoRealityKitOwnership() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     enum TestError: Error { case loadFailed }
     let repository = RealityAssetRepository { url in
         if url.lastPathComponent == "Neptune.usdz" {
@@ -240,7 +234,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func celestialBodyPreparationCanRetryAfterFailure() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     enum TestError: Error { case loadFailed }
     var neptuneAttempts = 0
     let repository = RealityAssetRepository { url in
@@ -265,7 +258,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func cancellingCelestialBodyPreparationCommitsNoBodies() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     var loadStarted = false
     let repository = RealityAssetRepository { _ in
         loadStarted = true
@@ -295,16 +287,15 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func migratedBodiesUseManifestPresentationRadii() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let manifest = try CelestialAssetManifestLoader.load()
     try await resources.prepare()
 
-    resources.renderPreparationPipeline.requestPreparation(simulationTime: 0)
-    while resources.renderPreparationPipeline.latestSnapshot == nil {
+    resources.sceneSnapshotPipeline.requestPreparation(simulationTime: 0)
+    while resources.sceneSnapshotPipeline.latestSnapshot == nil {
         await Task.yield()
     }
-    let snapshot = try #require(resources.renderPreparationPipeline.latestSnapshot)
+    let snapshot = try #require(resources.sceneSnapshotPipeline.latestSnapshot)
 
     for descriptor in manifest.assets {
         let packet = try #require(snapshot.planet(named: descriptor.displayName))
@@ -315,12 +306,11 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func everyMigratedBodyHasFiniteVisibleRealityKitGeometry() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let manifest = try CelestialAssetManifestLoader.load()
     try await resources.prepare()
-    resources.renderPreparationPipeline.requestPreparation(simulationTime: 0.1)
-    while resources.renderPreparationPipeline.latestSnapshot == nil {
+    resources.sceneSnapshotPipeline.requestPreparation(simulationTime: 0.1)
+    while resources.sceneSnapshotPipeline.latestSnapshot == nil {
         await Task.yield()
     }
     resources.sceneCoordinator.setViewportSize(CGSize(width: 390, height: 844))
@@ -347,23 +337,21 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func migratedBodyRetainsSnapshotRotationAndVisualCorrection() async throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     try await resources.prepare()
     resources.sceneCoordinator.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneCoordinator.update(deltaTime: 0.1)
     let initialFrame = try #require(resources.sceneCoordinator.latestFrameState)
     let rotation = float4x4.makeRotationZ(.pi / 3)
-    let packet = PreparedPlanetRenderPacket(
+    let packet = CelestialBodySnapshot(
         planetName: "Sun",
         baseModelMatrix: rotation,
-        worldModelMatrix: rotation,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: .zero
     )
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [packet])
     let frame = UniverseFrameState(simulationTime: 0,
@@ -381,7 +369,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorAdvancesOneSharedFrameAtATime() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 390, height: 844))
@@ -401,7 +388,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 @MainActor
 // swiftlint:disable:next function_body_length
 @Test func sceneCoordinatorAppliesSharedOriginAndProjectiveCamera() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
@@ -411,16 +397,15 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.update(deltaTime: 0.5)
     let initialFrame = try #require(coordinator.latestFrameState)
     let bodyPosition = SIMD3<Float>(10, 20, 30)
-    let packet = PreparedPlanetRenderPacket(
+    let packet = CelestialBodySnapshot(
         planetName: "Earth",
         baseModelMatrix: matrix_identity_float4x4,
-        worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
         worldPosition: bodyPosition
     )
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [packet])
     let frame = UniverseFrameState(simulationTime: 0,
@@ -470,8 +455,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
-@Test func sceneCoordinatorKeepsLastCompletePreparedSnapshot() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
+@Test func sceneCoordinatorKeepsLastCompleteSceneSnapshot() throws {
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
@@ -488,7 +472,6 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func inactiveSceneCoordinatorDoesNotAdvanceHiddenPresentation() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))

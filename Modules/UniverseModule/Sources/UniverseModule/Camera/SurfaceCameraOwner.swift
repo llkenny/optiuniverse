@@ -99,7 +99,7 @@ final class SurfaceCameraOwner {
         zoomTransition = nil
     }
 
-    func update(snapshot: PreparedRenderSnapshot?,
+    func update(snapshot: UniverseSceneSnapshot?,
                 delta: Float,
                 isSuppressed: Bool,
                 bodyFollowTransitionActive: Bool) {
@@ -143,7 +143,7 @@ final class SurfaceCameraOwner {
 
     private func startSurfaceTransition(bodyName: String,
                                         coordinate: SurfaceCoordinate,
-                                        snapshot: PreparedRenderSnapshot) {
+                                        snapshot: UniverseSceneSnapshot) {
         guard surfaceMode.makeSurfaceFrame(bodyName: bodyName,
                                            coordinate: coordinate,
                                            snapshot: snapshot,
@@ -157,7 +157,7 @@ final class SurfaceCameraOwner {
         phase = .surfaceTransition
     }
 
-    private func updateCameraTransition(snapshot: PreparedRenderSnapshot,
+    private func updateCameraTransition(snapshot: UniverseSceneSnapshot,
                                         delta: Float) {
         guard var transition = cameraTransition else { return }
         guard let bodyName,
@@ -199,7 +199,7 @@ final class SurfaceCameraOwner {
 
     private func updateZoomTransition(bodyName: String,
                                       coordinate: SurfaceCoordinate,
-                                      snapshot: PreparedRenderSnapshot,
+                                      snapshot: UniverseSceneSnapshot,
                                       delta: Float) {
         guard var transition = zoomTransition,
               let destinationFrame = surfaceMode.makeSurfaceFrame(bodyName: bodyName,
@@ -227,7 +227,7 @@ final class SurfaceCameraOwner {
 
     private func commitSteadySurfaceFrame(bodyName: String,
                                           coordinate: SurfaceCoordinate,
-                                          snapshot: PreparedRenderSnapshot) {
+                                          snapshot: UniverseSceneSnapshot) {
         guard let frame = surfaceMode.makeSurfaceFrame(bodyName: bodyName,
                                                        coordinate: coordinate,
                                                        snapshot: snapshot,

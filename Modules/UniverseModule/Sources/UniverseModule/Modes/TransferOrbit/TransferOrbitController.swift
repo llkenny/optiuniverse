@@ -85,7 +85,7 @@ final class TransferOrbitController {
         cameraTransition = nil
     }
 
-    func update(snapshot: PreparedRenderSnapshot?,
+    func update(snapshot: UniverseSceneSnapshot?,
                 delta: Float) {
         guard let snapshot else { return }
 
@@ -101,7 +101,7 @@ final class TransferOrbitController {
                                delta: delta)
     }
 
-    func projectionParameters(snapshot: PreparedRenderSnapshot?,
+    func projectionParameters(snapshot: UniverseSceneSnapshot?,
                               baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         guard let snapshot,
               let activeTransferOrbit,
@@ -118,7 +118,7 @@ final class TransferOrbitController {
     }
 
     private func applyTransferOrbit(destinationName: String,
-                                    snapshot: PreparedRenderSnapshot) -> Bool {
+                                    snapshot: UniverseSceneSnapshot) -> Bool {
         guard let transferOrbit = makeTransferOrbit(destinationName: destinationName,
                                                     snapshot: snapshot) else {
             clearTransferOrbit()
@@ -133,7 +133,7 @@ final class TransferOrbitController {
         return true
     }
 
-    private func updateActiveTransferOrbit(snapshot: PreparedRenderSnapshot) {
+    private func updateActiveTransferOrbit(snapshot: UniverseSceneSnapshot) {
         guard let activeDestinationName else { return }
 
         guard let transferOrbit = makeTransferOrbit(destinationName: activeDestinationName,
@@ -146,7 +146,7 @@ final class TransferOrbitController {
     }
 
     private func makeTransferOrbit(destinationName: String,
-                                   snapshot: PreparedRenderSnapshot) -> HohmannTransferOrbit? {
+                                   snapshot: UniverseSceneSnapshot) -> HohmannTransferOrbit? {
         guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
             return nil
@@ -159,7 +159,7 @@ final class TransferOrbitController {
     }
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
-                                                snapshot: PreparedRenderSnapshot) {
+                                                snapshot: UniverseSceneSnapshot) {
         guard let framing = earthCenteredTransferFraming(transferOrbit: transferOrbit,
                                                          snapshot: snapshot) else {
             return
@@ -173,7 +173,7 @@ final class TransferOrbitController {
         )
     }
 
-    private func updateCameraTransition(snapshot: PreparedRenderSnapshot,
+    private func updateCameraTransition(snapshot: UniverseSceneSnapshot,
                                         delta: Float) {
         guard var transition = cameraTransition else { return }
         guard let frame = transition.advance(delta: delta, resolveDestination: { [weak self] destination in
@@ -189,7 +189,7 @@ final class TransferOrbitController {
     }
 
     private func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,
-                                                    snapshot: PreparedRenderSnapshot)
+                                                    snapshot: UniverseSceneSnapshot)
     -> CameraTransition.Frame? {
         switch destination {
         case .planet(let name):
@@ -206,7 +206,7 @@ final class TransferOrbitController {
     }
 
     private func earthCenteredTransferFraming(transferOrbit: HohmannTransferOrbit,
-                                              snapshot: PreparedRenderSnapshot)
+                                              snapshot: UniverseSceneSnapshot)
     -> (center: SIMD3<Float>, radius: Float)? {
         guard let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
             return nil
@@ -239,7 +239,7 @@ final class TransferOrbitController {
     }
 
     private func transferProjectionRadius(transferOrbit: HohmannTransferOrbit,
-                                          snapshot: PreparedRenderSnapshot) -> Float? {
+                                          snapshot: UniverseSceneSnapshot) -> Float? {
         var radius: Float = 0
 
         func include(center: SIMD3<Float>, radius includedRadius: Float) {

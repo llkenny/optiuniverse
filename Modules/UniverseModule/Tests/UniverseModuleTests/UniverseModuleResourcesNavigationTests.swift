@@ -1,12 +1,10 @@
 import BaseModule
 import Foundation
-import Metal
 import Testing
 @testable import UniverseModule
 
 @MainActor
 @Test func universeModuleResourcesNavigationFacadeIsObservableResource() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let navigation = resources.navigation
 
@@ -20,7 +18,6 @@ import Testing
 
 @MainActor
 @Test func universeModuleResourcesTransferOrbitFacadeDelegatesWithoutRenderer() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let transferOrbit = resources.transferOrbit
 
@@ -34,7 +31,6 @@ import Testing
 
 @MainActor
 @Test func universeModuleResourcesWiresFollowHandoffsWithoutRenderer() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
 
     #expect(resources.navigationController.followPlanet != nil)
@@ -43,7 +39,6 @@ import Testing
 
 @MainActor
 @Test func universeModuleResourcesResolvesSurfaceFollowTargetByDestinationID() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let destinations = try decodeDestinationObjects("""
     [
@@ -79,7 +74,6 @@ import Testing
 
 @MainActor
 @Test func universeModuleResourcesResolvesNonSurfaceFollowTargetByDestinationID() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let destinations = try decodeDestinationObjects("""
     [

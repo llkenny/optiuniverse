@@ -125,7 +125,7 @@ final class NavigationController {
         self.routePlayback = routePlayback
     }
 
-    func update(snapshot: PreparedRenderSnapshot?,
+    func update(snapshot: UniverseSceneSnapshot?,
                 delta: Float) {
         if let snapshot,
            let name = pendingNavigationDestinationName,

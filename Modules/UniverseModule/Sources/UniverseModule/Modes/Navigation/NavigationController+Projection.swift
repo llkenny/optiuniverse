@@ -8,7 +8,7 @@
 import simd
 
 extension NavigationController {
-    func projectionParameters(snapshot: PreparedRenderSnapshot?,
+    func projectionParameters(snapshot: UniverseSceneSnapshot?,
                               baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         guard let route = navigationRouteCoordinator.activeRouteForRendering else {
             return baseProjection
@@ -34,7 +34,7 @@ extension NavigationController {
                                                  farPlane: farPlane)
     }
 
-    func routeProjectionRadius(snapshot: PreparedRenderSnapshot) -> Float? {
+    func routeProjectionRadius(snapshot: UniverseSceneSnapshot) -> Float? {
         guard let route = navigationRouteCoordinator.activeRouteForRendering else {
             return nil
         }
@@ -71,7 +71,7 @@ extension NavigationController {
     }
 
     func earthCenteredNavigationFraming(route: NavigationRoute,
-                                        snapshot: PreparedRenderSnapshot)
+                                        snapshot: UniverseSceneSnapshot)
     -> (center: SIMD3<Float>, radius: Float)? {
         guard let earthPosition = snapshot.worldPosition(ofPlanetNamed: route.originName) else {
             return nil

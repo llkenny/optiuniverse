@@ -1,18 +1,17 @@
 //
-//  PreparedRenderSnapshot.swift
+//  UniverseSceneSnapshot.swift
 //  UniverseModule
 //
 //  Created by max on 24.05.2026.
 //
 
-// Immutable per-frame render input prepared before Metal command encoding.
-// Keeps async mesh/model lookup out of the synchronous render pass.
-struct PreparedRenderSnapshot: Sendable {
+// Immutable per-frame scene state consumed by camera, route, and RealityKit updates.
+struct UniverseSceneSnapshot: Sendable {
     let frameID: UInt64
     let simulationTime: Float
-    let planets: [PreparedPlanetRenderPacket]
+    let planets: [CelestialBodySnapshot]
 
-    nonisolated func planet(named name: String) -> PreparedPlanetRenderPacket? {
+    nonisolated func planet(named name: String) -> CelestialBodySnapshot? {
         planets.first { $0.planetName == name }
     }
 

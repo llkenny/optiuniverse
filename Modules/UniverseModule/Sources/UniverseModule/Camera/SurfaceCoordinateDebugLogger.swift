@@ -19,8 +19,8 @@ final class SurfaceCoordinateDebugLogger {
     }
 
     func logIfNeeded(bodyName: String,
-                     planet: PreparedPlanetRenderPacket,
-                     snapshot: PreparedRenderSnapshot,
+                     planet: CelestialBodySnapshot,
+                     snapshot: UniverseSceneSnapshot,
                      cameraSnapshot: SnapshotProvider.CameraSnapshot) {
         guard shouldLog(bodyName: bodyName,
                         frameID: snapshot.frameID) else {

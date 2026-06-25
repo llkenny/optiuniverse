@@ -1,6 +1,6 @@
-OptiUniverse turns your iPhone or iPad into an interactive 3D solar-system viewer. Move through a real-time Metal scene, discover celestial destinations, and inspect each world with concise science facts and orbital details.
+OptiUniverse turns your iPhone or iPad into an interactive 3D solar-system viewer. Move through a real-time RealityKit scene, discover celestial destinations, and inspect each world with concise science facts and orbital details.
 
-Built for people who love astronomy, space visuals, and hands-on exploration, OptiUniverse combines a polished SwiftUI discovery experience with high-fidelity Metal rendering on device.
+Built for people who love astronomy, space visuals, and hands-on exploration, OptiUniverse combines a polished SwiftUI discovery experience with high-fidelity RealityKit rendering on device.
 
 Features:
 - Explore a real-time 3D solar-system scene
@@ -8,6 +8,6 @@ Features:
 - Pan, pinch, rotate, and follow celestial objects with smooth camera controls
 - View destination cards with age, diameter, mass, temperature, and short descriptions
 - Visualize transfer-orbit routes for supported destinations
-- Enjoy detailed textured materials, HDR rendering, bloom, tone mapping, and star-field visuals
+- Enjoy detailed textured materials, bloom, tone mapping, and star-field visuals
 
 OptiUniverse is designed for quick discovery and immersive inspection, whether you want to browse the solar system casually or appreciate the rendering details of each celestial object.

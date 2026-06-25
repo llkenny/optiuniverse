@@ -7,15 +7,13 @@
 
 internal import BaseModule
 import Foundation
-import Metal
-import MetalKit
 import Observation
 
 @MainActor
 @Observable
 public final class UniverseModuleResources {
     let planets: [Planet]
-    let renderPreparationPipeline: RenderPreparationPipeline
+    let sceneSnapshotPipeline: UniverseSceneSnapshotPipeline
     let cameraState: CameraState
     let cameraCoordinator: CameraCoordinator
     let snapshotProvider: SnapshotProvider
@@ -51,10 +49,10 @@ public final class UniverseModuleResources {
         }
     ) {
         planets = SolarSystemLoader.loadPlanets(from: "planets")
-        renderPreparationPipeline = RenderPreparationPipeline(planets: planets)
+        sceneSnapshotPipeline = UniverseSceneSnapshotPipeline(planets: planets)
         cameraState = CameraState()
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
-                                            snapshotSource: renderPreparationPipeline)
+                                            snapshotSource: sceneSnapshotPipeline)
         cameraCoordinator = CameraCoordinator(cameraState: cameraState,
                                               snapshotProvider: snapshotProvider)
         objectInfoOverlayFramingState = ObjectInfoOverlayFramingState()
@@ -111,7 +109,7 @@ public final class UniverseModuleResources {
         let task = Task { @MainActor [self] in
             let manifest = try celestialAssetManifestLoader()
             try await sceneCoordinator.prepareCelestialBodies(from: manifest)
-            renderPreparationPipeline.setPresentationMetrics(
+            sceneSnapshotPipeline.setPresentationMetrics(
                 Dictionary(uniqueKeysWithValues: manifest.assets.map { descriptor in
                     (descriptor.displayName, descriptor.presentationMetrics)
                 })

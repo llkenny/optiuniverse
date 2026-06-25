@@ -128,12 +128,11 @@ import Testing
 }
 
 private func testSurfacePlanet(baseModelMatrix: float4x4 = matrix_identity_float4x4,
-                               surfaceRadius: Float = 1) -> PreparedPlanetRenderPacket {
+                               surfaceRadius: Float = 1) -> CelestialBodySnapshot {
     let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
-    return PreparedPlanetRenderPacket(
+    return CelestialBodySnapshot(
         planetName: "Test",
         baseModelMatrix: baseModelMatrix,
-        worldModelMatrix: matrix_identity_float4x4,
         normalizedScale: 1,
         framingRadius: surfaceRadius,
         surfaceRadius: surfaceRadius,

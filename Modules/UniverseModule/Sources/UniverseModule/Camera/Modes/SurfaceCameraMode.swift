@@ -18,7 +18,7 @@ final class SurfaceCameraMode {
 
     func makeSurfaceFrame(bodyName: String,
                           coordinate: SurfaceCoordinate,
-                          snapshot: PreparedRenderSnapshot,
+                          snapshot: UniverseSceneSnapshot,
                           currentPose: CameraPose) -> Frame? {
         guard let planet = snapshot.planet(named: bodyName) else {
             return nil
