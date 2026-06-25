@@ -46,7 +46,7 @@ final class NavigationController {
 
     var cameraTransition: CameraTransition?
     var pendingNavigationDestinationName: String?
-    var navigationCameraTrailingOffset = SIMD3<Float>(0, 0, 0.18)
+    var navigationCameraTrailingOffset = SIMD3<Float>(0, 0, -0.18)
     var navigationArrivalRouteID: UUID?
     var navigationArrivalStartCameraPosition = SIMD3<Float>(repeating: 0)
     var navigationArrivalStartTarget = SIMD3<Float>(repeating: 0)

@@ -364,16 +364,13 @@ final class UniverseSceneCoordinator {
         let reverseDepthScale = near / (far - near)
         let reverseDepthTranslation = far * reverseDepthScale
 
-        // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
-        // center-offset, and W terms preserve the legacy camera's screen mapping.
-        // Convert the legacy +Z camera into RealityKit's -Z camera without
-        // reversing its local right axis. RealityKit's screen-space Y convention remains
-        // opposite the legacy convention, so X is compensated for the Y-axis basis rotation
-        // while Y retains the RealityKit projection convention.
+        // ProjectiveTransformCameraComponent requires reverse depth. The camera basis
+        // converts the legacy +Z camera into RealityKit's -Z camera, and the projection
+        // keeps the app's intended screen-space left/right and up/down mapping.
         return float4x4(
-            [-legacyProjection[0][0], 0, 0, 0],
-            [0, -legacyProjection[1][1], 0, 0],
-            [0, legacyProjection[2][1], reverseDepthScale, -1],
+            [legacyProjection[0][0], 0, 0, 0],
+            [0, legacyProjection[1][1], 0, 0],
+            [0, -legacyProjection[2][1], reverseDepthScale, -1],
             [0, 0, reverseDepthTranslation, 0]
         )
     }

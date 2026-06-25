@@ -51,7 +51,7 @@ extension NavigationController {
                                                snapshot: UniverseSceneSnapshot) {
         guard let currentPoint = route.point(at: navigationRouteCoordinator.renderProgress),
               let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
-            navigationCameraTrailingOffset = SIMD3<Float>(0, 0, 0.18)
+            navigationCameraTrailingOffset = SIMD3<Float>(0, 0, -0.18)
             return
         }
 
@@ -62,7 +62,7 @@ extension NavigationController {
         let destinationDirection = simd_length_squared(destinationPosition - currentPoint) > 0.000001
         ? normalize(destinationPosition - currentPoint)
         : SIMD3<Float>(0, 0, -1)
-        let lift = SIMD3<Float>(0, 0, max(trailingDistance * 0.25, destinationRadius * 2))
+        let lift = SIMD3<Float>(0, 0, -max(trailingDistance * 0.25, destinationRadius * 2))
 
         navigationCameraTrailingOffset = destinationDirection * trailingDistance + lift
     }
