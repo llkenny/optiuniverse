@@ -19,6 +19,7 @@ struct VisionUniverseControlView: View {
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
     @State private var isOpeningImmersiveSpace = false
+    @State private var presentedObjectInfo: ObjectInfoViewEntity?
 
     var body: some View {
         ZStack {
@@ -41,11 +42,15 @@ struct VisionUniverseControlView: View {
             await prepareUniverse()
         }
         .onChange(of: appEnvironment.selectedDestinationID) { _, newValue in
+            presentedObjectInfo = nil
             guard newValue != nil else { return }
 
             Task {
                 await openUniverseIfNeeded()
             }
+        }
+        .sheet(item: $presentedObjectInfo) { entity in
+            VisionObjectInfoSheet(entity: entity)
         }
     }
 
@@ -60,6 +65,14 @@ struct VisionUniverseControlView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 12) {
+                    Button {
+                        presentObjectInfo()
+                    } label: {
+                        Label("Info", systemImage: "info.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .disabled(selectedDestination == nil)
+
                     Button {
                         Task {
                             await openUniverseIfNeeded()
@@ -96,6 +109,16 @@ struct VisionUniverseControlView: View {
         }
     }
 
+    private var selectedDestination: DestinationObject? {
+        guard let selectedDestinationID = appEnvironment.selectedDestinationID else {
+            return nil
+        }
+
+        return appEnvironment.destinationsProvider.destinations.first {
+            $0.id == selectedDestinationID
+        }
+    }
+
     private var controlTitle: String {
         if appEnvironment.isUniverseImmersivePresented {
             return appEnvironment.location
@@ -106,6 +129,45 @@ struct VisionUniverseControlView: View {
         }
 
         return "Choose a destination"
+    }
+
+    private func presentObjectInfo() {
+        guard let selectedDestination else { return }
+
+        let details = selectedDestination.details.map {
+            ObjectInfoDetailCardEntity(title: $0.title,
+                                       value: $0.value,
+                                       dimension: $0.dimension)
+        }
+        let orbitInfo = selectedDestination.orbitInfo.map {
+            ObjectInfoOrbitView.Model(
+                description: $0.description,
+                properties: [
+                    .axis: $0.properties.axis,
+                    .eccentricity: $0.properties.eccentricity,
+                    .inclination: $0.properties.inclination
+                ]
+            )
+        }
+
+        presentedObjectInfo = ObjectInfoViewEntity(
+            id: selectedDestination.id,
+            imageName: selectedDestination.infoImageName,
+            title: selectedDestination.title,
+            subtitle: selectedDestination.subtitle,
+            description: selectedDestination.description,
+            details: details,
+            navigationButtonTitle: "🎯 Route",
+            isNavigable: selectedDestination.isNavigable,
+            orbitInfo: orbitInfo,
+            navigationButtonAction: {
+                presentedObjectInfo = nil
+                Task {
+                    await openUniverseIfNeeded()
+                    universeResources.transferOrbit.showTransferOrbit(to: selectedDestination.object)
+                }
+            }
+        )
     }
 
     private func prepareUniverse() async {
@@ -146,6 +208,19 @@ struct VisionUniverseControlView: View {
         await dismissImmersiveSpace()
         appEnvironment.isUniverseImmersivePresented = false
         appEnvironment.currentScreen = .home
+    }
+}
+
+private struct VisionObjectInfoSheet: View {
+    let entity: ObjectInfoViewEntity
+
+    var body: some View {
+        ScrollView {
+            ObjectInfoView(entity: entity)
+                .padding(.bottom, 20)
+        }
+        .frame(width: 520, height: 640)
+        .background(OptiColor.screenBackground)
     }
 }
 

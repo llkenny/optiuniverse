@@ -8,6 +8,7 @@ struct VisionImmersiveControls: View {
 
     let resources: UniverseModuleResources
     let selectedDestination: DestinationObject?
+    let showObjectInfo: (DestinationObject) -> Void
     let exit: () -> Void
 
     var body: some View {
@@ -55,6 +56,12 @@ struct VisionImmersiveControls: View {
         if let selectedDestination {
             switch resources.navigation.navigationSnapshot.state {
             case .idle, .cancelled:
+                Button {
+                    showObjectInfo(selectedDestination)
+                } label: {
+                    Label("Info", systemImage: "info.circle")
+                }
+
                 Button {
                     resources.transferOrbit.showTransferOrbit(to: selectedDestination.object)
                 } label: {

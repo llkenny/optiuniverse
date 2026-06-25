@@ -11,6 +11,7 @@ struct UniverseImmersiveView: View {
 
     @State private var previousDragTranslation: CGSize = .zero
     @State private var previousMagnification: CGFloat = 1
+    @State private var presentedObjectInfo: ObjectInfoViewEntity?
 
     var body: some View {
         UniverseView(
@@ -23,6 +24,9 @@ struct UniverseImmersiveView: View {
             VisionImmersiveControls(
                 resources: resources,
                 selectedDestination: selectedDestination,
+                showObjectInfo: { destination in
+                    presentObjectInfo(for: destination)
+                },
                 exit: {
                     Task {
                         await exitImmersiveSpace()
@@ -31,11 +35,19 @@ struct UniverseImmersiveView: View {
             )
             .environment(appEnvironment)
         }
+        .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .trailing) {
+            if let presentedObjectInfo {
+                objectInfoOrnament(entity: presentedObjectInfo)
+            }
+        }
         .onAppear {
             appEnvironment.isUniverseImmersivePresented = true
         }
         .onDisappear {
             appEnvironment.isUniverseImmersivePresented = false
+        }
+        .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
+            presentedObjectInfo = nil
         }
     }
 
@@ -47,6 +59,71 @@ struct UniverseImmersiveView: View {
         return appEnvironment.destinationsProvider.destinations.first {
             $0.id == selectedDestinationID
         }
+    }
+
+    private func objectInfoOrnament(entity: ObjectInfoViewEntity) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+
+                Button {
+                    presentedObjectInfo = nil
+                } label: {
+                    Image(systemName: "xmark")
+                        .frame(width: 36, height: 36)
+                }
+                .accessibilityLabel("Close object info")
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+
+            ScrollView {
+                ObjectInfoView(entity: entity)
+                    .padding(.bottom, 16)
+            }
+        }
+        .frame(width: 440)
+        .frame(maxHeight: 620)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
+        .overlay(
+            RoundedRectangle(cornerRadius: CornerRadius.panel)
+                .stroke(OptiColor.buttonBorder, lineWidth: 1)
+        )
+    }
+
+    private func presentObjectInfo(for destination: DestinationObject) {
+        let details = destination.details.map {
+            ObjectInfoDetailCardEntity(title: $0.title,
+                                       value: $0.value,
+                                       dimension: $0.dimension)
+        }
+        let orbitInfo = destination.orbitInfo.map {
+            ObjectInfoOrbitView.Model(
+                description: $0.description,
+                properties: [
+                    .axis: $0.properties.axis,
+                    .eccentricity: $0.properties.eccentricity,
+                    .inclination: $0.properties.inclination
+                ]
+            )
+        }
+
+        presentedObjectInfo = ObjectInfoViewEntity(
+            id: destination.id,
+            imageName: destination.infoImageName,
+            title: destination.title,
+            subtitle: destination.subtitle,
+            description: destination.description,
+            details: details,
+            navigationButtonTitle: "🎯 Route",
+            isNavigable: destination.isNavigable,
+            orbitInfo: orbitInfo,
+            navigationButtonAction: {
+                presentedObjectInfo = nil
+                resources.transferOrbit.showTransferOrbit(to: destination.object)
+            }
+        )
     }
 
     private var rotateGesture: some Gesture {
@@ -100,6 +177,7 @@ struct UniverseImmersiveView: View {
     }
 
     private func exitImmersiveSpace() async {
+        presentedObjectInfo = nil
         resources.transferOrbit.clearTransferOrbit()
         resources.navigation.cancelNavigation()
         await dismissImmersiveSpace()
