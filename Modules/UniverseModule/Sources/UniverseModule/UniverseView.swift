@@ -74,6 +74,18 @@ public struct UniverseView: View {
     }
 
     private func synchronizeSelection() {
+        #if os(visionOS)
+        if let selectedDestinationID = appEnvironment.selectedDestinationID {
+            resources.focusImmersiveDestination(
+                identifiedBy: selectedDestinationID,
+                destinations: appEnvironment.destinationsProvider.destinations
+            )
+        } else if let selectedPlanet = appEnvironment.selectedPlanet {
+            resources.focusImmersivePlanet(named: selectedPlanet)
+        } else {
+            resources.clearImmersiveFocus()
+        }
+        #else
         if let selectedDestinationID = appEnvironment.selectedDestinationID {
             resources.followDestination(
                 identifiedBy: selectedDestinationID,
@@ -83,5 +95,6 @@ public struct UniverseView: View {
             resources.followPlanet(named: selectedPlanet,
                                    surfaceLocation: nil)
         }
+        #endif
     }
 }

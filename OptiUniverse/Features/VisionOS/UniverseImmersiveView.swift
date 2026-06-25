@@ -9,6 +9,9 @@ struct UniverseImmersiveView: View {
 
     let resources: UniverseModuleResources
 
+    @State private var previousDragTranslation: CGSize = .zero
+    @State private var previousMagnification: CGFloat = 1
+
     var body: some View {
         UniverseView(
             resources: resources,
@@ -49,17 +52,40 @@ struct UniverseImmersiveView: View {
     private var rotateGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                resources.rotateCamera(
-                    translation: value.translation,
-                    velocity: velocity(for: value)
+                let translation = CGSize(
+                    width: value.translation.width - previousDragTranslation.width,
+                    height: value.translation.height - previousDragTranslation.height
                 )
+                previousDragTranslation = value.translation
+
+                if !resources.adjustImmersiveFocusRotation(translation: translation) {
+                    resources.rotateCamera(
+                        translation: translation,
+                        velocity: velocity(for: value)
+                    )
+                }
+            }
+            .onEnded { _ in
+                previousDragTranslation = .zero
             }
     }
 
     private var zoomGesture: some Gesture {
         MagnifyGesture()
             .onChanged { value in
-                resources.scaleCamera(by: Float(value.magnification))
+                let currentMagnification = CGFloat(value.magnification)
+                let relativeScale = Float(currentMagnification / previousMagnification)
+                previousMagnification = currentMagnification
+
+                if !resources.adjustImmersiveFocusScale(by: relativeScale) {
+                    resources.scaleCamera(
+                        by: relativeScale,
+                        velocity: 0
+                    )
+                }
+            }
+            .onEnded { _ in
+                previousMagnification = 1
             }
     }
 

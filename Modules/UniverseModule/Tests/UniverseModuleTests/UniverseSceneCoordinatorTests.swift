@@ -607,6 +607,126 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
+@Test func sceneCoordinatorStoresImmersiveFocusBeforeSnapshotAndAppliesAfterFrame() throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 200, height: 100))
+    coordinator.setImmersiveFocus(bodyName: "Earth")
+
+    #expect(coordinator.hasImmersiveFocus)
+    #expect(coordinator.immersiveFocusTransform == nil)
+
+    coordinator.update(deltaTime: 0.1)
+    let initialFrame = try #require(coordinator.latestFrameState)
+    let bodyPosition = SIMD3<Float>(10, 0, 3)
+    let packet = CelestialBodySnapshot(
+        planetName: "Earth",
+        baseModelMatrix: float4x4.makeTranslation(bodyPosition),
+        orbitTransformMatrix: float4x4.makeTranslation(bodyPosition),
+        normalizedScale: 1,
+        framingRadius: 2,
+        surfaceRadius: 2,
+        worldPosition: bodyPosition
+    )
+    let frame = UniverseFrameState(
+        simulationTime: 0,
+        cameraSnapshot: initialFrame.cameraSnapshot,
+        snapshot: UniverseSceneSnapshot(frameID: 1, simulationTime: 0, planets: [packet]),
+        routes: initialFrame.routes
+    )
+
+    coordinator.apply(frameState: frame)
+
+    let transform = try #require(coordinator.immersiveFocusTransform)
+    expectVector(
+        transform.project(bodyPosition - initialFrame.cameraSnapshot.sceneOrigin),
+        equals: ImmersiveFocusState.targetCenter
+    )
+}
+
+@MainActor
+@Test func changingImmersiveFocusResetsZoomAndRotationOffsets() throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 200, height: 100))
+    coordinator.update(deltaTime: 0.1)
+    let initialFrame = try #require(coordinator.latestFrameState)
+    let earthPosition = SIMD3<Float>(10, 0, 0)
+    let marsPosition = SIMD3<Float>(-4, 1, 6)
+    let marsRadius: Float = 2
+    let snapshot = makeTwoBodyFocusSnapshot(
+        earthPosition: earthPosition,
+        marsPosition: marsPosition,
+        marsRadius: marsRadius
+    )
+    let frame = UniverseFrameState(
+        simulationTime: 0,
+        cameraSnapshot: initialFrame.cameraSnapshot,
+        snapshot: snapshot,
+        routes: initialFrame.routes
+    )
+
+    coordinator.setImmersiveFocus(bodyName: "Earth")
+    #expect(coordinator.adjustImmersiveFocusScale(by: 2))
+    #expect(coordinator.adjustImmersiveFocusRotation(translation: CGSize(width: 40, height: 20)))
+    coordinator.apply(frameState: frame)
+    coordinator.setImmersiveFocus(bodyName: "Mars")
+    coordinator.apply(frameState: frame)
+
+    let transform = try #require(coordinator.immersiveFocusTransform)
+    let marsPositionAfterOrigin = marsPosition - initialFrame.cameraSnapshot.sceneOrigin
+    let mappedRadius = distance(
+        transform.project(marsPositionAfterOrigin + SIMD3<Float>(marsRadius, 0, 0)),
+        ImmersiveFocusState.targetCenter
+    )
+
+    expectVector(transform.project(marsPositionAfterOrigin),
+                 equals: ImmersiveFocusState.targetCenter)
+    #expect(abs(mappedRadius - ImmersiveFocusState.targetVisualRadius) < 0.00001)
+}
+
+@MainActor
+@Test func clearingAndDismantlingImmersiveFocusResetTransform() throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 200, height: 100))
+    coordinator.update(deltaTime: 0.1)
+    let initialFrame = try #require(coordinator.latestFrameState)
+    let bodyPosition = SIMD3<Float>(1, 2, 3)
+    let packet = CelestialBodySnapshot(
+        planetName: "Moon",
+        baseModelMatrix: float4x4.makeTranslation(bodyPosition),
+        orbitTransformMatrix: float4x4.makeTranslation(bodyPosition),
+        normalizedScale: 1,
+        framingRadius: 1,
+        surfaceRadius: 1,
+        worldPosition: bodyPosition
+    )
+    let frame = UniverseFrameState(
+        simulationTime: 0,
+        cameraSnapshot: initialFrame.cameraSnapshot,
+        snapshot: UniverseSceneSnapshot(frameID: 1, simulationTime: 0, planets: [packet]),
+        routes: initialFrame.routes
+    )
+
+    coordinator.setImmersiveFocus(bodyName: "Moon")
+    coordinator.apply(frameState: frame)
+    #expect(coordinator.immersiveFocusTransform != nil)
+
+    coordinator.clearImmersiveFocus()
+    #expect(!coordinator.hasImmersiveFocus)
+    #expect(coordinator.immersiveFocusTransform == nil)
+
+    coordinator.setImmersiveFocus(bodyName: "Moon")
+    coordinator.apply(frameState: frame)
+    #expect(coordinator.immersiveFocusTransform != nil)
+    coordinator.dismantle()
+
+    #expect(!coordinator.hasImmersiveFocus)
+    #expect(coordinator.immersiveFocusTransform == nil)
+}
+
+@MainActor
 @Test func sceneCoordinatorKeepsLastCompleteSceneSnapshot() throws {
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
@@ -675,4 +795,46 @@ private func expectVector(_ lhs: SIMD3<Float>,
     #expect(abs(lhs.x - rhs.x) <= tolerance)
     #expect(abs(lhs.y - rhs.y) <= tolerance)
     #expect(abs(lhs.z - rhs.z) <= tolerance)
+}
+
+private extension float4x4 {
+    func project(_ point: SIMD3<Float>) -> SIMD3<Float> {
+        let projected = self * SIMD4<Float>(point, 1)
+        return SIMD3<Float>(
+            projected.x / projected.w,
+            projected.y / projected.w,
+            projected.z / projected.w
+        )
+    }
+}
+
+private func makeTwoBodyFocusSnapshot(
+    earthPosition: SIMD3<Float>,
+    marsPosition: SIMD3<Float>,
+    marsRadius: Float
+) -> UniverseSceneSnapshot {
+    UniverseSceneSnapshot(
+        frameID: 1,
+        simulationTime: 0,
+        planets: [
+            CelestialBodySnapshot(
+                planetName: "Earth",
+                baseModelMatrix: float4x4.makeTranslation(earthPosition),
+                orbitTransformMatrix: float4x4.makeTranslation(earthPosition),
+                normalizedScale: 1,
+                framingRadius: 1,
+                surfaceRadius: 1,
+                worldPosition: earthPosition
+            ),
+            CelestialBodySnapshot(
+                planetName: "Mars",
+                baseModelMatrix: float4x4.makeTranslation(marsPosition),
+                orbitTransformMatrix: float4x4.makeTranslation(marsPosition),
+                normalizedScale: 1,
+                framingRadius: marsRadius,
+                surfaceRadius: marsRadius,
+                worldPosition: marsPosition
+            )
+        ]
+    )
 }

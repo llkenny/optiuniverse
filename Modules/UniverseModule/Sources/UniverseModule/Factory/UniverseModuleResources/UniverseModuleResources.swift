@@ -43,6 +43,10 @@ public final class UniverseModuleResources {
         navigationController.isNavigationActive
     }
 
+    public var isImmersiveFocusActive: Bool {
+        sceneCoordinator.hasImmersiveFocus
+    }
+
     init(
         assetRepository: RealityAssetRepository = RealityAssetRepository(),
         celestialAssetManifestLoader: @escaping () throws -> CelestialAssetManifest = {
@@ -175,6 +179,26 @@ public final class UniverseModuleResources {
                                        viewportSize: viewportSize)
     }
 
+    func focusImmersiveDestination(identifiedBy destinationID: UUID,
+                                   destinations: [DestinationObject]) {
+        guard let followTarget = followTarget(for: destinationID,
+                                              destinations: destinations) else {
+            return
+        }
+
+        focusImmersivePlanet(named: followTarget.bodyName)
+    }
+
+    func focusImmersivePlanet(named name: String) {
+        transferOrbitController.clearTransferOrbit()
+        navigationController.cancelNavigation(followDestination: false)
+        sceneCoordinator.setImmersiveFocus(bodyName: name)
+    }
+
+    func clearImmersiveFocus() {
+        sceneCoordinator.clearImmersiveFocus()
+    }
+
     func beginManualCameraControl() {
         navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
@@ -200,6 +224,14 @@ public final class UniverseModuleResources {
     public func scaleCamera(by scale: Float, velocity: CGFloat = 0) {
         beginManualCameraControl()
         cameraCoordinator.makeScale(with: scale, velocity: velocity)
+    }
+
+    public func adjustImmersiveFocusRotation(translation: CGSize) -> Bool {
+        sceneCoordinator.adjustImmersiveFocusRotation(translation: translation)
+    }
+
+    public func adjustImmersiveFocusScale(by scale: Float) -> Bool {
+        sceneCoordinator.adjustImmersiveFocusScale(by: scale)
     }
 
     public func setObjectInfoOverlayFraming(isPresented: Bool,
