@@ -5,8 +5,6 @@
 //  Created by max on 05.08.2025.
 //
 
-import MetalKit
-
 struct Planet: Sendable {
     let name: String
     let meshName: String

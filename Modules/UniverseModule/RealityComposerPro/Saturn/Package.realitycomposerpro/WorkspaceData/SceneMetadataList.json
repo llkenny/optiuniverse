@@ -34,38 +34,16 @@
     "objectMetadataList" : [
       [
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
         "Saturn_Rings",
-        "Circle_001"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Saturn",
-        "geom",
-        "realistic"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Body"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root",
-        "Saturn_Rings_2",
         "Circle_001"
       ],
       {
@@ -90,17 +68,8 @@
       [
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
-        "Body",
-        "Rings",
-        "Circle"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
-        "Root"
+        "Saturn_Rings_2",
+        "Circle_001"
       ],
       {
         "isExpanded" : true,
@@ -110,7 +79,8 @@
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
         "Body",
-        "Rings"
+        "Rings",
+        "Circle"
       ],
       {
         "isExpanded" : true,
@@ -132,8 +102,38 @@
       [
         "AC03EE14-1E40-4844-8EED-0634A1E4272E",
         "Root",
+        "Body",
+        "Rings"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
         "Saturn",
         "geom"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
+        "Saturn",
+        "geom",
+        "realistic"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "AC03EE14-1E40-4844-8EED-0634A1E4272E",
+        "Root",
+        "Body"
       ],
       {
         "isExpanded" : true,

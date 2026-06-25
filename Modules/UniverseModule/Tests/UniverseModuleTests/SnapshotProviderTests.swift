@@ -5,11 +5,11 @@ import Testing
 @testable import UniverseModule
 
 @MainActor
-@Test func snapshotProviderReturnsLatestPreparedSnapshot() {
-    let snapshot = PreparedRenderSnapshot(frameID: 7,
+@Test func snapshotProviderReturnsLatestSceneSnapshot() {
+    let snapshot = UniverseSceneSnapshot(frameID: 7,
                                           simulationTime: 12,
                                           planets: [])
-    let source = FakePreparedRenderSnapshotSource(latestSnapshot: snapshot)
+    let source = FakeUniverseSceneSnapshotSource(latestSnapshot: snapshot)
     let provider = SnapshotProvider(snapshotSource: source)
 
     #expect(provider.latestSnapshot?.frameID == 7)
@@ -18,7 +18,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderForwardsPreparationRequests() {
-    let source = FakePreparedRenderSnapshotSource()
+    let source = FakeUniverseSceneSnapshotSource()
     let provider = SnapshotProvider(snapshotSource: source)
 
     provider.requestPreparation(simulationTime: 42)
@@ -28,7 +28,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderUsesExplicitProjectionParameters() {
-    let source = FakePreparedRenderSnapshotSource()
+    let source = FakeUniverseSceneSnapshotSource()
     let provider = SnapshotProvider(snapshotSource: source)
     let viewportSize = CGSize(width: 200, height: 100)
     let projection = CameraProjectionParameters(nearPlane: 0.25,
@@ -50,8 +50,8 @@ import Testing
 @MainActor
 @Test func snapshotProviderReusesEquivalentSnapshotForUnchangedDependencies() {
     let cameraState = CameraState()
-    let source = FakePreparedRenderSnapshotSource(
-        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+    let source = FakeUniverseSceneSnapshotSource(
+        latestSnapshot: UniverseSceneSnapshot(frameID: 1,
                                                simulationTime: 0,
                                                planets: [])
     )
@@ -73,8 +73,8 @@ import Testing
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenCameraRevisionChanges() {
     let cameraState = CameraState()
-    let source = FakePreparedRenderSnapshotSource(
-        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+    let source = FakeUniverseSceneSnapshotSource(
+        latestSnapshot: UniverseSceneSnapshot(frameID: 1,
                                                simulationTime: 0,
                                                planets: [])
     )
@@ -98,8 +98,8 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenSceneFrameChanges() {
-    let source = FakePreparedRenderSnapshotSource(
-        latestSnapshot: PreparedRenderSnapshot(frameID: 1,
+    let source = FakeUniverseSceneSnapshotSource(
+        latestSnapshot: UniverseSceneSnapshot(frameID: 1,
                                                simulationTime: 0,
                                                planets: [])
     )
@@ -112,7 +112,7 @@ import Testing
                                        projection: projection)
     )
 
-    source.latestSnapshot = PreparedRenderSnapshot(frameID: 2,
+    source.latestSnapshot = UniverseSceneSnapshot(frameID: 2,
                                                    simulationTime: 1,
                                                    planets: [])
     let secondSnapshot = provider.makeCameraSnapshot(
@@ -127,7 +127,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenViewportOrProjectionChanges() {
-    let provider = SnapshotProvider(snapshotSource: FakePreparedRenderSnapshotSource())
+    let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
     let projection = CameraProjectionParameters(nearPlane: 0.1,
                                                 farPlane: 100)
     let firstSnapshot = provider.makeCameraSnapshot(
@@ -158,7 +158,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenFollowedObjectSignatureChanges() {
-    let provider = SnapshotProvider(snapshotSource: FakePreparedRenderSnapshotSource())
+    let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
     let projection = CameraProjectionParameters(nearPlane: 0.1,
                                                 farPlane: 100)
     let firstDependency = CameraFollowSnapshotDependency(
@@ -189,7 +189,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenNavigationRouteChanges() {
-    let provider = SnapshotProvider(snapshotSource: FakePreparedRenderSnapshotSource())
+    let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
     let projection = CameraProjectionParameters(nearPlane: 0.1,
                                                 farPlane: 100)
     let routeID = UUID()
@@ -221,7 +221,7 @@ import Testing
 
 @MainActor
 @Test func snapshotProviderInvalidatesCacheWhenActiveMotionRevisionChanges() {
-    let provider = SnapshotProvider(snapshotSource: FakePreparedRenderSnapshotSource())
+    let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
     let projection = CameraProjectionParameters(nearPlane: 0.1,
                                                 farPlane: 100)
 
@@ -241,7 +241,7 @@ import Testing
 @MainActor
 @Test func snapshotProviderDerivesSnapshotFromCanonicalCameraPose() {
     let cameraState = CameraState()
-    let source = FakePreparedRenderSnapshotSource()
+    let source = FakeUniverseSceneSnapshotSource()
     let provider = SnapshotProvider(cameraState: cameraState,
                                     snapshotSource: source)
     let orientation = simd_quatf(angle: .pi / 2,
@@ -268,11 +268,11 @@ import Testing
 }
 
 @MainActor
-private final class FakePreparedRenderSnapshotSource: PreparedRenderSnapshotProviding {
-    var latestSnapshot: PreparedRenderSnapshot?
+private final class FakeUniverseSceneSnapshotSource: UniverseSceneSnapshotProviding {
+    var latestSnapshot: UniverseSceneSnapshot?
     var requestedSimulationTimes: [Float] = []
 
-    init(latestSnapshot: PreparedRenderSnapshot? = nil) {
+    init(latestSnapshot: UniverseSceneSnapshot? = nil) {
         self.latestSnapshot = latestSnapshot
     }
 

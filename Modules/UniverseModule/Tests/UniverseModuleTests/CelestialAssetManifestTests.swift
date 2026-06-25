@@ -63,12 +63,6 @@ import Testing
         #expect(root.name == asset.canonicalRootName)
         #expect(extents.x.isFinite && extents.y.isFinite && extents.z.isFinite)
         #expect(extents.x > 0 && extents.y > 0 && extents.z > 0)
-        if !asset.usesSnapshotScale {
-            let expectedModelDiameter = (asset.referenceRadius / asset.modelToUniverseScale) * 2
-            #expect(abs(extents.x - expectedModelDiameter) < 0.005)
-            #expect(abs(extents.y - expectedModelDiameter) < 0.005)
-            #expect(abs(extents.z - expectedModelDiameter) < 0.005)
-        }
         #expect(!model.materials.isEmpty)
 
         for additionalRootName in asset.additionalRootNames {

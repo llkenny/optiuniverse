@@ -136,7 +136,7 @@ final class CameraCoordinator {
     /// Route playback and transfer-orbit geometry remain owned by their controllers. This entry point
     /// owns camera priority for manual inertia and follow behavior before `SnapshotProvider` derives
     /// immutable matrices.
-    func updateFrameCamera(snapshot: PreparedRenderSnapshot?,
+    func updateFrameCamera(snapshot: UniverseSceneSnapshot?,
                            delta: Float,
                            viewportSize: CGSize,
                            modeState: CameraFrameModeState) {
@@ -156,13 +156,13 @@ final class CameraCoordinator {
         }
     }
 
-    func followProjectionParameters(snapshot: PreparedRenderSnapshot?,
+    func followProjectionParameters(snapshot: UniverseSceneSnapshot?,
                                     baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         followCameraOwner.projectionParameters(snapshot: snapshot,
                                                baseProjection: baseProjection)
     }
 
-    func makeSnapshotDependencies(snapshot: PreparedRenderSnapshot?,
+    func makeSnapshotDependencies(snapshot: UniverseSceneSnapshot?,
                                   viewportSize: CGSize,
                                   projection: CameraProjectionParameters,
                                   modeState: CameraFrameModeState) -> CameraSnapshotDependencies {
@@ -181,7 +181,7 @@ final class CameraCoordinator {
     ///
     /// This replaces the old renderer-owned `updateCamera()` path while keeping matrix derivation
     /// centralized in `CameraState`/`SnapshotProvider`.
-    func refreshCamera(snapshot: PreparedRenderSnapshot? = nil) {
+    func refreshCamera(snapshot: UniverseSceneSnapshot? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
         cameraState.enforceCameraConstraints(
             minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)

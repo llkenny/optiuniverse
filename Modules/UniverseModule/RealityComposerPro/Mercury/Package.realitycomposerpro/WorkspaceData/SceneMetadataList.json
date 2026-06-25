@@ -15,20 +15,20 @@
     "objectMetadataList" : [
       [
         "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
-        "Root"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
         "Root",
         "Sphere"
       ],
       {
         "disallowsFraming" : false,
         "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "BE8AF195-ACA7-4CC2-89C4-E894BDAF0A27",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
         "isLocked" : false
       }
     ]

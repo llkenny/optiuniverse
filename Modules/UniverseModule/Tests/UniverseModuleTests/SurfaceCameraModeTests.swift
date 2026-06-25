@@ -7,7 +7,7 @@ import Testing
     let planet = surfaceCameraTestPacket(name: "Moon",
                                          worldPosition: SIMD3<Float>(2, 3, 4),
                                          radius: 0.5)
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [planet])
     let currentPose = CameraPose(target: .zero,
@@ -34,7 +34,7 @@ import Testing
     let planet = surfaceCameraTestPacket(name: "Moon",
                                          worldPosition: SIMD3<Float>(2, 3, 4),
                                          radius: 0.5)
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [planet])
 
@@ -69,7 +69,7 @@ import Testing
     let planet = surfaceCameraTestPacket(name: "Moon",
                                          worldPosition: .zero,
                                          radius: 1)
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [planet])
     let currentPose = CameraPose(
@@ -98,7 +98,7 @@ import Testing
 
 @Test func surfaceCameraModeReturnsNilForMissingHostBody() {
     let mode = SurfaceCameraMode()
-    let snapshot = PreparedRenderSnapshot(frameID: 1,
+    let snapshot = UniverseSceneSnapshot(frameID: 1,
                                           simulationTime: 0,
                                           planets: [])
 
@@ -118,15 +118,12 @@ import Testing
 
 func surfaceCameraTestPacket(name: String,
                              worldPosition: SIMD3<Float>,
-                             radius: Float) -> PreparedPlanetRenderPacket {
+                             radius: Float) -> CelestialBodySnapshot {
     let baseModelMatrix = float4x4.makeTranslation(worldPosition)
-    return PreparedPlanetRenderPacket(
+    return CelestialBodySnapshot(
         planetName: name,
-        meshes: [],
         baseModelMatrix: baseModelMatrix,
-        worldModelMatrix: baseModelMatrix,
         normalizedScale: 1,
-        primaryMeshRadius: radius,
         framingRadius: radius,
         surfaceRadius: radius,
         worldPosition: worldPosition

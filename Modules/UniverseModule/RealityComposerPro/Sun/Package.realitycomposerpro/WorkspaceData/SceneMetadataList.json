@@ -4,17 +4,15 @@
       [
         "DF3F37F5-ABA6-4129-9259-285489309D7E",
         "Root",
-        "Corona"
+        "Material"
       ],
       {
-        "disallowsFraming" : false,
-        "isExpanded" : false,
+        "isExpanded" : true,
         "isLocked" : false
       },
       [
         "DF3F37F5-ABA6-4129-9259-285489309D7E",
-        "Root",
-        "Material"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -31,10 +29,12 @@
       },
       [
         "DF3F37F5-ABA6-4129-9259-285489309D7E",
-        "Root"
+        "Root",
+        "Corona"
       ],
       {
-        "isExpanded" : true,
+        "disallowsFraming" : false,
+        "isExpanded" : false,
         "isLocked" : false
       },
       [

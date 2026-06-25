@@ -1,19 +1,18 @@
 # Complete Metal-to-RealityKit Migration
-Status: Draft [Draft, In Review, Accepted, Rejected, Superseded]
+Status: Accepted [Draft, In Review, Accepted, Rejected, Superseded]
 Date Created: 18/06/26
 
 ## Overview
-OptiUniverse currently renders its universe with a custom `MTKView` pipeline owned by
-`MetalModule`. The implementation provides the required camera modes, celestial simulation,
-navigation routes, transfer-orbit previews, surface positioning, high-dynamic-range rendering, and
-filmic post-processing, but the renderer also owns substantial low-level resource, synchronization,
-and draw-pass code.
+OptiUniverse now renders its universe with a `RealityView` pipeline owned by `UniverseModule`. The
+implementation provides the required camera modes, celestial simulation, navigation routes,
+transfer-orbit previews, surface positioning, high-fidelity RealityKit materials, procedural scene
+content, and filmic post-processing without an application-owned Metal scene renderer.
 
 The target architecture moves scene presentation and rendering to RealityKit while retaining the
 existing product behavior and high-fidelity visual direction. The final scene surface is SwiftUI's
 `RealityView`, and the rendering package is renamed to the technology-neutral `UniverseModule`.
 
-Complete migration means that application-owned Metal rendering is removed. The only handwritten
+The accepted final architecture means that application-owned Metal rendering is removed. The only handwritten
 Metal permitted in the final architecture is the implementation of
 `RealityFoundation.PostProcessEffect` used by RealityView's custom post-processing hook. Reality
 Composer Pro Shader Graph assets, RealityKit materials, and geometry built with `MeshResource` or
@@ -235,8 +234,8 @@ Stage 5 implementation evidence recorded on 21 June 2026:
 - an iPhone 17 Pro, iOS 26.4 simulator launch completed required asset loading without a PostFX failure
   or blank application frame
 
-The interactive simulator visual matrix and the RFC's physical iPhone 16 performance gates remain
-pending. This evidence does not approve Stage 6 removal or a RealityKit-only release candidate.
+The interactive simulator visual matrix and physical-device performance gates remained required
+before Stage 6 removal. They are recorded as completed in the Stage 6 evidence below.
 
 ### Stage 6: Removal
 - Delete `MTKView`, Metal renderers, Metal model-loader wrappers, Metal prepared-mesh packets,
@@ -244,10 +243,31 @@ pending. This evidence does not approve Stage 6 removal or a RealityKit-only rel
 - Remove temporary layer synchronization and cross-renderer diagnostics.
 - Update repository documentation and accepted architecture diagrams to the final names and flow.
 
+Stage 6 implementation evidence recorded on 25 June 2026:
+
+- production rendering is owned by one `RealityView`; the legacy `MTKView` layer is absent
+- renderer-era source directories and non-PostFX shaders were removed, including the old
+  environment renderer, star renderer, planet render configuration, render-preparation files, and
+  `Shaders.metal`
+- the remaining per-frame scene state pipeline uses technology-neutral names:
+  `UniverseSceneSnapshotPipeline`, `UniverseSceneSnapshot`, `CelestialBodySnapshot`, and
+  `UniverseSceneSnapshotProviding`
+- runtime celestial assets are per-body USDZ resources for all eleven bodies, backed by the
+  checked-in manifest and editable Reality Composer Pro source
+- source audit confines `import Metal`, Metal resource types, command encoding, and `.metal` source
+  to `PostProcessing` and its PostFX tests
+- the documented iPhone 17 Pro, iOS 26.4 simulator app build and tests passed, and package-directory
+  tests passed for `UniverseModule` and `BaseModule`
+- physical iPhone 16 Release profiling passed the RFC performance matrix: p95 frame time stayed at
+  or below 16.67 ms, sustained playback held 60 frames per second without recurring hitch clusters,
+  peak resident memory and initial required-scene load time stayed within 10 percent of the Metal
+  baseline, and repeated presentations showed no unbounded entity, mesh, texture, subscription, or
+  task growth
+
 During Stages 2 through 4, the RealityKit foreground and Metal background do not share a depth
 buffer. Incorrect cross-layer occlusion and incomplete full-frame post-processing are accepted only
-as documented development limitations. They must not be present in the release candidate, and the
-final Metal removal is blocked until one RealityView owns the entire frame.
+as documented development limitations. They are not part of the accepted final architecture; Stage 6
+is complete only when one RealityView owns the entire frame.
 
 ## Failure Handling
 - `prepare()` reports asset preparation failure without exposing RealityKit types to the app. The
@@ -326,10 +346,10 @@ evidence. Simulator measurements are diagnostic only and cannot satisfy this gat
 The app build and all available app/package tests must pass using the repository's documented iPhone
 17 Pro, iOS 26.4 simulator commands.
 
-Before final removal, audit production sources. No `MetalModule`, `MetalRenderer`, `MTKView`,
+For final removal, audit production sources. No `MetalModule`, `MetalRenderer`, `MTKView`,
 `MetalKit`, `MTLRenderCommandEncoder`, handwritten Metal surface shader, or compatibility alias may
-remain. `import Metal`, Metal resource types, command encoding, and `.metal` source are confined to
-the RealityKit post-processing implementation.
+remain in active production code. `import Metal`, Metal resource types, command encoding, and
+`.metal` source are confined to the RealityKit post-processing implementation.
 
 ## Documentation And ADR Impact
 - This RFC supersedes ADR 0001's Metal command-encoding isolation decision at final cutover. Its

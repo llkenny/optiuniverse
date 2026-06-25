@@ -30,7 +30,6 @@ let package = Package(
                 .product(name: "BaseModule", package: "BaseModule")
             ],
             resources: [
-                .copy("Assets/Models/high_resolution_solar_system.usdz"),
                 .copy("Assets/Models/Sun.usdz"),
                 .copy("Assets/Models/Mercury.usdz"),
                 .copy("Assets/Models/Venus.usdz"),

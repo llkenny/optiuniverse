@@ -83,6 +83,7 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
     let canonicalRootName: String
     let additionalRootNames: [String]
     let parentIdentity: String?
+    // Some legacy exports keep planet scale in the simulation snapshot instead of the USDZ root.
     let usesSnapshotScale: Bool
     let modelToUniverseScale: Float
     let referenceRadius: Float

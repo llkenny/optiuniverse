@@ -1,11 +1,9 @@
-import Metal
 import Testing
 import UIKit
 @testable import UniverseModule
 
 @MainActor
 @Test func cameraGestureViewInstallsExistingCameraControls() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     let controller = CameraController(
         cameraCoordinator: resources.cameraCoordinator,
@@ -36,7 +34,6 @@ import UIKit
 
 @MainActor
 @Test func trajectoryPanBeginsOnlyWhileTrajectoryModeIsActive() throws {
-    _ = try #require(MTLCreateSystemDefaultDevice())
     let resources = UniverseModuleResources()
     var isTrajectoryModeActive = false
     let controller = CameraController(

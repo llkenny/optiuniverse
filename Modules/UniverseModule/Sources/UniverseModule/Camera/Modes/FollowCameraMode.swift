@@ -21,7 +21,7 @@ import simd
 final class FollowCameraMode {
     /// Returns the per-frame target update for a followed planet.
     func makeSteadyFollowTransaction(named name: String,
-                                     snapshot: PreparedRenderSnapshot) -> CameraState.Transaction? {
+                                     snapshot: UniverseSceneSnapshot) -> CameraState.Transaction? {
         guard let position = snapshot.worldPosition(ofPlanetNamed: name) else {
             return nil
         }
@@ -31,7 +31,7 @@ final class FollowCameraMode {
 
     /// Resolves a transition destination for a planet follow animation.
     func makeTransitionFrame(named name: String,
-                             snapshot: PreparedRenderSnapshot,
+                             snapshot: UniverseSceneSnapshot,
                              currentDistance: Float,
                              viewportSize: CGSize) -> CameraTransition.Frame? {
         guard let position = snapshot.worldPosition(ofPlanetNamed: name),
@@ -59,7 +59,7 @@ final class FollowCameraMode {
 
     /// Keeps zoom outside the followed planet's visual radius.
     func minimumDistance(followingPlanetName: String?,
-                         snapshot: PreparedRenderSnapshot?,
+                         snapshot: UniverseSceneSnapshot?,
                          baseMinimumDistance: Float) -> Float {
         guard let followingPlanetName,
               let framingRadius = snapshot?.framingRadius(ofPlanetNamed: followingPlanetName) else {
@@ -71,7 +71,7 @@ final class FollowCameraMode {
 
     /// Applies follow-specific near-plane policy while preserving the caller's far plane.
     func projectionParameters(followingPlanetName: String?,
-                              snapshot: PreparedRenderSnapshot?,
+                              snapshot: UniverseSceneSnapshot?,
                               cameraDistance: Float,
                               baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         guard let followingPlanetName else {

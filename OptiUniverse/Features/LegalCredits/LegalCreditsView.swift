@@ -59,7 +59,7 @@ enum LegalCreditsCatalog {
             "The Milky Way panorama".
             Credit: ESO/S. Brunier.
             Licensed under Creative Commons Attribution 4.0 International.
-            Used as the live Metal renderer deep-space environment.
+            Used as the live RealityKit scene deep-space environment.
             """,
             links: [
                 LegalCreditLink(

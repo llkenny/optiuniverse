@@ -8,7 +8,7 @@ struct SceneRouteRenderState {
 struct UniverseFrameState {
     let simulationTime: Float
     let cameraSnapshot: SnapshotProvider.CameraSnapshot
-    let snapshot: PreparedRenderSnapshot?
+    let snapshot: UniverseSceneSnapshot?
     let routes: SceneRouteRenderState
 }
 

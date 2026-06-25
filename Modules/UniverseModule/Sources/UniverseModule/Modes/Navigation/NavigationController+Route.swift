@@ -92,7 +92,7 @@ extension NavigationController: UniverseNavigationControlling {
     }
 
     func applyNavigation(named name: String,
-                         snapshot: PreparedRenderSnapshot) -> Bool {
+                         snapshot: UniverseSceneSnapshot) -> Bool {
         resetNavigationArrivalTransition()
 
         guard navigationRouteCoordinator.start(destinationName: name,
@@ -115,7 +115,7 @@ extension NavigationController: UniverseNavigationControlling {
         return true
     }
 
-    func refreshActiveRoute(snapshot: PreparedRenderSnapshot) {
+    func refreshActiveRoute(snapshot: UniverseSceneSnapshot) {
         guard navigationRouteCoordinator.isNavigationActive,
               let route = navigationRouteCoordinator.activeRouteForRendering,
               let transferOrbit = makeTransferOrbit(destinationName: route.destinationName,
@@ -131,7 +131,7 @@ extension NavigationController: UniverseNavigationControlling {
     }
 
     func makeTransferOrbit(destinationName: String,
-                           snapshot: PreparedRenderSnapshot) -> HohmannTransferOrbit? {
+                           snapshot: UniverseSceneSnapshot) -> HohmannTransferOrbit? {
         guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
             return nil

@@ -51,14 +51,14 @@ enum SurfaceCoordinateMath {
                                  longitudeDegrees: normalizedLongitude(longitude))
     }
 
-    static func worldSurfacePoint(on planet: PreparedPlanetRenderPacket,
+    static func worldSurfacePoint(on planet: CelestialBodySnapshot,
                                   at coordinate: SurfaceCoordinate) -> SIMD3<Float> {
         let localPoint = localUnitVector(for: coordinate) * planet.surfaceRadius
         let worldPoint = planet.baseModelMatrix * SIMD4<Float>(localPoint, 1)
         return SIMD3<Float>(worldPoint.x, worldPoint.y, worldPoint.z)
     }
 
-    static func coordinate(on planet: PreparedPlanetRenderPacket,
+    static func coordinate(on planet: CelestialBodySnapshot,
                            forWorldPoint worldPoint: SIMD3<Float>) -> SurfaceCoordinate? {
         let localPoint = simd_inverse(planet.baseModelMatrix) * SIMD4<Float>(worldPoint, 1)
         return coordinate(fromLocalUnitVector: SIMD3<Float>(localPoint.x,
@@ -68,7 +68,7 @@ enum SurfaceCoordinateMath {
 
     static func referenceSphereIntersection(rayOrigin: SIMD3<Float>,
                                             rayDirection: SIMD3<Float>,
-                                            planet: PreparedPlanetRenderPacket)
+                                            planet: CelestialBodySnapshot)
     -> SurfaceRaySphereHit? {
         guard planet.surfaceRadius > epsilon else { return nil }
         guard simd_length_squared(rayDirection) > epsilon * epsilon else { return nil }
@@ -103,7 +103,7 @@ enum SurfaceCoordinateMath {
 
     static func centerRayIntersection(cameraWorldPosition: SIMD3<Float>,
                                       cameraTarget: SIMD3<Float>,
-                                      planet: PreparedPlanetRenderPacket)
+                                      planet: CelestialBodySnapshot)
     -> SurfaceRaySphereHit? {
         referenceSphereIntersection(
             rayOrigin: cameraWorldPosition,

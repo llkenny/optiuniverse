@@ -27,7 +27,7 @@ final class UniverseSceneCoordinator {
     let sunLight = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
     private(set) var realityKitOwnedBodyNames: Set<String> = []
-    private(set) var isStageFourContentPrepared = false
+    private(set) var isProceduralSceneContentPrepared = false
 
     private let snapshotProvider: SnapshotProvider
     private let cameraCoordinator: CameraCoordinator
@@ -38,7 +38,7 @@ final class UniverseSceneCoordinator {
     private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     private var simulationClock = UniverseSimulationClock()
     private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
-    private var stageFourContent: RealityStageFourContent?
+    private var proceduralSceneContent: RealityProceduralSceneContent?
     private var installationRoot: Entity?
     private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
@@ -132,7 +132,7 @@ final class UniverseSceneCoordinator {
 
     func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
         let requestedBodyNames = Set(manifest.assets.map(\.displayName))
-        guard requestedBodyNames != realityKitOwnedBodyNames || !isStageFourContentPrepared else {
+        guard requestedBodyNames != realityKitOwnedBodyNames || !isProceduralSceneContentPrepared else {
             return
         }
 
@@ -148,7 +148,7 @@ final class UniverseSceneCoordinator {
             preparedAssets.append((descriptor, entity))
         }
 
-        let preparedStageFourContent = try await RealityStageFourContent.prepare()
+        let preparedProceduralSceneContent = try await RealityProceduralSceneContent.prepare()
 
         try Task.checkCancellation()
         for (descriptor, assetRoot) in preparedAssets {
@@ -159,12 +159,12 @@ final class UniverseSceneCoordinator {
             entities.visualRoot.transform = descriptor.visualCorrectionTransform
             entities.visualRoot.addChild(assetRoot)
         }
-        install(stageFourContent: preparedStageFourContent)
+        install(proceduralSceneContent: preparedProceduralSceneContent)
         bodyDescriptors = Dictionary(uniqueKeysWithValues: manifest.assets.map {
             ($0.displayName, $0)
         })
         realityKitOwnedBodyNames = requestedBodyNames
-        isStageFourContentPrepared = true
+        isProceduralSceneContentPrepared = true
     }
 
     func update(deltaTime: TimeInterval) {
@@ -279,7 +279,7 @@ final class UniverseSceneCoordinator {
     }
 
     private func makeCameraProjection(
-        snapshot: PreparedRenderSnapshot?,
+        snapshot: UniverseSceneSnapshot?,
         overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment
     ) -> CameraProjectionParameters {
         let baseProjection = CameraProjectionParameters(
@@ -297,7 +297,7 @@ final class UniverseSceneCoordinator {
     }
 
     private func makeCameraSnapshot(
-        snapshot: PreparedRenderSnapshot?,
+        snapshot: UniverseSceneSnapshot?,
         projection: CameraProjectionParameters,
         modeState: CameraFrameModeState
     ) -> SnapshotProvider.CameraSnapshot {
@@ -321,7 +321,7 @@ final class UniverseSceneCoordinator {
             ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
         )
 
-        stageFourContent?.update(frameState: frameState)
+        proceduralSceneContent?.update(frameState: frameState)
 
         guard let snapshot = frameState.snapshot else { return }
         for packet in snapshot.planets {
@@ -337,22 +337,22 @@ final class UniverseSceneCoordinator {
         }
     }
 
-    private func install(stageFourContent: RealityStageFourContent) {
+    private func install(proceduralSceneContent: RealityProceduralSceneContent) {
         environmentRoot.children.removeAll()
         starFieldRoot.children.removeAll()
         transferOrbitRoot.children.removeAll()
         navigationRouteRoot.children.removeAll()
         navigationMarkerRoot.children.removeAll()
 
-        environmentRoot.addChild(stageFourContent.environmentEntity)
-        starFieldRoot.addChild(stageFourContent.starField.entity)
-        transferOrbitRoot.addChild(stageFourContent.transferEarthOrbit.entity)
-        transferOrbitRoot.addChild(stageFourContent.transferDestinationOrbit.entity)
-        transferOrbitRoot.addChild(stageFourContent.transferPath.entity)
-        navigationRouteRoot.addChild(stageFourContent.navigationPath.entity)
+        environmentRoot.addChild(proceduralSceneContent.environmentEntity)
+        starFieldRoot.addChild(proceduralSceneContent.starField.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferEarthOrbit.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferDestinationOrbit.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferPath.entity)
+        navigationRouteRoot.addChild(proceduralSceneContent.navigationPath.entity)
         navigationRouteRoot.addChild(navigationMarkerRoot)
-        navigationMarkerRoot.addChild(stageFourContent.navigationMarker)
-        self.stageFourContent = stageFourContent
+        navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)
+        self.proceduralSceneContent = proceduralSceneContent
     }
 
     static func makeRealityKitProjection(
@@ -366,9 +366,9 @@ final class UniverseSceneCoordinator {
 
         // ProjectiveTransformCameraComponent requires reverse depth. The X, Y,
         // center-offset, and W terms preserve the legacy camera's screen mapping.
-        // Convert Metal's +Z camera into RealityKit's -Z camera without reversing
-        // its local right axis. RealityKit's screen-space Y convention remains
-        // opposite Metal's, so X is compensated for the Y-axis basis rotation
+        // Convert the legacy +Z camera into RealityKit's -Z camera without
+        // reversing its local right axis. RealityKit's screen-space Y convention remains
+        // opposite the legacy convention, so X is compensated for the Y-axis basis rotation
         // while Y retains the RealityKit projection convention.
         return float4x4(
             [-legacyProjection[0][0], 0, 0, 0],
@@ -378,7 +378,7 @@ final class UniverseSceneCoordinator {
         )
     }
 
-    private func logSurfaceCoordinateDebug(snapshot: PreparedRenderSnapshot?,
+    private func logSurfaceCoordinateDebug(snapshot: UniverseSceneSnapshot?,
                                            cameraSnapshot: SnapshotProvider.CameraSnapshot,
                                            modeState: CameraFrameModeState) {
         guard let snapshot,

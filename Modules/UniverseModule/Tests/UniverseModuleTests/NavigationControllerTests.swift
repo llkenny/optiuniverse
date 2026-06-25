@@ -154,7 +154,7 @@ import Testing
 @MainActor
 private struct NavigationControllerFixture {
     let viewportSize = CGSize(width: 390, height: 844)
-    let snapshot = PreparedRenderSnapshot.navigationControllerTestSnapshot
+    let snapshot = UniverseSceneSnapshot.navigationControllerTestSnapshot
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
     let cameraState: CameraState
@@ -208,19 +208,19 @@ private final class CompletingRoutePlayback: RoutePlayback {
 }
 
 @MainActor
-private final class FakeNavigationSnapshotSource: PreparedRenderSnapshotProviding {
-    var latestSnapshot: PreparedRenderSnapshot?
+private final class FakeNavigationSnapshotSource: UniverseSceneSnapshotProviding {
+    var latestSnapshot: UniverseSceneSnapshot?
 
-    init(latestSnapshot: PreparedRenderSnapshot?) {
+    init(latestSnapshot: UniverseSceneSnapshot?) {
         self.latestSnapshot = latestSnapshot
     }
 
     func requestPreparation(simulationTime: Float) {}
 }
 
-private extension PreparedRenderSnapshot {
-    static var navigationControllerTestSnapshot: PreparedRenderSnapshot {
-        PreparedRenderSnapshot(frameID: 1,
+private extension UniverseSceneSnapshot {
+    static var navigationControllerTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
                                simulationTime: 0,
                                planets: [
                                 testPacket(name: "Sun",
@@ -237,13 +237,10 @@ private extension PreparedRenderSnapshot {
 
     static func testPacket(name: String,
                            worldPosition: SIMD3<Float>,
-                           framingRadius: Float) -> PreparedPlanetRenderPacket {
-        PreparedPlanetRenderPacket(planetName: name,
-                                   meshes: [],
+                           framingRadius: Float) -> CelestialBodySnapshot {
+        CelestialBodySnapshot(planetName: name,
                                    baseModelMatrix: matrix_identity_float4x4,
-                                   worldModelMatrix: matrix_identity_float4x4,
                                    normalizedScale: 1,
-                                   primaryMeshRadius: framingRadius,
                                    framingRadius: framingRadius,
                                    surfaceRadius: framingRadius,
                                    worldPosition: worldPosition)

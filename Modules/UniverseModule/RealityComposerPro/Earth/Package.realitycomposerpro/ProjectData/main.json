@@ -1,9 +1,11 @@
 {
   "pathsToIds" : {
-    "\/Earth\/Sources\/Earth\/Earth.rkassets\/Scene.usda" : "8423DC16-49C3-4097-86EC-D486C98439A0"
+    "\/Earth\/Sources\/Earth\/Earth.rkassets\/Scene.usda" : "8423DC16-49C3-4097-86EC-D486C98439A0",
+    "Earth\/Sources\/Earth\/Earth.rkassets\/Scene.usda" : "E2B7E0D5-CA3D-4BA5-B9EF-7847944ECB83"
   },
   "projectID" : -5748742154157908798,
   "uuidToIntID" : {
-    "8423DC16-49C3-4097-86EC-D486C98439A0" : -972756226522241512
+    "8423DC16-49C3-4097-86EC-D486C98439A0" : -972756226522241512,
+    "E2B7E0D5-CA3D-4BA5-B9EF-7847944ECB83" : -4189919330691694077
   }
 }

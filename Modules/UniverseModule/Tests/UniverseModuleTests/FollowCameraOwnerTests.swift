@@ -254,7 +254,7 @@ private struct FollowCameraOwnerFixture {
     let cameraState: CameraState
     let owner: FollowCameraOwner
 
-    init(latestSnapshot: PreparedRenderSnapshot? = .followCameraTestSnapshot) {
+    init(latestSnapshot: UniverseSceneSnapshot? = .followCameraTestSnapshot) {
         source = FakeFollowCameraSnapshotSource(latestSnapshot: latestSnapshot)
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
@@ -285,10 +285,10 @@ private struct FollowCameraOwnerFixture {
 }
 
 @MainActor
-private final class FakeFollowCameraSnapshotSource: PreparedRenderSnapshotProviding {
-    var latestSnapshot: PreparedRenderSnapshot?
+private final class FakeFollowCameraSnapshotSource: UniverseSceneSnapshotProviding {
+    var latestSnapshot: UniverseSceneSnapshot?
 
-    init(latestSnapshot: PreparedRenderSnapshot?) {
+    init(latestSnapshot: UniverseSceneSnapshot?) {
         self.latestSnapshot = latestSnapshot
     }
 
@@ -297,9 +297,9 @@ private final class FakeFollowCameraSnapshotSource: PreparedRenderSnapshotProvid
 
 private let surfaceMoonCenter = SIMD3<Float>(2, 0, 0)
 
-private extension PreparedRenderSnapshot {
-    static var surfaceFollowTestSnapshot: PreparedRenderSnapshot {
-        PreparedRenderSnapshot(frameID: 1,
+private extension UniverseSceneSnapshot {
+    static var surfaceFollowTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
                                simulationTime: 0,
                                planets: [
                                 surfaceCameraTestPacket(name: "Moon",
@@ -310,7 +310,7 @@ private extension PreparedRenderSnapshot {
 }
 
 private func expectCurrentCameraAlignedWithMoonSouthPole(_ cameraState: CameraState) throws {
-    let planet = try #require(PreparedRenderSnapshot.surfaceFollowTestSnapshot.planet(named: "Moon"))
+    let planet = try #require(UniverseSceneSnapshot.surfaceFollowTestSnapshot.planet(named: "Moon"))
     let surfacePoint = SurfaceCoordinateMath.worldSurfacePoint(
         on: planet,
         at: SurfaceCoordinate(latitudeDegrees: -90,

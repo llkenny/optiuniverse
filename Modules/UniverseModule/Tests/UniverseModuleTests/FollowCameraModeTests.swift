@@ -62,9 +62,9 @@ import Testing
     #expect(projection.farPlane == 10000)
 }
 
-extension PreparedRenderSnapshot {
-    static var followCameraTestSnapshot: PreparedRenderSnapshot {
-        PreparedRenderSnapshot(frameID: 1,
+extension UniverseSceneSnapshot {
+    static var followCameraTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
                                simulationTime: 0,
                                planets: [
                                 followCameraTestPacket(name: "Sun",
@@ -78,13 +78,10 @@ extension PreparedRenderSnapshot {
 
     static func followCameraTestPacket(name: String,
                                        worldPosition: SIMD3<Float>,
-                                       framingRadius: Float) -> PreparedPlanetRenderPacket {
-        PreparedPlanetRenderPacket(planetName: name,
-                                   meshes: [],
+                                       framingRadius: Float) -> CelestialBodySnapshot {
+        CelestialBodySnapshot(planetName: name,
                                    baseModelMatrix: matrix_identity_float4x4,
-                                   worldModelMatrix: matrix_identity_float4x4,
                                    normalizedScale: 1,
-                                   primaryMeshRadius: framingRadius,
                                    framingRadius: framingRadius,
                                    surfaceRadius: framingRadius,
                                    worldPosition: worldPosition)

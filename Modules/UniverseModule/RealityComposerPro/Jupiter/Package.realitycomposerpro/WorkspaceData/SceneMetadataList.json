@@ -4,7 +4,7 @@
       [
         "2117D7C2-B692-433C-8E57-6164637C3A65",
         "Root",
-        "Spin_White",
+        "Loop_Orange",
         "Track"
       ],
       {
@@ -14,27 +14,17 @@
       [
         "2117D7C2-B692-433C-8E57-6164637C3A65",
         "Root",
-        "Loop_White",
-        "Track2"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "2117D7C2-B692-433C-8E57-6164637C3A65",
-        "Root",
-        "Spin_White"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "2117D7C2-B692-433C-8E57-6164637C3A65",
-        "Root",
-        "Loop_White_1",
+        "Loop",
         "Track"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "2117D7C2-B692-433C-8E57-6164637C3A65",
+        "Root",
+        "Spin_Orange"
       ],
       {
         "isExpanded" : true,
@@ -53,8 +43,35 @@
       [
         "2117D7C2-B692-433C-8E57-6164637C3A65",
         "Root",
-        "Loop_Orange",
+        "Loop_White",
+        "Track2"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "2117D7C2-B692-433C-8E57-6164637C3A65",
+        "Root",
+        "Spin_White",
         "Track"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "2117D7C2-B692-433C-8E57-6164637C3A65",
+        "Root",
+        "Loop"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "2117D7C2-B692-433C-8E57-6164637C3A65",
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -82,17 +99,8 @@
       },
       [
         "2117D7C2-B692-433C-8E57-6164637C3A65",
-        "Root"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "2117D7C2-B692-433C-8E57-6164637C3A65",
         "Root",
-        "Loop",
-        "Track"
+        "Spin_White"
       ],
       {
         "isExpanded" : true,
@@ -121,16 +129,20 @@
       [
         "2117D7C2-B692-433C-8E57-6164637C3A65",
         "Root",
-        "Spin_Orange"
+        "Loop_White_1",
+        "Track"
       ],
       {
         "isExpanded" : true,
         "isLocked" : false
-      },
+      }
+    ]
+  },
+  "7CEF4E2C-7CB9-4605-A5BA-31DDDE5781D3" : {
+    "objectMetadataList" : [
       [
-        "2117D7C2-B692-433C-8E57-6164637C3A65",
-        "Root",
-        "Loop"
+        "7CEF4E2C-7CB9-4605-A5BA-31DDDE5781D3",
+        "Root"
       ],
       {
         "isExpanded" : true,

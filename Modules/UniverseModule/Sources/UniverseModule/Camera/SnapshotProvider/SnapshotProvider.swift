@@ -16,11 +16,11 @@ final class SnapshotProvider {
 
     // Input
     private let cameraState: CameraState
-    private let snapshotSource: PreparedRenderSnapshotProviding
+    private let snapshotSource: UniverseSceneSnapshotProviding
     private var cachedCameraSnapshot: CameraSnapshot?
     private var cachedDependencyKey: CameraSnapshotDependencyKey?
 
-    var latestSnapshot: PreparedRenderSnapshot? {
+    var latestSnapshot: UniverseSceneSnapshot? {
         snapshotSource.latestSnapshot
     }
 
@@ -44,12 +44,12 @@ final class SnapshotProvider {
     }
 
     init(cameraState: CameraState,
-         snapshotSource: PreparedRenderSnapshotProviding) {
+         snapshotSource: UniverseSceneSnapshotProviding) {
         self.snapshotSource = snapshotSource
         self.cameraState = cameraState
     }
 
-    convenience init(snapshotSource: PreparedRenderSnapshotProviding) {
+    convenience init(snapshotSource: UniverseSceneSnapshotProviding) {
         self.init(cameraState: CameraState(),
                   snapshotSource: snapshotSource)
     }

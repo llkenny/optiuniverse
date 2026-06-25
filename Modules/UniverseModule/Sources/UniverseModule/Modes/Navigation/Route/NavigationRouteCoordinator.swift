@@ -40,7 +40,7 @@ final class NavigationRouteCoordinator {
 
     func start(destinationName: String,
                planets: [Planet],
-               snapshot: PreparedRenderSnapshot) -> Bool {
+               snapshot: UniverseSceneSnapshot) -> Bool {
         state = .preparing
         publishSnapshot()
 

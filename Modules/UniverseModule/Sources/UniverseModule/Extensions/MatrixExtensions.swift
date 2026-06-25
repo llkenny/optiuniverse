@@ -109,7 +109,7 @@ extension float4x4 {
         let zValue = far / (far - near)
         let wValue = -far * near / (far - near)
 
-        // Metal's clip space uses a top-left origin in screen space, which makes
+        // The legacy projection uses a top-left origin in screen space, which makes
         // the Y axis appear inverted compared to the typical mathematical
         // coordinate system. Negate the Y component so that positive Y points
         // upward on screen.
