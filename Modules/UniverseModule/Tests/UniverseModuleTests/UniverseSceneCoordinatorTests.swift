@@ -219,6 +219,25 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
+@Test func sceneCoordinatorRestartsConfiguredAnimationsAfterDismantle() async throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+
+    try await resources.prepare()
+    #expect(coordinator.animationPlaybackControllers["Earth"]?.count == 1)
+    #expect(coordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
+
+    coordinator.dismantle()
+    #expect(coordinator.animationPlaybackControllers.isEmpty)
+
+    coordinator.resumeConfiguredAnimationsIfNeeded()
+
+    #expect(coordinator.animationPlaybackControllers["Earth"]?.count == 1)
+    #expect(coordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
+    #expect(Set(coordinator.animationPlaybackControllers.keys) == ["Earth", "Jupiter"])
+}
+
+@MainActor
 @Test func failedCelestialBodyPreparationCommitsNoRealityKitOwnership() async throws {
     enum TestError: Error { case loadFailed }
     let repository = RealityAssetRepository { url in

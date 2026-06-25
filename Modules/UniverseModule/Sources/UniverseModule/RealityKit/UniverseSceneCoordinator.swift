@@ -74,6 +74,7 @@ final class UniverseSceneCoordinator {
         updateSubscription?.cancel()
         updateSubscription = nil
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
         subscribeToUpdates(in: content)
     }
 
@@ -84,6 +85,7 @@ final class UniverseSceneCoordinator {
             return
         }
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
@@ -377,6 +379,16 @@ final class UniverseSceneCoordinator {
         }
         if !controllers.isEmpty {
             animationPlaybackControllers[descriptor.displayName] = controllers
+        }
+    }
+
+    func resumeConfiguredAnimationsIfNeeded() {
+        for (bodyName, descriptor) in bodyDescriptors where !descriptor.animations.isEmpty {
+            guard animationPlaybackControllers[bodyName]?.isEmpty != false,
+                  let assetRoot = bodyEntities[bodyName]?.visualRoot.children.first else {
+                continue
+            }
+            playConfiguredAnimations(for: descriptor, on: assetRoot)
         }
     }
 
