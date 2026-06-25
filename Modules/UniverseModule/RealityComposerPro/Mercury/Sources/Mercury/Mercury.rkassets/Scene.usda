@@ -10,7 +10,8 @@
 
 def Xform "Root"
 {
-    def Sphere "Sphere" (
+    reorder nameChildren = ["Body", "Material"]
+    def Sphere "Body" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
@@ -26,7 +27,7 @@ def Xform "Root"
 
         def Material "DefaultMaterial"
         {
-            prepend token outputs:surface.connect = </Root/Sphere/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
 
             def Shader "DefaultSurfaceShader"
             {

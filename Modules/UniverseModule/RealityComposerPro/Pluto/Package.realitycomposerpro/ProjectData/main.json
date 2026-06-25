@@ -1,9 +1,11 @@
 {
   "pathsToIds" : {
-    "\/Pluto\/Sources\/Pluto\/Pluto.rkassets\/Scene.usda" : "D36A3D66-14FA-4D55-B950-E4C5CD83DAEE"
+    "\/Pluto\/Sources\/Pluto\/Pluto.rkassets\/Scene.usda" : "D36A3D66-14FA-4D55-B950-E4C5CD83DAEE",
+    "Pluto\/Sources\/Pluto\/Pluto.rkassets\/Scene.usda" : "CE42B7F6-B88E-452E-BD36-10223F0D4212"
   },
   "projectID" : 7866101846742494027,
   "uuidToIntID" : {
+    "CE42B7F6-B88E-452E-BD36-10223F0D4212" : 5966762180515171110,
     "D36A3D66-14FA-4D55-B950-E4C5CD83DAEE" : -5693992790498811745
   }
 }

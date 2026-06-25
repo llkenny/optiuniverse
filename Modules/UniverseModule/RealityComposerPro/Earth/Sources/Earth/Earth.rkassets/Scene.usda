@@ -10,7 +10,7 @@
 
 def Xform "Root"
 {
-    reorder nameChildren = ["Earth", "PointLight", "Clouds", "Clouds_Material", "Earth_Material", "SpinAnimation", "Loop_SpinAnimation", "Clouds_External", "Clouds_External_Material"]
+    reorder nameChildren = ["Body", "PointLight", "Clouds", "Clouds_Material", "Earth_Material", "SpinAnimation", "Loop_SpinAnimation", "Clouds_External", "Clouds_External_Material"]
     def Material "Earth_Material"
     {
         token inputs:frame:stPrimvarName = "st" (
@@ -177,7 +177,7 @@ def Xform "Root"
         }
     }
 
-    def Sphere "Earth" (
+    def Sphere "Body" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
@@ -189,7 +189,9 @@ def Xform "Root"
 
         def Material "DefaultMaterial"
         {
-            token outputs:surface.connect = </Root/Earth/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+            token outputs:mtlx:surface
+            token outputs:realitykit:vertex
+            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
 
             def Shader "DefaultSurfaceShader"
             {

@@ -4,6 +4,15 @@
       [
         "8423DC16-49C3-4097-86EC-D486C98439A0",
         "Root",
+        "SpinAnimation"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
         "Clouds_External"
       ],
       {
@@ -14,26 +23,8 @@
       [
         "8423DC16-49C3-4097-86EC-D486C98439A0",
         "Root",
-        "Loop_SpinAnimation",
+        "SpinAnimation",
         "Track"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "8423DC16-49C3-4097-86EC-D486C98439A0",
-        "Root",
-        "Loop_SpinAnimation"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "8423DC16-49C3-4097-86EC-D486C98439A0",
-        "Root",
-        "SpinAnimation"
       ],
       {
         "isExpanded" : true,
@@ -50,8 +41,17 @@
       [
         "8423DC16-49C3-4097-86EC-D486C98439A0",
         "Root",
-        "SpinAnimation",
-        "Track"
+        "SkySphere"
+      ],
+      {
+        "disallowsFraming" : true,
+        "isExpanded" : false,
+        "isLocked" : false
+      },
+      [
+        "8423DC16-49C3-4097-86EC-D486C98439A0",
+        "Root",
+        "Loop_SpinAnimation"
       ],
       {
         "isExpanded" : true,
@@ -60,11 +60,32 @@
       [
         "8423DC16-49C3-4097-86EC-D486C98439A0",
         "Root",
-        "SkySphere"
+        "Loop_SpinAnimation",
+        "Track"
       ],
       {
-        "disallowsFraming" : true,
-        "isExpanded" : false,
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
+  },
+  "E2B7E0D5-CA3D-4BA5-B9EF-7847944ECB83" : {
+    "objectMetadataList" : [
+      [
+        "E2B7E0D5-CA3D-4BA5-B9EF-7847944ECB83",
+        "Root",
+        "Body"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "E2B7E0D5-CA3D-4BA5-B9EF-7847944ECB83",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
         "isLocked" : false
       }
     ]

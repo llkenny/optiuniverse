@@ -57,7 +57,6 @@ import Testing
         let bounds = root.visualBounds(relativeTo: root)
         let extents = bounds.extents
         let modelRootName = asset.usesSnapshotScale ? asset.canonicalRootName : "Body"
-        // TODO: Fix assets naming (should be named "Body")
         let body = try #require(root.findEntity(named: modelRootName))
         let model = try #require(firstModelComponent(in: body))
 

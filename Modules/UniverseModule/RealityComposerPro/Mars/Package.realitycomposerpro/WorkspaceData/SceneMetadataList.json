@@ -15,7 +15,8 @@
     "objectMetadataList" : [
       [
         "F108AD28-2F98-48C5-B3EA-C875A319A0B5",
-        "Root"
+        "Root",
+        "Body"
       ],
       {
         "isExpanded" : true,
@@ -23,8 +24,7 @@
       },
       [
         "F108AD28-2F98-48C5-B3EA-C875A319A0B5",
-        "Root",
-        "Body"
+        "Root"
       ],
       {
         "isExpanded" : true,

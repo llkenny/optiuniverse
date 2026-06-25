@@ -1,9 +1,11 @@
 {
   "pathsToIds" : {
-    "\/Venus\/Sources\/Venus\/Venus.rkassets\/Scene.usda" : "46F12C8E-5807-44FA-B35C-5C1B63DD4CED"
+    "\/Venus\/Sources\/Venus\/Venus.rkassets\/Scene.usda" : "46F12C8E-5807-44FA-B35C-5C1B63DD4CED",
+    "Venus\/Sources\/Venus\/Venus.rkassets\/Scene.usda" : "894BF542-4603-49D9-88F9-6A85D9AFF711"
   },
   "projectID" : -2660466137743025115,
   "uuidToIntID" : {
-    "46F12C8E-5807-44FA-B35C-5C1B63DD4CED" : -2446224764541403169
+    "46F12C8E-5807-44FA-B35C-5C1B63DD4CED" : -2446224764541403169,
+    "894BF542-4603-49D9-88F9-6A85D9AFF711" : -3421742061878384445
   }
 }
