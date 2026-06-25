@@ -212,15 +212,29 @@ struct VisionUniverseControlView: View {
 }
 
 private struct VisionObjectInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
     let entity: ObjectInfoViewEntity
 
     var body: some View {
-        ScrollView {
-            ObjectInfoView(entity: entity)
-                .padding(.bottom, 20)
+        NavigationStack {
+            ScrollView {
+                ObjectInfoView(entity: entity)
+                    .padding(.bottom, 20)
+            }
+            .frame(width: 520, height: 640)
+            .background(OptiColor.screenBackground)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel("Close object info")
+                }
+            }
         }
-        .frame(width: 520, height: 640)
-        .background(OptiColor.screenBackground)
     }
 }
 
