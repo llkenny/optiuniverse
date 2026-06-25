@@ -28,6 +28,7 @@ final class UniverseSceneCoordinator {
     private(set) var bodyEntities: [String: BodyEntities] = [:]
     private(set) var realityKitOwnedBodyNames: Set<String> = []
     private(set) var isProceduralSceneContentPrepared = false
+    private(set) var animationPlaybackControllers: [String: [AnimationPlaybackController]] = [:]
 
     private let snapshotProvider: SnapshotProvider
     private let cameraCoordinator: CameraCoordinator
@@ -73,6 +74,7 @@ final class UniverseSceneCoordinator {
         updateSubscription?.cancel()
         updateSubscription = nil
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
         subscribeToUpdates(in: content)
     }
 
@@ -83,6 +85,7 @@ final class UniverseSceneCoordinator {
             return
         }
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
@@ -155,9 +158,11 @@ final class UniverseSceneCoordinator {
             guard let entities = bodyEntities[descriptor.displayName] else {
                 throw PreparationError.missingBody(descriptor.displayName)
             }
+            stopAnimations(for: descriptor.displayName)
             entities.visualRoot.children.removeAll()
             entities.visualRoot.transform = descriptor.visualCorrectionTransform
             entities.visualRoot.addChild(assetRoot)
+            playConfiguredAnimations(for: descriptor, on: assetRoot)
         }
         install(proceduralSceneContent: preparedProceduralSceneContent)
         bodyDescriptors = Dictionary(uniqueKeysWithValues: manifest.assets.map {
@@ -220,6 +225,7 @@ final class UniverseSceneCoordinator {
         updateSubscription?.cancel()
         updateSubscription = nil
         assetRepository.cancelPendingLoads()
+        stopAllAnimations()
         universeRoot.removeFromParent()
         installationRoot = nil
         activeInstallationID = nil
@@ -351,6 +357,73 @@ final class UniverseSceneCoordinator {
         navigationRouteRoot.addChild(navigationMarkerRoot)
         navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)
         self.proceduralSceneContent = proceduralSceneContent
+    }
+
+    private func playConfiguredAnimations(for descriptor: CelestialAssetDescriptor,
+                                          on assetRoot: Entity) {
+        guard !descriptor.animations.isEmpty else { return }
+        let availableAnimations = assetRoot.availableAnimations.reduce(
+            into: [String: AnimationResource]()
+        ) { animationsByName, animation in
+            animationsByName[animation.name] = animationsByName[animation.name] ?? animation
+        }
+        var controllers: [AnimationPlaybackController] = []
+        controllers.reserveCapacity(descriptor.animations.count)
+        for configuredAnimation in descriptor.animations {
+            let animationOwnerAndResource = availableAnimations[configuredAnimation.name].map {
+                (assetRoot, $0)
+            } ?? animationResource(named: configuredAnimation.name, in: assetRoot)
+            guard let (animationOwner, animation) = animationOwnerAndResource else { continue }
+            let playbackAnimation = configuredAnimation.repeats ? animation.repeat() : animation
+            controllers.append(animationOwner.playAnimation(playbackAnimation))
+        }
+        if !controllers.isEmpty {
+            animationPlaybackControllers[descriptor.displayName] = controllers
+        }
+    }
+
+    func resumeConfiguredAnimationsIfNeeded() {
+        for (bodyName, descriptor) in bodyDescriptors where !descriptor.animations.isEmpty {
+            guard animationPlaybackControllers[bodyName]?.isEmpty != false,
+                  let assetRoot = bodyEntities[bodyName]?.visualRoot.children.first else {
+                continue
+            }
+            playConfiguredAnimations(for: descriptor, on: assetRoot)
+        }
+    }
+
+    private func stopAnimations(for bodyName: String) {
+        animationPlaybackControllers[bodyName]?.forEach { $0.stop() }
+        animationPlaybackControllers[bodyName] = nil
+    }
+
+    private func stopAllAnimations() {
+        animationPlaybackControllers.values.flatMap { $0 }.forEach { $0.stop() }
+        animationPlaybackControllers.removeAll()
+    }
+
+    private func animationResource(named name: String,
+                                   in entity: Entity) -> (Entity, AnimationResource)? {
+        if let animationLibrary = entity.components[AnimationLibraryComponent.self] {
+            if let animation = animationLibrary.animations[name] {
+                return (entity, animation)
+            }
+            if let animation = animationLibrary.animations.first(where: {
+                Self.animationKey($0.key, matches: name)
+            })?.value {
+                return (entity, animation)
+            }
+        }
+        for child in entity.children {
+            if let animation = animationResource(named: name, in: child) {
+                return animation
+            }
+        }
+        return nil
+    }
+
+    private static func animationKey(_ key: String, matches configuredName: String) -> Bool {
+        key.split(separator: "/").last.map(String.init) == configuredName
     }
 
     static func makeRealityKitProjection(

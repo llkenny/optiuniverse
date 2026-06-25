@@ -191,6 +191,10 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
     let sunVisualRoot = try #require(resources.sceneCoordinator.bodyEntities["Sun"]?.visualRoot)
     #expect(sunVisualRoot.findEntity(named: "Corona") != nil)
+    #expect(resources.sceneCoordinator.animationPlaybackControllers["Earth"]?.count == 1)
+    #expect(resources.sceneCoordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
+    #expect(Set(resources.sceneCoordinator.animationPlaybackControllers.keys)
+            == ["Earth", "Jupiter"])
 }
 
 @MainActor
@@ -212,6 +216,25 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
         named: CelestialLightingConfiguration.SunPointLight.entityName,
         in: resources.sceneCoordinator.universeRoot
     ) == 1)
+}
+
+@MainActor
+@Test func sceneCoordinatorRestartsConfiguredAnimationsAfterDismantle() async throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+
+    try await resources.prepare()
+    #expect(coordinator.animationPlaybackControllers["Earth"]?.count == 1)
+    #expect(coordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
+
+    coordinator.dismantle()
+    #expect(coordinator.animationPlaybackControllers.isEmpty)
+
+    coordinator.resumeConfiguredAnimationsIfNeeded()
+
+    #expect(coordinator.animationPlaybackControllers["Earth"]?.count == 1)
+    #expect(coordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
+    #expect(Set(coordinator.animationPlaybackControllers.keys) == ["Earth", "Jupiter"])
 }
 
 @MainActor
@@ -283,6 +306,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
         try await preparation.value
     }
     #expect(resources.sceneCoordinator.realityKitOwnedBodyNames.isEmpty)
+    #expect(resources.sceneCoordinator.animationPlaybackControllers.isEmpty)
     #expect(resources.sceneCoordinator.bodyEntities["Sun"]?.visualRoot.children.isEmpty == true)
     #expect(resources.sceneCoordinator.bodyEntities["Neptune"]?.visualRoot.children.isEmpty == true)
 }
