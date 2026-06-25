@@ -24,7 +24,7 @@ import Testing
 
     let sun = try #require(coordinator.bodyEntities["Sun"])
     #expect(coordinator.sunLight.name == CelestialLightingConfiguration.SunPointLight.entityName)
-    #expect(coordinator.sunLight.parent == sun.bodyRoot)
+    #expect(coordinator.sunLight.parent == sun.orbitTransform)
     #expect(coordinator.sunLight.position == .zero)
     let sunLightComponent = try #require(
         coordinator.sunLight.components[PointLightComponent.self]
@@ -128,9 +128,11 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.update(deltaTime: 0.1)
     let initialFrame = try #require(coordinator.latestFrameState)
     let sunPosition = SIMD3<Float>(100, 20, -30)
+    let orbitTransformMatrix = float4x4.makeTranslation(sunPosition)
     let packet = CelestialBodySnapshot(
         planetName: "Sun",
-        baseModelMatrix: matrix_identity_float4x4,
+        baseModelMatrix: orbitTransformMatrix,
+        orbitTransformMatrix: orbitTransformMatrix,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
@@ -336,16 +338,135 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
-@Test func migratedBodyRetainsSnapshotRotationAndVisualCorrection() async throws {
+@Test func sceneSnapshotPipelineEmitsVisualSelfRotation() async throws {
+    let planet = Planet(name: "Sun",
+                        meshName: "Sun",
+                        parentName: nil,
+                        radius: 1,
+                        distance: 2,
+                        orbitSpeed: 0.25,
+                        rotationSpeedKmSec: 0.5)
+    let pipeline = UniverseSceneSnapshotPipeline(planets: [planet])
+    pipeline.setPresentationMetrics([
+        planet.name: CelestialBodyPresentationMetrics(renderRadius: 1,
+                                                      framingRadius: 1,
+                                                      surfaceRadius: 1)
+    ])
+
+    pipeline.requestPreparation(simulationTime: 2)
+    while pipeline.latestSnapshot == nil {
+        await Task.yield()
+    }
+
+    let packet = try #require(pipeline.latestSnapshot?.planet(named: planet.name))
+    let expectedVisualRotation = float4x4.makeRotationY(1)
+    let expectedOrbitTransform = planet.orbitTransformMatrix(at: 2)
+    let expectedBaseModelMatrix = planet.modelMatrix(at: 2)
+    expectSceneMatrix(packet.orbitTransformMatrix,
+                      equals: expectedOrbitTransform)
+    expectSceneMatrix(packet.visualRotationMatrix,
+                      equals: expectedVisualRotation)
+    expectSceneMatrix(packet.baseModelMatrix,
+                      equals: expectedBaseModelMatrix)
+    #expect(abs(packet.visualRotationMatrix[0][0] - 1) > 0.00001)
+}
+
+@MainActor
+@Test func sceneSnapshotPipelineSpinsVisibleBodiesAroundRealityKitUpAxis() async throws {
+    let bodyNames = Set(["Mercury", "Earth", "Jupiter", "Saturn", "Neptune"])
+    let planets = SolarSystemLoader.loadPlanets(from: "planets")
+        .filter { bodyNames.contains($0.name) }
+    let pipeline = UniverseSceneSnapshotPipeline(planets: planets)
+    pipeline.setPresentationMetrics(
+        Dictionary(uniqueKeysWithValues: planets.map {
+            ($0.name, CelestialBodyPresentationMetrics(renderRadius: 1,
+                                                       framingRadius: 1,
+                                                       surfaceRadius: 1))
+        })
+    )
+    let simulationTime: Float = 100_000
+
+    pipeline.requestPreparation(simulationTime: simulationTime)
+    while pipeline.latestSnapshot == nil {
+        await Task.yield()
+    }
+
+    let snapshot = try #require(pipeline.latestSnapshot)
+    for planet in planets {
+        let packet = try #require(snapshot.planet(named: planet.name))
+        let expectedRotation = float4x4.makeRotationY(simulationTime * planet.rotationSpeedKmSec)
+        expectSceneMatrix(packet.visualRotationMatrix,
+                          equals: expectedRotation)
+        #expect(abs(packet.visualRotationMatrix[1][1] - 1) <= 0.00001)
+        #expect(abs(packet.visualRotationMatrix[0][1]) <= 0.00001)
+        #expect(abs(packet.visualRotationMatrix[1][0]) <= 0.00001)
+        #expect(abs(packet.visualRotationMatrix[1][2]) <= 0.00001)
+        #expect(abs(packet.visualRotationMatrix[2][1]) <= 0.00001)
+    }
+}
+
+@MainActor
+@Test func sceneSnapshotPipelineEmitsParentRelativeOrbitMotion() async throws {
+    let earth = Planet(name: "Earth",
+                       meshName: "Earth",
+                       parentName: nil,
+                       radius: 1,
+                       distance: 10,
+                       orbitSpeed: 0,
+                       rotationSpeedKmSec: 0)
+    let moon = Planet(name: "Moon",
+                      meshName: "Moon",
+                      parentName: "Earth",
+                      radius: 1,
+                      distance: 2,
+                      orbitSpeed: 0.5,
+                      rotationSpeedKmSec: 0)
+    let pipeline = UniverseSceneSnapshotPipeline(planets: [earth, moon])
+    pipeline.setPresentationMetrics([
+        earth.name: CelestialBodyPresentationMetrics(renderRadius: 1,
+                                                     framingRadius: 1,
+                                                     surfaceRadius: 1),
+        moon.name: CelestialBodyPresentationMetrics(renderRadius: 1,
+                                                    framingRadius: 1,
+                                                    surfaceRadius: 1)
+    ])
+
+    pipeline.requestPreparation(simulationTime: Float.pi)
+    while pipeline.latestSnapshot == nil {
+        await Task.yield()
+    }
+
+    let snapshot = try #require(pipeline.latestSnapshot)
+    let earthPacket = try #require(snapshot.planet(named: earth.name))
+    let moonPacket = try #require(snapshot.planet(named: moon.name))
+    let expectedMoonOrbit = moon.orbitTransformMatrix(
+        at: Float.pi,
+        parentWorldPosition: earthPacket.worldPosition
+    )
+
+    expectSceneMatrix(moonPacket.orbitTransformMatrix,
+                      equals: expectedMoonOrbit)
+    expectVector(earthPacket.worldPosition,
+                 equals: SIMD3<Float>(10, 0, 0))
+    expectVector(moonPacket.worldPosition,
+                 equals: SIMD3<Float>(10, 0, -2))
+}
+
+@MainActor
+@Test func migratedBodyAppliesVisualRotationAndRetainsVisualCorrection() async throws {
     let resources = UniverseModuleResources()
     try await resources.prepare()
     resources.sceneCoordinator.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneCoordinator.update(deltaTime: 0.1)
     let initialFrame = try #require(resources.sceneCoordinator.latestFrameState)
-    let rotation = float4x4.makeRotationZ(.pi / 3)
+    let orbitTransform = float4x4.makeRotationY(.pi / 6)
+        * float4x4.makeTranslation(SIMD3<Float>(2, 0, 0))
+    let visualRotation = float4x4.makeRotationY(.pi / 3)
     let packet = CelestialBodySnapshot(
         planetName: "Sun",
-        baseModelMatrix: rotation,
+        baseModelMatrix: orbitTransform * visualRotation,
+        orbitTransformMatrix: orbitTransform,
+        visualRotationMatrix: visualRotation,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
@@ -363,7 +484,10 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
     resources.sceneCoordinator.apply(frameState: frame)
 
-    expectSceneMatrix(sun.rotationTransform.transform.matrix, equals: rotation)
+    expectSceneMatrix(sun.orbitTransform.transform.matrix,
+                      equals: orbitTransform)
+    expectSceneMatrix(sun.rotationTransform.transform.matrix,
+                      equals: visualRotation)
     #expect(sun.visualRoot.transform == visualTransform)
 }
 
@@ -397,9 +521,11 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.update(deltaTime: 0.5)
     let initialFrame = try #require(coordinator.latestFrameState)
     let bodyPosition = SIMD3<Float>(10, 20, 30)
+    let orbitTransformMatrix = float4x4.makeTranslation(bodyPosition)
     let packet = CelestialBodySnapshot(
         planetName: "Earth",
-        baseModelMatrix: matrix_identity_float4x4,
+        baseModelMatrix: orbitTransformMatrix,
+        orbitTransformMatrix: orbitTransformMatrix,
         normalizedScale: 1,
         framingRadius: 1,
         surfaceRadius: 1,
@@ -416,7 +542,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.apply(frameState: frame)
 
     let earth = try #require(coordinator.bodyEntities["Earth"])
-    #expect(earth.bodyRoot.position == bodyPosition - initialFrame.cameraSnapshot.sceneOrigin)
+    #expect(earth.bodyRoot.position == -initialFrame.cameraSnapshot.sceneOrigin)
+    expectSceneMatrix(earth.orbitTransform.transform.matrix,
+                      equals: orbitTransformMatrix)
     let cameraComponent = try #require(
         coordinator.virtualCamera.components[ProjectiveTransformCameraComponent.self]
     )
@@ -515,4 +643,12 @@ private func expectSceneMatrix(_ lhs: float4x4,
             #expect(abs(lhs[column][row] - rhs[column][row]) <= tolerance)
         }
     }
+}
+
+private func expectVector(_ lhs: SIMD3<Float>,
+                          equals rhs: SIMD3<Float>,
+                          tolerance: Float = 0.00001) {
+    #expect(abs(lhs.x - rhs.x) <= tolerance)
+    #expect(abs(lhs.y - rhs.y) <= tolerance)
+    #expect(abs(lhs.z - rhs.z) <= tolerance)
 }

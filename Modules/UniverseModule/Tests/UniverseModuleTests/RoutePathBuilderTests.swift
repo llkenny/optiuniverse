@@ -22,7 +22,7 @@ import Testing
 }
 
 @Test func routeBuilderExtendsTransferToDestinationOrbitPosition() throws {
-    let destinationPosition = SIMD3<Float>(0, -1.52, 0)
+    let destinationPosition = SIMD3<Float>(0, 0, 1.52)
     let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
         destinationName: "Mars",
         planets: testPlanets,
@@ -36,6 +36,20 @@ import Testing
 
     #expect(simd_distance(finalPoint, destinationPosition) < 0.0001)
     #expect(route.points.count > 24)
+    #expect(route.points.allSatisfy { abs($0.y) < 0.0001 })
+}
+
+@Test func routeBuilderLeavesTransferArcWhenDestinationHasNoOrbitPlaneDirection() throws {
+    let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        destinationName: "Mars",
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: SIMD3<Float>(0, 1.52, 0),
+        estimatedDuration: 12
+    )))
+
+    #expect(route.points.count == 24)
 }
 
 @Test func routeBuilderRejectsUnsupportedDestinations() {

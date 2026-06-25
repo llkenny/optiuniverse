@@ -26,7 +26,7 @@ struct HohmannTransferOrbit: Equatable, Sendable {
               isSupportedDestination(destination),
               earth.distance > 0,
               destination.distance > 0,
-              simd_length_squared(earthSunDirection) > 0.000001 else {
+              horizontalLengthSquared(earthSunDirection) > 0.000001 else {
             return nil
         }
 
@@ -75,7 +75,7 @@ struct HohmannTransferOrbit: Equatable, Sendable {
             let progress = Float(index) / Float(sampleCount - 1)
             let trueAnomaly = departureTrueAnomaly +
             (destinationTrueAnomaly - departureTrueAnomaly) * progress
-            return rotateZ(point(trueAnomaly: trueAnomaly,
+            return rotateY(point(trueAnomaly: trueAnomaly,
                                  eccentricity: eccentricity,
                                  semiLatusRectum: semiLatusRectum),
                            angle: rotationAngle)
@@ -87,26 +87,30 @@ struct HohmannTransferOrbit: Equatable, Sendable {
                               semiLatusRectum: Float) -> SIMD3<Float> {
         let radius = semiLatusRectum / (1 + eccentricity * cos(trueAnomaly))
         return SIMD3<Float>(radius * cos(trueAnomaly),
-                            radius * sin(trueAnomaly),
-                            0)
+                            0,
+                            -radius * sin(trueAnomaly))
     }
 
     private static func signedAngle(from source: SIMD3<Float>,
                                     to destination: SIMD3<Float>) -> Float {
-        let sourceXY = normalize(SIMD2<Float>(source.x, source.y))
-        let destinationXY = normalize(SIMD2<Float>(destination.x, destination.y))
-        let crossValue = sourceXY.x * destinationXY.y - sourceXY.y * destinationXY.x
-        let dotValue = simd_clamp(simd_dot(sourceXY, destinationXY), -1, 1)
+        let sourceXZ = normalize(SIMD2<Float>(source.x, source.z))
+        let destinationXZ = normalize(SIMD2<Float>(destination.x, destination.z))
+        let crossValue = sourceXZ.y * destinationXZ.x - sourceXZ.x * destinationXZ.y
+        let dotValue = simd_clamp(simd_dot(sourceXZ, destinationXZ), -1, 1)
         return atan2(crossValue, dotValue)
     }
 
-    private static func rotateZ(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {
+    private static func rotateY(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {
         let cosine = cos(angle)
         let sine = sin(angle)
         return SIMD3<Float>(
-            point.x * cosine - point.y * sine,
-            point.x * sine + point.y * cosine,
-            point.z
+            point.x * cosine + point.z * sine,
+            point.y,
+            -point.x * sine + point.z * cosine
         )
+    }
+
+    private static func horizontalLengthSquared(_ vector: SIMD3<Float>) -> Float {
+        vector.x * vector.x + vector.z * vector.z
     }
 }

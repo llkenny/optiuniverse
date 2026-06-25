@@ -130,11 +130,11 @@ final class RealityProceduralSceneContent {
         navigationMarker.scale = SIMD3<Float>(repeating: cameraDistance * 0.008 * pulse)
     }
 
-    private static func circlePoints(center: SIMD3<Float>, radius: Float) -> [SIMD3<Float>] {
+    static func circlePoints(center: SIMD3<Float>, radius: Float) -> [SIMD3<Float>] {
         guard radius.isFinite, radius > 0 else { return [] }
         return (0...transferSampleCount).map { index in
             let angle = Float(index) / Float(transferSampleCount) * 2 * .pi
-            return center + SIMD3<Float>(radius * cos(angle), radius * sin(angle), 0)
+            return center + SIMD3<Float>(radius * cos(angle), 0, -radius * sin(angle))
         }
     }
 

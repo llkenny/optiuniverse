@@ -10,15 +10,15 @@ import Testing
     expectVector(SurfaceCoordinateMath.localUnitVector(
         for: SurfaceCoordinate(latitudeDegrees: 0,
                                longitudeDegrees: 90)
-    ), equals: SIMD3<Float>(0, 1, 0))
+    ), equals: SIMD3<Float>(0, 0, 1))
     expectVector(SurfaceCoordinateMath.localUnitVector(
         for: SurfaceCoordinate(latitudeDegrees: 90,
                                longitudeDegrees: 42)
-    ), equals: SIMD3<Float>(0, 0, 1))
+    ), equals: SIMD3<Float>(0, 1, 0))
     expectVector(SurfaceCoordinateMath.localUnitVector(
         for: SurfaceCoordinate(latitudeDegrees: -90,
                                longitudeDegrees: 42)
-    ), equals: SIMD3<Float>(0, 0, -1))
+    ), equals: SIMD3<Float>(0, -1, 0))
 }
 
 @Test func surfaceCoordinateRoundTripsAwayFromPoles() throws {
@@ -107,7 +107,7 @@ import Testing
 
 @Test func worldSurfacePointUsesBaseModelMatrixAndSurfaceRadius() throws {
     let baseModelMatrix = float4x4.makeTranslation(SIMD3<Float>(10, 20, 30))
-    * float4x4.makeRotationZ(.pi / 2)
+    * float4x4.makeRotationY(.pi / 2)
     let planet = testSurfacePlanet(baseModelMatrix: baseModelMatrix,
                                    surfaceRadius: 2)
 
@@ -120,7 +120,7 @@ import Testing
                                                                    forWorldPoint: worldPoint))
 
     expectVector(worldPoint,
-                 equals: SIMD3<Float>(10, 22, 30))
+                 equals: SIMD3<Float>(10, 20, 28))
     expectEqual(coordinate.latitudeDegrees,
                 0)
     expectEqual(coordinate.longitudeDegrees,

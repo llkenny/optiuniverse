@@ -87,8 +87,8 @@ struct RoutePathBuilder: RouteBuilding {
         let destinationVector = destinationPosition - sunPosition
         let epsilon: Float = 0.000001
 
-        guard simd_length_squared(endpointVector) > epsilon,
-              simd_length_squared(destinationVector) > epsilon else {
+        guard horizontalLengthSquared(endpointVector) > epsilon,
+              horizontalLengthSquared(destinationVector) > epsilon else {
             return transferOrbit.points
         }
 
@@ -102,7 +102,7 @@ struct RoutePathBuilder: RouteBuilding {
         let orbitPoints = (1...arcSampleCount).map { index in
             let progress = Float(index) / Float(arcSampleCount)
             let angle = orbitAngle * progress
-            return sunPosition + rotateZ(startDirection * radius, angle: angle)
+            return sunPosition + rotateY(startDirection * radius, angle: angle)
         }
 
         return transferOrbit.points + orbitPoints
@@ -127,21 +127,25 @@ struct RoutePathBuilder: RouteBuilding {
 
     private static func positiveAngle(from source: SIMD3<Float>,
                                       to destination: SIMD3<Float>) -> Float {
-        let sourceXY = normalize(SIMD2<Float>(source.x, source.y))
-        let destinationXY = normalize(SIMD2<Float>(destination.x, destination.y))
-        let crossValue = sourceXY.x * destinationXY.y - sourceXY.y * destinationXY.x
-        let dotValue = simd_clamp(simd_dot(sourceXY, destinationXY), -1, 1)
+        let sourceXZ = normalize(SIMD2<Float>(source.x, source.z))
+        let destinationXZ = normalize(SIMD2<Float>(destination.x, destination.z))
+        let crossValue = sourceXZ.y * destinationXZ.x - sourceXZ.x * destinationXZ.y
+        let dotValue = simd_clamp(simd_dot(sourceXZ, destinationXZ), -1, 1)
         let signedAngle = atan2(crossValue, dotValue)
         return signedAngle >= 0 ? signedAngle : signedAngle + 2 * .pi
     }
 
-    private static func rotateZ(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {
+    private static func rotateY(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {
         let cosine = cos(angle)
         let sine = sin(angle)
         return SIMD3<Float>(
-            point.x * cosine - point.y * sine,
-            point.x * sine + point.y * cosine,
-            point.z
+            point.x * cosine + point.z * sine,
+            point.y,
+            -point.x * sine + point.z * cosine
         )
+    }
+
+    private static func horizontalLengthSquared(_ vector: SIMD3<Float>) -> Float {
+        vector.x * vector.x + vector.z * vector.z
     }
 }

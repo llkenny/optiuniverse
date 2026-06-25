@@ -65,13 +65,17 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
 
             let parentWorldPosition = planet.parentName
                 .flatMap { worldPositionsByName[$0] }
-            let baseModelMatrix = planet.modelMatrix(at: simulationTime,
-                                                     parentWorldPosition: parentWorldPosition)
+            let orbitTransformMatrix = planet.orbitTransformMatrix(
+                at: simulationTime,
+                parentWorldPosition: parentWorldPosition
+            )
+            let visualRotationMatrix = planet.visualRotationMatrix(at: simulationTime)
+            let baseModelMatrix = orbitTransformMatrix * visualRotationMatrix
             let normalizedScale = planet.radius
             guard let presentationMetrics = presentationMetricsByBodyName[planet.name] else {
                 continue
             }
-            let worldPosition4 = baseModelMatrix * SIMD4<Float>(0, 0, 0, 1)
+            let worldPosition4 = orbitTransformMatrix * SIMD4<Float>(0, 0, 0, 1)
             let worldPosition = SIMD3<Float>(worldPosition4.x,
                                              worldPosition4.y,
                                              worldPosition4.z)
@@ -81,6 +85,8 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
                 CelestialBodySnapshot(
                     planetName: planet.name,
                     baseModelMatrix: baseModelMatrix,
+                    orbitTransformMatrix: orbitTransformMatrix,
+                    visualRotationMatrix: visualRotationMatrix,
                     normalizedScale: normalizedScale,
                     framingRadius: presentationMetrics.framingRadius,
                     surfaceRadius: presentationMetrics.surfaceRadius,
@@ -99,13 +105,23 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
 extension Planet {
     nonisolated func modelMatrix(at time: Float,
                                  parentWorldPosition: SIMD3<Float>? = nil) -> float4x4 {
+        orbitTransformMatrix(at: time, parentWorldPosition: parentWorldPosition)
+            * visualRotationMatrix(at: time)
+    }
+
+    nonisolated func orbitTransformMatrix(at time: Float,
+                                          parentWorldPosition: SIMD3<Float>? = nil) -> float4x4 {
         let orbitAngle = time * orbitSpeed
-        let orbitRotation = float4x4.makeRotationZ(orbitAngle)
+        // Presentation orbits are stylized circular paths in RealityKit's XZ plane.
+        let orbitRotation = float4x4.makeRotationY(orbitAngle)
         let orbitalTranslation = float4x4.makeTranslation([distance, 0, 0])
-        let selfSpin = float4x4.makeRotationZ(time * rotationSpeedKmSec)
         let parentTranslation = float4x4.makeTranslation(parentWorldPosition ?? .zero)
 
         // Transformations are applied right to left.
-        return parentTranslation * orbitRotation * orbitalTranslation * selfSpin
+        return parentTranslation * orbitRotation * orbitalTranslation
+    }
+
+    nonisolated func visualRotationMatrix(at time: Float) -> float4x4 {
+        float4x4.makeRotationY(time * rotationSpeedKmSec)
     }
 }

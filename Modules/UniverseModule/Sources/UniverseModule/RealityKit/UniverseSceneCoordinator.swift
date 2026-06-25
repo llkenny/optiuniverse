@@ -259,7 +259,7 @@ final class UniverseSceneCoordinator {
             orbitTransform.addChild(rotationTransform)
             rotationTransform.addChild(visualRoot)
             if planet.name == "Sun" {
-                bodyRoot.addChild(sunLight)
+                orbitTransform.addChild(sunLight)
             }
             celestialSystemRoot.addChild(bodyRoot)
             bodyEntities[planet.name] = BodyEntities(bodyRoot: bodyRoot,
@@ -326,11 +326,9 @@ final class UniverseSceneCoordinator {
         guard let snapshot = frameState.snapshot else { return }
         for packet in snapshot.planets {
             guard let entities = bodyEntities[packet.planetName] else { continue }
-            entities.bodyRoot.position = packet.worldPosition - cameraSnapshot.sceneOrigin
-
-            var localModelMatrix = packet.baseModelMatrix
-            localModelMatrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
-            entities.rotationTransform.transform = Transform(matrix: localModelMatrix)
+            entities.bodyRoot.position = -cameraSnapshot.sceneOrigin
+            entities.orbitTransform.transform = Transform(matrix: packet.orbitTransformMatrix)
+            entities.rotationTransform.transform = Transform(matrix: packet.visualRotationMatrix)
             if bodyDescriptors[packet.planetName]?.usesSnapshotScale == true {
                 entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
             }

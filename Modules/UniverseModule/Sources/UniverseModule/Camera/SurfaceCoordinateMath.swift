@@ -28,8 +28,8 @@ enum SurfaceCoordinateMath {
         let equatorRadius = cos(latitude)
         let vector = SIMD3<Float>(
             equatorRadius * cos(longitude),
-            equatorRadius * sin(longitude),
-            sin(latitude)
+            sin(latitude),
+            equatorRadius * sin(longitude)
         )
 
         guard simd_length_squared(vector) > epsilon * epsilon else {
@@ -44,9 +44,9 @@ enum SurfaceCoordinateMath {
         }
 
         let unitVector = simd_normalize(vector)
-        let clampedZ = min(max(unitVector.z, -1), 1)
-        let latitude = asin(clampedZ) * 180 / .pi
-        let longitude = atan2(unitVector.y, unitVector.x) * 180 / .pi
+        let clampedY = min(max(unitVector.y, -1), 1)
+        let latitude = asin(clampedY) * 180 / .pi
+        let longitude = atan2(unitVector.z, unitVector.x) * 180 / .pi
         return SurfaceCoordinate(latitudeDegrees: latitude,
                                  longitudeDegrees: normalizedLongitude(longitude))
     }
