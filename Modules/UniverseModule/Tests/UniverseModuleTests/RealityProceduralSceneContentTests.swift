@@ -50,6 +50,18 @@ import Testing
 }
 
 @MainActor
+@Test func proceduralOrbitCirclePointsUseRealityKitXZPlane() throws {
+    let points = RealityProceduralSceneContent.circlePoints(center: SIMD3<Float>(10, 20, 30),
+                                                            radius: 4)
+    let firstPoint = try #require(points.first)
+    let quarterPoint = points[points.count / 4]
+
+    #expect(simd_distance(firstPoint, SIMD3<Float>(14, 20, 30)) < 0.0001)
+    #expect(simd_distance(quarterPoint, SIMD3<Float>(10, 20, 26)) < 0.0001)
+    #expect(points.allSatisfy { abs($0.y - 20) < 0.0001 })
+}
+
+@MainActor
 @Test func realityStarFieldUsesOneBatchedLowLevelMesh() throws {
     let starField = try RealityStarField(configuration: StarFieldConfiguration(density: 0.01))
     let model = try #require(starField.entity.components[ModelComponent.self])
