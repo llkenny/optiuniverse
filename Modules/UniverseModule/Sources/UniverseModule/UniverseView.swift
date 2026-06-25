@@ -16,6 +16,20 @@ public struct UniverseView: View {
     public var body: some View {
         GeometryReader { geometry in
             ZStack {
+                #if os(visionOS)
+                RealityView { content in
+                    resources.sceneCoordinator.install(
+                        in: &content,
+                        installationID: installationID
+                    )
+                } update: { content in
+                    resources.sceneCoordinator.restoreInstallationIfNeeded(
+                        in: &content,
+                        installationID: installationID
+                    )
+                }
+                .allowsHitTesting(false)
+                #else
                 RealityView { content in
                     resources.sceneCoordinator.install(
                         in: &content,
@@ -33,6 +47,7 @@ public struct UniverseView: View {
                 .allowsHitTesting(false)
 
                 CameraGestureView(resources: resources)
+                #endif
             }
             .onAppear {
                 resources.sceneCoordinator.setPresentationActive(isActive)

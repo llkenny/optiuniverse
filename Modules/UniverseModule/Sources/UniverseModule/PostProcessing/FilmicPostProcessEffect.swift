@@ -3,6 +3,7 @@ import Metal
 import OSLog
 import RealityKit
 
+#if !os(visionOS)
 struct FilmicPostProcessEffect: PostProcessEffect {
     private let renderer = FilmicPostProcessRenderer()
 
@@ -20,6 +21,7 @@ struct FilmicPostProcessEffect: PostProcessEffect {
         )
     }
 }
+#endif
 
 final class FilmicPostProcessRenderer: @unchecked Sendable {
     private enum PipelineKind: Hashable {

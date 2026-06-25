@@ -1,3 +1,4 @@
+#if !os(visionOS)
 import SwiftUI
 import UIKit
 
@@ -63,3 +64,4 @@ struct CameraGestureView: UIViewRepresentable {
         )
     }
 }
+#endif

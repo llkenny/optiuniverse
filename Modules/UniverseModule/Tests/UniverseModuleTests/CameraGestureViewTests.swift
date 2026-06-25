@@ -1,3 +1,4 @@
+#if !os(visionOS)
 import Testing
 import UIKit
 @testable import UniverseModule
@@ -49,3 +50,4 @@ import UIKit
     isTrajectoryModeActive = true
     #expect(controller.gestureRecognizerShouldBegin(trajectoryPan))
 }
+#endif

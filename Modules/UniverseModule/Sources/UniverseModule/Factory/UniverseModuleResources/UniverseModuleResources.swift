@@ -6,6 +6,7 @@
 //
 
 internal import BaseModule
+import CoreGraphics
 import Foundation
 import Observation
 
@@ -178,6 +179,27 @@ public final class UniverseModuleResources {
         navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
         cameraCoordinator.beginManualCameraControl()
+    }
+
+    public func rotateCamera(translation: CGSize, velocity: CGSize = .zero) {
+        beginManualCameraControl()
+        cameraCoordinator.makeRotation(
+            with: CGPoint(x: translation.width, y: translation.height),
+            velocity: CGPoint(x: velocity.width, y: velocity.height)
+        )
+    }
+
+    public func translateCamera(translation: CGSize) {
+        beginManualCameraControl()
+        cameraCoordinator.makeTranslation(
+            with: CGPoint(x: translation.width, y: translation.height),
+            viewportSize: viewportSize
+        )
+    }
+
+    public func scaleCamera(by scale: Float, velocity: CGFloat = 0) {
+        beginManualCameraControl()
+        cameraCoordinator.makeScale(with: scale, velocity: velocity)
     }
 
     public func setObjectInfoOverlayFraming(isPresented: Bool,

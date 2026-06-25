@@ -1,3 +1,4 @@
+#if !os(visionOS)
 import UIKit
 
 /// Handles user gestures to control the orbital camera around the scene's origin.
@@ -57,3 +58,4 @@ final class CameraController: NSObject, UIGestureRecognizerDelegate {
         return isTrajectoryModeActive()
     }
 }
+#endif

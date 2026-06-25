@@ -68,12 +68,37 @@ final class UniverseSceneCoordinator {
         buildHierarchy(planets: planets)
     }
 
+    #if os(visionOS)
+    func install(in content: inout RealityViewContent,
+                 installationID: UUID) {
+        registerInstallation(installationID)
+        updateSubscription?.cancel()
+        updateSubscription = nil
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
+        subscribeToUpdates(in: content)
+    }
+
+    func restoreInstallationIfNeeded(in content: inout RealityViewContent,
+                                     installationID: UUID) {
+        if activeInstallationID != installationID {
+            install(in: &content, installationID: installationID)
+            return
+        }
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
+        guard updateSubscription == nil else { return }
+        subscribeToUpdates(in: content)
+    }
+    #else
     func install(in content: inout RealityViewCameraContent,
                  installationID: UUID) {
         registerInstallation(installationID)
         updateSubscription?.cancel()
         updateSubscription = nil
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        content.camera = .virtual
+        content.cameraTarget = virtualCamera
         resumeConfiguredAnimationsIfNeeded()
         subscribeToUpdates(in: content)
     }
@@ -85,13 +110,18 @@ final class UniverseSceneCoordinator {
             return
         }
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        content.camera = .virtual
+        content.cameraTarget = virtualCamera
         resumeConfiguredAnimationsIfNeeded()
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
+    #endif
 
-    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent,
-                                     installationID: UUID) {
+    private func attachSceneIfNeeded<Content: RealityViewContentProtocol>(
+        to content: inout Content,
+        installationID: UUID
+    ) {
         guard activeInstallationID == installationID else { return }
 
         if let installationRoot,
@@ -107,11 +137,9 @@ final class UniverseSceneCoordinator {
             content.add(installationRoot)
             self.installationRoot = installationRoot
         }
-        content.camera = .virtual
-        content.cameraTarget = virtualCamera
     }
 
-    private func subscribeToUpdates(in content: RealityViewCameraContent) {
+    private func subscribeToUpdates<Content: RealityViewContentProtocol>(in content: Content) {
         updateSubscription = content.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.update(deltaTime: event.deltaTime)

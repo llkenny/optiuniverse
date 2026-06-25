@@ -15,9 +15,22 @@ struct OptiUniverseApp: App {
     @State private var universeResources = UniverseModuleFactory.makeResources()
 
     var body: some Scene {
+        #if os(visionOS)
+        WindowGroup {
+            VisionUniverseControlView(universeResources: universeResources)
+                .environment(appEnvironment)
+        }
+        .defaultSize(width: 900, height: 720)
+
+        ImmersiveSpace(id: VisionSceneID.universeImmersiveSpace) {
+            UniverseImmersiveView(resources: universeResources)
+                .environment(appEnvironment)
+        }
+        #else
         WindowGroup {
             RootContainerView(universeResources: universeResources)
                 .environment(appEnvironment)
         }
+        #endif
     }
 }

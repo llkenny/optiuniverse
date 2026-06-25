@@ -19,6 +19,7 @@ public final class AppEnvironment {
     public var currentScreen: Screen = .home
     public var selectedDestinationID: UUID?
     public var selectedPlanet: String?
+    public var isUniverseImmersivePresented = false
     public var location: String {
         "\(selectedPlanet ?? "Unknown"), Solar System, Milky Way"
     }
