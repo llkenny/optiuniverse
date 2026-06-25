@@ -12,6 +12,13 @@ import Testing
     #expect(manifest.assets.allSatisfy { $0.filename.hasSuffix(".usdz") })
     #expect(manifest.assets.allSatisfy { $0.modelToUniverseScale.isFinite })
     #expect(manifest.assets.allSatisfy { $0.referenceRadius.isFinite })
+
+    let earth = try #require(manifest.assets.first { $0.identity == "earth" })
+    let jupiter = try #require(manifest.assets.first { $0.identity == "jupiter" })
+    let animatedIdentities = Set(manifest.assets.filter { !$0.animations.isEmpty }.map(\.identity))
+    #expect(animatedIdentities == ["earth", "jupiter"])
+    #expect(earth.animations == [.init(name: "Loop_SpinAnimation")])
+    #expect(jupiter.animations == [.init(name: "Loop")])
 }
 
 @Test func celestialAssetManifestRejectsDuplicateIdentities() {
@@ -28,6 +35,10 @@ import Testing
                                            modelToUniverseScale: .infinity)
     let missingParent = makeAssetDescriptor(identity: "neptune",
                                             parentIdentity: "sun")
+    let emptyAnimationName = makeAssetDescriptor(
+        identity: "earth",
+        animations: [.init(name: " \n ")]
+    )
 
     #expect(
         throws: CelestialAssetManifest.ValidationError.invalidNumericValue(
@@ -44,6 +55,14 @@ import Testing
         )
     ) {
         try CelestialAssetManifest(assets: [missingParent]).validated()
+    }
+    #expect(
+        throws: CelestialAssetManifest.ValidationError.emptyValue(
+            identity: "earth",
+            field: "animations"
+        )
+    ) {
+        try CelestialAssetManifest(assets: [emptyAnimationName]).validated()
     }
 }
 
@@ -76,6 +95,10 @@ import Testing
             let coronaModel = try #require(corona.components[ModelComponent.self])
             #expect(!coronaModel.materials.isEmpty)
         }
+
+        for animation in asset.animations {
+            #expect(containsAnimation(named: animation.name, in: root))
+        }
     }
 }
 
@@ -92,10 +115,25 @@ private func firstModelComponent(in entity: Entity) -> ModelComponent? {
     return nil
 }
 
+private func containsAnimation(named name: String, in entity: Entity) -> Bool {
+    if let animationLibrary = entity.components[AnimationLibraryComponent.self] {
+        if animationLibrary.animations[name] != nil {
+            return true
+        }
+        if animationLibrary.animations.contains(where: {
+            $0.key.split(separator: "/").last.map(String.init) == name
+        }) {
+            return true
+        }
+    }
+    return entity.children.contains { containsAnimation(named: name, in: $0) }
+}
+
 private func makeAssetDescriptor(
     identity: String,
     parentIdentity: String? = nil,
-    modelToUniverseScale: Float = 1
+    modelToUniverseScale: Float = 1,
+    animations: [CelestialAssetAnimationDescriptor] = []
 ) -> CelestialAssetDescriptor {
     CelestialAssetDescriptor(
         identity: identity,
@@ -111,6 +149,7 @@ private func makeAssetDescriptor(
         orientationCorrection: .init(xAxis: 0, yAxis: 0, zAxis: 0, real: 1),
         renderRadius: 1,
         framingRadius: 1,
-        surfaceRadius: 1
+        surfaceRadius: 1,
+        animations: animations
     )
 }

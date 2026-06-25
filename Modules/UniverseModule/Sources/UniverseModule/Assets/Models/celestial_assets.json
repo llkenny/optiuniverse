@@ -53,7 +53,13 @@
             "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
             "renderRadius": 0.006378,
             "framingRadius": 0.00645,
-            "surfaceRadius": 0.006378
+            "surfaceRadius": 0.006378,
+            "animations": [
+                {
+                    "name": "Loop_SpinAnimation",
+                    "repeats": true
+                }
+            ]
         },
         {
             "identity": "moon",
@@ -95,7 +101,13 @@
             "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
             "renderRadius": 0.071492,
             "framingRadius": 0.0722,
-            "surfaceRadius": 0.071492
+            "surfaceRadius": 0.071492,
+            "animations": [
+                {
+                    "name": "Loop",
+                    "repeats": true
+                }
+            ]
         },
         {
             "identity": "saturn",

@@ -30,6 +30,27 @@ struct CelestialAssetQuaternion: Decodable, Sendable, Equatable {
     var values: [Float] { [xAxis, yAxis, zAxis, real] }
 }
 
+struct CelestialAssetAnimationDescriptor: Decodable, Sendable, Equatable {
+    let name: String
+    let repeats: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case repeats
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        repeats = try container.decodeIfPresent(Bool.self, forKey: .repeats) ?? true
+    }
+
+    init(name: String, repeats: Bool = true) {
+        self.name = name
+        self.repeats = repeats
+    }
+}
+
 struct CelestialAssetManifest: Decodable, Sendable {
     enum ValidationError: Error, Equatable {
         case emptyManifest
@@ -92,6 +113,7 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
     let renderRadius: Float
     let framingRadius: Float
     let surfaceRadius: Float
+    let animations: [CelestialAssetAnimationDescriptor]
 
     var assetName: String {
         URL(fileURLWithPath: filename).deletingPathExtension().lastPathComponent
@@ -116,6 +138,7 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
         case renderRadius
         case framingRadius
         case surfaceRadius
+        case animations
     }
 
     init(from decoder: Decoder) throws {
@@ -138,6 +161,8 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
         renderRadius = try container.decode(Float.self, forKey: .renderRadius)
         framingRadius = try container.decode(Float.self, forKey: .framingRadius)
         surfaceRadius = try container.decode(Float.self, forKey: .surfaceRadius)
+        animations = try container.decodeIfPresent([CelestialAssetAnimationDescriptor].self,
+                                                    forKey: .animations) ?? []
     }
 
     init(identity: String,
@@ -153,7 +178,8 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
          orientationCorrection: CelestialAssetQuaternion,
          renderRadius: Float,
          framingRadius: Float,
-         surfaceRadius: Float) {
+         surfaceRadius: Float,
+         animations: [CelestialAssetAnimationDescriptor] = []) {
         self.identity = identity
         self.displayName = displayName
         self.filename = filename
@@ -168,6 +194,7 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
         self.renderRadius = renderRadius
         self.framingRadius = framingRadius
         self.surfaceRadius = surfaceRadius
+        self.animations = animations
     }
 
     fileprivate func validate() throws {
@@ -184,6 +211,11 @@ struct CelestialAssetDescriptor: Decodable, Sendable, Equatable {
         where rootName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity,
                                                                     field: "additionalRootNames")
+        }
+        for animation in animations
+        where animation.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity,
+                                                                    field: "animations")
         }
         guard Set(rootNames).count == rootNames.count else {
             throw CelestialAssetManifest.ValidationError.emptyValue(identity: identity,
