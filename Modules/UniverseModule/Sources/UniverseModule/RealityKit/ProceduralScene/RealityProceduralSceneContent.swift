@@ -87,7 +87,8 @@ final class RealityProceduralSceneContent {
             cameraUp: cameraUp,
             color: SIMD4<Float>(0.26, 0.55, 1, 0.72),
             dashFrequency: 72,
-            dashDuty: 0.48
+            dashDuty: 0.48,
+            widthMultiplier: 30
         )
         transferDestinationOrbit.update(
             points: Self.circlePoints(center: orbit.sunPosition,
@@ -97,13 +98,15 @@ final class RealityProceduralSceneContent {
             cameraUp: cameraUp,
             color: SIMD4<Float>(1, 0.62, 0.22, 0.72),
             dashFrequency: 92,
-            dashDuty: 0.48
+            dashDuty: 0.48,
+            widthMultiplier: 30
         )
         transferPath.update(points: orbit.points,
                             sceneOrigin: sceneOrigin,
                             cameraPosition: cameraPosition,
                             cameraUp: cameraUp,
-                            color: SIMD4<Float>(0.2, 0.82, 1, 1))
+                            color: SIMD4<Float>(0.2, 0.82, 1, 1),
+                            widthMultiplier: 30)
     }
 
     private func updateNavigation(state: NavigationRouteRenderState,
@@ -238,7 +241,8 @@ final class RealityRibbon {
                 cameraUp: SIMD3<Float>,
                 color: SIMD4<Float>,
                 dashFrequency: Float = 0,
-                dashDuty: Float = 1) {
+                dashDuty: Float = 1,
+                widthMultiplier: Float = 1) {
         guard points.count >= 2,
               points.count - 1 <= maximumSegmentCount,
               points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else {
@@ -268,7 +272,7 @@ final class RealityRibbon {
                                            fallback: cameraUp)
             let width = min(max(simd_distance(midpoint, cameraPosition) * 0.0004,
                                 0.0002),
-                            0.005)
+                            0.005) * widthMultiplier
             let offset = side * width
             let pulse = 0.76 + 0.24 * sin(progress * .pi)
             let vertexColor = SIMD4<Float>(color.x * pulse,
