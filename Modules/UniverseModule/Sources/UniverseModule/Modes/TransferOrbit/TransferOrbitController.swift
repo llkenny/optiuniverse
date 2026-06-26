@@ -10,6 +10,8 @@ import simd
 
 @MainActor
 final class TransferOrbitController {
+    private static let transferFarPlaneRadiusMultiplier: Float = 2
+
     private unowned let snapshotProvider: SnapshotProvider
     private unowned let cameraCoordinator: any TransferPreviewCameraCoordinating
     private let planets: [Planet]
@@ -46,7 +48,8 @@ final class TransferOrbitController {
 
         return CameraTransferSnapshotDependency(
             destinationName: activeDestinationName ?? pendingDestinationName,
-            hasActiveTransition: cameraTransition != nil
+            hasActiveTransition: cameraTransition != nil,
+            maximumCameraDistance: activeTransferOrbit.map(transferMaximumCameraDistance)
         )
     }
 
@@ -114,7 +117,8 @@ final class TransferOrbitController {
         return baseProjection.withClippingPlanes(
             farPlane: max(baseProjection.farPlane,
                           CameraFit.defaultFarPlane,
-                          cameraCoordinator.cameraDistance + transferRadius * 1.15)
+                          cameraCoordinator.cameraDistance
+                          + transferRadius * Self.transferFarPlaneRadiusMultiplier)
         )
     }
 
@@ -162,12 +166,26 @@ final class TransferOrbitController {
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit) {
         let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
         let orientation: simd_quatf? = transferOverviewOrientation
+        let destination = CameraTransition.Frame(
+            target: framing.center,
+            distance: transferOverviewDistance(radius: framing.radius),
+            orientation: orientation
+        )
+
+        // Outer-system overview distances exceed the normal interactive camera range.
+        // Commit them atomically so a gesture or follow-camera handoff cannot leave the
+        // transfer geometry framed from the destination before the animation completes.
+        if destination.distance > CameraState.defaultMaximumDistance {
+            cameraTransition = nil
+            cameraCoordinator.commitTransferPreviewTransition(frame: destination)
+            return
+        }
 
         cameraTransition = CameraTransition(
             start: cameraCoordinator.currentCameraTransitionFrame,
-            destination: .fixed(target: framing.center,
-                                distance: transferOverviewDistance(radius: framing.radius),
-                                orientation: orientation),
+            destination: .fixed(target: destination.target,
+                                distance: destination.distance,
+                                orientation: destination.orientation),
             duration: cameraCoordinator.cameraFollowTransitionDuration
         )
     }
@@ -259,5 +277,11 @@ final class TransferOrbitController {
         CameraFit.distanceToFitWidth(radius: radius,
                                      currentDistance: cameraCoordinator.cameraDistance,
                                      viewportSize: viewportSize())
+    }
+
+    private func transferMaximumCameraDistance(_ transferOrbit: HohmannTransferOrbit) -> Float {
+        let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
+        return max(CameraState.defaultMaximumDistance,
+                   transferOverviewDistance(radius: framing.radius) * 1.2)
     }
 }

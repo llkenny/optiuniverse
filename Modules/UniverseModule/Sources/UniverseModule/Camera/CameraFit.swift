@@ -40,7 +40,8 @@ enum CameraFit {
         let height = max(Float(viewportSize.height), 1)
         let aspect = width / height
         let horizontalHalfFOV = atan(tan(verticalFieldOfView / 2) * aspect)
-        let fittedDistance = radius / max(tan(horizontalHalfFOV), 0.001)
+        let targetHalfAngle = atan(viewportFill * tan(horizontalHalfFOV))
+        let fittedDistance = radius / max(tan(targetHalfAngle), 0.001)
 
         return max(fittedDistance, radius * 1.05)
     }

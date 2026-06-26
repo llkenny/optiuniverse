@@ -74,6 +74,84 @@ import Testing
 }
 
 @MainActor
+@Test func transferOrbitControllerImmediatelyFramesOuterSystemTransfers() throws {
+    let farUranus = Planet(name: "Uranus",
+                           meshName: "Uranus",
+                           parentName: nil,
+                           radius: 1,
+                           distance: 2_867,
+                           orbitSpeed: 0,
+                           rotationSpeedKmSec: 0)
+    let planets = testPlanets.filter { $0.name != "Uranus" } + [farUranus]
+    let fixture = TransferOrbitControllerFixture(
+        latestSnapshot: .outerTransferSnapshot(destinationName: "Uranus",
+                                                destinationDistance: farUranus.distance),
+        planets: planets
+    )
+
+    fixture.controller.showTransferOrbit(to: "Uranus")
+
+    #expect(fixture.cameraState.cameraTarget == .zero)
+    #expect(fixture.cameraState.cameraDistance > CameraState.defaultMaximumDistance)
+    #expect(fixture.controller.cameraSnapshotDependency?.hasActiveTransition == false)
+}
+
+@MainActor
+@Test func transferOverviewRetainsOuterPlanetFitDuringCameraRefresh() throws {
+    for destination in ["Neptune", "Pluto"] {
+        let fixture = TransferOrbitControllerFixture(
+            latestSnapshot: .outerTransferSnapshot(destinationName: destination),
+            planets: testPlanets
+        )
+
+        fixture.controller.showTransferOrbit(to: destination)
+        fixture.controller.update(snapshot: fixture.source.latestSnapshot,
+                                  delta: 2)
+
+        let destinationRadius = try #require(testPlanets.first { $0.name == destination }?.distance)
+        let expectedDistance = CameraFit.distanceToFitWidth(
+            radius: destinationRadius,
+            currentDistance: 3,
+            viewportSize: fixture.viewportSize
+        )
+        let dependency = try #require(fixture.controller.cameraSnapshotDependency)
+        #expect(dependency.maximumCameraDistance ?? 0 > expectedDistance)
+
+        fixture.cameraCoordinator.updateFrameCamera(
+            snapshot: fixture.source.latestSnapshot,
+            delta: 0,
+            viewportSize: fixture.viewportSize,
+            modeState: CameraFrameModeState(navigationControlsCamera: false,
+                                            navigation: nil,
+                                            transferPreviewActive: true,
+                                            transfer: dependency)
+        )
+
+        #expect(abs(fixture.cameraState.cameraDistance - expectedDistance) < 0.001)
+    }
+}
+
+@MainActor
+@Test func transferProjectionLeavesHeadroomForOuterOrbitGeometry() throws {
+    let fixture = TransferOrbitControllerFixture(
+        latestSnapshot: .outerTransferSnapshot(destinationName: "Uranus"),
+        planets: testPlanets
+    )
+    fixture.controller.showTransferOrbit(to: "Uranus")
+    fixture.controller.update(snapshot: fixture.source.latestSnapshot,
+                              delta: 2)
+
+    let projection = fixture.controller.projectionParameters(
+        snapshot: fixture.source.latestSnapshot,
+        baseProjection: CameraProjectionParameters(nearPlane: 0.1, farPlane: 1)
+    )
+    let uranusRadius = try #require(testPlanets.first { $0.name == "Uranus" }?.distance)
+    let requiredFarPlane = fixture.cameraState.cameraDistance + uranusRadius * 2
+
+    #expect(projection.farPlane >= requiredFarPlane)
+}
+
+@MainActor
 @Test func transferOrbitControllerClearRemovesRenderStateAndPendingTransition() throws {
     let fixture = TransferOrbitControllerFixture()
 
@@ -139,7 +217,8 @@ private struct TransferOrbitControllerFixture {
     let cameraCoordinator: CameraCoordinator
     let controller: TransferOrbitController
 
-    init(latestSnapshot: UniverseSceneSnapshot? = .transferOrbitControllerTestSnapshot) {
+    init(latestSnapshot: UniverseSceneSnapshot? = .transferOrbitControllerTestSnapshot,
+         planets: [Planet] = testPlanets) {
         let viewportSize = self.viewportSize
         source = FakeTransferSnapshotSource(latestSnapshot: latestSnapshot)
         cameraState = CameraState()
@@ -149,7 +228,7 @@ private struct TransferOrbitControllerFixture {
                                               snapshotProvider: provider)
         controller = TransferOrbitController(snapshotProvider: provider,
                                              cameraCoordinator: cameraCoordinator,
-                                             planets: testPlanets,
+                                             planets: planets,
                                              viewportSize: { viewportSize })
     }
 }
@@ -180,6 +259,28 @@ private extension UniverseSceneSnapshot {
                                                    worldPosition: SIMD3<Float>(1.52, 0, 0),
                                                    framingRadius: 0.05)
                                ])
+    }
+
+    static func outerTransferSnapshot(destinationName: String,
+                                      destinationDistance: Float? = nil) -> UniverseSceneSnapshot {
+        let destinationDistance = destinationDistance
+            ?? testPlanets.first { $0.name == destinationName }?.distance
+            ?? 1
+        return UniverseSceneSnapshot(
+            frameID: 1,
+            simulationTime: 0,
+            planets: [
+                transferTestPacket(name: "Sun",
+                                   worldPosition: .zero,
+                                   framingRadius: 0.2),
+                transferTestPacket(name: "Earth",
+                                   worldPosition: SIMD3<Float>(1, 0, 0),
+                                   framingRadius: 0.05),
+                transferTestPacket(name: destinationName,
+                                   worldPosition: SIMD3<Float>(destinationDistance, 0, 0),
+                                   framingRadius: 0.05)
+            ]
+        )
     }
 
     static func transferTestPacket(name: String,

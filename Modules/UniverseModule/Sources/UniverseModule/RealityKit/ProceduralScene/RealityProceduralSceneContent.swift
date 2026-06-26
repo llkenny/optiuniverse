@@ -7,6 +7,8 @@ import UIKit
 
 @MainActor
 final class RealityProceduralSceneContent {
+    nonisolated private static let environmentRadius: Float = 9_000
+
     let environmentEntity: ModelEntity
     let starField: RealityStarField
     let transferEarthOrbit: RealityRibbon
@@ -52,6 +54,9 @@ final class RealityProceduralSceneContent {
         )
 
         environmentEntity.position = cameraPosition
+        environmentEntity.scale = SIMD3<Float>(repeating: Self.environmentScale(
+            farPlane: camera.dependencies.projection.farPlane
+        ))
         starField.update(sceneOrigin: camera.sceneOrigin,
                          cameraPosition: cameraPosition,
                          cameraRight: cameraRight,
@@ -60,18 +65,27 @@ final class RealityProceduralSceneContent {
         updateTransfer(state: frameState.routes.transfer,
                        sceneOrigin: camera.sceneOrigin,
                        cameraPosition: cameraPosition,
-                       cameraUp: cameraUp)
+                       cameraUp: cameraUp,
+                       renderViewMatrix: camera.renderViewMatrix,
+                       verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
+                       viewportHeight: Float(camera.viewportSize.height))
         updateNavigation(state: frameState.routes.navigation,
                          sceneOrigin: camera.sceneOrigin,
                          cameraPosition: cameraPosition,
                          cameraUp: cameraUp,
+                         renderViewMatrix: camera.renderViewMatrix,
+                         verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
+                         viewportHeight: Float(camera.viewportSize.height),
                          elapsedTime: frameState.routes.navigation.elapsedTime)
     }
 
     private func updateTransfer(state: TransferOrbitRenderState,
                                 sceneOrigin: SIMD3<Float>,
                                 cameraPosition: SIMD3<Float>,
-                                cameraUp: SIMD3<Float>) {
+                                cameraUp: SIMD3<Float>,
+                                renderViewMatrix: float4x4,
+                                verticalFieldOfView: Float,
+                                viewportHeight: Float) {
         guard let orbit = state.transferOrbit else {
             transferEarthOrbit.hide()
             transferDestinationOrbit.hide()
@@ -85,10 +99,13 @@ final class RealityProceduralSceneContent {
             sceneOrigin: sceneOrigin,
             cameraPosition: cameraPosition,
             cameraUp: cameraUp,
+            renderViewMatrix: renderViewMatrix,
+            verticalFieldOfView: verticalFieldOfView,
+            viewportHeight: viewportHeight,
             color: SIMD4<Float>(0.26, 0.55, 1, 0.72),
             dashFrequency: 72,
             dashDuty: 0.48,
-            widthMultiplier: 30
+            lineWidth: 1.75
         )
         transferDestinationOrbit.update(
             points: Self.circlePoints(center: orbit.sunPosition,
@@ -96,23 +113,32 @@ final class RealityProceduralSceneContent {
             sceneOrigin: sceneOrigin,
             cameraPosition: cameraPosition,
             cameraUp: cameraUp,
+            renderViewMatrix: renderViewMatrix,
+            verticalFieldOfView: verticalFieldOfView,
+            viewportHeight: viewportHeight,
             color: SIMD4<Float>(1, 0.62, 0.22, 0.72),
             dashFrequency: 92,
             dashDuty: 0.48,
-            widthMultiplier: 30
+            lineWidth: 1.75
         )
         transferPath.update(points: orbit.points,
                             sceneOrigin: sceneOrigin,
                             cameraPosition: cameraPosition,
                             cameraUp: cameraUp,
+                            renderViewMatrix: renderViewMatrix,
+                            verticalFieldOfView: verticalFieldOfView,
+                            viewportHeight: viewportHeight,
                             color: SIMD4<Float>(0.2, 0.82, 1, 1),
-                            widthMultiplier: 30)
+                            lineWidth: 2.5)
     }
 
     private func updateNavigation(state: NavigationRouteRenderState,
                                   sceneOrigin: SIMD3<Float>,
                                   cameraPosition: SIMD3<Float>,
                                   cameraUp: SIMD3<Float>,
+                                  renderViewMatrix: float4x4,
+                                  verticalFieldOfView: Float,
+                                  viewportHeight: Float,
                                   elapsedTime: TimeInterval) {
         guard let route = state.route,
               let markerPosition = route.point(at: state.progress) else {
@@ -125,6 +151,9 @@ final class RealityProceduralSceneContent {
                               sceneOrigin: sceneOrigin,
                               cameraPosition: cameraPosition,
                               cameraUp: cameraUp,
+                              renderViewMatrix: renderViewMatrix,
+                              verticalFieldOfView: verticalFieldOfView,
+                              viewportHeight: viewportHeight,
                               color: SIMD4<Float>(0.2, 0.82, 1, 0.95))
         navigationMarker.isEnabled = true
         navigationMarker.position = markerPosition - sceneOrigin
@@ -165,7 +194,7 @@ final class RealityProceduralSceneContent {
         )
         var material = UnlitMaterial(texture: texture)
         material.faceCulling = .front
-        let entity = ModelEntity(mesh: .generateSphere(radius: 9_000),
+        let entity = ModelEntity(mesh: .generateSphere(radius: environmentRadius),
                                  materials: [material])
         entity.name = "MilkyWayEnvironment"
         return entity
@@ -189,6 +218,13 @@ final class RealityProceduralSceneContent {
         }
         entity.isEnabled = false
         return entity
+    }
+
+    nonisolated static func environmentScale(farPlane: Float) -> Float {
+        guard farPlane.isFinite else { return 1 }
+        // The environment is opaque and depth-writing. Keep its inward-facing surface
+        // behind every transfer ribbon while leaving a small margin before the far clip.
+        return max(1, farPlane * 0.98 / environmentRadius)
     }
 }
 
@@ -239,10 +275,13 @@ final class RealityRibbon {
                 sceneOrigin: SIMD3<Float>,
                 cameraPosition: SIMD3<Float>,
                 cameraUp: SIMD3<Float>,
+                renderViewMatrix: float4x4 = matrix_identity_float4x4,
+                verticalFieldOfView: Float = CameraFit.verticalFieldOfView,
+                viewportHeight: Float = 1,
                 color: SIMD4<Float>,
                 dashFrequency: Float = 0,
                 dashDuty: Float = 1,
-                widthMultiplier: Float = 1) {
+                lineWidth: Float = 1.5) {
         guard points.count >= 2,
               points.count - 1 <= maximumSegmentCount,
               points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else {
@@ -270,9 +309,14 @@ final class RealityRibbon {
                                                     fallback: cameraUp)
             let side = normalizeOrFallback(simd_cross(direction, viewDirection),
                                            fallback: cameraUp)
-            let width = min(max(simd_distance(midpoint, cameraPosition) * 0.0004,
-                                0.0002),
-                            0.005) * widthMultiplier
+            let cameraSpaceMidpoint = renderViewMatrix * SIMD4<Float>(midpoint.x,
+                                                                        midpoint.y,
+                                                                        midpoint.z,
+                                                                        1)
+            let width = Self.halfWidth(cameraSpaceDepth: cameraSpaceMidpoint.z,
+                                       verticalFieldOfView: verticalFieldOfView,
+                                       viewportHeight: viewportHeight,
+                                       lineWidth: lineWidth)
             let offset = side * width
             let pulse = 0.76 + 0.24 * sin(progress * .pi)
             let vertexColor = SIMD4<Float>(color.x * pulse,
@@ -308,6 +352,23 @@ final class RealityRibbon {
                   bounds: bounds)
         ])
         entity.isEnabled = true
+    }
+
+    nonisolated static func halfWidth(cameraSpaceDepth: Float,
+                                      verticalFieldOfView: Float,
+                                      viewportHeight: Float,
+                                      lineWidth: Float) -> Float {
+        guard cameraSpaceDepth.isFinite,
+              verticalFieldOfView.isFinite,
+              viewportHeight.isFinite,
+              lineWidth.isFinite,
+              viewportHeight > 0,
+              lineWidth > 0 else {
+            return 0
+        }
+
+        let depth = max(abs(cameraSpaceDepth), CameraFit.minimumNearPlane)
+        return depth * tan(verticalFieldOfView / 2) * lineWidth / viewportHeight
     }
 
     private func updateMaterialIfNeeded(color: SIMD4<Float>) {
