@@ -17,6 +17,7 @@ import Testing
 
     expectVector(transform.project(selectedPosition),
                  equals: ImmersiveFocusState.targetCenter)
+    #expect(ImmersiveFocusState.targetCenter.y > 0)
 }
 
 @Test func immersiveFocusTransformScalesByFramingRadius() throws {

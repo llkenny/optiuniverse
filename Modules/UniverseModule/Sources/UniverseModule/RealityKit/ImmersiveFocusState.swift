@@ -2,7 +2,9 @@ import CoreGraphics
 import simd
 
 struct ImmersiveFocusState: Equatable {
-    static let targetCenter = SIMD3<Float>(0, 0, -1.2)
+    // Keep the initially focused body above the user's eye line so it is visible
+    // without requiring an initial head movement.
+    static let targetCenter = SIMD3<Float>(0, 1.25, -1.2)
     static let targetVisualRadius: Float = 0.35
     static let minimumZoomMultiplier: Float = 0.5
     static let maximumZoomMultiplier: Float = 2.5
