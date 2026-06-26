@@ -42,11 +42,13 @@ final class UniverseSceneCoordinator {
     private var proceduralSceneContent: RealityProceduralSceneContent?
     private var installationRoot: Entity?
     private var immersiveFocusState = ImmersiveFocusState()
+    private var immersiveTransferOverviewState = ImmersiveTransferOverviewState()
     private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
     private(set) var immersiveFocusTransform: float4x4?
+    private(set) var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
 
@@ -166,7 +168,23 @@ final class UniverseSceneCoordinator {
     }
 
     var hasImmersiveFocus: Bool {
-        immersiveFocusState.hasFocus
+        immersiveFocusState.hasFocus && !hasImmersiveTransferOverview
+    }
+
+    private var hasImmersiveTransferOverview: Bool {
+        transferOrbitController.isTransferPreviewActive ||
+        immersiveTransferOverviewState.hasPersistedTransform
+    }
+
+    func beginImmersiveTransferOverview() {
+        immersiveTransferOverviewState.begin()
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+    }
+
+    func clearImmersiveTransferOverview() {
+        immersiveTransferOverviewState.clear()
+        immersiveTransferOverviewTransform = nil
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
     }
 
     func setImmersiveFocus(bodyName: String) {
@@ -176,17 +194,21 @@ final class UniverseSceneCoordinator {
 
     func clearImmersiveFocus() {
         immersiveFocusState.clear()
+        immersiveTransferOverviewState.clear()
         immersiveFocusTransform = nil
-        installationRoot?.transform = .identity
+        immersiveTransferOverviewTransform = nil
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
     }
 
     func adjustImmersiveFocusRotation(translation: CGSize) -> Bool {
+        guard !hasImmersiveTransferOverview else { return false }
         guard immersiveFocusState.rotate(translation: translation) else { return false }
         applyImmersiveFocusIfPossible(frameState: latestFrameState)
         return true
     }
 
     func adjustImmersiveFocusScale(by scale: Float) -> Bool {
+        guard !hasImmersiveTransferOverview else { return false }
         guard immersiveFocusState.scale(by: scale) else { return false }
         applyImmersiveFocusIfPossible(frameState: latestFrameState)
         return true
@@ -403,6 +425,25 @@ final class UniverseSceneCoordinator {
     }
 
     private func applyImmersiveFocusIfPossible(frameState: UniverseFrameState?) {
+        if transferOrbitController.isTransferPreviewActive,
+           let frameState,
+           let transform = immersiveTransferOverviewState.persist(
+                cameraPose: cameraCoordinator.currentCameraPose,
+                targetAfterSceneOrigin: cameraCoordinator.currentCameraPose.target
+                    - frameState.cameraSnapshot.sceneOrigin
+           ) {
+            immersiveTransferOverviewTransform = transform
+            installationRoot?.transform = Transform(matrix: transform)
+            return
+        }
+
+        if let transform = immersiveTransferOverviewState.persistedTransform {
+            immersiveTransferOverviewTransform = transform
+            installationRoot?.transform = Transform(matrix: transform)
+            return
+        }
+
+        immersiveTransferOverviewTransform = nil
         guard immersiveFocusState.hasFocus else {
             immersiveFocusTransform = nil
             installationRoot?.transform = .identity

@@ -53,9 +53,8 @@ import Testing
     #expect(fixture.cameraState.revision == initialRevision + 1)
 }
 
-#if os(iOS)
 @MainActor
-@Test func transferOrbitControllerOverviewUsesSunCenteredTiltedIOSFraming() throws {
+@Test func transferOrbitControllerOverviewUsesSunCenteredTiltedFraming() throws {
     let fixture = TransferOrbitControllerFixture()
 
     fixture.controller.showTransferOrbit(to: "Mars")
@@ -73,7 +72,6 @@ import Testing
     #expect(cameraOffset.y > 0.65)
     #expect(cameraOffset.z > 0.65)
 }
-#endif
 
 @MainActor
 @Test func transferOrbitControllerClearRemovesRenderStateAndPendingTransition() throws {

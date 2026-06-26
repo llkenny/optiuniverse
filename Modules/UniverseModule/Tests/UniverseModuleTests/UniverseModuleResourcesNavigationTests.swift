@@ -37,6 +37,44 @@ import Testing
     #expect(resources.transferOrbitController.followPlanet != nil)
 }
 
+#if os(visionOS)
+@MainActor
+@Test func transferPreviewTemporarilyOverridesAndThenPersistsImmersiveFocus() throws {
+    let resources = UniverseModuleResources()
+    let coordinator = resources.sceneCoordinator
+    coordinator.setViewportSize(CGSize(width: 1280, height: 720))
+    coordinator.update(deltaTime: 0.1)
+
+    resources.focusImmersivePlanet(named: "Earth")
+    #expect(resources.isImmersiveFocusActive)
+
+    resources.transferOrbit.showTransferOrbit(to: "Mars")
+    coordinator.update(deltaTime: 0.1)
+
+    #expect(resources.transferOrbitController.isTransferPreviewActive)
+    #expect(!resources.isImmersiveFocusActive)
+    #expect(coordinator.immersiveTransferOverviewTransform != nil)
+
+    resources.transferOrbit.clearTransferOrbit()
+    coordinator.update(deltaTime: 0.1)
+
+    #expect(!resources.transferOrbitController.isTransferPreviewActive)
+    #expect(coordinator.immersiveTransferOverviewTransform != nil)
+
+    resources.beginManualCameraControl()
+
+    #expect(coordinator.immersiveTransferOverviewTransform == nil)
+    #expect(resources.isImmersiveFocusActive)
+
+    resources.transferOrbit.showTransferOrbit(to: "Mars")
+    coordinator.update(deltaTime: 0.1)
+    resources.focusImmersivePlanet(named: "Earth")
+
+    #expect(coordinator.immersiveTransferOverviewTransform == nil)
+    #expect(resources.isImmersiveFocusActive)
+}
+#endif
+
 @MainActor
 @Test func universeModuleResourcesResolvesSurfaceFollowTargetByDestinationID() throws {
     let resources = UniverseModuleResources()

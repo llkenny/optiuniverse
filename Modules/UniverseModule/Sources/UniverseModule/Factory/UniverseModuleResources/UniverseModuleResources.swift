@@ -95,6 +95,11 @@ public final class UniverseModuleResources {
             cameraCoordinator.followNavigationDestination(named: name,
                                                           viewportSize: viewportSize)
         }
+        transferOrbitController.transferPreviewDidBegin = { [weak self] in
+            #if os(visionOS)
+            self?.sceneCoordinator.beginImmersiveTransferOverview()
+            #endif
+        }
     }
 
     public func prepare() async throws {
@@ -192,16 +197,19 @@ public final class UniverseModuleResources {
     func focusImmersivePlanet(named name: String) {
         transferOrbitController.clearTransferOrbit()
         navigationController.cancelNavigation(followDestination: false)
+        sceneCoordinator.clearImmersiveTransferOverview()
         sceneCoordinator.setImmersiveFocus(bodyName: name)
     }
 
     func clearImmersiveFocus() {
+        sceneCoordinator.clearImmersiveTransferOverview()
         sceneCoordinator.clearImmersiveFocus()
     }
 
     func beginManualCameraControl() {
         navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
+        sceneCoordinator.clearImmersiveTransferOverview()
         cameraCoordinator.beginManualCameraControl()
     }
 

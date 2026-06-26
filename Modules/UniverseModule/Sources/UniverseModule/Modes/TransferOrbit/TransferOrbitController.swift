@@ -16,6 +16,7 @@ final class TransferOrbitController {
     private let viewportSize: () -> CGSize
 
     var followPlanet: ((String) -> Void)?
+    var transferPreviewDidBegin: (() -> Void)?
 
     private var pendingDestinationName: String?
     private var activeDestinationName: String?
@@ -128,8 +129,8 @@ final class TransferOrbitController {
 
         activeDestinationName = destinationName
         activeTransferOrbit = transferOrbit
-        startTransferOverviewAnimation(transferOrbit: transferOrbit,
-                                       snapshot: snapshot)
+        transferPreviewDidBegin?()
+        startTransferOverviewAnimation(transferOrbit: transferOrbit)
         return true
     }
 
@@ -158,18 +159,9 @@ final class TransferOrbitController {
                                          sunPosition: sunPosition)
     }
 
-    private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
-                                                snapshot: UniverseSceneSnapshot) {
-        #if os(iOS)
+    private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit) {
         let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
         let orientation: simd_quatf? = transferOverviewOrientation
-        #else
-        guard let framing = earthCenteredTransferFraming(transferOrbit: transferOrbit,
-                                                         snapshot: snapshot) else {
-            return
-        }
-        let orientation: simd_quatf? = nil
-        #endif
 
         cameraTransition = CameraTransition(
             start: cameraCoordinator.currentCameraTransitionFrame,
@@ -213,7 +205,6 @@ final class TransferOrbitController {
         }
     }
 
-    #if os(iOS)
     private var transferOverviewOrientation: simd_quatf {
         // The orbit plane is XZ. Keep the Sun centered from above, with a small
         // forward tilt so the overview retains depth.
@@ -226,40 +217,6 @@ final class TransferOrbitController {
         (transferOrbit.sunPosition,
          max(transferOrbit.earthOrbitRadius,
              transferOrbit.destinationOrbitRadius))
-    }
-    #endif
-
-    private func earthCenteredTransferFraming(transferOrbit: HohmannTransferOrbit,
-                                              snapshot: UniverseSceneSnapshot)
-    -> (center: SIMD3<Float>, radius: Float)? {
-        guard let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
-            return nil
-        }
-
-        var framingRadius: Float = 0
-        func include(center: SIMD3<Float>, radius: Float) {
-            framingRadius = max(framingRadius,
-                                simd_distance(earthPosition, center) + max(radius, 0))
-        }
-
-        for point in transferOrbit.points {
-            include(center: point, radius: 0)
-        }
-
-        include(center: transferOrbit.sunPosition,
-                radius: max(transferOrbit.earthOrbitRadius,
-                            transferOrbit.destinationOrbitRadius))
-
-        for planetName in ["Sun", "Earth", transferOrbit.destinationName] {
-            guard let planetPosition = snapshot.worldPosition(ofPlanetNamed: planetName) else {
-                continue
-            }
-            include(center: planetPosition,
-                    radius: snapshot.framingRadius(ofPlanetNamed: planetName) ?? 0)
-        }
-
-        guard framingRadius.isFinite else { return nil }
-        return (earthPosition, max(framingRadius, 0.001))
     }
 
     private func transferProjectionRadius(transferOrbit: HohmannTransferOrbit,
@@ -299,12 +256,8 @@ final class TransferOrbitController {
     }
 
     private func transferOverviewDistance(radius: Float) -> Float {
-        #if os(iOS)
-        return CameraFit.distanceToFitWidth(radius: radius,
-                                            currentDistance: cameraCoordinator.cameraDistance,
-                                            viewportSize: viewportSize())
-        #else
-        return distanceToFitPlanet(radius: radius) * 1.08
-        #endif
+        CameraFit.distanceToFitWidth(radius: radius,
+                                     currentDistance: cameraCoordinator.cameraDistance,
+                                     viewportSize: viewportSize())
     }
 }
