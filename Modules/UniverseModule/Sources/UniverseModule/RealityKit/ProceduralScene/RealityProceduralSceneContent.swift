@@ -266,9 +266,9 @@ final class RealityRibbon {
                                                     fallback: cameraUp)
             let side = normalizeOrFallback(simd_cross(direction, viewDirection),
                                            fallback: cameraUp)
-            let width = min(max(simd_distance(midpoint, cameraPosition) * 0.002,
-                                0.001),
-                            0.05)
+            let width = min(max(simd_distance(midpoint, cameraPosition) * 0.0004,
+                                0.0002),
+                            0.005)
             let offset = side * width
             let pulse = 0.76 + 0.24 * sin(progress * .pi)
             let vertexColor = SIMD4<Float>(color.x * pulse,
