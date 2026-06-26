@@ -16,7 +16,7 @@ final class TransferPreviewCameraOwner {
     }
 
     func commitTransition(frame: CameraTransition.Frame) {
-        let cameraOrientation = simd_normalize(cameraState.cameraOrientation)
+        let cameraOrientation = simd_normalize(frame.orientation ?? cameraState.cameraOrientation)
 
         cameraState.commit(CameraState.Transaction(cameraTarget: frame.target,
                                                    cameraDistance: frame.distance,

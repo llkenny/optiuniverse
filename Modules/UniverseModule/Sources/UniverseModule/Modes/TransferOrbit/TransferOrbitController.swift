@@ -160,15 +160,22 @@ final class TransferOrbitController {
 
     private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit,
                                                 snapshot: UniverseSceneSnapshot) {
+        #if os(iOS)
+        let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
+        let orientation: simd_quatf? = transferOverviewOrientation
+        #else
         guard let framing = earthCenteredTransferFraming(transferOrbit: transferOrbit,
                                                          snapshot: snapshot) else {
             return
         }
+        let orientation: simd_quatf? = nil
+        #endif
 
         cameraTransition = CameraTransition(
             start: cameraCoordinator.currentCameraTransitionFrame,
             destination: .fixed(target: framing.center,
-                                distance: distanceToFitPlanet(radius: framing.radius) * 1.08),
+                                distance: transferOverviewDistance(radius: framing.radius),
+                                orientation: orientation),
             duration: cameraCoordinator.cameraFollowTransitionDuration
         )
     }
@@ -199,11 +206,28 @@ final class TransferOrbitController {
             }
             return CameraTransition.Frame(target: position,
                                           distance: distanceToFitPlanet(radius: framingRadius))
-        case .fixed(let target, let distance):
+        case .fixed(let target, let distance, let orientation):
             return CameraTransition.Frame(target: target,
-                                          distance: distance)
+                                          distance: distance,
+                                          orientation: orientation)
         }
     }
+
+    #if os(iOS)
+    private var transferOverviewOrientation: simd_quatf {
+        // The orbit plane is XZ. Keep the Sun centered from above, with a small
+        // forward tilt so the overview retains depth.
+        simd_quatf(angle: -.pi * 0.43,
+                   axis: SIMD3<Float>(1, 0, 0))
+    }
+
+    private func sunCenteredTransferFraming(transferOrbit: HohmannTransferOrbit)
+    -> (center: SIMD3<Float>, radius: Float) {
+        (transferOrbit.sunPosition,
+         max(transferOrbit.earthOrbitRadius,
+             transferOrbit.destinationOrbitRadius))
+    }
+    #endif
 
     private func earthCenteredTransferFraming(transferOrbit: HohmannTransferOrbit,
                                               snapshot: UniverseSceneSnapshot)
@@ -272,5 +296,15 @@ final class TransferOrbitController {
         CameraFit.distanceToFit(radius: radius,
                                 currentDistance: cameraCoordinator.cameraDistance,
                                 viewportSize: viewportSize())
+    }
+
+    private func transferOverviewDistance(radius: Float) -> Float {
+        #if os(iOS)
+        return CameraFit.distanceToFitWidth(radius: radius,
+                                            currentDistance: cameraCoordinator.cameraDistance,
+                                            viewportSize: viewportSize())
+        #else
+        return distanceToFitPlanet(radius: radius) * 1.08
+        #endif
     }
 }

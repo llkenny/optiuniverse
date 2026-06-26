@@ -10,7 +10,7 @@ import Testing
     )
 
     let frame = try #require(transition.advance(delta: 2) { destination in
-        guard case .fixed(let target, let distance) = destination else { return nil }
+        guard case .fixed(let target, let distance, _) = destination else { return nil }
         return CameraTransition.Frame(target: target, distance: distance)
     })
 

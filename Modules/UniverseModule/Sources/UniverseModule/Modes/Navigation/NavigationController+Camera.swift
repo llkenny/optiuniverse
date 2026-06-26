@@ -148,7 +148,7 @@ extension NavigationController {
             guard let snapshot else { return nil }
             return resolvedPlanetTransitionFrame(named: name,
                                                  snapshot: snapshot)
-        case .fixed(let target, let distance):
+        case .fixed(let target, let distance, _):
             return CameraTransition.Frame(target: target,
                                           distance: distance)
         }
