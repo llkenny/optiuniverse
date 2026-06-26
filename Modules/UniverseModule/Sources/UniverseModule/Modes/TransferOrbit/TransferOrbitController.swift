@@ -217,7 +217,7 @@ final class TransferOrbitController {
     private var transferOverviewOrientation: simd_quatf {
         // The orbit plane is XZ. Keep the Sun centered from above, with a small
         // forward tilt so the overview retains depth.
-        simd_quatf(angle: -.pi * 0.43,
+        simd_quatf(angle: -.pi * 0.25,
                    axis: SIMD3<Float>(1, 0, 0))
     }
 

@@ -70,8 +70,8 @@ import Testing
     ))
 
     let cameraOffset = fixture.cameraState.cameraOrientation.act(SIMD3<Float>(0, 0, 1))
-    #expect(cameraOffset.y > 0.9)
-    #expect(cameraOffset.z > 0)
+    #expect(cameraOffset.y > 0.65)
+    #expect(cameraOffset.z > 0.65)
 }
 #endif
 
