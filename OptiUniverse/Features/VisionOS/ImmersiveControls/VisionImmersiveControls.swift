@@ -3,10 +3,10 @@ import BaseModule
 import SwiftUI
 import UniverseModule
 
-struct VisionImmersiveControls: View {
+struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View {
     @Environment(AppEnvironment.self) private var appEnvironment
 
-    let resources: UniverseModuleResources
+    let resources: Resources
     let selectedDestination: DestinationObject?
     let showObjectInfo: (DestinationObject) -> Void
     let exit: () -> Void
@@ -137,4 +137,5 @@ struct VisionImmersiveControls: View {
         }
     }
 }
+
 #endif

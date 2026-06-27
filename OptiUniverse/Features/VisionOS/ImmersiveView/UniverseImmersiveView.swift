@@ -3,21 +3,33 @@ import BaseModule
 import SwiftUI
 import UniverseModule
 
-struct UniverseImmersiveView: View {
+struct UniverseImmersiveView<Resources: UniverseModuleResourcesProtocol, UniverseContent: View>: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 
-    let resources: UniverseModuleResources
+    let resources: Resources
+    private let universeContent: (Bool) -> UniverseContent
 
     @State private var previousDragTranslation: CGSize = .zero
     @State private var previousMagnification: CGFloat = 1
     @State private var presentedObjectInfo: ObjectInfoViewEntity?
 
+    init(resources: UniverseModuleResources) where Resources == UniverseModuleResources,
+                                                   UniverseContent == UniverseView {
+        self.resources = resources
+        universeContent = { isActive in
+            UniverseView(resources: resources, isActive: isActive)
+        }
+    }
+
+    init(resources: Resources,
+         @ViewBuilder universeContent: @escaping (Bool) -> UniverseContent) {
+        self.resources = resources
+        self.universeContent = universeContent
+    }
+
     var body: some View {
-        UniverseView(
-            resources: resources,
-            isActive: appEnvironment.isUniverseImmersivePresented
-        )
+        universeContent(appEnvironment.isUniverseImmersivePresented)
         .gesture(rotateGesture)
         .simultaneousGesture(zoomGesture)
         .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .bottom) {
@@ -185,4 +197,5 @@ struct UniverseImmersiveView: View {
         appEnvironment.currentScreen = .home
     }
 }
+
 #endif
