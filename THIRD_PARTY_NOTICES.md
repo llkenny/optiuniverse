@@ -51,6 +51,9 @@ NASA content is generally available for educational or informational uses when u
 - `OptiUniverse/Resources/Resources.xcassets/Featured Objects/Saturn/Saturn_3.imageset/heic1917a.jpg`
   - Source: https://esahubble.org/images/heic1917a/
   - Credit: NASA, ESA, A. Simon (GSFC), M.H. Wong (University of California, Berkeley), and the OPAL Team
+- `OptiUniverse/Resources/Resources.xcassets/Featured Objects/Saturn/Jupiter_1.imageset/PIA03451.jpg`
+  - Source: https://science.nasa.gov/image-detail/amf-f99593ed-7430-4b17-bad5-9245cc073ac9/
+  - Credit: NASA
 
 ### Bundled Destination Thumbnails
 
