@@ -6,6 +6,7 @@
 //
 
 internal import BaseModule
+import CoreGraphics
 import Foundation
 import Observation
 
@@ -40,6 +41,10 @@ public final class UniverseModuleResources {
     var isTrajectoryModeActive: Bool {
         transferOrbitController.isTransferPreviewActive ||
         navigationController.isNavigationActive
+    }
+
+    public var isImmersiveFocusActive: Bool {
+        sceneCoordinator.hasImmersiveFocus
     }
 
     init(
@@ -89,6 +94,11 @@ public final class UniverseModuleResources {
             guard let self else { return }
             cameraCoordinator.followNavigationDestination(named: name,
                                                           viewportSize: viewportSize)
+        }
+        transferOrbitController.transferPreviewDidBegin = { [weak self] in
+            #if os(visionOS)
+            self?.sceneCoordinator.beginImmersiveTransferOverview()
+            #endif
         }
     }
 
@@ -174,10 +184,62 @@ public final class UniverseModuleResources {
                                        viewportSize: viewportSize)
     }
 
+    func focusImmersiveDestination(identifiedBy destinationID: UUID,
+                                   destinations: [DestinationObject]) {
+        guard let followTarget = followTarget(for: destinationID,
+                                              destinations: destinations) else {
+            return
+        }
+
+        focusImmersivePlanet(named: followTarget.bodyName)
+    }
+
+    func focusImmersivePlanet(named name: String) {
+        transferOrbitController.clearTransferOrbit()
+        navigationController.cancelNavigation(followDestination: false)
+        sceneCoordinator.clearImmersiveTransferOverview()
+        sceneCoordinator.setImmersiveFocus(bodyName: name)
+    }
+
+    func clearImmersiveFocus() {
+        sceneCoordinator.clearImmersiveTransferOverview()
+        sceneCoordinator.clearImmersiveFocus()
+    }
+
     func beginManualCameraControl() {
         navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
+        sceneCoordinator.clearImmersiveTransferOverview()
         cameraCoordinator.beginManualCameraControl()
+    }
+
+    public func rotateCamera(translation: CGSize, velocity: CGSize = .zero) {
+        beginManualCameraControl()
+        cameraCoordinator.makeRotation(
+            with: CGPoint(x: translation.width, y: translation.height),
+            velocity: CGPoint(x: velocity.width, y: velocity.height)
+        )
+    }
+
+    public func translateCamera(translation: CGSize) {
+        beginManualCameraControl()
+        cameraCoordinator.makeTranslation(
+            with: CGPoint(x: translation.width, y: translation.height),
+            viewportSize: viewportSize
+        )
+    }
+
+    public func scaleCamera(by scale: Float, velocity: CGFloat = 0) {
+        beginManualCameraControl()
+        cameraCoordinator.makeScale(with: scale, velocity: velocity)
+    }
+
+    public func adjustImmersiveFocusRotation(translation: CGSize) -> Bool {
+        sceneCoordinator.adjustImmersiveFocusRotation(translation: translation)
+    }
+
+    public func adjustImmersiveFocusScale(by scale: Float) -> Bool {
+        sceneCoordinator.adjustImmersiveFocusScale(by: scale)
     }
 
     public func setObjectInfoOverlayFraming(isPresented: Bool,

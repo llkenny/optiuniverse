@@ -26,7 +26,8 @@ struct CameraPose: Equatable {
 
     var transitionFrame: CameraTransition.Frame {
         .init(target: target,
-              distance: distance)
+              distance: distance,
+              orientation: orientation)
     }
 
     func makeRenderViewMatrix() -> float4x4 {

@@ -41,10 +41,14 @@ final class UniverseSceneCoordinator {
     private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
     private var proceduralSceneContent: RealityProceduralSceneContent?
     private var installationRoot: Entity?
+    private var immersiveFocusState = ImmersiveFocusState()
+    private var immersiveTransferOverviewState = ImmersiveTransferOverviewState()
     private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
+    private(set) var immersiveFocusTransform: float4x4?
+    private(set) var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
 
@@ -68,12 +72,37 @@ final class UniverseSceneCoordinator {
         buildHierarchy(planets: planets)
     }
 
+    #if os(visionOS)
+    func install(in content: inout RealityViewContent,
+                 installationID: UUID) {
+        registerInstallation(installationID)
+        updateSubscription?.cancel()
+        updateSubscription = nil
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
+        subscribeToUpdates(in: content)
+    }
+
+    func restoreInstallationIfNeeded(in content: inout RealityViewContent,
+                                     installationID: UUID) {
+        if activeInstallationID != installationID {
+            install(in: &content, installationID: installationID)
+            return
+        }
+        attachSceneIfNeeded(to: &content, installationID: installationID)
+        resumeConfiguredAnimationsIfNeeded()
+        guard updateSubscription == nil else { return }
+        subscribeToUpdates(in: content)
+    }
+    #else
     func install(in content: inout RealityViewCameraContent,
                  installationID: UUID) {
         registerInstallation(installationID)
         updateSubscription?.cancel()
         updateSubscription = nil
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        content.camera = .virtual
+        content.cameraTarget = virtualCamera
         resumeConfiguredAnimationsIfNeeded()
         subscribeToUpdates(in: content)
     }
@@ -85,13 +114,18 @@ final class UniverseSceneCoordinator {
             return
         }
         attachSceneIfNeeded(to: &content, installationID: installationID)
+        content.camera = .virtual
+        content.cameraTarget = virtualCamera
         resumeConfiguredAnimationsIfNeeded()
         guard updateSubscription == nil else { return }
         subscribeToUpdates(in: content)
     }
+    #endif
 
-    private func attachSceneIfNeeded(to content: inout RealityViewCameraContent,
-                                     installationID: UUID) {
+    private func attachSceneIfNeeded<Content: RealityViewContentProtocol>(
+        to content: inout Content,
+        installationID: UUID
+    ) {
         guard activeInstallationID == installationID else { return }
 
         if let installationRoot,
@@ -99,6 +133,7 @@ final class UniverseSceneCoordinator {
             if universeRoot.parent !== installationRoot {
                 installationRoot.addChild(universeRoot)
             }
+            applyImmersiveFocusIfPossible(frameState: latestFrameState)
         } else {
             universeRoot.removeFromParent()
             let installationRoot = Entity()
@@ -106,12 +141,11 @@ final class UniverseSceneCoordinator {
             installationRoot.addChild(universeRoot)
             content.add(installationRoot)
             self.installationRoot = installationRoot
+            applyImmersiveFocusIfPossible(frameState: latestFrameState)
         }
-        content.camera = .virtual
-        content.cameraTarget = virtualCamera
     }
 
-    private func subscribeToUpdates(in content: RealityViewCameraContent) {
+    private func subscribeToUpdates<Content: RealityViewContentProtocol>(in content: Content) {
         updateSubscription = content.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.update(deltaTime: event.deltaTime)
@@ -131,6 +165,53 @@ final class UniverseSceneCoordinator {
 
     func setPresentationActive(_ isActive: Bool) {
         isPresentationActive = isActive
+    }
+
+    var hasImmersiveFocus: Bool {
+        immersiveFocusState.hasFocus && !hasImmersiveTransferOverview
+    }
+
+    private var hasImmersiveTransferOverview: Bool {
+        transferOrbitController.isTransferPreviewActive ||
+        immersiveTransferOverviewState.hasPersistedTransform
+    }
+
+    func beginImmersiveTransferOverview() {
+        immersiveTransferOverviewState.begin()
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+    }
+
+    func clearImmersiveTransferOverview() {
+        immersiveTransferOverviewState.clear()
+        immersiveTransferOverviewTransform = nil
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+    }
+
+    func setImmersiveFocus(bodyName: String) {
+        immersiveFocusState.focus(on: bodyName)
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+    }
+
+    func clearImmersiveFocus() {
+        immersiveFocusState.clear()
+        immersiveTransferOverviewState.clear()
+        immersiveFocusTransform = nil
+        immersiveTransferOverviewTransform = nil
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+    }
+
+    func adjustImmersiveFocusRotation(translation: CGSize) -> Bool {
+        guard !hasImmersiveTransferOverview else { return false }
+        guard immersiveFocusState.rotate(translation: translation) else { return false }
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+        return true
+    }
+
+    func adjustImmersiveFocusScale(by scale: Float) -> Bool {
+        guard !hasImmersiveTransferOverview else { return false }
+        guard immersiveFocusState.scale(by: scale) else { return false }
+        applyImmersiveFocusIfPossible(frameState: latestFrameState)
+        return true
     }
 
     func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
@@ -226,6 +307,7 @@ final class UniverseSceneCoordinator {
         updateSubscription = nil
         assetRepository.cancelPendingLoads()
         stopAllAnimations()
+        clearImmersiveFocus()
         universeRoot.removeFromParent()
         installationRoot = nil
         activeInstallationID = nil
@@ -339,6 +421,48 @@ final class UniverseSceneCoordinator {
                 entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
             }
         }
+        applyImmersiveFocusIfPossible(frameState: frameState)
+    }
+
+    private func applyImmersiveFocusIfPossible(frameState: UniverseFrameState?) {
+        if transferOrbitController.isTransferPreviewActive,
+           let frameState,
+           let transform = immersiveTransferOverviewState.persist(
+                cameraPose: cameraCoordinator.currentCameraPose,
+                targetAfterSceneOrigin: cameraCoordinator.currentCameraPose.target
+                    - frameState.cameraSnapshot.sceneOrigin
+           ) {
+            immersiveTransferOverviewTransform = transform
+            installationRoot?.transform = Transform(matrix: transform)
+            return
+        }
+
+        if let transform = immersiveTransferOverviewState.persistedTransform {
+            immersiveTransferOverviewTransform = transform
+            installationRoot?.transform = Transform(matrix: transform)
+            return
+        }
+
+        immersiveTransferOverviewTransform = nil
+        guard immersiveFocusState.hasFocus else {
+            immersiveFocusTransform = nil
+            installationRoot?.transform = .identity
+            return
+        }
+        guard let frameState,
+              let snapshot = frameState.snapshot,
+              let bodyName = immersiveFocusState.bodyName,
+              let bodySnapshot = snapshot.planet(named: bodyName),
+              let transform = immersiveFocusState.transform(
+                  selectedBodyPositionAfterSceneOrigin: bodySnapshot.worldPosition
+                    - frameState.cameraSnapshot.sceneOrigin,
+                  framingRadius: bodySnapshot.framingRadius
+              ) else {
+            return
+        }
+
+        immersiveFocusTransform = transform
+        installationRoot?.transform = Transform(matrix: transform)
     }
 
     private func install(proceduralSceneContent: RealityProceduralSceneContent) {

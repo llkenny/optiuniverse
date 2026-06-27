@@ -203,7 +203,7 @@ final class FollowCameraOwner {
                                                   snapshot: snapshot,
                                                   currentDistance: cameraState.cameraDistance,
                                                   viewportSize: viewportSize)
-        case .fixed(let target, let distance):
+        case .fixed(let target, let distance, _):
             return CameraTransition.Frame(target: target,
                                           distance: distance)
         }

@@ -1,2 +1,3 @@
 - Complete the RealityKit universe renderer migration
 - Verify cinematic PostFX and Milky Way environment
+- Check VisionOS

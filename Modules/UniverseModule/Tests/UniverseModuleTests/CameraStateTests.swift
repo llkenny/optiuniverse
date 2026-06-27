@@ -57,3 +57,13 @@ import Testing
     #expect(unchangedDirtyFields.isEmpty)
     #expect(cameraState.revision == revisionAfterClamp)
 }
+
+@Test func cameraStateAllowsTransferSpecificMaximumDistance() {
+    let cameraState = CameraState()
+    cameraState.commit(CameraState.Transaction(cameraDistance: 20_000))
+
+    cameraState.enforceCameraConstraints(minDistance: 0.1,
+                                         maximumDistance: 25_000)
+
+    #expect(cameraState.cameraDistance == 20_000)
+}

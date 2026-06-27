@@ -34,7 +34,7 @@ final class CameraState {
     let cameraFollowTransitionDuration: Float = 1.1
 
     let minDistance: Float = 0.001
-    private let maxDistance: Float = 10000.0
+    static let defaultMaximumDistance: Float = 10_000
 
     private(set) var cameraDistance: Float = 3
     private(set) var cameraTarget = SIMD3<Float>(0, 0, 0)
@@ -87,9 +87,12 @@ final class CameraState {
     /// Keeps zoom inside available range and outside of the followed planet
     /// - Parameter minDistance: Minimum allowed camera distance
     @discardableResult
-    func enforceCameraConstraints(minDistance: Float) -> DirtyFields {
+    func enforceCameraConstraints(minDistance: Float,
+                                  maximumDistance: Float? = nil) -> DirtyFields {
         let distance = cameraDistance
-        let fixedDistance = max(minDistance, min(distance, maxDistance))
+        let maximumDistance = max(maximumDistance ?? Self.defaultMaximumDistance,
+                                  minDistance)
+        let fixedDistance = max(minDistance, min(distance, maximumDistance))
         guard fixedDistance != distance else { return [] }
 
         return commit(Transaction(cameraDistance: fixedDistance))

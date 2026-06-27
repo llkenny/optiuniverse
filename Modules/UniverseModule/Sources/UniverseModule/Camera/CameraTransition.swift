@@ -11,11 +11,20 @@ struct CameraTransition {
     struct Frame: Equatable {
         let target: SIMD3<Float>
         let distance: Float
+        let orientation: simd_quatf?
+
+        init(target: SIMD3<Float>,
+             distance: Float,
+             orientation: simd_quatf? = nil) {
+            self.target = target
+            self.distance = distance
+            self.orientation = orientation
+        }
     }
 
     enum Destination: Equatable {
         case planet(name: String)
-        case fixed(target: SIMD3<Float>, distance: Float)
+        case fixed(target: SIMD3<Float>, distance: Float, orientation: simd_quatf? = nil)
     }
 
     let start: Frame
@@ -60,8 +69,18 @@ struct CameraTransition {
         let clampedProgress = min(max(progress, 0), 1)
         return Frame(
             target: start.target + (end.target - start.target) * clampedProgress,
-            distance: start.distance + (end.distance - start.distance) * clampedProgress
+            distance: start.distance + (end.distance - start.distance) * clampedProgress,
+            orientation: interpolatedOrientation(from: start.orientation,
+                                                 to: end.orientation,
+                                                 progress: clampedProgress)
         )
+    }
+
+    private static func interpolatedOrientation(from start: simd_quatf?,
+                                                to end: simd_quatf?,
+                                                progress: Float) -> simd_quatf? {
+        guard let start, let end else { return nil }
+        return simd_normalize(simd_slerp(start, end, progress))
     }
 
     static func easeInOutCubic(_ value: Float) -> Float {

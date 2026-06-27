@@ -30,6 +30,22 @@ enum CameraFit {
         return max(fittedDistance, radius * 1.05)
     }
 
+    /// Fits a circular orbit to the horizontal bounds of the viewport.
+    static func distanceToFitWidth(radius: Float,
+                                   currentDistance: Float,
+                                   viewportSize: CGSize) -> Float {
+        guard radius > 0 else { return max(currentDistance, defaultNearPlane) }
+
+        let width = max(Float(viewportSize.width), 1)
+        let height = max(Float(viewportSize.height), 1)
+        let aspect = width / height
+        let horizontalHalfFOV = atan(tan(verticalFieldOfView / 2) * aspect)
+        let targetHalfAngle = atan(viewportFill * tan(horizontalHalfFOV))
+        let fittedDistance = radius / max(tan(targetHalfAngle), 0.001)
+
+        return max(fittedDistance, radius * 1.05)
+    }
+
     static func nearPlaneDistance(cameraDistance: Float,
                                   framingRadius: Float?) -> Float {
         guard let framingRadius else {

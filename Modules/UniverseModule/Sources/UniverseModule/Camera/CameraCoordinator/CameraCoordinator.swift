@@ -147,8 +147,9 @@ final class CameraCoordinator {
                                  delta: delta,
                                  viewportSize: viewportSize,
                                  isSuppressed: isSuppressed)
-        if !isSuppressed {
-            refreshCamera(snapshot: snapshot)
+        if !isSuppressed || modeState.transferPreviewActive {
+            refreshCamera(snapshot: snapshot,
+                          maximumDistance: modeState.transfer?.maximumCameraDistance)
         }
 
         if hasActiveCameraMotion(modeState: modeState) {
@@ -181,10 +182,12 @@ final class CameraCoordinator {
     ///
     /// This replaces the old renderer-owned `updateCamera()` path while keeping matrix derivation
     /// centralized in `CameraState`/`SnapshotProvider`.
-    func refreshCamera(snapshot: UniverseSceneSnapshot? = nil) {
+    func refreshCamera(snapshot: UniverseSceneSnapshot? = nil,
+                       maximumDistance: Float? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
         cameraState.enforceCameraConstraints(
-            minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)
+            minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot),
+            maximumDistance: maximumDistance
         )
     }
 
@@ -198,9 +201,6 @@ final class CameraCoordinator {
                              cameraOrientation: cameraState.cameraOrientation)
         )
 
-        if !isNavigationCameraActive {
-            refreshCamera()
-        }
     }
 
     private func hasActiveCameraMotion(modeState: CameraFrameModeState) -> Bool {

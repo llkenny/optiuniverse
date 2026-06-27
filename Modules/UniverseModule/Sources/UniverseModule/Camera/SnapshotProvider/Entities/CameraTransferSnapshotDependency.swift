@@ -8,4 +8,5 @@
 struct CameraTransferSnapshotDependency: Equatable {
     let destinationName: String?
     let hasActiveTransition: Bool
+    let maximumCameraDistance: Float?
 }

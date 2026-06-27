@@ -49,6 +49,42 @@ import Testing
     #expect(!ribbon.entity.isEnabled)
 }
 
+@Test func realityRibbonMaintainsScreenSpaceWidthAcrossCameraDepths() {
+    let fov: Float = .pi / 3
+    let viewportHeight: Float = 844
+    let lineWidth: Float = 2.5
+    let nearDepth: Float = 10
+    let farDepth: Float = 20_000
+
+    let nearHalfWidth = RealityRibbon.halfWidth(cameraSpaceDepth: nearDepth,
+                                                 verticalFieldOfView: fov,
+                                                 viewportHeight: viewportHeight,
+                                                 lineWidth: lineWidth)
+    let farHalfWidth = RealityRibbon.halfWidth(cameraSpaceDepth: farDepth,
+                                                verticalFieldOfView: fov,
+                                                viewportHeight: viewportHeight,
+                                                lineWidth: lineWidth)
+
+    #expect(abs(projectedLineWidth(halfWidth: nearHalfWidth,
+                                   depth: nearDepth,
+                                   fov: fov,
+                                   viewportHeight: viewportHeight) - lineWidth) < 0.0001)
+    #expect(abs(projectedLineWidth(halfWidth: farHalfWidth,
+                                   depth: farDepth,
+                                   fov: fov,
+                                   viewportHeight: viewportHeight) - lineWidth) < 0.0001)
+}
+
+@Test func proceduralEnvironmentExpandsBeyondOuterTransferGeometry() {
+    let farPlane: Float = 40_000
+    let environmentRadius = RealityProceduralSceneContent.environmentScale(
+        farPlane: farPlane
+    ) * 9_000
+
+    #expect(environmentRadius > 39_000)
+    #expect(environmentRadius < farPlane)
+}
+
 @MainActor
 @Test func proceduralOrbitCirclePointsUseRealityKitXZPlane() throws {
     let points = RealityProceduralSceneContent.circlePoints(center: SIMD3<Float>(10, 20, 30),
@@ -75,4 +111,11 @@ import Testing
 
     #expect(mesh.parts.count == 1)
     #expect(starField.entity.children.isEmpty)
+}
+
+private func projectedLineWidth(halfWidth: Float,
+                                depth: Float,
+                                fov: Float,
+                                viewportHeight: Float) -> Float {
+    halfWidth * viewportHeight / (depth * tan(fov / 2))
 }
