@@ -3,38 +3,42 @@ import BaseModule
 import SwiftUI
 import UniverseModule
 
-struct UniverseImmersiveView: View {
+struct UniverseImmersiveView<Resources: UniverseModuleResourcesProtocol, UniverseContent: View>: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 
-    let resources: UniverseModuleResources
+    let resources: Resources
+    private let universeContent: (Bool, AnyView) -> UniverseContent
 
     @State private var previousDragTranslation: CGSize = .zero
     @State private var previousMagnification: CGFloat = 1
     @State private var presentedObjectInfo: ObjectInfoViewEntity?
 
+    init(resources: UniverseModuleResources) where Resources == UniverseModuleResources,
+                                                   UniverseContent == UniverseView {
+        self.resources = resources
+        universeContent = { isActive, immersiveControls in
+            UniverseView(resources: resources, isActive: isActive) {
+                immersiveControls
+            }
+        }
+    }
+
+    init(resources: Resources,
+         @ViewBuilder universeContent: @escaping (Bool) -> UniverseContent) {
+        self.resources = resources
+        self.universeContent = { isActive, _ in
+            universeContent(isActive)
+        }
+    }
+
     var body: some View {
-        UniverseView(
-            resources: resources,
-            isActive: appEnvironment.isUniverseImmersivePresented
+        universeContent(
+            appEnvironment.isUniverseImmersivePresented,
+            AnyView(immersiveControlsAttachment)
         )
         .gesture(rotateGesture)
         .simultaneousGesture(zoomGesture)
-        .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .bottom) {
-            VisionImmersiveControls(
-                resources: resources,
-                selectedDestination: selectedDestination,
-                showObjectInfo: { destination in
-                    presentObjectInfo(for: destination)
-                },
-                exit: {
-                    Task {
-                        await exitImmersiveSpace()
-                    }
-                }
-            )
-            .environment(appEnvironment)
-        }
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .trailing) {
             if let presentedObjectInfo {
                 objectInfoOrnament(entity: presentedObjectInfo)
@@ -49,6 +53,22 @@ struct UniverseImmersiveView: View {
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
             presentedObjectInfo = nil
         }
+    }
+
+    private var immersiveControlsAttachment: some View {
+        VisionImmersiveControls(
+            resources: resources,
+            selectedDestination: selectedDestination,
+            showObjectInfo: { destination in
+                presentObjectInfo(for: destination)
+            },
+            exit: {
+                Task {
+                    await exitImmersiveSpace()
+                }
+            }
+        )
+        .environment(appEnvironment)
     }
 
     private var selectedDestination: DestinationObject? {
@@ -185,4 +205,5 @@ struct UniverseImmersiveView: View {
         appEnvironment.currentScreen = .home
     }
 }
+
 #endif
