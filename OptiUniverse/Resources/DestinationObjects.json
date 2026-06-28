@@ -1,45 +1,5 @@
 [
     {
-        "id": "2A362A51-31E5-4609-8B0D-CE2FBC314F15",
-        "object": "Sun",
-        "title": "Sun",
-        "subtitle": "Solar Giant",
-        "description": "The Sun is the star at the center of the solar system, holding every planet in orbit with its gravity. Its roiling plasma, magnetic storms, and constant stream of solar wind shape conditions across interplanetary space.",
-        "imageName": "dst-Sun",
-        "tag": "🌶️ Hot",
-        "isNavigable": false,
-        "details": [
-            {
-                "title": "Age",
-                "value": "4.6B",
-                "dimension": "YEARS"
-            },
-            {
-                "title": "Diameter",
-                "value": "1.39M",
-                "dimension": "KM"
-            },
-            {
-                "title": "Mass",
-                "value": "1",
-                "dimension": "SOLAR MASS"
-            },
-            {
-                "title": "Surface temp",
-                "value": "5,500",
-                "dimension": "C"
-            }
-        ],
-        "orbitInfo": {
-            "description": "The Sun completes one orbit around the Milky Way's galactic center roughly every 230 million years.",
-            "properties": {
-                "axis": "~26,000 ly",
-                "eccentricity": "N/A",
-                "inclination": "N/A"
-            }
-        }
-    },
-    {
         "id": "2F2B045C-4C7C-4797-A423-BAC3665F67AF",
         "object": "Mercury",
         "title": "Mercury",
@@ -475,5 +435,45 @@
                 "dimension": "tons"
             }
         ]
+    },
+    {
+        "id": "2A362A51-31E5-4609-8B0D-CE2FBC314F15",
+        "object": "Sun",
+        "title": "Sun",
+        "subtitle": "Solar Giant",
+        "description": "The Sun is the star at the center of the solar system, holding every planet in orbit with its gravity. Its roiling plasma, magnetic storms, and constant stream of solar wind shape conditions across interplanetary space.",
+        "imageName": "dst-Sun",
+        "tag": "🌶️ Hot",
+        "isNavigable": false,
+        "details": [
+            {
+                "title": "Age",
+                "value": "4.6B",
+                "dimension": "YEARS"
+            },
+            {
+                "title": "Diameter",
+                "value": "1.39M",
+                "dimension": "KM"
+            },
+            {
+                "title": "Mass",
+                "value": "1",
+                "dimension": "SOLAR MASS"
+            },
+            {
+                "title": "Surface temp",
+                "value": "5,500",
+                "dimension": "C"
+            }
+        ],
+        "orbitInfo": {
+            "description": "The Sun completes one orbit around the Milky Way's galactic center roughly every 230 million years.",
+            "properties": {
+                "axis": "~26,000 ly",
+                "eccentricity": "N/A",
+                "inclination": "N/A"
+            }
+        }
     }
 ]

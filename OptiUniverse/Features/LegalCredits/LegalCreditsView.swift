@@ -36,16 +36,16 @@ struct LegalCreditsView: View {
 enum LegalCreditsCatalog {
     static let sections: [LegalCreditSection] = [
         LegalCreditSection(
-            title: "3D Solar System Model",
+            title: "Solar System Textures",
             body: """
-            "High Resolution Solar system" by pebegou.
+            "Solar System Textures" by solarsystemscope.
             Licensed under Creative Commons Attribution 4.0 International.
             Changes: Converted and optimized for use in OptiUniverse.
             """,
             links: [
                 LegalCreditLink(
                     title: "Source",
-                    url: URL(string: "https://www.fab.com/listings/f8e5507c-76d2-44f5-97b2-d22c264dc4ab")!
+                    url: URL(string: "https://www.solarsystemscope.com/textures/")!
                 ),
                 LegalCreditLink(
                     title: "License",
@@ -100,16 +100,16 @@ enum LegalCreditsCatalog {
             """,
             links: [
                 LegalCreditLink(
-                    title: "Mars Hubble Image",
-                    url: URL(string: "https://esahubble.org/images/opo0124a/")!
-                ),
-                LegalCreditLink(
-                    title: "Neptune Hubble Image",
-                    url: URL(string: "https://esahubble.org/images/opo1622b/")!
+                    title: "Jupiter Cassini spacecraft Image",
+                    url: URL(string: "https://science.nasa.gov/image-detail/amf-f99593ed-7430-4b17-bad5-9245cc073ac9/")!
                 ),
                 LegalCreditLink(
                     title: "Saturn Hubble Image",
                     url: URL(string: "https://esahubble.org/images/heic1917a/")!
+                ),
+                LegalCreditLink(
+                    title: "Neptune Hubble Image",
+                    url: URL(string: "https://esahubble.org/images/opo1622b/")!
                 )
             ]
         ),

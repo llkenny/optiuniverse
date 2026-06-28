@@ -1,20 +1,20 @@
 [
     {
-        "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
-        "name": "Moon Base",
-        "description": "First lunar outpost",
-        "imageName": "Moon_Base_4",
+        "id": "B09A3752-957D-4B27-AB40-C237B7CBEAD0",
+        "name": "Jupiter",
+        "description": "Great Storm Giant",
+        "imageName": "Jupiter_1",
         "accentColor":
         [
             {
-                "red": 0.01,
-                "green": 0.01,
-                "blue": 0.01
+                "red": 0,
+                "green": 0,
+                "blue": 0
             },
             {
-                "red": 0.09,
-                "green": 0.09,
-                "blue": 0.11
+                "red": 0.63,
+                "green": 0.54,
+                "blue": 0.48
             }
         ]
     },
@@ -38,40 +38,21 @@
         ]
     },
     {
-        "id": "597DF2F3-98E7-4CFE-ACBA-C9D8B30F187E",
-        "name": "Neptune",
-        "description": "Deep blue frontier",
-        "imageName": "Neptune_1",
+        "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
+        "name": "Moon Base",
+        "description": "First lunar outpost",
+        "imageName": "Moon_Base_4",
         "accentColor":
         [
             {
-                "red": 0.28,
-                "green": 0.57,
-                "blue": 0.98
+                "red": 0.01,
+                "green": 0.01,
+                "blue": 0.01
             },
             {
-                "red": 0.04,
-                "green": 0.11,
-                "blue": 0.36
-            }
-        ]
-    },
-    {
-        "id": "2530E63D-699E-4F38-9B77-EABDE51152A5",
-        "name": "Mars",
-        "description": "Dust storms and canyons",
-        "imageName": "Mars_1",
-        "accentColor":
-        [
-            {
-                "red": 0.93,
-                "green": 0.45,
-                "blue": 0.28
-            },
-            {
-                "red": 0.29,
-                "green": 0.08,
-                "blue": 0.06
+                "red": 0.09,
+                "green": 0.09,
+                "blue": 0.11
             }
         ]
     }
