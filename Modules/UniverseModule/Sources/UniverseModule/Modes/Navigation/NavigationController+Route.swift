@@ -106,7 +106,6 @@ extension NavigationController: UniverseNavigationControlling {
 
         if navigationCameraFollowEnabled {
             cameraTransition = nil
-            captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
             updateNavigationFollowCamera(snapshot: snapshot)
         } else {
             startNavigationOverviewAnimation(route: route,

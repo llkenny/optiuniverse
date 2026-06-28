@@ -10,18 +10,15 @@ import simd
 /// Computes transactional camera mutations for route navigation.
 final class NavigationCameraMode {
 
-    func makeNavigationFollowTransaction(currentPoint: SIMD3<Float>,
-                                         destinationPosition: SIMD3<Float>,
-                                         trailingOffset: SIMD3<Float>) -> CameraState.Transaction {
-        let localTarget = destinationPosition - currentPoint
-        let localEye = trailingOffset
-        let viewDirectionInput = localTarget - localEye
-        let viewDirection = simd_length_squared(viewDirectionInput) > 0.000001
-        ? normalize(viewDirectionInput)
+    func makeNavigationFollowTransaction(cameraPosition: SIMD3<Float>,
+                                         lookTarget: SIMD3<Float>) -> CameraState.Transaction {
+        let localEye = cameraPosition - lookTarget
+        let viewDirection = simd_length_squared(-localEye) > 0.000001
+        ? normalize(-localEye)
         : SIMD3<Float>(0, 0, -1)
         let cameraUp = makeCameraUp(viewDirection: viewDirection)
 
-        return CameraState.Transaction(cameraTarget: currentPoint,
+        return CameraState.Transaction(cameraTarget: lookTarget,
                                        cameraDistance: max(simd_length(localEye), CameraFit.minimumNearPlane),
                                        cameraOrientation: makeCameraOrientation(localEye: localEye,
                                                                                 cameraUp: cameraUp))

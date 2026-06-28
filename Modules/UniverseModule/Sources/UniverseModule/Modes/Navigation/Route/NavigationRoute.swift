@@ -57,23 +57,72 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
+        point(atDistance: distance(at: progress))
+    }
+
+    func distance(at progress: Float) -> Float {
+        guard totalDistance.isFinite, totalDistance > 0 else { return 0 }
+        let clampedProgress = min(max(progress, 0), 1)
+        return totalDistance * clampedProgress
+    }
+
+    func remainingDistance(at progress: Float) -> Float {
+        max(totalDistance - distance(at: progress), 0)
+    }
+
+    func motionDirection(at progress: Float) -> SIMD3<Float>? {
+        guard points.count >= 2,
+              points.count == cumulativeDistances.count else {
+            return nil
+        }
+
+        let targetDistance = distance(at: progress)
+        let epsilon: Float = 0.000_001
+
+        for upperIndex in 1..<points.count where cumulativeDistances[upperIndex] > targetDistance + epsilon {
+            let direction = points[upperIndex] - points[upperIndex - 1]
+            if simd_length_squared(direction) > epsilon {
+                return normalize(direction)
+            }
+        }
+
+        for upperIndex in stride(from: points.count - 1, through: 1, by: -1) {
+            let direction = points[upperIndex] - points[upperIndex - 1]
+            if simd_length_squared(direction) > epsilon {
+                return normalize(direction)
+            }
+        }
+
+        return nil
+    }
+
+    func lookAheadPoint(at progress: Float,
+                        distance lookAheadDistance: Float) -> SIMD3<Float>? {
+        guard lookAheadDistance.isFinite else {
+            return point(at: progress)
+        }
+
+        let targetDistance = min(distance(at: progress) + max(lookAheadDistance, 0), totalDistance)
+        return point(atDistance: targetDistance)
+    }
+
+    private func point(atDistance targetDistance: Float) -> SIMD3<Float>? {
         guard let first = points.first,
               points.count == cumulativeDistances.count else {
             return nil
         }
         guard totalDistance > 0 else { return first }
 
-        let clampedProgress = min(max(progress, 0), 1)
-        let targetDistance = totalDistance * clampedProgress
+        let clampedDistance = min(max(targetDistance, 0), totalDistance)
 
-        if targetDistance <= 0 {
+        if clampedDistance <= 0 {
             return first
         }
-        if targetDistance >= totalDistance {
+        if clampedDistance >= totalDistance {
             return points.last
         }
 
-        guard let upperIndex = cumulativeDistances.firstIndex(where: { $0 >= targetDistance }),
+        guard let upperIndex = cumulativeDistances.firstIndex(where: { $0 >= clampedDistance }),
               upperIndex > 0 else {
             return first
         }
@@ -82,7 +131,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         let lowerDistance = cumulativeDistances[lowerIndex]
         let upperDistance = cumulativeDistances[upperIndex]
         let segmentDistance = max(upperDistance - lowerDistance, .leastNonzeroMagnitude)
-        let segmentProgress = (targetDistance - lowerDistance) / segmentDistance
+        let segmentProgress = (clampedDistance - lowerDistance) / segmentDistance
 
         return points[lowerIndex] + (points[upperIndex] - points[lowerIndex]) * segmentProgress
     }

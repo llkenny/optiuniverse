@@ -26,13 +26,11 @@ extension CameraCoordinator: NavigationCameraCoordinating {
     }
 
     func commitNavigationFollow(route: NavigationRoute,
-                                currentPoint: SIMD3<Float>,
-                                destinationPosition: SIMD3<Float>,
-                                trailingOffset: SIMD3<Float>) {
+                                cameraPosition: SIMD3<Float>,
+                                lookTarget: SIMD3<Float>) {
         navigationCameraOwner.commitFollow(route: route,
-                                           currentPoint: currentPoint,
-                                           destinationPosition: destinationPosition,
-                                           trailingOffset: trailingOffset)
+                                           cameraPosition: cameraPosition,
+                                           lookTarget: lookTarget)
     }
 
     func commitNavigationArrival(route: NavigationRoute,

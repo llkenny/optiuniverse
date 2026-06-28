@@ -44,13 +44,11 @@ final class NavigationCameraOwner {
     }
 
     func commitFollow(route: NavigationRoute,
-                      currentPoint: SIMD3<Float>,
-                      destinationPosition: SIMD3<Float>,
-                      trailingOffset: SIMD3<Float>) {
+                      cameraPosition: SIMD3<Float>,
+                      lookTarget: SIMD3<Float>) {
         routeID = route.id
-        cameraState.commit(navigationMode.makeNavigationFollowTransaction(currentPoint: currentPoint,
-                                                                          destinationPosition: destinationPosition,
-                                                                          trailingOffset: trailingOffset))
+        cameraState.commit(navigationMode.makeNavigationFollowTransaction(cameraPosition: cameraPosition,
+                                                                          lookTarget: lookTarget))
     }
 
     func commitArrival(route: NavigationRoute,

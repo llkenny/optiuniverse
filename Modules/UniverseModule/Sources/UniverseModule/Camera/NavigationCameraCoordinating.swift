@@ -25,9 +25,8 @@ protocol NavigationCameraCoordinating: AnyObject {
     func suspendNavigationFollow(routeID: UUID?)
     func endNavigationCameraControl(routeID: UUID?)
     func commitNavigationFollow(route: NavigationRoute,
-                                currentPoint: SIMD3<Float>,
-                                destinationPosition: SIMD3<Float>,
-                                trailingOffset: SIMD3<Float>)
+                                cameraPosition: SIMD3<Float>,
+                                lookTarget: SIMD3<Float>)
     func commitNavigationArrival(route: NavigationRoute,
                                  position: SIMD3<Float>,
                                  target: SIMD3<Float>)

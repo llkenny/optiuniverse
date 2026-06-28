@@ -82,14 +82,36 @@ import Testing
 }
 
 @MainActor
-@Test func navigationControllerFollowCameraUsesCorrectedVerticalTrailingOffset() {
+@Test func navigationControllerFollowCameraUsesMotionAwareTrailingOffset() throws {
     let fixture = NavigationControllerFixture()
 
     fixture.controller.startNavigation(to: "Mars")
     fixture.controller.update(snapshot: fixture.snapshot,
                               delta: 0.1)
 
-    #expect(fixture.controller.navigationCameraTrailingOffset.z < 0)
+    let route = try #require(fixture.controller.routeRenderState.route)
+    let motionDirection = try #require(route.motionDirection(at: fixture.controller.routeRenderState.progress))
+
+    #expect(simd_dot(fixture.controller.navigationCameraTrailingOffset, motionDirection) < 0)
+}
+
+@MainActor
+@Test func navigationControllerFollowCameraLooksAheadAlongRouteMotion() throws {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+
+    let route = try #require(fixture.controller.routeRenderState.route)
+    let progress = fixture.controller.routeRenderState.progress
+    let currentPoint = try #require(route.point(at: progress))
+    let motionDirection = try #require(route.motionDirection(at: progress))
+    let cameraPosition = fixture.cameraState.pose.position
+    let lookTarget = fixture.cameraState.cameraTarget
+
+    #expect(simd_dot(lookTarget - currentPoint, motionDirection) > 0)
+    #expect(simd_dot(cameraPosition - currentPoint, motionDirection) < 0)
 }
 
 @MainActor
