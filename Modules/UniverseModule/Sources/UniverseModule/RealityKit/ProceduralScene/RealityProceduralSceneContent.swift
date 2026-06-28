@@ -18,7 +18,7 @@ final class RealityProceduralSceneContent {
     let navigationMarker: Entity
 
     private static let transferSampleCount = 256
-    static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.60)
+    static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
     static func prepare() async throws -> RealityProceduralSceneContent {
         let environmentEntity = try await makeEnvironmentEntity()
