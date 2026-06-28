@@ -80,11 +80,29 @@ extension NavigationController {
         let lookTarget = route.lookAheadPoint(at: navigationRouteCoordinator.renderProgress,
                                               distance: lookAheadDistance)
         ?? currentPoint + motionDirection * lookAheadDistance
+        applyNavigationTopViewTilt(currentPoint: currentPoint,
+                                   lookTarget: lookTarget)
         let cameraPosition = currentPoint + navigationCameraTrailingOffset
 
         cameraCoordinator.commitNavigationFollow(route: route,
                                                  cameraPosition: cameraPosition,
                                                  lookTarget: lookTarget)
+    }
+
+    func applyNavigationTopViewTilt(currentPoint: SIMD3<Float>,
+                                    lookTarget: SIMD3<Float>) {
+        let planarCameraPosition = currentPoint + navigationCameraTrailingOffset
+        let horizontalDistance = simd_length(
+            SIMD2<Float>(lookTarget.x - planarCameraPosition.x,
+                         lookTarget.z - planarCameraPosition.z)
+        )
+        guard horizontalDistance.isFinite,
+              horizontalDistance > 0 else {
+            return
+        }
+
+        navigationCameraTrailingOffset.y = (lookTarget.y - currentPoint.y)
+        + horizontalDistance * tan(navigationCameraTopViewTiltAngle)
     }
 
     func updateNavigationArrivalCamera(snapshot: UniverseSceneSnapshot,

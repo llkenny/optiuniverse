@@ -115,6 +115,26 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerFollowCameraUsesTwentyDegreeTopViewTilt() {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+
+    let cameraPosition = fixture.cameraState.pose.position
+    let lookTarget = fixture.cameraState.cameraTarget
+    let horizontalDistance = simd_length(
+        SIMD2<Float>(cameraPosition.x - lookTarget.x,
+                     cameraPosition.z - lookTarget.z)
+    )
+    let tiltAngle = atan2(cameraPosition.y - lookTarget.y,
+                          horizontalDistance)
+
+    #expect(abs(tiltAngle - fixture.controller.navigationCameraTopViewTiltAngle) < 0.0001)
+}
+
+@MainActor
 @Test func navigationControllerManualControlReleasesNavigationCameraOwner() {
     let fixture = NavigationControllerFixture()
 
