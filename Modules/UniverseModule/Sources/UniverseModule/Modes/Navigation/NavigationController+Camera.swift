@@ -74,19 +74,13 @@ extension NavigationController {
         captureNavigationCameraTrailingOffset(route: route,
                                               snapshot: snapshot,
                                               motionDirection: motionDirection)
-        let trailingDistance = simd_length(navigationCameraTrailingOffset)
-        let destinationRadius = snapshot.framingRadius(ofPlanetNamed: route.destinationName) ?? 0.01
-        let lookAheadDistance = max(destinationRadius * 4, trailingDistance * 1.5)
-        let lookTarget = route.lookAheadPoint(at: navigationRouteCoordinator.renderProgress,
-                                              distance: lookAheadDistance)
-        ?? currentPoint + motionDirection * lookAheadDistance
         applyNavigationTopViewTilt(currentPoint: currentPoint,
-                                   lookTarget: lookTarget)
+                                   lookTarget: currentPoint)
         let cameraPosition = currentPoint + navigationCameraTrailingOffset
 
         cameraCoordinator.commitNavigationFollow(route: route,
                                                  cameraPosition: cameraPosition,
-                                                 lookTarget: lookTarget)
+                                                 lookTarget: currentPoint)
     }
 
     func applyNavigationTopViewTilt(currentPoint: SIMD3<Float>,

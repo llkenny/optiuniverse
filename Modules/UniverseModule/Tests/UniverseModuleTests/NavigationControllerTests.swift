@@ -96,7 +96,7 @@ import Testing
 }
 
 @MainActor
-@Test func navigationControllerFollowCameraLooksAheadAlongRouteMotion() throws {
+@Test func navigationControllerFollowCameraTargetsCurrentRoutePoint() throws {
     let fixture = NavigationControllerFixture()
 
     fixture.controller.startNavigation(to: "Mars")
@@ -108,9 +108,8 @@ import Testing
     let currentPoint = try #require(route.point(at: progress))
     let motionDirection = try #require(route.motionDirection(at: progress))
     let cameraPosition = fixture.cameraState.pose.position
-    let lookTarget = fixture.cameraState.cameraTarget
 
-    #expect(simd_dot(lookTarget - currentPoint, motionDirection) > 0)
+    #expect(simd_distance(fixture.cameraState.cameraTarget, currentPoint) < 0.0001)
     #expect(simd_dot(cameraPosition - currentPoint, motionDirection) < 0)
 }
 

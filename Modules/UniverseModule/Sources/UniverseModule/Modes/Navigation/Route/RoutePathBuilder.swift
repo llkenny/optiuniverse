@@ -76,7 +76,8 @@ struct RoutePathBuilder: RouteBuilding {
     }
 
     static func makeNavigationPoints(transferOrbit: HohmannTransferOrbit,
-                                     destinationPosition: SIMD3<Float>?) -> [SIMD3<Float>] {
+                                     destinationPosition: SIMD3<Float>?,
+                                     destinationArcSampleCount: Int? = nil) -> [SIMD3<Float>] {
         guard let destinationPosition,
               let transferEndpoint = transferOrbit.points.last else {
             return transferOrbit.points
@@ -96,7 +97,9 @@ struct RoutePathBuilder: RouteBuilding {
         let startDirection = normalize(endpointVector)
         let destinationDirection = normalize(destinationVector)
         let orbitAngle = positiveAngle(from: startDirection, to: destinationDirection)
-        let arcSampleCount = max(2, Int(ceil(orbitAngle / (2 * .pi) * 192)))
+        let arcSampleCount = destinationArcSampleCount
+        .map { max(2, $0) }
+        ?? max(2, Int(ceil(orbitAngle / (2 * .pi) * 192)))
         guard arcSampleCount > 1 else { return transferOrbit.points }
 
         let orbitPoints = (1...arcSampleCount).map { index in
