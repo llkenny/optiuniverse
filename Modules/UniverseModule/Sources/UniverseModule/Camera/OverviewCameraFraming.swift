@@ -1,0 +1,47 @@
+//
+//  OverviewCameraFraming.swift
+//  UniverseModule
+//
+//  Created by Codex on 02.07.2026.
+//
+
+import CoreGraphics
+import simd
+
+enum OverviewCameraFraming {
+    static let orientation = simd_quatf(angle: -.pi * 0.25,
+                                        axis: SIMD3<Float>(1, 0, 0))
+
+    static func navigationRouteRadius(route: NavigationRoute) -> Float {
+        guard let firstPoint = route.points.first else {
+            return 0
+        }
+
+        var minimum = firstPoint
+        var maximum = firstPoint
+
+        for point in route.points.dropFirst() {
+            minimum = simd_min(minimum, point)
+            maximum = simd_max(maximum, point)
+        }
+
+        return max(simd_length(maximum - minimum), 0.001)
+    }
+
+    static func navigationOverviewDistance(route: NavigationRoute,
+                                           currentDistance: Float,
+                                           viewportSize: CGSize) -> Float {
+        CameraFit.distanceToFitWidth(radius: navigationRouteRadius(route: route),
+                                     currentDistance: currentDistance,
+                                     viewportSize: viewportSize)
+    }
+
+    static func navigationMaximumCameraDistance(route: NavigationRoute,
+                                                currentDistance: Float,
+                                                viewportSize: CGSize) -> Float {
+        max(CameraState.defaultMaximumDistance,
+            navigationOverviewDistance(route: route,
+                                       currentDistance: currentDistance,
+                                       viewportSize: viewportSize) * 1.2)
+    }
+}

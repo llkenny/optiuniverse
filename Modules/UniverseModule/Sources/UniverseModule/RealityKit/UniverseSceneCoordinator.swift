@@ -273,7 +273,8 @@ final class UniverseSceneCoordinator {
                                             modeState: modeState)
         let overlayAdjustment = objectInfoOverlayFramingState.advance(delta: delta)
         let projection = makeCameraProjection(snapshot: snapshot,
-                                              overlayAdjustment: overlayAdjustment)
+                                              overlayAdjustment: overlayAdjustment,
+                                              modeState: modeState)
         let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
                                                 projection: projection,
                                                 modeState: modeState)
@@ -360,13 +361,15 @@ final class UniverseSceneCoordinator {
     private func makeCameraFrameModeState() -> CameraFrameModeState {
         CameraFrameModeState(
             transferPreviewActive: transferOrbitController.isTransferPreviewActive,
-            transfer: transferOrbitController.cameraSnapshotDependency
+            transfer: transferOrbitController.cameraSnapshotDependency,
+            navigation: navigationController.routeRenderState
         )
     }
 
     private func makeCameraProjection(
         snapshot: UniverseSceneSnapshot?,
-        overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment
+        overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment,
+        modeState: CameraFrameModeState
     ) -> CameraProjectionParameters {
         let baseProjection = CameraProjectionParameters(
             nearPlane: CameraFit.defaultNearPlane,
@@ -376,8 +379,12 @@ final class UniverseSceneCoordinator {
         )
         let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
                                                                             baseProjection: baseProjection)
+        let navigationProjection = cameraCoordinator.navigationProjectionParameters(
+            modeState: modeState,
+            baseProjection: followProjection
+        )
         return transferOrbitController.projectionParameters(snapshot: snapshot,
-                                                            baseProjection: followProjection)
+                                                            baseProjection: navigationProjection)
     }
 
     private func makeCameraSnapshot(

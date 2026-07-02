@@ -7,8 +7,12 @@
 
 import Foundation
 
-struct NavigationRouteRenderState {
+struct NavigationRouteRenderState: Equatable {
     let route: NavigationRoute?
     let progress: Float
     let elapsedTime: TimeInterval
+
+    static let idle = NavigationRouteRenderState(route: nil,
+                                                 progress: 0,
+                                                 elapsedTime: 0)
 }

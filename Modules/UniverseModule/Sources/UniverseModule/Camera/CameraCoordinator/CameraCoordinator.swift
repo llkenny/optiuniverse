@@ -33,6 +33,7 @@ final class CameraCoordinator {
     private let zoomMode: ZoomCameraMode
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
+    private let navigationCameraMode: NavigationCameraMode
     let followCameraOwner: FollowCameraOwner
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
@@ -65,6 +66,7 @@ final class CameraCoordinator {
         zoomMode = .init()
         orbitMode = .init()
         trajectoryMode = .init()
+        navigationCameraMode = .init()
         followCameraOwner = .init(cameraState: cameraState,
                                   snapshotProvider: snapshotProvider)
         transferPreviewCameraOwner = .init(cameraState: cameraState)
@@ -140,14 +142,20 @@ final class CameraCoordinator {
                            modeState: CameraFrameModeState) {
         updateManualCameraInertia(delta: delta)
 
-        let isSuppressed = modeState.transferPreviewActive
+        let isSuppressed = modeState.transferPreviewActive || modeState.navigationActive
         followCameraOwner.update(snapshot: snapshot,
                                  delta: delta,
                                  viewportSize: viewportSize,
                                  isSuppressed: isSuppressed)
-        if !isSuppressed || modeState.transferPreviewActive {
+
+        commitNavigationCameraTransaction(snapshot: snapshot,
+                                          viewportSize: viewportSize,
+                                          modeState: modeState)
+
+        if !isSuppressed || modeState.transferPreviewActive || modeState.navigationActive {
             refreshCamera(snapshot: snapshot,
-                          maximumDistance: modeState.transfer?.maximumCameraDistance)
+                          maximumDistance: maximumCameraDistance(modeState: modeState,
+                                                                 viewportSize: viewportSize))
         }
 
         if hasActiveCameraMotion(modeState: modeState) {
@@ -159,6 +167,13 @@ final class CameraCoordinator {
                                     baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
         followCameraOwner.projectionParameters(snapshot: snapshot,
                                                baseProjection: baseProjection)
+    }
+
+    func navigationProjectionParameters(modeState: CameraFrameModeState,
+                                        baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
+        navigationCameraMode.projectionParameters(state: modeState.navigation,
+                                                  cameraDistance: cameraState.cameraDistance,
+                                                  baseProjection: baseProjection)
     }
 
     func makeSnapshotDependencies(snapshot: UniverseSceneSnapshot?,
@@ -210,5 +225,29 @@ final class CameraCoordinator {
     private func commitManualCameraTransaction(_ transaction: CameraState.Transaction?) {
         guard let transaction else { return }
         cameraState.commit(transaction)
+    }
+
+    private func commitNavigationCameraTransaction(snapshot: UniverseSceneSnapshot?,
+                                                   viewportSize: CGSize,
+                                                   modeState: CameraFrameModeState) {
+        guard !modeState.transferPreviewActive else { return }
+
+        let transaction = navigationCameraMode.makeNavigationTransaction(
+            state: modeState.navigation,
+            snapshot: snapshot,
+            viewportSize: viewportSize,
+            currentPose: cameraState.pose
+        )
+        guard let transaction else { return }
+
+        cameraState.commit(transaction)
+    }
+
+    private func maximumCameraDistance(modeState: CameraFrameModeState,
+                                       viewportSize: CGSize) -> Float? {
+        modeState.transfer?.maximumCameraDistance ??
+        navigationCameraMode.maximumCameraDistance(state: modeState.navigation,
+                                                   currentDistance: cameraState.cameraDistance,
+                                                   viewportSize: viewportSize)
     }
 }
