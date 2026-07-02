@@ -54,6 +54,7 @@ final class NavigationController {
     var navigationArrivalProgress: Float = 1
     let navigationArrivalDuration: Float = 0.9
     let navigationArrivalDistanceMultiplier: Float = 5.8
+    let navigationCameraTopViewTiltAngle: Float = 5 * .pi / 180
 
     var navigationCameraFollowEnabled = true {
         didSet {

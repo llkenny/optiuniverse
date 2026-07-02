@@ -48,37 +48,55 @@ extension NavigationController {
     }
 
     func captureNavigationCameraTrailingOffset(route: NavigationRoute,
-                                               snapshot: UniverseSceneSnapshot) {
-        guard let currentPoint = route.point(at: navigationRouteCoordinator.renderProgress),
-              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
+                                               snapshot: UniverseSceneSnapshot,
+                                               motionDirection: SIMD3<Float>) {
+        guard route.point(at: navigationRouteCoordinator.renderProgress) != nil else {
             navigationCameraTrailingOffset = SIMD3<Float>(0, 0, -0.18)
             return
         }
 
-        let routeDistance = max(simd_distance(currentPoint, destinationPosition), 0.001)
+        let routeDistance = max(route.remainingDistance(at: navigationRouteCoordinator.renderProgress), 0.001)
         let destinationRadius = snapshot.framingRadius(ofPlanetNamed: route.destinationName) ?? 0.01
         let desiredTrailingDistance = min(max(destinationRadius * 4, routeDistance * 0.08), 35)
         let trailingDistance = min(desiredTrailingDistance, max(routeDistance * 0.45, 0.002))
-        let destinationDirection = simd_length_squared(destinationPosition - currentPoint) > 0.000001
-        ? normalize(destinationPosition - currentPoint)
-        : SIMD3<Float>(0, 0, -1)
         let lift = SIMD3<Float>(0, 0, -max(trailingDistance * 0.25, destinationRadius * 2))
 
-        navigationCameraTrailingOffset = destinationDirection * trailingDistance + lift
+        navigationCameraTrailingOffset = -motionDirection * trailingDistance + lift
     }
 
     func updateNavigationFollowCamera(snapshot: UniverseSceneSnapshot) {
         guard let route = navigationRouteCoordinator.activeRouteForRendering,
               let currentPoint = navigationRouteCoordinator.currentRoutePoint,
-              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName) else {
+              let motionDirection = route.motionDirection(at: navigationRouteCoordinator.renderProgress) else {
             return
         }
 
-        captureNavigationCameraTrailingOffset(route: route, snapshot: snapshot)
+        captureNavigationCameraTrailingOffset(route: route,
+                                              snapshot: snapshot,
+                                              motionDirection: motionDirection)
+        applyNavigationTopViewTilt(currentPoint: currentPoint,
+                                   lookTarget: currentPoint)
+        let cameraPosition = currentPoint + navigationCameraTrailingOffset
+
         cameraCoordinator.commitNavigationFollow(route: route,
-                                                 currentPoint: currentPoint,
-                                                 destinationPosition: destinationPosition,
-                                                 trailingOffset: navigationCameraTrailingOffset)
+                                                 cameraPosition: cameraPosition,
+                                                 lookTarget: currentPoint)
+    }
+
+    func applyNavigationTopViewTilt(currentPoint: SIMD3<Float>,
+                                    lookTarget: SIMD3<Float>) {
+        let planarCameraPosition = currentPoint + navigationCameraTrailingOffset
+        let horizontalDistance = simd_length(
+            SIMD2<Float>(lookTarget.x - planarCameraPosition.x,
+                         lookTarget.z - planarCameraPosition.z)
+        )
+        guard horizontalDistance.isFinite,
+              horizontalDistance > 0 else {
+            return
+        }
+
+        navigationCameraTrailingOffset.y = (lookTarget.y - currentPoint.y)
+        + horizontalDistance * tan(navigationCameraTopViewTiltAngle)
     }
 
     func updateNavigationArrivalCamera(snapshot: UniverseSceneSnapshot,

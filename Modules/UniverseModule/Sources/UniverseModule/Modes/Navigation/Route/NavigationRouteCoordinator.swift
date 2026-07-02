@@ -22,6 +22,10 @@ import simd
 /// - Is owned by `NavigationController`, which decides when route lifecycle operations are invoked.
 @MainActor
 final class NavigationRouteCoordinator {
+    private let refreshSmoothingFactor: Float = 0.18
+    private let refreshRelativeDisplacementThreshold: Float = 0.000_05
+    private let refreshMinimumDisplacementThreshold: Float = 0.000_05
+
     private let routeBuilder: RouteBuilding
     private let playback: RoutePlayback
     private let snapshotPublisher: (NavigationRouteSnapshot) -> Void
@@ -77,8 +81,28 @@ final class NavigationRouteCoordinator {
             return
         }
 
-        let routePoints = RoutePathBuilder.makeNavigationPoints(transferOrbit: transferOrbit,
-                                                                destinationPosition: destinationPosition)
+        let destinationArcSampleCount = currentDestinationArcSampleCount(
+            route: route,
+            transferPointCount: transferOrbit.points.count
+        )
+        let refreshedPoints = RoutePathBuilder.makeNavigationPoints(
+            transferOrbit: transferOrbit,
+            destinationPosition: destinationPosition,
+            destinationArcSampleCount: destinationArcSampleCount
+        )
+        let routePoints: [SIMD3<Float>]
+        if refreshedPoints.count == route.points.count {
+            let displacement = maxDisplacement(from: route.points,
+                                               to: refreshedPoints)
+            let threshold = max(route.totalDistance * refreshRelativeDisplacementThreshold,
+                                refreshMinimumDisplacementThreshold)
+            guard displacement >= threshold else { return }
+            routePoints = smoothedPoints(from: route.points,
+                                         to: refreshedPoints)
+        } else {
+            routePoints = refreshedPoints
+        }
+
         let cumulativeDistances = RoutePathBuilder.makeCumulativeDistances(points: routePoints)
         guard let totalDistance = cumulativeDistances.last,
               totalDistance > 0 else {
@@ -88,6 +112,27 @@ final class NavigationRouteCoordinator {
         self.route = route.replacingPath(points: routePoints,
                                          cumulativeDistances: cumulativeDistances,
                                          totalDistance: totalDistance)
+    }
+
+    private func currentDestinationArcSampleCount(route: NavigationRoute,
+                                                  transferPointCount: Int) -> Int? {
+        let destinationArcSampleCount = route.points.count - transferPointCount
+        guard destinationArcSampleCount > 0 else { return nil }
+        return destinationArcSampleCount
+    }
+
+    private func maxDisplacement(from currentPoints: [SIMD3<Float>],
+                                 to refreshedPoints: [SIMD3<Float>]) -> Float {
+        zip(currentPoints, refreshedPoints).reduce(0) { partialResult, pair in
+            max(partialResult, simd_distance(pair.0, pair.1))
+        }
+    }
+
+    private func smoothedPoints(from currentPoints: [SIMD3<Float>],
+                                to refreshedPoints: [SIMD3<Float>]) -> [SIMD3<Float>] {
+        zip(currentPoints, refreshedPoints).map { currentPoint, refreshedPoint in
+            currentPoint + (refreshedPoint - currentPoint) * refreshSmoothingFactor
+        }
     }
 
     func pause() {

@@ -18,6 +18,7 @@ final class RealityProceduralSceneContent {
     let navigationMarker: Entity
 
     private static let transferSampleCount = 256
+    static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
     static func prepare() async throws -> RealityProceduralSceneContent {
         let environmentEntity = try await makeEnvironmentEntity()
@@ -154,7 +155,7 @@ final class RealityProceduralSceneContent {
                               renderViewMatrix: renderViewMatrix,
                               verticalFieldOfView: verticalFieldOfView,
                               viewportHeight: viewportHeight,
-                              color: SIMD4<Float>(0.2, 0.82, 1, 0.95))
+                              color: Self.navigationRouteColor)
         navigationMarker.isEnabled = true
         navigationMarker.position = markerPosition - sceneOrigin
         let cameraDistance = max(simd_distance(navigationMarker.position, cameraPosition), 0.001)

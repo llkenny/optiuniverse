@@ -49,6 +49,11 @@ import Testing
     #expect(!ribbon.entity.isEnabled)
 }
 
+@MainActor
+@Test func proceduralNavigationRouteColorUsesSubtleOpacity() {
+    #expect(abs(RealityProceduralSceneContent.navigationRouteColor.w - 0.45) < 0.0001)
+}
+
 @Test func realityRibbonMaintainsScreenSpaceWidthAcrossCameraDepths() {
     let fov: Float = .pi / 3
     let viewportHeight: Float = 844
