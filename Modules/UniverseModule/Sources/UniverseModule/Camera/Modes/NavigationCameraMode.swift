@@ -44,7 +44,7 @@ final class NavigationCameraMode {
             let phaseProgress = progress / departurePhaseEnd
             frame = CameraTransition.Frame(
                 target: interpolate(from: origin,
-                                    to: route.point(at: departurePhaseEnd) ?? origin,
+                                    to: route.overviewCenter,
                                     progress: phaseProgress),
                 distance: interpolate(from: originDistance,
                                       to: overviewDistance,
@@ -57,14 +57,14 @@ final class NavigationCameraMode {
             )
         } else if progress < arrivalPhaseStart {
             frame = CameraTransition.Frame(
-                target: route.point(at: progress) ?? origin,
+                target: route.overviewCenter,
                 distance: overviewDistance,
                 orientation: OverviewCameraFraming.orientation
             )
         } else {
             let phaseProgress = (progress - arrivalPhaseStart) / (1 - arrivalPhaseStart)
             frame = CameraTransition.Frame(
-                target: interpolate(from: route.point(at: arrivalPhaseStart) ?? destination,
+                target: interpolate(from: route.overviewCenter,
                                     to: destination,
                                     progress: phaseProgress),
                 distance: interpolate(from: overviewDistance,

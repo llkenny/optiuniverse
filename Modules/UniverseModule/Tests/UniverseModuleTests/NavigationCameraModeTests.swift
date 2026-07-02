@@ -39,7 +39,7 @@ import Testing
     expectOrientation(try #require(start.cameraOrientation),
                       equals: currentPose.orientation)
     expectVector(try #require(departureEnd.cameraTarget),
-                 equals: try #require(route.point(at: 0.1)))
+                 equals: route.overviewCenter)
     #expect(abs((departureEnd.cameraDistance ?? 0) - overviewDistance(
         route: route,
         currentDistance: currentPose.distance,
@@ -67,7 +67,7 @@ import Testing
     ))
 
     expectVector(try #require(transaction.cameraTarget),
-                 equals: try #require(route.point(at: 0.5)))
+                 equals: route.overviewCenter)
     #expect(abs((transaction.cameraDistance ?? 0) - overviewDistance(
         route: route,
         currentDistance: currentPose.distance,
@@ -103,7 +103,7 @@ import Testing
     ))
 
     expectVector(try #require(arrivalStart.cameraTarget),
-                 equals: try #require(route.point(at: 0.9)))
+                 equals: route.overviewCenter)
     #expect(abs((arrivalStart.cameraDistance ?? 0) - overviewDistance(
         route: route,
         currentDistance: currentPose.distance,
@@ -145,8 +145,62 @@ import Testing
 
     #expect(cameraState.revision > initialRevision)
     expectVector(cameraState.cameraTarget,
-                 equals: try #require(route.point(at: 0.5)))
+                 equals: route.overviewCenter)
     #expect(cameraState.cameraTarget != SIMD3<Float>(100, 0, 0))
+}
+
+@MainActor
+@Test func cameraCoordinatorNavigationAutoFramingDisabledPreservesManualView() throws {
+    let source = NavigationCameraSnapshotSource(latestSnapshot: .navigationCameraTestSnapshot)
+    let cameraState = CameraState()
+    let snapshotProvider = SnapshotProvider(cameraState: cameraState,
+                                            snapshotSource: source)
+    let coordinator = CameraCoordinator(cameraState: cameraState,
+                                        snapshotProvider: snapshotProvider)
+    let route = makeNavigationCameraTestRoute()
+
+    coordinator.makeRotation(with: CGPoint(x: 18, y: 9),
+                             velocity: .zero)
+    coordinator.makeScale(with: 2,
+                          velocity: 0)
+    let manualOrientation = cameraState.cameraOrientation
+    let manualDistance = cameraState.cameraDistance
+
+    coordinator.updateFrameCamera(
+        snapshot: source.latestSnapshot,
+        delta: 1.0 / 60.0,
+        viewportSize: CGSize(width: 400, height: 400),
+        modeState: CameraFrameModeState(
+            transferPreviewActive: false,
+            transfer: nil,
+            navigation: NavigationRouteRenderState(route: route,
+                                                   progress: 0.5,
+                                                   elapsedTime: 6,
+                                                   isCameraAutoFramingEnabled: false)
+        )
+    )
+
+    expectOrientation(cameraState.cameraOrientation,
+                      equals: manualOrientation)
+    #expect(abs(cameraState.cameraDistance - manualDistance) < 0.0001)
+    #expect(cameraState.cameraTarget != route.overviewCenter)
+}
+
+@Test func navigationOverviewRadiusUsesRouteDistanceFromOverviewCenter() {
+    let totalDistance: Float = 4.236_068
+    let route = NavigationRoute(originName: "Earth",
+                                destinationName: "Mars",
+                                points: [
+                                    SIMD3<Float>(-1, 0, 0),
+                                    SIMD3<Float>(1, 0, 0),
+                                    SIMD3<Float>(0, 0, -2)
+                                ],
+                                cumulativeDistances: [0, 2, totalDistance],
+                                totalDistance: totalDistance,
+                                estimatedDuration: 12,
+                                overviewCenter: .zero)
+
+    #expect(abs(OverviewCameraFraming.navigationRouteRadius(route: route) - 2) < 0.0001)
 }
 
 private func makeNavigationCameraTestRoute() -> NavigationRoute {
@@ -159,7 +213,8 @@ private func makeNavigationCameraTestRoute() -> NavigationRoute {
                     ],
                     cumulativeDistances: [0, 2, 3],
                     totalDistance: 3,
-                    estimatedDuration: 12)
+                    estimatedDuration: 12,
+                    overviewCenter: SIMD3<Float>(1.5, 0, 0))
 }
 
 private func overviewDistance(route: NavigationRoute,

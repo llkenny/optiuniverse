@@ -35,11 +35,13 @@ final class NavigationController {
     )
 
     var pendingNavigationDestinationName: String?
+    var isCameraAutoFramingEnabled = false
 
     private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
         didSet {
             navigationSnapshotDidChange?(navigationSnapshot)
             if navigationSnapshot.state == .completed {
+                isCameraAutoFramingEnabled = false
                 scheduleDoneNavigation()
             } else {
                 pendingDoneNavigationTask?.cancel()
@@ -51,7 +53,8 @@ final class NavigationController {
     var routeRenderState: NavigationRouteRenderState {
         NavigationRouteRenderState(route: navigationRouteCoordinator.activeRouteForRendering,
                                    progress: navigationRouteCoordinator.renderProgress,
-                                   elapsedTime: navigationRouteCoordinator.elapsedTime)
+                                   elapsedTime: navigationRouteCoordinator.elapsedTime,
+                                   isCameraAutoFramingEnabled: isCameraAutoFramingEnabled)
     }
 
     var isNavigationActive: Bool {
@@ -77,10 +80,12 @@ final class NavigationController {
         }
 
         navigationRouteCoordinator.update()
+    }
 
-        if let snapshot {
-            refreshActiveRoute(snapshot: snapshot)
-        }
+    func beginManualCameraControl() {
+        guard navigationRouteCoordinator.isNavigationActive else { return }
+
+        isCameraAutoFramingEnabled = false
     }
 
     private func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {

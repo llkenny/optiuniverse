@@ -5,8 +5,6 @@
 //  Created by max on 25.05.2026.
 //
 
-import simd
-
 extension NavigationController: UniverseNavigationControlling {
     func startNavigation(to name: String) {
         guard let snapshot = snapshotProvider.latestSnapshot,
@@ -28,6 +26,7 @@ extension NavigationController: UniverseNavigationControlling {
 
     func cancelNavigation() {
         navigationRouteCoordinator.cancel()
+        isCameraAutoFramingEnabled = false
         pendingNavigationDestinationName = nil
     }
 
@@ -38,46 +37,21 @@ extension NavigationController: UniverseNavigationControlling {
         }
 
         navigationRouteCoordinator.cancel()
+        isCameraAutoFramingEnabled = false
         pendingNavigationDestinationName = nil
     }
 
     func applyNavigation(named name: String,
                          snapshot: UniverseSceneSnapshot) -> Bool {
+        isCameraAutoFramingEnabled = true
         guard navigationRouteCoordinator.start(destinationName: name,
                                                planets: planets,
                                                snapshot: snapshot),
               navigationRouteCoordinator.route != nil else {
+            isCameraAutoFramingEnabled = false
             return true
         }
 
         return true
-    }
-
-    func refreshActiveRoute(snapshot: UniverseSceneSnapshot) {
-        guard navigationRouteCoordinator.isNavigationActive,
-              let route = navigationRouteCoordinator.activeRouteForRendering,
-              let transferOrbit = makeTransferOrbit(destinationName: route.destinationName,
-                                                    snapshot: snapshot),
-              let destinationPosition = snapshot.worldPosition(
-                ofPlanetNamed: transferOrbit.destinationName
-              ) else {
-            return
-        }
-
-        navigationRouteCoordinator.refresh(using: transferOrbit,
-                                           destinationPosition: destinationPosition)
-    }
-
-    func makeTransferOrbit(destinationName: String,
-                           snapshot: UniverseSceneSnapshot) -> HohmannTransferOrbit? {
-        guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
-              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
-            return nil
-        }
-
-        return HohmannTransferOrbit.make(destinationName: destinationName,
-                                         planets: planets,
-                                         earthSunDirection: earthPosition - sunPosition,
-                                         sunPosition: sunPosition)
     }
 }

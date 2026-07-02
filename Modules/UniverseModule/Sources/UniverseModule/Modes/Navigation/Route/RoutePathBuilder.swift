@@ -72,7 +72,8 @@ struct RoutePathBuilder: RouteBuilding {
                                points: routePoints,
                                cumulativeDistances: cumulativeDistances,
                                totalDistance: totalDistance,
-                               estimatedDuration: input.estimatedDuration)
+                               estimatedDuration: input.estimatedDuration,
+                               overviewCenter: transferOrbit.sunPosition)
     }
 
     static func makeNavigationPoints(transferOrbit: HohmannTransferOrbit,

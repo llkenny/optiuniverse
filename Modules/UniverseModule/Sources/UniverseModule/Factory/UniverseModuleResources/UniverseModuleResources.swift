@@ -195,6 +195,7 @@ public final class UniverseModuleResources {
 
     func beginManualCameraControl() {
         transferOrbitController.beginManualCameraControl()
+        navigationController.beginManualCameraControl()
         sceneCoordinator.clearImmersiveTransferOverview()
         cameraCoordinator.beginManualCameraControl()
     }

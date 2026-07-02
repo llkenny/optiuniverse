@@ -55,6 +55,49 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerUpdateKeepsRouteGeometryStableWhileProgressAdvances() throws {
+    let playback = AdvancingRoutePlayback(progressAfterUpdate: 0.5)
+    let fixture = NavigationControllerFixture(routePlayback: playback)
+
+    fixture.controller.startNavigation(to: "Mars")
+    let initialPoints = try #require(fixture.controller.routeRenderState.route?.points)
+
+    fixture.controller.update(snapshot: .movedDestinationSnapshot,
+                              delta: 0.1)
+
+    #expect(fixture.controller.routeRenderState.progress == 0.5)
+    #expect(fixture.controller.routeRenderState.route?.points == initialPoints)
+}
+
+@MainActor
+@Test func navigationControllerManualCameraControlDisablesAutoFramingButKeepsRouteActive() throws {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    #expect(fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+
+    fixture.controller.beginManualCameraControl()
+
+    #expect(!fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+    #expect(fixture.controller.routeRenderState.route != nil)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+}
+
+@MainActor
+@Test func navigationControllerStartResetsCameraAutoFraming() throws {
+    let fixture = NavigationControllerFixture()
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.beginManualCameraControl()
+    #expect(!fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+
+    fixture.controller.cancelNavigation()
+    fixture.controller.startNavigation(to: "Mars")
+
+    #expect(fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+}
+
+@MainActor
 @Test func navigationControllerPublishesObservableFacadeStateChanges() {
     let fixture = NavigationControllerFixture()
     var snapshots: [NavigationRouteSnapshot] = []
@@ -132,6 +175,38 @@ private final class CompletingRoutePlayback: RoutePlayback {
     }
 }
 
+private final class AdvancingRoutePlayback: RoutePlayback {
+    private let progressAfterUpdate: Float
+    private(set) var progress: Float = 0
+    private(set) var elapsedTime: TimeInterval = 0
+    private(set) var isCompleted = false
+
+    init(progressAfterUpdate: Float) {
+        self.progressAfterUpdate = progressAfterUpdate
+    }
+
+    func start(duration: TimeInterval) {
+        progress = 0
+        elapsedTime = 0
+        isCompleted = false
+    }
+
+    func pause() {}
+
+    func resume() {}
+
+    func cancel() {
+        progress = 0
+        elapsedTime = 0
+        isCompleted = false
+    }
+
+    func update() {
+        progress = progressAfterUpdate
+        elapsedTime = TimeInterval(progressAfterUpdate)
+    }
+}
+
 @MainActor
 private final class FakeNavigationSnapshotSource: UniverseSceneSnapshotProviding {
     var latestSnapshot: UniverseSceneSnapshot?
@@ -156,6 +231,22 @@ private extension UniverseSceneSnapshot {
                                            framingRadius: 0.05),
                                 testPacket(name: "Mars",
                                            worldPosition: SIMD3<Float>(1.52, 0, 0),
+                                           framingRadius: 0.05)
+                               ])
+    }
+
+    static var movedDestinationSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 2,
+                               simulationTime: 1,
+                               planets: [
+                                testPacket(name: "Sun",
+                                           worldPosition: SIMD3<Float>(0, 0, 0),
+                                           framingRadius: 0.2),
+                                testPacket(name: "Earth",
+                                           worldPosition: SIMD3<Float>(1, 0, 0),
+                                           framingRadius: 0.05),
+                                testPacket(name: "Mars",
+                                           worldPosition: SIMD3<Float>(0, 0, -1.52),
                                            framingRadius: 0.05)
                                ])
     }

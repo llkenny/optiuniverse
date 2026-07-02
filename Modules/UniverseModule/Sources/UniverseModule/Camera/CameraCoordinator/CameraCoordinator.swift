@@ -230,7 +230,10 @@ final class CameraCoordinator {
     private func commitNavigationCameraTransaction(snapshot: UniverseSceneSnapshot?,
                                                    viewportSize: CGSize,
                                                    modeState: CameraFrameModeState) {
-        guard !modeState.transferPreviewActive else { return }
+        guard !modeState.transferPreviewActive,
+              modeState.navigation.isCameraAutoFramingEnabled else {
+            return
+        }
 
         let transaction = navigationCameraMode.makeNavigationTransaction(
             state: modeState.navigation,

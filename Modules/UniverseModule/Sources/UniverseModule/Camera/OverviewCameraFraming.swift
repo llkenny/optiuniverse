@@ -13,19 +13,11 @@ enum OverviewCameraFraming {
                                         axis: SIMD3<Float>(1, 0, 0))
 
     static func navigationRouteRadius(route: NavigationRoute) -> Float {
-        guard let firstPoint = route.points.first else {
-            return 0
+        let radius = route.points.reduce(Float(0)) { partialResult, point in
+            max(partialResult, simd_distance(point, route.overviewCenter))
         }
 
-        var minimum = firstPoint
-        var maximum = firstPoint
-
-        for point in route.points.dropFirst() {
-            minimum = simd_min(minimum, point)
-            maximum = simd_max(maximum, point)
-        }
-
-        return max(simd_length(maximum - minimum), 0.001)
+        return max(radius, 0.001)
     }
 
     static func navigationOverviewDistance(route: NavigationRoute,
