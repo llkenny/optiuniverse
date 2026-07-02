@@ -12,7 +12,7 @@ extension UniverseModuleResources: UniverseTransferOrbitControlling {
     }
 
     public func showTransferOrbit(to destinationName: String) {
-        navigationController.cancelNavigation(followDestination: false)
+        navigationController.cancelNavigation()
         transferOrbitController.showTransferOrbit(to: destinationName)
     }
 

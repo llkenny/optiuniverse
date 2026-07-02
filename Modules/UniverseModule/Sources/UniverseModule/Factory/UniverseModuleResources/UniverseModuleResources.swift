@@ -22,7 +22,6 @@ public final class UniverseModuleResources {
     let assetRepository: RealityAssetRepository
     private let celestialAssetManifestLoader: () throws -> CelestialAssetManifest
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
-    public internal(set) var navigationCameraFollowEnabled = true
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
     @ObservationIgnored private(set) var navigationController: NavigationController!
     @ObservationIgnored private(set) lazy var sceneCoordinator = UniverseSceneCoordinator(
@@ -73,22 +72,10 @@ public final class UniverseModuleResources {
         )
         navigationController = NavigationController(
             snapshotProvider: snapshotProvider,
-            cameraCoordinator: cameraCoordinator,
-            planets: planets,
-            viewportSize: { [weak self] in
-                self?.viewportSize ?? .zero
-            }
+            planets: planets
         )
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
             self?.navigationSnapshot = snapshot
-        }
-        navigationController.navigationCameraFollowEnabledDidChange = { [weak self] isEnabled in
-            self?.navigationCameraFollowEnabled = isEnabled
-        }
-        navigationController.followPlanet = { [weak self] name in
-            guard let self else { return }
-            cameraCoordinator.followNavigationDestination(named: name,
-                                                          viewportSize: viewportSize)
         }
         transferOrbitController.followPlanet = { [weak self] name in
             guard let self else { return }
@@ -175,7 +162,7 @@ public final class UniverseModuleResources {
     func followPlanet(named name: String,
                       surfaceLocation: SurfaceLocation? = nil) {
         transferOrbitController.clearTransferOrbit()
-        navigationController.cancelNavigation(followDestination: false)
+        navigationController.cancelNavigation()
         cameraCoordinator.followPlanet(named: name,
                                        surfaceCoordinate: surfaceLocation.map {
             SurfaceCoordinate(latitudeDegrees: $0.latitudeDegrees,
@@ -196,7 +183,7 @@ public final class UniverseModuleResources {
 
     func focusImmersivePlanet(named name: String) {
         transferOrbitController.clearTransferOrbit()
-        navigationController.cancelNavigation(followDestination: false)
+        navigationController.cancelNavigation()
         sceneCoordinator.clearImmersiveTransferOverview()
         sceneCoordinator.setImmersiveFocus(bodyName: name)
     }
@@ -207,7 +194,6 @@ public final class UniverseModuleResources {
     }
 
     func beginManualCameraControl() {
-        navigationController.beginManualCameraControl()
         transferOrbitController.beginManualCameraControl()
         sceneCoordinator.clearImmersiveTransferOverview()
         cameraCoordinator.beginManualCameraControl()

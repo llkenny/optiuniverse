@@ -18,7 +18,7 @@ import simd
 ///
 /// ADR 0003 boundary:
 /// - UI and feature controllers call this coordinator instead of mutating renderer camera fields.
-/// - Follow, navigation, transfer preview, orbit, zoom, and trajectory behavior stay in camera modes.
+/// - Follow, transfer preview, orbit, zoom, and trajectory behavior stay in camera modes.
 /// - `SnapshotProvider` derives render-ready matrices from committed `CameraState`; the coordinator
 ///   only refreshes derived state needed by the current mode before snapshots are requested.
 @MainActor
@@ -34,7 +34,6 @@ final class CameraCoordinator {
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
     let followCameraOwner: FollowCameraOwner
-    let navigationCameraOwner: NavigationCameraOwner
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
     private var activeCameraMotionRevision = 0
@@ -68,7 +67,6 @@ final class CameraCoordinator {
         trajectoryMode = .init()
         followCameraOwner = .init(cameraState: cameraState,
                                   snapshotProvider: snapshotProvider)
-        navigationCameraOwner = .init(cameraState: cameraState)
         transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
@@ -142,7 +140,7 @@ final class CameraCoordinator {
                            modeState: CameraFrameModeState) {
         updateManualCameraInertia(delta: delta)
 
-        let isSuppressed = modeState.navigationControlsCamera || modeState.transferPreviewActive
+        let isSuppressed = modeState.transferPreviewActive
         followCameraOwner.update(snapshot: snapshot,
                                  delta: delta,
                                  viewportSize: viewportSize,
@@ -169,7 +167,6 @@ final class CameraCoordinator {
                                   modeState: CameraFrameModeState) -> CameraSnapshotDependencies {
         CameraSnapshotDependencies(
             followedObject: followCameraOwner.snapshotDependency(snapshot: snapshot),
-            navigation: modeState.navigation,
             transfer: modeState.transfer,
             activeCameraMotionRevision: activeCameraMotionRevision,
             sceneFrameID: snapshot?.frameID,

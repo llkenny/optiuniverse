@@ -12,7 +12,6 @@ extension NavigationController: UniverseNavigationControlling {
         guard let snapshot = snapshotProvider.latestSnapshot,
               applyNavigation(named: name, snapshot: snapshot) else {
             pendingNavigationDestinationName = name
-            cameraTransition = nil
             return
         }
 
@@ -28,30 +27,8 @@ extension NavigationController: UniverseNavigationControlling {
     }
 
     func cancelNavigation() {
-        cancelNavigation(followDestination: true)
-    }
-
-    func cancelNavigation(followDestination: Bool) {
-        let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-        ?? navigationSnapshot.destinationName
-
-        if let destinationName,
-           let destinationPosition = snapshotProvider
-            .latestSnapshot?
-            .worldPosition(ofPlanetNamed: destinationName) {
-            cameraCoordinator.commitNavigationDestination(destinationPosition: destinationPosition)
-        }
-
         navigationRouteCoordinator.cancel()
-        cameraCoordinator.endNavigationCameraControl(routeID: nil)
-        resetNavigationArrivalTransition()
         pendingNavigationDestinationName = nil
-        cameraTransition = nil
-        navigationCameraFollowEnabled = true
-
-        guard followDestination,
-              let destinationName else { return }
-        followPlanet?(destinationName)
     }
 
     func doneNavigation() {
@@ -60,57 +37,19 @@ extension NavigationController: UniverseNavigationControlling {
             return
         }
 
-        let destinationName = navigationRouteCoordinator.activeRouteForRendering?.destinationName
-        ?? navigationSnapshot.destinationName
-
-        if let destinationName,
-           let destinationPosition = snapshotProvider
-            .latestSnapshot?
-            .worldPosition(ofPlanetNamed: destinationName) {
-            cameraCoordinator.commitNavigationDestination(destinationPosition: destinationPosition)
-        }
-
         navigationRouteCoordinator.cancel()
-        cameraCoordinator.endNavigationCameraControl(routeID: nil)
-        resetNavigationArrivalTransition()
         pendingNavigationDestinationName = nil
-        cameraTransition = nil
-        navigationCameraFollowEnabled = true
-
-        guard let destinationName else { return }
-        followPlanet?(destinationName)
-    }
-
-    func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
-        navigationCameraFollowEnabled = isEnabled
-        if isEnabled {
-            cameraTransition = nil
-        } else if let route = navigationRouteCoordinator.activeRouteForRendering,
-                  let snapshot = snapshotProvider.latestSnapshot {
-            startNavigationOverviewAnimation(route: route, snapshot: snapshot)
-        }
     }
 
     func applyNavigation(named name: String,
                          snapshot: UniverseSceneSnapshot) -> Bool {
-        resetNavigationArrivalTransition()
-
         guard navigationRouteCoordinator.start(destinationName: name,
                                                planets: planets,
                                                snapshot: snapshot),
-              let route = navigationRouteCoordinator.route else {
-            cameraCoordinator.endNavigationCameraControl(routeID: nil)
-            followPlanet?(name)
+              navigationRouteCoordinator.route != nil else {
             return true
         }
 
-        if navigationCameraFollowEnabled {
-            cameraTransition = nil
-            updateNavigationFollowCamera(snapshot: snapshot)
-        } else {
-            startNavigationOverviewAnimation(route: route,
-                                             snapshot: snapshot)
-        }
         return true
     }
 

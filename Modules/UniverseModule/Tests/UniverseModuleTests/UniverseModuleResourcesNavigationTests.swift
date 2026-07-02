@@ -9,11 +9,6 @@ import Testing
     let navigation = resources.navigation
 
     #expect(ObjectIdentifier(navigation) == ObjectIdentifier(resources))
-
-    navigation.setNavigationCameraFollowEnabled(false)
-
-    #expect(resources.navigationCameraFollowEnabled == false)
-    #expect(navigation.navigationCameraFollowEnabled == false)
 }
 
 @MainActor
@@ -33,7 +28,6 @@ import Testing
 @Test func universeModuleResourcesWiresFollowHandoffsWithoutRenderer() throws {
     let resources = UniverseModuleResources()
 
-    #expect(resources.navigationController.followPlanet != nil)
     #expect(resources.transferOrbitController.followPlanet != nil)
 }
 

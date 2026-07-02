@@ -57,13 +57,6 @@ extension RootContainerView {
             ProgressView(value: Double(snapshot.progress))
                 .tint(OptiColor.overlayTextPrimary)
 
-            Toggle(isOn: navigationCameraFollowBinding) {
-                Text("Follow marker")
-                    .foregroundStyle(OptiColor.overlayTextSecondary)
-                    .font(Typography.navigationControl)
-            }
-            .tint(OptiColor.overlayTextPrimary)
-
             navigationActionControls(snapshot: snapshot)
         }
         .padding(14)
@@ -79,14 +72,6 @@ extension RootContainerView {
                maxHeight: .infinity,
                alignment: .bottom)
         .transition(.move(edge: .bottom).combined(with: .opacity))
-    }
-
-    private var navigationCameraFollowBinding: Binding<Bool> {
-        Binding {
-            universeResources.navigation.navigationCameraFollowEnabled
-        } set: { isEnabled in
-            universeResources.navigation.setNavigationCameraFollowEnabled(isEnabled)
-        }
     }
 
     @ViewBuilder

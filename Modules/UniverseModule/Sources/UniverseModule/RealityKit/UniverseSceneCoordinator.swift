@@ -359,8 +359,6 @@ final class UniverseSceneCoordinator {
 
     private func makeCameraFrameModeState() -> CameraFrameModeState {
         CameraFrameModeState(
-            navigationControlsCamera: navigationController.controlsCamera,
-            navigation: navigationController.cameraSnapshotDependency,
             transferPreviewActive: transferOrbitController.isTransferPreviewActive,
             transfer: transferOrbitController.cameraSnapshotDependency
         )
@@ -378,10 +376,8 @@ final class UniverseSceneCoordinator {
         )
         let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
                                                                             baseProjection: baseProjection)
-        let transferProjection = transferOrbitController.projectionParameters(snapshot: snapshot,
-                                                                               baseProjection: followProjection)
-        return navigationController.projectionParameters(snapshot: snapshot,
-                                                         baseProjection: transferProjection)
+        return transferOrbitController.projectionParameters(snapshot: snapshot,
+                                                            baseProjection: followProjection)
     }
 
     private func makeCameraSnapshot(
@@ -590,10 +586,6 @@ final class UniverseSceneCoordinator {
         cameraSnapshot: SnapshotProvider.CameraSnapshot,
         modeState: CameraFrameModeState
     ) -> String? {
-        if modeState.navigationControlsCamera,
-           let destinationName = modeState.navigation?.destinationName {
-            return destinationName
-        }
         return cameraSnapshot.dependencies.followedObject?.planetName
     }
 }
