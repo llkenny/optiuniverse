@@ -51,7 +51,7 @@ import Testing
 
 @MainActor
 @Test func proceduralNavigationRouteColorUsesSubtleOpacity() {
-    #expect(abs(RealityProceduralSceneContent.navigationRouteColor.w - 0.60) < 0.0001)
+    #expect(abs(RealityProceduralSceneContent.navigationRouteColor.w - 0.45) < 0.0001)
 }
 
 @Test func realityRibbonMaintainsScreenSpaceWidthAcrossCameraDepths() {
