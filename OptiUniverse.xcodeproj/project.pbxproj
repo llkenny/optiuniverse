@@ -38,6 +38,7 @@
 		502BE7E32FB1AFF800A2F8A1 /* Exceptions for "OptiUniverse" folder in "OptiUniverse" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Info.plist,
 				Resources/DevelopmentResources.xcassets,
 			);
 			target = 50BAAA352E30E2A800ECB7DE /* OptiUniverse */;
@@ -474,6 +475,7 @@
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OptiUniverse/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OptiUniverse;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
@@ -518,6 +520,7 @@
 				DEVELOPMENT_TEAM = Y3DHLE65YM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OptiUniverse/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OptiUniverse;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
