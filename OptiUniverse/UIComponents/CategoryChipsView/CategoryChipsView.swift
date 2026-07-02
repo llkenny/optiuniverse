@@ -43,9 +43,15 @@ struct CategoryChipsView: View {
 
 #Preview {
     @Previewable @State var selectedTag: String?
+    let appEnvironment: AppEnvironment = {
+        let appEnvironment = AppEnvironment()
+        appEnvironment.destinationsProvider.fetch()
+        return appEnvironment
+    }()
 
     VStack {
         CategoryChipsView(selectedTag: $selectedTag)
+            .environment(appEnvironment)
         Spacer()
     }
     .padding()
