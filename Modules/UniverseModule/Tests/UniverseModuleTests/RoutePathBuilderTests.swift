@@ -62,6 +62,57 @@ import Testing
     #expect(route.points.count == 24)
 }
 
+@Test func routeBuilderCreatesContinuousEarthMoonEarthEllipse() throws {
+    let originPosition = SIMD3<Float>(1, 0, 0)
+    let waypointPosition = SIMD3<Float>(1.2, 0, 0)
+    let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        originName: "Earth",
+        waypointName: "Moon",
+        destinationName: "Earth",
+        planets: testPlanets,
+        originPosition: originPosition,
+        waypointPosition: waypointPosition,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: originPosition,
+        estimatedDuration: 16
+    )))
+    let firstPoint = try #require(route.points.first)
+    let midpoint = try #require(route.point(at: 0.5))
+    let lastPoint = try #require(route.points.last)
+
+    #expect(route.originName == "Earth")
+    #expect(route.waypointName == "Moon")
+    #expect(route.destinationName == "Earth")
+    #expect(route.estimatedDuration == 16)
+    #expect(simd_distance(firstPoint, originPosition) < 0.0001)
+    #expect(simd_distance(midpoint, waypointPosition) < 0.0001)
+    #expect(simd_distance(lastPoint, originPosition) < 0.0001)
+    #expect(route.totalDistance > simd_distance(originPosition, waypointPosition) * 2)
+    #expect((route.points.map { abs($0.z) }.max() ?? 0) > 0.03)
+
+    for index in route.cumulativeDistances.indices.dropFirst() {
+        #expect(route.cumulativeDistances[index] >= route.cumulativeDistances[index - 1])
+    }
+}
+
+@Test func routeBuilderRejectsUnsupportedNonEarthOriginRoutes() {
+    let route = RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        originName: "Moon",
+        waypointName: "Earth",
+        destinationName: "Mars",
+        planets: testPlanets,
+        originPosition: SIMD3<Float>(1.2, 0, 0),
+        waypointPosition: SIMD3<Float>(1, 0, 0),
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: SIMD3<Float>(1.52, 0, 0),
+        estimatedDuration: 12
+    ))
+
+    #expect(route == nil)
+}
+
 @Test func routeBuilderRejectsUnsupportedDestinations() {
     let builder = RoutePathBuilder()
 

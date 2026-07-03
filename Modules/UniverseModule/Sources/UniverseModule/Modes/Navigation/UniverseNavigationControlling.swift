@@ -20,9 +20,21 @@
 public protocol UniverseNavigationControlling: AnyObject {
     var navigationSnapshot: NavigationRouteSnapshot { get }
 
+    func startNavigation(from originName: String, via waypointName: String?, to destinationName: String)
+    func startNavigation(from originName: String, to destinationName: String)
     func startNavigation(to name: String)
     func pauseNavigation()
     func resumeNavigation()
     func cancelNavigation()
     func doneNavigation()
+}
+
+public extension UniverseNavigationControlling {
+    func startNavigation(from originName: String, to destinationName: String) {
+        startNavigation(from: originName, via: nil, to: destinationName)
+    }
+
+    func startNavigation(to name: String) {
+        startNavigation(from: "Earth", to: name)
+    }
 }

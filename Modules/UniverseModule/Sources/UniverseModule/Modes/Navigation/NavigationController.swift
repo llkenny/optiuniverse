@@ -21,6 +21,12 @@ import Foundation
 /// - Stores and publishes public navigation state through `UniverseNavigationControlling`.
 @MainActor
 final class NavigationController {
+    struct NavigationRequest: Equatable {
+        let originName: String
+        let waypointName: String?
+        let destinationName: String
+    }
+
     let routeBuilder: RouteBuilding
     let routePlayback: RoutePlayback
     unowned let snapshotProvider: SnapshotProvider
@@ -35,7 +41,7 @@ final class NavigationController {
         }
     )
 
-    var pendingNavigationDestinationName: String?
+    var pendingNavigationRequest: NavigationRequest?
     var isCameraAutoFramingEnabled = false
 
     private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
@@ -74,9 +80,12 @@ final class NavigationController {
     func update(snapshot: UniverseSceneSnapshot?,
                 delta: Float) {
         if let snapshot,
-           let name = pendingNavigationDestinationName,
-           applyNavigation(named: name, snapshot: snapshot) {
-            pendingNavigationDestinationName = nil
+           let request = pendingNavigationRequest,
+           applyNavigation(from: request.originName,
+                           via: request.waypointName,
+                           to: request.destinationName,
+                           snapshot: snapshot) {
+            pendingNavigationRequest = nil
         }
 
         navigationRouteCoordinator.update()
@@ -88,7 +97,7 @@ final class NavigationController {
         isCameraAutoFramingEnabled = false
     }
 
-    private func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {
+    func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {
         navigationSnapshot = snapshot
     }
 

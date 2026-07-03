@@ -34,6 +34,7 @@ public enum NavigationRouteState: Sendable, Equatable {
 public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let id: UUID
     public let originName: String
+    public let waypointName: String?
     public let destinationName: String
     public let points: [SIMD3<Float>]
     public let cumulativeDistances: [Float]
@@ -43,6 +44,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
     init(id: UUID = UUID(),
          originName: String,
+         waypointName: String? = nil,
          destinationName: String,
          points: [SIMD3<Float>],
          cumulativeDistances: [Float],
@@ -51,6 +53,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          overviewCenter: SIMD3<Float>? = nil) {
         self.id = id
         self.originName = originName
+        self.waypointName = waypointName
         self.destinationName = destinationName
         self.points = points
         self.cumulativeDistances = cumulativeDistances
@@ -144,6 +147,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                        totalDistance: Float) -> NavigationRoute {
         NavigationRoute(id: id,
                         originName: originName,
+                        waypointName: waypointName,
                         destinationName: destinationName,
                         points: points,
                         cumulativeDistances: cumulativeDistances,
@@ -166,6 +170,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 public struct NavigationRouteSnapshot: Sendable, Equatable {
     public let routeID: UUID?
     public let state: NavigationRouteState
+    public let originName: String?
+    public let waypointName: String?
     public let destinationName: String?
     public let progress: Float
     public let elapsedTime: TimeInterval
@@ -174,6 +180,8 @@ public struct NavigationRouteSnapshot: Sendable, Equatable {
 
     public static let idle = NavigationRouteSnapshot(routeID: nil,
                                                      state: .idle,
+                                                     originName: nil,
+                                                     waypointName: nil,
                                                      destinationName: nil,
                                                      progress: 0,
                                                      elapsedTime: 0,

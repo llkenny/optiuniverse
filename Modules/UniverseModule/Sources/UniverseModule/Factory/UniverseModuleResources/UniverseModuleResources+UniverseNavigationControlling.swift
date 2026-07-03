@@ -11,9 +11,11 @@ extension UniverseModuleResources: UniverseNavigationControlling {
         self
     }
 
-    public func startNavigation(to name: String) {
+    public func startNavigation(from originName: String, via waypointName: String?, to destinationName: String) {
         transferOrbitController.clearTransferOrbit()
-        navigationController.startNavigation(to: name)
+        navigationController.startNavigation(from: originName,
+                                             via: waypointName,
+                                             to: destinationName)
     }
 
     public func pauseNavigation() {
