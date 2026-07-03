@@ -273,7 +273,8 @@ final class UniverseSceneCoordinator {
                                             modeState: modeState)
         let overlayAdjustment = objectInfoOverlayFramingState.advance(delta: delta)
         let projection = makeCameraProjection(snapshot: snapshot,
-                                              overlayAdjustment: overlayAdjustment)
+                                              overlayAdjustment: overlayAdjustment,
+                                              modeState: modeState)
         let cameraSnapshot = makeCameraSnapshot(snapshot: snapshot,
                                                 projection: projection,
                                                 modeState: modeState)
@@ -359,16 +360,16 @@ final class UniverseSceneCoordinator {
 
     private func makeCameraFrameModeState() -> CameraFrameModeState {
         CameraFrameModeState(
-            navigationControlsCamera: navigationController.controlsCamera,
-            navigation: navigationController.cameraSnapshotDependency,
             transferPreviewActive: transferOrbitController.isTransferPreviewActive,
-            transfer: transferOrbitController.cameraSnapshotDependency
+            transfer: transferOrbitController.cameraSnapshotDependency,
+            navigation: navigationController.routeRenderState
         )
     }
 
     private func makeCameraProjection(
         snapshot: UniverseSceneSnapshot?,
-        overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment
+        overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment,
+        modeState: CameraFrameModeState
     ) -> CameraProjectionParameters {
         let baseProjection = CameraProjectionParameters(
             nearPlane: CameraFit.defaultNearPlane,
@@ -378,10 +379,12 @@ final class UniverseSceneCoordinator {
         )
         let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
                                                                             baseProjection: baseProjection)
-        let transferProjection = transferOrbitController.projectionParameters(snapshot: snapshot,
-                                                                               baseProjection: followProjection)
-        return navigationController.projectionParameters(snapshot: snapshot,
-                                                         baseProjection: transferProjection)
+        let navigationProjection = cameraCoordinator.navigationProjectionParameters(
+            modeState: modeState,
+            baseProjection: followProjection
+        )
+        return transferOrbitController.projectionParameters(snapshot: snapshot,
+                                                            baseProjection: navigationProjection)
     }
 
     private func makeCameraSnapshot(
@@ -590,10 +593,6 @@ final class UniverseSceneCoordinator {
         cameraSnapshot: SnapshotProvider.CameraSnapshot,
         modeState: CameraFrameModeState
     ) -> String? {
-        if modeState.navigationControlsCamera,
-           let destinationName = modeState.navigation?.destinationName {
-            return destinationName
-        }
         return cameraSnapshot.dependencies.followedObject?.planetName
     }
 }

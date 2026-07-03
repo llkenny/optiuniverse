@@ -121,9 +121,7 @@ import Testing
             snapshot: fixture.source.latestSnapshot,
             delta: 0,
             viewportSize: fixture.viewportSize,
-            modeState: CameraFrameModeState(navigationControlsCamera: false,
-                                            navigation: nil,
-                                            transferPreviewActive: true,
+            modeState: CameraFrameModeState(transferPreviewActive: true,
                                             transfer: dependency)
         )
 
@@ -182,9 +180,7 @@ import Testing
         snapshot: fixture.source.latestSnapshot,
         delta: 1.2,
         viewportSize: fixture.viewportSize,
-        modeState: CameraFrameModeState(navigationControlsCamera: false,
-                                        navigation: nil,
-                                        transferPreviewActive: false,
+        modeState: CameraFrameModeState(transferPreviewActive: false,
                                         transfer: nil)
     )
 

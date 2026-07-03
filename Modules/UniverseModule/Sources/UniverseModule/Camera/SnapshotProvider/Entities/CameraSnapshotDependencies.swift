@@ -9,7 +9,6 @@ import CoreFoundation
 
 struct CameraSnapshotDependencies: Equatable {
     let followedObject: CameraFollowSnapshotDependency?
-    let navigation: CameraNavigationSnapshotDependency?
     let transfer: CameraTransferSnapshotDependency?
     let activeCameraMotionRevision: Int
     let sceneFrameID: UInt64?

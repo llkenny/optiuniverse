@@ -6,13 +6,23 @@
 //
 
 struct CameraFrameModeState: Equatable {
-    let navigationControlsCamera: Bool
-    let navigation: CameraNavigationSnapshotDependency?
     let transferPreviewActive: Bool
     let transfer: CameraTransferSnapshotDependency?
+    let navigation: NavigationRouteRenderState
+
+    init(transferPreviewActive: Bool,
+         transfer: CameraTransferSnapshotDependency?,
+         navigation: NavigationRouteRenderState = .idle) {
+        self.transferPreviewActive = transferPreviewActive
+        self.transfer = transfer
+        self.navigation = navigation
+    }
+
+    var navigationActive: Bool {
+        navigation.route != nil
+    }
 
     var hasActiveExternalCameraMotion: Bool {
-        navigation?.hasActiveTransition == true ||
-        transfer?.hasActiveTransition == true
+        transfer?.hasActiveTransition == true || navigationActive
     }
 }

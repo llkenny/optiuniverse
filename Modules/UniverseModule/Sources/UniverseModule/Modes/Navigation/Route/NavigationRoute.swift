@@ -39,6 +39,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
+    let overviewCenter: SIMD3<Float>
 
     init(id: UUID = UUID(),
          originName: String,
@@ -46,7 +47,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          points: [SIMD3<Float>],
          cumulativeDistances: [Float],
          totalDistance: Float,
-         estimatedDuration: TimeInterval) {
+         estimatedDuration: TimeInterval,
+         overviewCenter: SIMD3<Float>? = nil) {
         self.id = id
         self.originName = originName
         self.destinationName = destinationName
@@ -54,6 +56,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         self.cumulativeDistances = cumulativeDistances
         self.totalDistance = totalDistance
         self.estimatedDuration = estimatedDuration
+        self.overviewCenter = overviewCenter ?? points.first ?? .zero
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
@@ -145,7 +148,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         points: points,
                         cumulativeDistances: cumulativeDistances,
                         totalDistance: totalDistance,
-                        estimatedDuration: estimatedDuration)
+                        estimatedDuration: estimatedDuration,
+                        overviewCenter: overviewCenter)
     }
 }
 

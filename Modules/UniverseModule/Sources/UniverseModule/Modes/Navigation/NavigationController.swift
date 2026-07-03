@@ -5,35 +5,28 @@
 //  Created by max on 25.05.2026.
 //
 
-import CoreGraphics
 import Foundation
-import simd
 
 /// Main controller for time-dependent route navigation.
 ///
 /// `NavigationController` is the module-facing owner of route navigation. It translates public
-/// navigation commands into route playback, render-state publishing, and navigation camera requests.
+/// navigation commands into route playback and render-state publishing.
 /// The controller is necessary because route navigation is a long-lived mode: it spans multiple render
-/// frames, can be paused or cancelled, and needs to coordinate route progress with camera ownership.
+/// frames and can be paused or cancelled.
 ///
 /// Ownership:
-/// - Owns `NavigationRouteCoordinator` and all route-specific pending/arrival camera state.
-/// - Does not own canonical camera variables; it asks `NavigationCameraCoordinating` to claim or release
-///   navigation camera ownership and to commit camera transactions.
+/// - Owns `NavigationRouteCoordinator`.
+/// - Does not own canonical camera variables or camera behavior.
 /// - Reads scene data through `SnapshotProvider` but does not own snapshot production.
 /// - Stores and publishes public navigation state through `UniverseNavigationControlling`.
-/// - Uses `followPlanet` only as a completion/cancellation handoff back to legacy non-navigation follow
-///   behavior that still lives outside the route navigation mode.
 @MainActor
 final class NavigationController {
     let routeBuilder: RouteBuilding
     let routePlayback: RoutePlayback
     unowned let snapshotProvider: SnapshotProvider
-    unowned let cameraCoordinator: any NavigationCameraCoordinating
     let planets: [Planet]
-    let viewportSize: () -> CGSize
     var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
-    var navigationCameraFollowEnabledDidChange: ((Bool) -> Void)?
+    var navigationDidComplete: ((String) -> Void)?
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,
@@ -42,25 +35,8 @@ final class NavigationController {
         }
     )
 
-    var followPlanet: ((String) -> Void)?
-
-    var cameraTransition: CameraTransition?
     var pendingNavigationDestinationName: String?
-    var navigationCameraTrailingOffset = SIMD3<Float>(0, 0, -0.18)
-    var navigationArrivalRouteID: UUID?
-    var navigationArrivalStartCameraPosition = SIMD3<Float>(repeating: 0)
-    var navigationArrivalStartTarget = SIMD3<Float>(repeating: 0)
-    var navigationArrivalTargetOffset = SIMD3<Float>(0, 0, 1)
-    var navigationArrivalProgress: Float = 1
-    let navigationArrivalDuration: Float = 0.9
-    let navigationArrivalDistanceMultiplier: Float = 5.8
-    let navigationCameraTopViewTiltAngle: Float = 5 * .pi / 180
-
-    var navigationCameraFollowEnabled = true {
-        didSet {
-            navigationCameraFollowEnabledDidChange?(navigationCameraFollowEnabled)
-        }
-    }
+    var isCameraAutoFramingEnabled = false
 
     private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
         didSet {
@@ -77,51 +53,20 @@ final class NavigationController {
     var routeRenderState: NavigationRouteRenderState {
         NavigationRouteRenderState(route: navigationRouteCoordinator.activeRouteForRendering,
                                    progress: navigationRouteCoordinator.renderProgress,
-                                   elapsedTime: navigationRouteCoordinator.elapsedTime)
+                                   elapsedTime: navigationRouteCoordinator.elapsedTime,
+                                   isCameraAutoFramingEnabled: isCameraAutoFramingEnabled)
     }
 
     var isNavigationActive: Bool {
         navigationRouteCoordinator.isNavigationActive
     }
 
-    var controlsCamera: Bool {
-        isNavigationActive || cameraTransition != nil
-    }
-
-    var cameraSnapshotDependency: CameraNavigationSnapshotDependency? {
-        let routeSnapshot = navigationSnapshot
-        let activeRoute = navigationRouteCoordinator.activeRouteForRendering
-
-        guard activeRoute != nil ||
-              routeSnapshot.routeID != nil ||
-              pendingNavigationDestinationName != nil ||
-              cameraTransition != nil else {
-            return nil
-        }
-
-        return CameraNavigationSnapshotDependency(
-            routeID: activeRoute?.id ?? routeSnapshot.routeID,
-            destinationName: activeRoute?.destinationName ??
-            routeSnapshot.destinationName ??
-            pendingNavigationDestinationName,
-            progress: navigationRouteCoordinator.renderProgress,
-            state: navigationRouteCoordinator.state,
-            hasActiveTransition: cameraTransition != nil ||
-            (navigationArrivalRouteID != nil && navigationArrivalProgress < 1),
-            arrivalProgress: navigationArrivalProgress
-        )
-    }
-
     init(snapshotProvider: SnapshotProvider,
-         cameraCoordinator: any NavigationCameraCoordinating,
          planets: [Planet],
-         viewportSize: @escaping () -> CGSize,
          routeBuilder: RouteBuilding = RoutePathBuilder(),
          routePlayback: RoutePlayback = RoutePlaybackController()) {
         self.snapshotProvider = snapshotProvider
-        self.cameraCoordinator = cameraCoordinator
         self.planets = planets
-        self.viewportSize = viewportSize
         self.routeBuilder = routeBuilder
         self.routePlayback = routePlayback
     }
@@ -135,25 +80,12 @@ final class NavigationController {
         }
 
         navigationRouteCoordinator.update()
-
-        if let snapshot {
-            refreshActiveRoute(snapshot: snapshot)
-            updateNavigationCamera(snapshot: snapshot,
-                                   delta: delta)
-        }
     }
 
     func beginManualCameraControl() {
-        guard navigationRouteCoordinator.isNavigationActive else {
-            return
-        }
+        guard navigationRouteCoordinator.isNavigationActive else { return }
 
-        cameraCoordinator.suspendNavigationFollow(routeID: navigationRouteCoordinator.activeRouteForRendering?.id)
-        cameraTransition = nil
-
-        if navigationCameraFollowEnabled {
-            navigationCameraFollowEnabled = false
-        }
+        isCameraAutoFramingEnabled = false
     }
 
     private func publishNavigationSnapshot(_ snapshot: NavigationRouteSnapshot) {

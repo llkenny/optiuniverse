@@ -18,7 +18,7 @@ import simd
 ///
 /// ADR 0003 boundary:
 /// - UI and feature controllers call this coordinator instead of mutating renderer camera fields.
-/// - Follow, navigation, transfer preview, orbit, zoom, and trajectory behavior stay in camera modes.
+/// - Follow, transfer preview, orbit, zoom, and trajectory behavior stay in camera modes.
 /// - `SnapshotProvider` derives render-ready matrices from committed `CameraState`; the coordinator
 ///   only refreshes derived state needed by the current mode before snapshots are requested.
 @MainActor
@@ -33,11 +33,12 @@ final class CameraCoordinator {
     private let zoomMode: ZoomCameraMode
     private let orbitMode: OrbitCameraMode
     private let trajectoryMode: TrajectoryCameraMode
+    private let navigationCameraMode: NavigationCameraMode
     let followCameraOwner: FollowCameraOwner
-    let navigationCameraOwner: NavigationCameraOwner
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
     private var activeCameraMotionRevision = 0
+    private var navigationArrivalRecovery: NavigationArrivalRecovery?
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
@@ -66,9 +67,9 @@ final class CameraCoordinator {
         zoomMode = .init()
         orbitMode = .init()
         trajectoryMode = .init()
+        navigationCameraMode = .init()
         followCameraOwner = .init(cameraState: cameraState,
                                   snapshotProvider: snapshotProvider)
-        navigationCameraOwner = .init(cameraState: cameraState)
         transferPreviewCameraOwner = .init(cameraState: cameraState)
     }
 
@@ -125,7 +126,13 @@ final class CameraCoordinator {
         refreshCamera()
     }
 
+    func adoptNavigationDestination(named name: String) {
+        followCameraOwner.adoptPlanet(named: name)
+        refreshCamera()
+    }
+
     func beginManualCameraControl() {
+        navigationArrivalRecovery = nil
         zoomMode.cancelInertia()
         orbitMode.cancelInertia()
         followCameraOwner.beginManualCameraControl()
@@ -142,14 +149,22 @@ final class CameraCoordinator {
                            modeState: CameraFrameModeState) {
         updateManualCameraInertia(delta: delta)
 
-        let isSuppressed = modeState.navigationControlsCamera || modeState.transferPreviewActive
+        let isSuppressed = modeState.transferPreviewActive || modeState.navigationActive
         followCameraOwner.update(snapshot: snapshot,
                                  delta: delta,
                                  viewportSize: viewportSize,
                                  isSuppressed: isSuppressed)
-        if !isSuppressed || modeState.transferPreviewActive {
+
+        commitNavigationCameraTransaction(snapshot: snapshot,
+                                          viewportSize: viewportSize,
+                                          modeState: modeState)
+
+        if !isSuppressed || modeState.transferPreviewActive || modeState.navigationActive {
             refreshCamera(snapshot: snapshot,
-                          maximumDistance: modeState.transfer?.maximumCameraDistance)
+                          maximumDistance: maximumCameraDistance(modeState: modeState,
+                                                                 viewportSize: viewportSize),
+                          minimumDistance: minimumCameraDistance(snapshot: snapshot,
+                                                                 modeState: modeState))
         }
 
         if hasActiveCameraMotion(modeState: modeState) {
@@ -163,13 +178,19 @@ final class CameraCoordinator {
                                                baseProjection: baseProjection)
     }
 
+    func navigationProjectionParameters(modeState: CameraFrameModeState,
+                                        baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
+        navigationCameraMode.projectionParameters(state: modeState.navigation,
+                                                  cameraDistance: cameraState.cameraDistance,
+                                                  baseProjection: baseProjection)
+    }
+
     func makeSnapshotDependencies(snapshot: UniverseSceneSnapshot?,
                                   viewportSize: CGSize,
                                   projection: CameraProjectionParameters,
                                   modeState: CameraFrameModeState) -> CameraSnapshotDependencies {
         CameraSnapshotDependencies(
             followedObject: followCameraOwner.snapshotDependency(snapshot: snapshot),
-            navigation: modeState.navigation,
             transfer: modeState.transfer,
             activeCameraMotionRevision: activeCameraMotionRevision,
             sceneFrameID: snapshot?.frameID,
@@ -183,10 +204,13 @@ final class CameraCoordinator {
     /// This replaces the old renderer-owned `updateCamera()` path while keeping matrix derivation
     /// centralized in `CameraState`/`SnapshotProvider`.
     func refreshCamera(snapshot: UniverseSceneSnapshot? = nil,
-                       maximumDistance: Float? = nil) {
+                       maximumDistance: Float? = nil,
+                       minimumDistance: Float? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
+        let resolvedMinimumDistance = minimumDistance ??
+            followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)
         cameraState.enforceCameraConstraints(
-            minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot),
+            minDistance: resolvedMinimumDistance,
             maximumDistance: maximumDistance
         )
     }
@@ -214,4 +238,85 @@ final class CameraCoordinator {
         guard let transaction else { return }
         cameraState.commit(transaction)
     }
+
+    private func commitNavigationCameraTransaction(snapshot: UniverseSceneSnapshot?,
+                                                   viewportSize: CGSize,
+                                                   modeState: CameraFrameModeState) {
+        guard !modeState.transferPreviewActive else {
+            navigationArrivalRecovery = nil
+            return
+        }
+        guard let route = modeState.navigation.route else {
+            navigationArrivalRecovery = nil
+            return
+        }
+        guard modeState.navigation.isCameraAutoFramingEnabled ||
+              navigationCameraMode.isArrivalPhase(state: modeState.navigation) else {
+            return
+        }
+
+        let arrivalRecovery = navigationArrivalRecovery(
+            routeID: route.id,
+            modeState: modeState
+        )
+
+        let transaction = navigationCameraMode.makeNavigationTransaction(
+            state: modeState.navigation,
+            snapshot: snapshot,
+            viewportSize: viewportSize,
+            currentPose: cameraState.pose,
+            arrivalRecovery: arrivalRecovery
+        )
+        guard let transaction else { return }
+
+        cameraState.commit(transaction)
+    }
+
+    private func navigationArrivalRecovery(routeID: UUID,
+                                           modeState: CameraFrameModeState) -> NavigationCameraMode.ArrivalRecovery? {
+        guard !modeState.navigation.isCameraAutoFramingEnabled,
+              navigationCameraMode.isArrivalPhase(state: modeState.navigation) else {
+            navigationArrivalRecovery = nil
+            return nil
+        }
+
+        if navigationArrivalRecovery?.routeID != routeID {
+            navigationArrivalRecovery = NavigationArrivalRecovery(
+                routeID: routeID,
+                recovery: NavigationCameraMode.ArrivalRecovery(
+                    startFrame: cameraState.currentCameraTransitionFrame,
+                    startProgress: modeState.navigation.progress
+                )
+            )
+        }
+
+        return navigationArrivalRecovery?.recovery
+    }
+
+    private func maximumCameraDistance(modeState: CameraFrameModeState,
+                                       viewportSize: CGSize) -> Float? {
+        modeState.transfer?.maximumCameraDistance ??
+        navigationCameraMode.maximumCameraDistance(state: modeState.navigation,
+                                                   currentDistance: cameraState.cameraDistance,
+                                                   viewportSize: viewportSize)
+    }
+
+    private func minimumCameraDistance(snapshot: UniverseSceneSnapshot?,
+                                       modeState: CameraFrameModeState) -> Float? {
+        guard !modeState.transferPreviewActive,
+              modeState.navigationActive else {
+            return nil
+        }
+
+        return navigationCameraMode.minimumCameraDistance(
+            state: modeState.navigation,
+            snapshot: snapshot,
+            baseMinimumDistance: cameraState.minDistance
+        )
+    }
+}
+
+private struct NavigationArrivalRecovery {
+    let routeID: UUID
+    let recovery: NavigationCameraMode.ArrivalRecovery
 }

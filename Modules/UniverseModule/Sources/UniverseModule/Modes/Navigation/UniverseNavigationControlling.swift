@@ -14,17 +14,15 @@
 ///
 /// Ownership:
 /// - Does not own route, camera, or render state.
-/// - Exposes immutable route snapshots and navigation camera-follow preference.
+/// - Exposes immutable route snapshots.
 /// - Keeps transfer-orbit preview out of the navigation API; that remains a separate renderer-facing
 ///   control surface.
 public protocol UniverseNavigationControlling: AnyObject {
     var navigationSnapshot: NavigationRouteSnapshot { get }
-    var navigationCameraFollowEnabled: Bool { get }
 
     func startNavigation(to name: String)
     func pauseNavigation()
     func resumeNavigation()
     func cancelNavigation()
     func doneNavigation()
-    func setNavigationCameraFollowEnabled(_ isEnabled: Bool)
 }

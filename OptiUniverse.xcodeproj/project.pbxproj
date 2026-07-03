@@ -51,11 +51,6 @@
 			path = OptiUniverseTests;
 			sourceTree = "<group>";
 		};
-		50AE44882FE4187900C0A5B9 /* RealityKitMigration */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = RealityKitMigration;
-			sourceTree = "<group>";
-		};
 		50BAAA382E30E2A800ECB7DE /* OptiUniverse */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -126,7 +121,6 @@
 		50BAAA2D2E30E2A800ECB7DE = {
 			isa = PBXGroup;
 			children = (
-				50AE44882FE4187900C0A5B9 /* RealityKitMigration */,
 				505D78AC2FBC77B600E3C185 /* AppStore */,
 				500657822F7B646400DA651B /* LINKS.md */,
 				50F3F1882F9475F200C4E44E /* RFC */,

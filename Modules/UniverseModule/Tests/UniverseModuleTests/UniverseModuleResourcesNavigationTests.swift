@@ -1,5 +1,6 @@
 import BaseModule
 import Foundation
+import simd
 import Testing
 @testable import UniverseModule
 
@@ -9,11 +10,6 @@ import Testing
     let navigation = resources.navigation
 
     #expect(ObjectIdentifier(navigation) == ObjectIdentifier(resources))
-
-    navigation.setNavigationCameraFollowEnabled(false)
-
-    #expect(resources.navigationCameraFollowEnabled == false)
-    #expect(navigation.navigationCameraFollowEnabled == false)
 }
 
 @MainActor
@@ -33,8 +29,35 @@ import Testing
 @Test func universeModuleResourcesWiresFollowHandoffsWithoutRenderer() throws {
     let resources = UniverseModuleResources()
 
-    #expect(resources.navigationController.followPlanet != nil)
     #expect(resources.transferOrbitController.followPlanet != nil)
+    #expect(resources.navigationController.navigationDidComplete != nil)
+}
+
+@MainActor
+@Test func universeModuleResourcesNavigationCompletionFollowsDestination() throws {
+    let resources = UniverseModuleResources()
+    let initialPose = resources.cameraCoordinator.currentCameraPose
+
+    resources.navigationController.navigationDidComplete?("Mars")
+
+    #expect(resources.cameraCoordinator.followCameraOwner.followingPlanetName == "Mars")
+    #expect(!resources.cameraCoordinator.followCameraOwner.hasActiveTransition)
+    #expect(resources.cameraCoordinator.currentCameraPose == initialPose)
+}
+
+@MainActor
+@Test func universeModuleResourcesManualCameraControlDisablesNavigationAutoFraming() throws {
+    let resources = UniverseModuleResources()
+
+    resources.navigationController.applyNavigation(named: "Mars",
+                                                   snapshot: .navigationResourcesTestSnapshot)
+    #expect(resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
+
+    resources.beginManualCameraControl()
+
+    #expect(resources.navigationController.routeRenderState.route != nil)
+    #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
+    #expect(resources.navigationSnapshot.state == .running)
 }
 
 #if os(visionOS)
@@ -142,4 +165,33 @@ import Testing
 
 private func decodeDestinationObjects(_ json: String) throws -> [DestinationObject] {
     try JSONDecoder().decode([DestinationObject].self, from: Data(json.utf8))
+}
+
+private extension UniverseSceneSnapshot {
+    static var navigationResourcesTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
+                              simulationTime: 0,
+                              planets: [
+                                testPacket(name: "Sun",
+                                           worldPosition: SIMD3<Float>(0, 0, 0),
+                                           framingRadius: 0.2),
+                                testPacket(name: "Earth",
+                                           worldPosition: SIMD3<Float>(1, 0, 0),
+                                           framingRadius: 0.05),
+                                testPacket(name: "Mars",
+                                           worldPosition: SIMD3<Float>(1.52, 0, 0),
+                                           framingRadius: 0.05)
+                              ])
+    }
+
+    static func testPacket(name: String,
+                           worldPosition: SIMD3<Float>,
+                           framingRadius: Float) -> CelestialBodySnapshot {
+        CelestialBodySnapshot(planetName: name,
+                              baseModelMatrix: matrix_identity_float4x4,
+                              normalizedScale: 1,
+                              framingRadius: framingRadius,
+                              surfaceRadius: framingRadius,
+                              worldPosition: worldPosition)
+    }
 }

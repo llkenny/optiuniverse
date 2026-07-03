@@ -25,14 +25,12 @@ private final class VisionImmersiveControlsPreviewResources: UniverseModuleResou
 
 private final class VisionImmersiveControlsPreviewNavigation: UniverseNavigationControlling {
     let navigationSnapshot: NavigationRouteSnapshot = .idle
-    let navigationCameraFollowEnabled = true
 
     func startNavigation(to name: String) {}
     func pauseNavigation() {}
     func resumeNavigation() {}
     func cancelNavigation() {}
     func doneNavigation() {}
-    func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {}
 }
 
 private final class PreviewTransferOrbit: UniverseTransferOrbitControlling {

@@ -31,8 +31,4 @@ extension UniverseModuleResources: UniverseNavigationControlling {
     public func doneNavigation() {
         navigationController.doneNavigation()
     }
-
-    public func setNavigationCameraFollowEnabled(_ isEnabled: Bool) {
-        navigationController.setNavigationCameraFollowEnabled(isEnabled)
-    }
 }

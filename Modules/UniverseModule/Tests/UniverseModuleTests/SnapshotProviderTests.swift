@@ -188,38 +188,6 @@ import Testing
 }
 
 @MainActor
-@Test func snapshotProviderInvalidatesCacheWhenNavigationRouteChanges() {
-    let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
-    let projection = CameraProjectionParameters(nearPlane: 0.1,
-                                                farPlane: 100)
-    let routeID = UUID()
-    let firstNavigation = CameraNavigationSnapshotDependency(routeID: routeID,
-                                                            destinationName: "Mars",
-                                                            progress: 0.1,
-                                                            state: .running,
-                                                            hasActiveTransition: false,
-                                                            arrivalProgress: 1)
-    let secondNavigation = CameraNavigationSnapshotDependency(routeID: routeID,
-                                                             destinationName: "Mars",
-                                                             progress: 0.2,
-                                                             state: .running,
-                                                             hasActiveTransition: false,
-                                                             arrivalProgress: 1)
-
-    let firstSnapshot = provider.makeCameraSnapshot(
-        dependencies: makeDependencies(navigation: firstNavigation,
-                                       projection: projection)
-    )
-    let secondSnapshot = provider.makeCameraSnapshot(
-        dependencies: makeDependencies(navigation: secondNavigation,
-                                       projection: projection)
-    )
-
-    #expect(firstSnapshot.dependencies.navigation == firstNavigation)
-    #expect(secondSnapshot.dependencies.navigation == secondNavigation)
-}
-
-@MainActor
 @Test func snapshotProviderInvalidatesCacheWhenActiveMotionRevisionChanges() {
     let provider = SnapshotProvider(snapshotSource: FakeUniverseSceneSnapshotSource())
     let projection = CameraProjectionParameters(nearPlane: 0.1,
@@ -317,14 +285,12 @@ private func expectCameraSnapshot(_ lhs: SnapshotProvider.CameraSnapshot,
 }
 
 private func makeDependencies(followedObject: CameraFollowSnapshotDependency? = nil,
-                              navigation: CameraNavigationSnapshotDependency? = nil,
                               transfer: CameraTransferSnapshotDependency? = nil,
                               activeCameraMotionRevision: Int = 0,
                               sceneFrameID: UInt64? = nil,
                               viewportSize: CGSize = CGSize(width: 200, height: 100),
                               projection: CameraProjectionParameters) -> CameraSnapshotDependencies {
     CameraSnapshotDependencies(followedObject: followedObject,
-                               navigation: navigation,
                                transfer: transfer,
                                activeCameraMotionRevision: activeCameraMotionRevision,
                                sceneFrameID: sceneFrameID,
