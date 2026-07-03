@@ -97,10 +97,12 @@ struct RoutePathBuilder: RouteBuilding {
         let radius = transferOrbit.destinationOrbitRadius
         let startDirection = normalize(endpointVector)
         let destinationDirection = normalize(destinationVector)
-        let orbitAngle = positiveAngle(from: startDirection, to: destinationDirection)
+        let orbitAngle = connectorAngle(from: startDirection,
+                                        to: destinationDirection,
+                                        transferPoints: transferOrbit.points)
         let arcSampleCount = destinationArcSampleCount
         .map { max(2, $0) }
-        ?? max(2, Int(ceil(orbitAngle / (2 * .pi) * 192)))
+        ?? max(2, Int(ceil(abs(orbitAngle) / (2 * .pi) * 192)))
         guard arcSampleCount > 1 else { return transferOrbit.points }
 
         let orbitPoints = (1...arcSampleCount).map { index in
@@ -137,6 +139,33 @@ struct RoutePathBuilder: RouteBuilding {
         let dotValue = simd_clamp(simd_dot(sourceXZ, destinationXZ), -1, 1)
         let signedAngle = atan2(crossValue, dotValue)
         return signedAngle >= 0 ? signedAngle : signedAngle + 2 * .pi
+    }
+
+    private static func connectorAngle(from source: SIMD3<Float>,
+                                       to destination: SIMD3<Float>,
+                                       transferPoints: [SIMD3<Float>]) -> Float {
+        let angle = positiveAngle(from: source, to: destination)
+        guard let arrivalDirection = finalHorizontalDirection(points: transferPoints) else {
+            return angle
+        }
+
+        let positiveTangent = normalize(SIMD3<Float>(source.z, 0, -source.x))
+        return simd_dot(arrivalDirection, positiveTangent) >= 0 ? angle : angle - 2 * .pi
+    }
+
+    private static func finalHorizontalDirection(points: [SIMD3<Float>]) -> SIMD3<Float>? {
+        let epsilon: Float = 0.000001
+
+        guard points.count >= 2 else { return nil }
+        for upperIndex in stride(from: points.count - 1, through: 1, by: -1) {
+            var direction = points[upperIndex] - points[upperIndex - 1]
+            direction.y = 0
+            if horizontalLengthSquared(direction) > epsilon {
+                return normalize(direction)
+            }
+        }
+
+        return nil
     }
 
     private static func rotateY(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {

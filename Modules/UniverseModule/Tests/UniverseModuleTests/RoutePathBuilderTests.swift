@@ -39,6 +39,16 @@ import Testing
     #expect(route.points.allSatisfy { abs($0.y) < 0.0001 })
 }
 
+@Test func routeBuilderConnectsMercuryWithoutReversingArrivalTangent() throws {
+    try expectDestinationConnectorContinuesArrivalTangent(destinationName: "Mercury",
+                                                         destinationOrbitRadius: 0.38)
+}
+
+@Test func routeBuilderConnectsVenusWithoutReversingArrivalTangent() throws {
+    try expectDestinationConnectorContinuesArrivalTangent(destinationName: "Venus",
+                                                         destinationOrbitRadius: 0.72)
+}
+
 @Test func routeBuilderLeavesTransferArcWhenDestinationHasNoOrbitPlaneDirection() throws {
     let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
         destinationName: "Mars",
@@ -79,4 +89,28 @@ import Testing
         destinationPosition: nil,
         estimatedDuration: 12
     )) == nil)
+}
+
+private func expectDestinationConnectorContinuesArrivalTangent(destinationName: String,
+                                                               destinationOrbitRadius: Float) throws {
+    let transferPointCount = 24
+    let route = try #require(RoutePathBuilder(sampleCount: transferPointCount).makeRoute(input: RouteBuildInput(
+        destinationName: destinationName,
+        planets: testPlanets,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: SIMD3<Float>(0, 0, destinationOrbitRadius),
+        estimatedDuration: 12
+    )))
+
+    #expect(route.points.count > transferPointCount)
+
+    let finalTransferSegment = normalize(route.points[transferPointCount - 1] -
+                                         route.points[transferPointCount - 2])
+    let firstConnectorSegment = normalize(route.points[transferPointCount] -
+                                          route.points[transferPointCount - 1])
+
+    #expect(simd_dot(finalTransferSegment, firstConnectorSegment) > 0)
+    #expect(simd_distance(route.points.last ?? .zero,
+                          SIMD3<Float>(0, 0, destinationOrbitRadius)) < 0.0001)
 }
