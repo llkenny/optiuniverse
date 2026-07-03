@@ -142,6 +142,7 @@ final class NavigationCameraMode {
                                snapshot: UniverseSceneSnapshot?,
                                baseMinimumDistance: Float) -> Float? {
         guard let route = state.route,
+              simd_clamp(state.progress, 0, 1) >= arrivalPhaseStart,
               let framingRadius = snapshot?.framingRadius(ofPlanetNamed: route.destinationName) else {
             return nil
         }

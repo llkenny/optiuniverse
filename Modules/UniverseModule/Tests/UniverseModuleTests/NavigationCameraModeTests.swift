@@ -164,6 +164,44 @@ import Testing
                       equals: OverviewCameraFraming.orientation)
 }
 
+@Test func navigationCameraModeAppliesDestinationMinimumDistanceOnlyDuringArrival() {
+    let mode = NavigationCameraMode()
+    let route = makeNavigationCameraTestRoute()
+    let baseMinimumDistance: Float = 0.001
+
+    #expect(mode.minimumCameraDistance(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0,
+                                          elapsedTime: 0),
+        snapshot: .navigationCameraTestSnapshot,
+        baseMinimumDistance: baseMinimumDistance
+    ) == nil)
+    #expect(mode.minimumCameraDistance(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0.5,
+                                          elapsedTime: 6),
+        snapshot: .navigationCameraTestSnapshot,
+        baseMinimumDistance: baseMinimumDistance
+    ) == nil)
+    #expect(mode.minimumCameraDistance(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0.899,
+                                          elapsedTime: 10),
+        snapshot: .navigationCameraTestSnapshot,
+        baseMinimumDistance: baseMinimumDistance
+    ) == nil)
+
+    let arrivalMinimumDistance = mode.minimumCameraDistance(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0.9,
+                                          elapsedTime: 11),
+        snapshot: .navigationCameraTestSnapshot,
+        baseMinimumDistance: baseMinimumDistance
+    )
+
+    #expect(abs((arrivalMinimumDistance ?? 0) - 0.21) < 0.0001)
+}
+
 @MainActor
 @Test func cameraCoordinatorNavigationCommitsCameraAndSuppressesFollow() throws {
     let source = NavigationCameraSnapshotSource(latestSnapshot: .navigationCameraTestSnapshot)
