@@ -128,7 +128,8 @@ final class SurfaceCameraOwner {
                                    delta: delta)
         case .zoomTransition:
             if zoomTransition == nil {
-                startZoomTransition()
+                startZoomTransition(bodyName: bodyName,
+                                    snapshot: snapshot)
             }
             updateZoomTransition(bodyName: bodyName,
                                  coordinate: coordinate,
@@ -189,10 +190,16 @@ final class SurfaceCameraOwner {
         cameraState.commit(surfaceMode.makeSurfaceTransaction(frame: frame))
     }
 
-    private func startZoomTransition() {
+    private func startZoomTransition(bodyName: String,
+                                     snapshot: UniverseSceneSnapshot) {
+        let minimumDistance = snapshot.planet(named: bodyName).map {
+            CameraFit.minimumDistanceOutsideBody(radius: $0.surfaceRadius,
+                                                 baseMinimumDistance: cameraState.minDistance)
+        } ?? cameraState.minDistance
         zoomTransition = ActiveZoom(
             startDistance: cameraState.cameraDistance,
-            targetDistance: cameraState.cameraDistance * surfaceZoomFactor,
+            targetDistance: max(cameraState.cameraDistance * surfaceZoomFactor,
+                                minimumDistance),
             duration: cameraState.cameraFollowTransitionDuration
         )
     }

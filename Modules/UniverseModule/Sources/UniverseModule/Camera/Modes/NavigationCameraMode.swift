@@ -178,7 +178,8 @@ final class NavigationCameraMode {
             return nil
         }
 
-        return max(baseMinimumDistance, framingRadius * 1.05)
+        return CameraFit.minimumDistanceOutsideBody(radius: framingRadius,
+                                                    baseMinimumDistance: baseMinimumDistance)
     }
 
     func projectionParameters(state: NavigationRouteRenderState,
