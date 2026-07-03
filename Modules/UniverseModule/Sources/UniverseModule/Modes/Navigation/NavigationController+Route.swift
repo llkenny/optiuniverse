@@ -36,9 +36,13 @@ extension NavigationController: UniverseNavigationControlling {
             return
         }
 
+        let completedDestinationName = navigationSnapshot.destinationName
         navigationRouteCoordinator.cancel()
         isCameraAutoFramingEnabled = false
         pendingNavigationDestinationName = nil
+        if let completedDestinationName {
+            navigationDidComplete?(completedDestinationName)
+        }
     }
 
     func applyNavigation(named name: String,

@@ -127,6 +127,48 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerKeepsAutoFramingDuringCompletedHold() {
+    let playback = CompletingRoutePlayback()
+    let fixture = NavigationControllerFixture(routePlayback: playback)
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+
+    #expect(fixture.controller.navigationSnapshot.state == .completed)
+    #expect(fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+    #expect(fixture.controller.routeRenderState.progress == 1)
+}
+
+@MainActor
+@Test func navigationControllerDonePublishesCompletedDestinationHandoff() {
+    let playback = CompletingRoutePlayback()
+    let fixture = NavigationControllerFixture(routePlayback: playback)
+    var completedDestinationName: String?
+    fixture.controller.navigationDidComplete = { completedDestinationName = $0 }
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.update(snapshot: fixture.snapshot,
+                              delta: 0.1)
+    fixture.controller.doneNavigation()
+
+    #expect(completedDestinationName == "Mars")
+    #expect(fixture.controller.navigationSnapshot.state == .cancelled)
+}
+
+@MainActor
+@Test func navigationControllerCancelDoesNotPublishCompletedDestinationHandoff() {
+    let fixture = NavigationControllerFixture()
+    var completedDestinationName: String?
+    fixture.controller.navigationDidComplete = { completedDestinationName = $0 }
+
+    fixture.controller.startNavigation(to: "Mars")
+    fixture.controller.cancelNavigation()
+
+    #expect(completedDestinationName == nil)
+}
+
+@MainActor
 private struct NavigationControllerFixture {
     let snapshot = UniverseSceneSnapshot.navigationControllerTestSnapshot
     let source: FakeNavigationSnapshotSource

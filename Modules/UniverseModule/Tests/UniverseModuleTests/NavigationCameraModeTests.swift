@@ -77,7 +77,7 @@ import Testing
                       equals: OverviewCameraFraming.orientation)
 }
 
-@Test func navigationCameraModeMapsArrivalPhaseToLiveDestination() throws {
+@Test func navigationCameraModeKeepsOverviewAtArrivalStartAndMovesTargetEarly() throws {
     let mode = NavigationCameraMode()
     let route = makeNavigationCameraTestRoute()
     let currentPose = CameraPose(target: .zero,
@@ -85,10 +85,58 @@ import Testing
                                  orientation: simd_quatf(angle: 0,
                                                          axis: SIMD3<Float>(0, 1, 0)))
     let viewportSize = CGSize(width: 400, height: 400)
+    let destinationPosition = SIMD3<Float>(4, 0, 0)
+    let overviewFitDistance = overviewDistance(route: route,
+                                               currentDistance: currentPose.distance,
+                                               viewportSize: viewportSize)
     let arrivalStart = try #require(mode.makeNavigationTransaction(
         state: NavigationRouteRenderState(route: route,
                                           progress: 0.9,
                                           elapsedTime: 11),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+    let arrivalMiddle = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0.925,
+                                          elapsedTime: 11.1),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+
+    expectVector(try #require(arrivalStart.cameraTarget),
+                 equals: route.overviewCenter)
+    #expect(abs((arrivalStart.cameraDistance ?? 0) - overviewFitDistance) < 0.0001)
+
+    let middleTarget = try #require(arrivalMiddle.cameraTarget)
+    #expect(simd_distance(middleTarget, route.overviewCenter) > 0.1)
+    #expect(simd_distance(middleTarget, destinationPosition) <
+            simd_distance(route.overviewCenter, destinationPosition))
+}
+
+@Test func navigationCameraModeCentersDestinationAndCompletesZoomBeforeRouteEnd() throws {
+    let mode = NavigationCameraMode()
+    let route = makeNavigationCameraTestRoute()
+    let currentPose = CameraPose(target: .zero,
+                                 distance: 3,
+                                 orientation: simd_quatf(angle: 0,
+                                                         axis: SIMD3<Float>(0, 1, 0)))
+    let viewportSize = CGSize(width: 400, height: 400)
+    let destinationPosition = SIMD3<Float>(4, 0, 0)
+    let destinationDistance = CameraFit.distanceToFit(
+        radius: 0.2,
+        currentDistance: currentPose.distance,
+        viewportSize: viewportSize
+    )
+    let overviewFitDistance = overviewDistance(route: route,
+                                               currentDistance: currentPose.distance,
+                                               viewportSize: viewportSize)
+    let arrivalNearlyDone = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0.97,
+                                          elapsedTime: 11.5),
         snapshot: .navigationCameraTestSnapshot,
         viewportSize: viewportSize,
         currentPose: currentPose
@@ -102,20 +150,16 @@ import Testing
         currentPose: currentPose
     ))
 
-    expectVector(try #require(arrivalStart.cameraTarget),
-                 equals: route.overviewCenter)
-    #expect(abs((arrivalStart.cameraDistance ?? 0) - overviewDistance(
-        route: route,
-        currentDistance: currentPose.distance,
-        viewportSize: viewportSize
-    )) < 0.0001)
+    expectVector(try #require(arrivalNearlyDone.cameraTarget),
+                 equals: destinationPosition)
+    let nearlyDoneDistance = try #require(arrivalNearlyDone.cameraDistance)
+    #expect(nearlyDoneDistance >= destinationDistance)
+    #expect((nearlyDoneDistance - destinationDistance) /
+            (overviewFitDistance - destinationDistance) < 0.02)
+
     expectVector(try #require(arrivalEnd.cameraTarget),
-                 equals: SIMD3<Float>(4, 0, 0))
-    #expect(abs((arrivalEnd.cameraDistance ?? 0) - CameraFit.distanceToFit(
-        radius: 0.2,
-        currentDistance: currentPose.distance,
-        viewportSize: viewportSize
-    )) < 0.0001)
+                 equals: destinationPosition)
+    #expect(abs((arrivalEnd.cameraDistance ?? 0) - destinationDistance) < 0.0001)
     expectOrientation(try #require(arrivalEnd.cameraOrientation),
                       equals: OverviewCameraFraming.orientation)
 }
@@ -184,6 +228,40 @@ import Testing
                       equals: manualOrientation)
     #expect(abs(cameraState.cameraDistance - manualDistance) < 0.0001)
     #expect(cameraState.cameraTarget != route.overviewCenter)
+}
+
+@MainActor
+@Test func cameraCoordinatorNavigationArrivalUsesDestinationMinimumDistance() throws {
+    let source = NavigationCameraSnapshotSource(latestSnapshot: .navigationCameraTestSnapshot)
+    let cameraState = CameraState()
+    let snapshotProvider = SnapshotProvider(cameraState: cameraState,
+                                            snapshotSource: source)
+    let coordinator = CameraCoordinator(cameraState: cameraState,
+                                        snapshotProvider: snapshotProvider)
+    let route = makeNavigationCameraTestRoute()
+    let viewportSize = CGSize(width: 400, height: 400)
+    let destinationDistance = CameraFit.distanceToFit(radius: 0.2,
+                                                      currentDistance: cameraState.cameraDistance,
+                                                      viewportSize: viewportSize)
+    let sunMinimumDistance: Float = 1.05
+
+    coordinator.updateFrameCamera(
+        snapshot: source.latestSnapshot,
+        delta: 1.0 / 60.0,
+        viewportSize: viewportSize,
+        modeState: CameraFrameModeState(
+            transferPreviewActive: false,
+            transfer: nil,
+            navigation: NavigationRouteRenderState(route: route,
+                                                   progress: 1,
+                                                   elapsedTime: 12)
+        )
+    )
+
+    expectVector(cameraState.cameraTarget,
+                 equals: SIMD3<Float>(4, 0, 0))
+    #expect(abs(cameraState.cameraDistance - destinationDistance) < 0.0001)
+    #expect(cameraState.cameraDistance < sunMinimumDistance)
 }
 
 @Test func navigationOverviewRadiusUsesRouteDistanceFromOverviewCenter() {

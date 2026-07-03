@@ -26,6 +26,7 @@ final class NavigationController {
     unowned let snapshotProvider: SnapshotProvider
     let planets: [Planet]
     var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
+    var navigationDidComplete: ((String) -> Void)?
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,
@@ -41,7 +42,6 @@ final class NavigationController {
         didSet {
             navigationSnapshotDidChange?(navigationSnapshot)
             if navigationSnapshot.state == .completed {
-                isCameraAutoFramingEnabled = false
                 scheduleDoneNavigation()
             } else {
                 pendingDoneNavigationTask?.cancel()

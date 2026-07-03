@@ -30,6 +30,19 @@ import Testing
     let resources = UniverseModuleResources()
 
     #expect(resources.transferOrbitController.followPlanet != nil)
+    #expect(resources.navigationController.navigationDidComplete != nil)
+}
+
+@MainActor
+@Test func universeModuleResourcesNavigationCompletionFollowsDestination() throws {
+    let resources = UniverseModuleResources()
+    let initialPose = resources.cameraCoordinator.currentCameraPose
+
+    resources.navigationController.navigationDidComplete?("Mars")
+
+    #expect(resources.cameraCoordinator.followCameraOwner.followingPlanetName == "Mars")
+    #expect(!resources.cameraCoordinator.followCameraOwner.hasActiveTransition)
+    #expect(resources.cameraCoordinator.currentCameraPose == initialPose)
 }
 
 @MainActor

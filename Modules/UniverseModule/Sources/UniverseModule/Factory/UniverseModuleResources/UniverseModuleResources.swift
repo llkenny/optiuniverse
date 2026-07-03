@@ -77,6 +77,10 @@ public final class UniverseModuleResources {
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
             self?.navigationSnapshot = snapshot
         }
+        navigationController.navigationDidComplete = { [weak self] name in
+            guard let self else { return }
+            cameraCoordinator.adoptNavigationDestination(named: name)
+        }
         transferOrbitController.followPlanet = { [weak self] name in
             guard let self else { return }
             cameraCoordinator.followNavigationDestination(named: name,

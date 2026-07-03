@@ -11,6 +11,8 @@ import simd
 final class NavigationCameraMode {
     private let departurePhaseEnd: Float = 0.1
     private let arrivalPhaseStart: Float = 0.9
+    private let arrivalTargetPhaseDuration: Float = 0.35
+    private let arrivalDistancePhaseDuration: Float = 0.8
 
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
@@ -39,44 +41,89 @@ final class NavigationCameraMode {
             viewportSize: viewportSize
         )
 
-        let frame: CameraTransition.Frame
         if progress <= departurePhaseEnd {
-            let phaseProgress = progress / departurePhaseEnd
-            frame = CameraTransition.Frame(
-                target: interpolate(from: origin,
-                                    to: route.overviewCenter,
-                                    progress: phaseProgress),
-                distance: interpolate(from: originDistance,
-                                      to: overviewDistance,
-                                      progress: phaseProgress),
-                orientation: simd_normalize(
-                    simd_slerp(currentPose.orientation,
-                               OverviewCameraFraming.orientation,
-                               phaseProgress)
-                )
-            )
-        } else if progress < arrivalPhaseStart {
-            frame = CameraTransition.Frame(
-                target: route.overviewCenter,
-                distance: overviewDistance,
-                orientation: OverviewCameraFraming.orientation
-            )
-        } else {
-            let phaseProgress = (progress - arrivalPhaseStart) / (1 - arrivalPhaseStart)
-            frame = CameraTransition.Frame(
-                target: interpolate(from: route.overviewCenter,
-                                    to: destination,
-                                    progress: phaseProgress),
-                distance: interpolate(from: overviewDistance,
-                                      to: destinationDistance,
-                                      progress: phaseProgress),
-                orientation: OverviewCameraFraming.orientation
+            return makeCameraTransaction(
+                frame: makeDepartureFrame(progress: progress,
+                                          origin: origin,
+                                          originDistance: originDistance,
+                                          overviewDistance: overviewDistance,
+                                          overviewCenter: route.overviewCenter,
+                                          currentPose: currentPose)
             )
         }
 
-        return CameraState.Transaction(cameraTarget: frame.target,
-                                       cameraDistance: frame.distance,
-                                       cameraOrientation: frame.orientation)
+        if progress < arrivalPhaseStart {
+            return makeCameraTransaction(
+                frame: makeOverviewFrame(center: route.overviewCenter,
+                                         distance: overviewDistance)
+            )
+        }
+
+        return makeCameraTransaction(
+            frame: makeArrivalFrame(progress: progress,
+                                    overviewCenter: route.overviewCenter,
+                                    overviewDistance: overviewDistance,
+                                    destination: destination,
+                                    destinationDistance: destinationDistance)
+        )
+    }
+
+    private func makeCameraTransaction(frame: CameraTransition.Frame) -> CameraState.Transaction {
+        CameraState.Transaction(cameraTarget: frame.target,
+                                cameraDistance: frame.distance,
+                                cameraOrientation: frame.orientation)
+    }
+
+    private func makeDepartureFrame(progress: Float,
+                                    origin: SIMD3<Float>,
+                                    originDistance: Float,
+                                    overviewDistance: Float,
+                                    overviewCenter: SIMD3<Float>,
+                                    currentPose: CameraPose) -> CameraTransition.Frame {
+        let phaseProgress = progress / departurePhaseEnd
+        return CameraTransition.Frame(
+            target: interpolate(from: origin,
+                                to: overviewCenter,
+                                progress: phaseProgress),
+            distance: interpolate(from: originDistance,
+                                  to: overviewDistance,
+                                  progress: phaseProgress),
+            orientation: simd_normalize(
+                simd_slerp(currentPose.orientation,
+                           OverviewCameraFraming.orientation,
+                           phaseProgress)
+            )
+        )
+    }
+
+    private func makeOverviewFrame(center: SIMD3<Float>,
+                                   distance: Float) -> CameraTransition.Frame {
+        CameraTransition.Frame(target: center,
+                               distance: distance,
+                               orientation: OverviewCameraFraming.orientation)
+    }
+
+    private func makeArrivalFrame(progress: Float,
+                                  overviewCenter: SIMD3<Float>,
+                                  overviewDistance: Float,
+                                  destination: SIMD3<Float>,
+                                  destinationDistance: Float) -> CameraTransition.Frame {
+        let phaseProgress = (progress - arrivalPhaseStart) / (1 - arrivalPhaseStart)
+        let targetProgress = CameraTransition.easeInOutCubic(
+            phaseProgress / arrivalTargetPhaseDuration
+        )
+        let distanceProgress = CameraTransition.easeInOutCubic(
+            phaseProgress / arrivalDistancePhaseDuration
+        )
+        return CameraTransition.Frame(
+            target: interpolate(from: overviewCenter,
+                                to: destination,
+                                progress: targetProgress),
+            distance: interpolate(from: overviewDistance,
+                                  to: destinationDistance,
+                                  progress: distanceProgress),
+            orientation: OverviewCameraFraming.orientation
+        )
     }
 
     func maximumCameraDistance(state: NavigationRouteRenderState,
@@ -89,6 +136,17 @@ final class NavigationCameraMode {
             currentDistance: currentDistance,
             viewportSize: viewportSize
         )
+    }
+
+    func minimumCameraDistance(state: NavigationRouteRenderState,
+                               snapshot: UniverseSceneSnapshot?,
+                               baseMinimumDistance: Float) -> Float? {
+        guard let route = state.route,
+              let framingRadius = snapshot?.framingRadius(ofPlanetNamed: route.destinationName) else {
+            return nil
+        }
+
+        return max(baseMinimumDistance, framingRadius * 1.05)
     }
 
     func projectionParameters(state: NavigationRouteRenderState,

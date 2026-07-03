@@ -125,6 +125,11 @@ final class CameraCoordinator {
         refreshCamera()
     }
 
+    func adoptNavigationDestination(named name: String) {
+        followCameraOwner.adoptPlanet(named: name)
+        refreshCamera()
+    }
+
     func beginManualCameraControl() {
         zoomMode.cancelInertia()
         orbitMode.cancelInertia()
@@ -155,7 +160,9 @@ final class CameraCoordinator {
         if !isSuppressed || modeState.transferPreviewActive || modeState.navigationActive {
             refreshCamera(snapshot: snapshot,
                           maximumDistance: maximumCameraDistance(modeState: modeState,
-                                                                 viewportSize: viewportSize))
+                                                                 viewportSize: viewportSize),
+                          minimumDistance: minimumCameraDistance(snapshot: snapshot,
+                                                                 modeState: modeState))
         }
 
         if hasActiveCameraMotion(modeState: modeState) {
@@ -195,10 +202,13 @@ final class CameraCoordinator {
     /// This replaces the old renderer-owned `updateCamera()` path while keeping matrix derivation
     /// centralized in `CameraState`/`SnapshotProvider`.
     func refreshCamera(snapshot: UniverseSceneSnapshot? = nil,
-                       maximumDistance: Float? = nil) {
+                       maximumDistance: Float? = nil,
+                       minimumDistance: Float? = nil) {
         let snapshot = snapshot ?? snapshotProvider.latestSnapshot
+        let resolvedMinimumDistance = minimumDistance ??
+            followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot)
         cameraState.enforceCameraConstraints(
-            minDistance: followCameraOwner.minimumAllowedCameraDistance(snapshot: snapshot),
+            minDistance: resolvedMinimumDistance,
             maximumDistance: maximumDistance
         )
     }
@@ -252,5 +262,19 @@ final class CameraCoordinator {
         navigationCameraMode.maximumCameraDistance(state: modeState.navigation,
                                                    currentDistance: cameraState.cameraDistance,
                                                    viewportSize: viewportSize)
+    }
+
+    private func minimumCameraDistance(snapshot: UniverseSceneSnapshot?,
+                                       modeState: CameraFrameModeState) -> Float? {
+        guard !modeState.transferPreviewActive,
+              modeState.navigationActive else {
+            return nil
+        }
+
+        return navigationCameraMode.minimumCameraDistance(
+            state: modeState.navigation,
+            snapshot: snapshot,
+            baseMinimumDistance: cameraState.minDistance
+        )
     }
 }

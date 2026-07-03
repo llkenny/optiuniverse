@@ -82,6 +82,13 @@ final class FollowCameraOwner {
         }
     }
 
+    func adoptPlanet(named name: String) {
+        followingPlanetName = name
+        pendingFollowPlanetName = nil
+        cameraTransition = nil
+        surfaceCameraOwner.cancel()
+    }
+
     func beginManualCameraControl() {
         pendingFollowPlanetName = nil
         cameraTransition = nil
