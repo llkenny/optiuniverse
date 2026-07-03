@@ -38,6 +38,7 @@ final class CameraCoordinator {
     let transferPreviewCameraOwner: TransferPreviewCameraOwner
 
     private var activeCameraMotionRevision = 0
+    private var navigationArrivalRecovery: NavigationArrivalRecovery?
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
@@ -131,6 +132,7 @@ final class CameraCoordinator {
     }
 
     func beginManualCameraControl() {
+        navigationArrivalRecovery = nil
         zoomMode.cancelInertia()
         orbitMode.cancelInertia()
         followCameraOwner.beginManualCameraControl()
@@ -240,20 +242,55 @@ final class CameraCoordinator {
     private func commitNavigationCameraTransaction(snapshot: UniverseSceneSnapshot?,
                                                    viewportSize: CGSize,
                                                    modeState: CameraFrameModeState) {
-        guard !modeState.transferPreviewActive,
-              modeState.navigation.isCameraAutoFramingEnabled else {
+        guard !modeState.transferPreviewActive else {
+            navigationArrivalRecovery = nil
             return
         }
+        guard let route = modeState.navigation.route else {
+            navigationArrivalRecovery = nil
+            return
+        }
+        guard modeState.navigation.isCameraAutoFramingEnabled ||
+              navigationCameraMode.isArrivalPhase(state: modeState.navigation) else {
+            return
+        }
+
+        let arrivalRecovery = navigationArrivalRecovery(
+            routeID: route.id,
+            modeState: modeState
+        )
 
         let transaction = navigationCameraMode.makeNavigationTransaction(
             state: modeState.navigation,
             snapshot: snapshot,
             viewportSize: viewportSize,
-            currentPose: cameraState.pose
+            currentPose: cameraState.pose,
+            arrivalRecovery: arrivalRecovery
         )
         guard let transaction else { return }
 
         cameraState.commit(transaction)
+    }
+
+    private func navigationArrivalRecovery(routeID: UUID,
+                                           modeState: CameraFrameModeState) -> NavigationCameraMode.ArrivalRecovery? {
+        guard !modeState.navigation.isCameraAutoFramingEnabled,
+              navigationCameraMode.isArrivalPhase(state: modeState.navigation) else {
+            navigationArrivalRecovery = nil
+            return nil
+        }
+
+        if navigationArrivalRecovery?.routeID != routeID {
+            navigationArrivalRecovery = NavigationArrivalRecovery(
+                routeID: routeID,
+                recovery: NavigationCameraMode.ArrivalRecovery(
+                    startFrame: cameraState.currentCameraTransitionFrame,
+                    startProgress: modeState.navigation.progress
+                )
+            )
+        }
+
+        return navigationArrivalRecovery?.recovery
     }
 
     private func maximumCameraDistance(modeState: CameraFrameModeState,
@@ -277,4 +314,9 @@ final class CameraCoordinator {
             baseMinimumDistance: cameraState.minDistance
         )
     }
+}
+
+private struct NavigationArrivalRecovery {
+    let routeID: UUID
+    let recovery: NavigationCameraMode.ArrivalRecovery
 }

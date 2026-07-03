@@ -9,6 +9,11 @@ import CoreGraphics
 import simd
 
 final class NavigationCameraMode {
+    struct ArrivalRecovery: Equatable {
+        let startFrame: CameraTransition.Frame
+        let startProgress: Float
+    }
+
     private let departurePhaseEnd: Float = 0.1
     private let arrivalPhaseStart: Float = 0.9
     private let arrivalTargetPhaseDuration: Float = 0.35
@@ -17,7 +22,8 @@ final class NavigationCameraMode {
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
                                    viewportSize: CGSize,
-                                   currentPose: CameraPose) -> CameraState.Transaction? {
+                                   currentPose: CameraPose,
+                                   arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
         guard let route = state.route,
               let originFallback = route.points.first,
               let destinationFallback = route.points.last else {
@@ -59,13 +65,25 @@ final class NavigationCameraMode {
             )
         }
 
-        return makeCameraTransaction(
-            frame: makeArrivalFrame(progress: progress,
-                                    overviewCenter: route.overviewCenter,
-                                    overviewDistance: overviewDistance,
-                                    destination: destination,
-                                    destinationDistance: destinationDistance)
-        )
+        let arrivalFrame = makeArrivalFrame(progress: progress,
+                                            overviewCenter: route.overviewCenter,
+                                            overviewDistance: overviewDistance,
+                                            destination: destination,
+                                            destinationDistance: destinationDistance)
+        if let arrivalRecovery {
+            return makeCameraTransaction(
+                frame: makeArrivalRecoveryFrame(progress: progress,
+                                                arrivalFrame: arrivalFrame,
+                                                recovery: arrivalRecovery)
+            )
+        }
+
+        return makeCameraTransaction(frame: arrivalFrame)
+    }
+
+    func isArrivalPhase(state: NavigationRouteRenderState) -> Bool {
+        guard state.route != nil else { return false }
+        return simd_clamp(state.progress, 0, 1) >= arrivalPhaseStart
     }
 
     private func makeCameraTransaction(frame: CameraTransition.Frame) -> CameraState.Transaction {
@@ -124,6 +142,19 @@ final class NavigationCameraMode {
                                   progress: distanceProgress),
             orientation: OverviewCameraFraming.orientation
         )
+    }
+
+    private func makeArrivalRecoveryFrame(progress: Float,
+                                          arrivalFrame: CameraTransition.Frame,
+                                          recovery: ArrivalRecovery) -> CameraTransition.Frame {
+        let clampedStartProgress = simd_clamp(recovery.startProgress, arrivalPhaseStart, 1)
+        let clampedProgress = simd_clamp(progress, clampedStartProgress, 1)
+        let remainingProgress = max(1 - clampedStartProgress, .leastNonzeroMagnitude)
+        let recoveryProgress = (clampedProgress - clampedStartProgress) / remainingProgress
+
+        return CameraTransition.interpolate(from: recovery.startFrame,
+                                            to: arrivalFrame,
+                                            progress: CameraTransition.easeInOutCubic(recoveryProgress))
     }
 
     func maximumCameraDistance(state: NavigationRouteRenderState,
