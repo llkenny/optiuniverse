@@ -27,7 +27,7 @@ enum CameraFit {
         let targetHalfAngle = atan(viewportFill * tan(limitingHalfFOV))
         let fittedDistance = radius / max(sin(targetHalfAngle), 0.001)
 
-        return max(fittedDistance, radius * 1.05)
+        return max(fittedDistance, minimumDistanceOutsideBody(radius: radius))
     }
 
     /// Fits a circular orbit to the horizontal bounds of the viewport.
@@ -43,7 +43,17 @@ enum CameraFit {
         let targetHalfAngle = atan(viewportFill * tan(horizontalHalfFOV))
         let fittedDistance = radius / max(tan(targetHalfAngle), 0.001)
 
-        return max(fittedDistance, radius * 1.05)
+        return max(fittedDistance, minimumDistanceOutsideBody(radius: radius))
+    }
+
+    static func minimumDistanceOutsideBody(radius: Float,
+                                           baseMinimumDistance: Float = 0) -> Float {
+        guard radius > 0 else { return baseMinimumDistance }
+
+        let nearPlaneClearance = minimumNearPlane * 2
+        return max(baseMinimumDistance,
+                   radius * 1.05,
+                   radius + nearPlaneClearance)
     }
 
     static func nearPlaneDistance(cameraDistance: Float,

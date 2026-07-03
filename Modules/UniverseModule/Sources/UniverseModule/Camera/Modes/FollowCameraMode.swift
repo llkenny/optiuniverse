@@ -66,7 +66,8 @@ final class FollowCameraMode {
             return baseMinimumDistance
         }
 
-        return max(baseMinimumDistance, framingRadius * 1.05)
+        return CameraFit.minimumDistanceOutsideBody(radius: framingRadius,
+                                                    baseMinimumDistance: baseMinimumDistance)
     }
 
     /// Applies follow-specific near-plane policy while preserving the caller's far plane.

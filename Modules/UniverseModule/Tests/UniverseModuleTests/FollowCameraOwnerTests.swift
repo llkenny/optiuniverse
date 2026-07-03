@@ -135,7 +135,7 @@ import Testing
 }
 
 @MainActor
-@Test func followCameraOwnerSurfaceZoomHalvesDistanceAfterRotation() throws {
+@Test func followCameraOwnerSurfaceZoomUsesClearanceAwareDistanceAfterRotation() throws {
     let fixture = FollowCameraOwnerFixture(latestSnapshot: .surfaceFollowTestSnapshot)
     let bodyFollowDistance = fixture.startSurfaceFollowAndCompleteBodyTransition()
 
@@ -153,8 +153,12 @@ import Testing
 
     expectSurfaceVector(fixture.cameraState.cameraTarget,
                  equals: surfaceMoonCenter)
-    expectSurfaceEqual(fixture.cameraState.cameraDistance,
-                bodyFollowDistance * 0.5)
+    expectSurfaceEqual(
+        fixture.cameraState.cameraDistance,
+        max(bodyFollowDistance * 0.5,
+            CameraFit.minimumDistanceOutsideBody(radius: 0.5,
+                                                 baseMinimumDistance: fixture.cameraState.minDistance))
+    )
     try expectCurrentCameraAlignedWithMoonSouthPole(fixture.cameraState)
 }
 

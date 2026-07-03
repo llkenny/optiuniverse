@@ -62,6 +62,34 @@ import Testing
     #expect(projection.farPlane == 10000)
 }
 
+@MainActor
+@Test func followCameraModeKeepsSmallBodiesOutsideMinimumNearPlane() {
+    let mode = FollowCameraMode()
+    let mercuryRadius: Float = 0.0024395
+    let snapshot = UniverseSceneSnapshot(
+        frameID: 1,
+        simulationTime: 0,
+        planets: [
+            UniverseSceneSnapshot.followCameraTestPacket(
+                name: "Mercury",
+                worldPosition: .zero,
+                framingRadius: mercuryRadius
+            )
+        ]
+    )
+
+    let minimumDistance = mode.minimumDistance(
+        followingPlanetName: "Mercury",
+        snapshot: snapshot,
+        baseMinimumDistance: 0.001
+    )
+    let nearPlane = CameraFit.nearPlaneDistance(cameraDistance: minimumDistance,
+                                                framingRadius: mercuryRadius)
+
+    #expect(abs(minimumDistance - (mercuryRadius + CameraFit.minimumNearPlane * 2)) < 0.000001)
+    #expect(nearPlane < minimumDistance - mercuryRadius)
+}
+
 extension UniverseSceneSnapshot {
     static var followCameraTestSnapshot: UniverseSceneSnapshot {
         UniverseSceneSnapshot(frameID: 1,
