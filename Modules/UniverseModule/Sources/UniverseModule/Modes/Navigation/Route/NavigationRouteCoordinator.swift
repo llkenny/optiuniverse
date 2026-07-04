@@ -60,6 +60,11 @@ final class NavigationRouteCoordinator {
                 planets: planets,
                 originPosition: originPosition,
                 waypointPosition: waypointName.flatMap { snapshot.worldPosition(ofPlanetNamed: $0) },
+                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: originName) ?? 0,
+                waypointSurfaceRadius: waypointName.flatMap {
+                    snapshot.surfaceRadius(ofPlanetNamed: $0)
+                } ?? 0,
+                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: destinationName) ?? 0,
                 earthSunDirection: earthPosition - sunPosition,
                 sunPosition: sunPosition,
                 destinationPosition: destinationPosition,

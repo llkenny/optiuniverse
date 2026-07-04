@@ -40,6 +40,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
+    let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
 
     init(id: UUID = UUID(),
@@ -50,6 +51,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          cumulativeDistances: [Float],
          totalDistance: Float,
          estimatedDuration: TimeInterval,
+         overviewPaddingRadius: Float = 0,
          overviewCenter: SIMD3<Float>? = nil) {
         self.id = id
         self.originName = originName
@@ -59,6 +61,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         self.cumulativeDistances = cumulativeDistances
         self.totalDistance = totalDistance
         self.estimatedDuration = estimatedDuration
+        self.overviewPaddingRadius = overviewPaddingRadius
         self.overviewCenter = overviewCenter ?? points.first ?? .zero
     }
 
@@ -112,6 +115,40 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         return point(atDistance: targetDistance)
     }
 
+    func prefixPoints(through progress: Float) -> [SIMD3<Float>] {
+        guard let first = points.first,
+              points.count == cumulativeDistances.count else {
+            return []
+        }
+        guard totalDistance > 0 else { return [first] }
+
+        let clampedProgress = min(max(progress, 0), 1)
+        guard clampedProgress > 0 else { return [first] }
+        guard clampedProgress < 1 else { return points }
+
+        let targetDistance = distance(at: clampedProgress)
+        let epsilon: Float = 0.000_001
+        var prefix = [first]
+        prefix.reserveCapacity(points.count)
+
+        for upperIndex in 1..<points.count {
+            let upperDistance = cumulativeDistances[upperIndex]
+            if upperDistance < targetDistance - epsilon {
+                prefix.append(points[upperIndex])
+                continue
+            }
+
+            if abs(upperDistance - targetDistance) <= epsilon {
+                prefix.append(points[upperIndex])
+            } else if let point = point(atDistance: targetDistance) {
+                prefix.append(point)
+            }
+            break
+        }
+
+        return prefix
+    }
+
     private func point(atDistance targetDistance: Float) -> SIMD3<Float>? {
         guard let first = points.first,
               points.count == cumulativeDistances.count else {
@@ -153,6 +190,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         cumulativeDistances: cumulativeDistances,
                         totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration,
+                        overviewPaddingRadius: overviewPaddingRadius,
                         overviewCenter: overviewCenter)
     }
 }

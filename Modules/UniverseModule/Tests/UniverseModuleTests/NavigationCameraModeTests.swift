@@ -49,6 +49,125 @@ import Testing
                       equals: OverviewCameraFraming.orientation)
 }
 
+@Test func navigationCameraModeStartsArtemisRouteFromEarthCloseUp() throws {
+    let mode = NavigationCameraMode()
+    let route = makeArtemisNavigationCameraTestRoute()
+    let currentPose = CameraPose(target: SIMD3<Float>(12, 3, 4),
+                                 distance: 7,
+                                 orientation: simd_quatf(angle: .pi / 4,
+                                                         axis: SIMD3<Float>(0, 1, 0)))
+    let viewportSize = CGSize(width: 400, height: 400)
+    let transaction = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: 0,
+                                          elapsedTime: 0),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+
+    expectVector(try #require(transaction.cameraTarget),
+                 equals: SIMD3<Float>(0, 0, 0))
+    #expect(abs((transaction.cameraDistance ?? 0) - CameraFit.distanceToFit(
+        radius: 0.1,
+        currentDistance: currentPose.distance,
+        viewportSize: viewportSize
+    )) < 0.0001)
+    expectOrientation(try #require(transaction.cameraOrientation),
+                      equals: OverviewCameraFraming.orientation)
+}
+
+@Test func navigationCameraModeZoomsArtemisRouteFromEarthToOverview() throws {
+    let mode = NavigationCameraMode()
+    let route = makeArtemisNavigationCameraTestRoute()
+    let currentPose = CameraPose(target: SIMD3<Float>(12, 3, 4),
+                                 distance: 7,
+                                 orientation: simd_quatf(angle: .pi / 4,
+                                                         axis: SIMD3<Float>(0, 1, 0)))
+    let viewportSize = CGSize(width: 400, height: 400)
+    let openingEndProgress: Float = 2.5 / 16.0
+    let earthDistance = CameraFit.distanceToFit(radius: 0.1,
+                                                currentDistance: currentPose.distance,
+                                                viewportSize: viewportSize)
+    let routeOverviewDistance = overviewDistance(route: route,
+                                                 currentDistance: currentPose.distance,
+                                                 viewportSize: viewportSize)
+    let midpoint = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: openingEndProgress * 0.5,
+                                          elapsedTime: 1.25),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+    let openingEnd = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: openingEndProgress,
+                                          elapsedTime: 2.5),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+
+    let midpointTarget = try #require(midpoint.cameraTarget)
+    #expect(simd_distance(midpointTarget, SIMD3<Float>(0, 0, 0)) > 0.0001)
+    #expect(simd_distance(midpointTarget, route.overviewCenter) > 0.0001)
+    #expect((midpoint.cameraDistance ?? 0) > earthDistance)
+    #expect((midpoint.cameraDistance ?? 0) < routeOverviewDistance)
+    expectOrientation(try #require(midpoint.cameraOrientation),
+                      equals: OverviewCameraFraming.orientation)
+
+    expectVector(try #require(openingEnd.cameraTarget),
+                 equals: route.overviewCenter)
+    #expect(abs((openingEnd.cameraDistance ?? 0) - routeOverviewDistance) < 0.0001)
+    expectOrientation(try #require(openingEnd.cameraOrientation),
+                      equals: OverviewCameraFraming.orientation)
+}
+
+@Test func navigationCameraModeMovesArtemisOpeningTargetThroughRouteMarker() throws {
+    let mode = NavigationCameraMode()
+    let route = makeArtemisNavigationCameraTestRoute()
+    let currentPose = CameraPose(target: SIMD3<Float>(12, 3, 4),
+                                 distance: 7,
+                                 orientation: simd_quatf(angle: .pi / 4,
+                                                         axis: SIMD3<Float>(0, 1, 0)))
+    let viewportSize = CGSize(width: 400, height: 400)
+    let openingEndProgress = ArtemisRouteProfile.openingPhaseEnd(
+        estimatedDuration: route.estimatedDuration
+    )
+    let earlyProgress = openingEndProgress * 0.25
+    let markerFocusProgress = openingEndProgress * 0.5
+
+    let early = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: earlyProgress,
+                                          elapsedTime: 0.625),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+    let markerFocused = try #require(mode.makeNavigationTransaction(
+        state: NavigationRouteRenderState(route: route,
+                                          progress: markerFocusProgress,
+                                          elapsedTime: 1.25),
+        snapshot: .navigationCameraTestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: currentPose
+    ))
+
+    let earlyTarget = try #require(early.cameraTarget)
+    let earlyMarker = try #require(route.point(at: earlyProgress))
+    #expect(simd_distance(earlyTarget, SIMD3<Float>(0, 0, 0)) > 0.0001)
+    #expect(simd_distance(earlyTarget, earlyMarker) < simd_distance(SIMD3<Float>(0, 0, 0),
+                                                                   earlyMarker))
+
+    let markerFocusTarget = try #require(markerFocused.cameraTarget)
+    let markerPoint = try #require(route.point(at: markerFocusProgress))
+    #expect(simd_distance(markerFocusTarget, markerPoint) <
+            simd_distance(markerFocusTarget, route.overviewCenter))
+    #expect(simd_distance(markerFocusTarget, route.overviewCenter) > 0.0001)
+}
+
 @Test func navigationCameraModeUsesOverviewForMiddlePhase() throws {
     let mode = NavigationCameraMode()
     let route = makeNavigationCameraTestRoute()
@@ -486,6 +605,23 @@ import Testing
     #expect(abs(OverviewCameraFraming.navigationRouteRadius(route: route) - 2) < 0.0001)
 }
 
+@Test func navigationOverviewRadiusIncludesCislunarBodyPadding() {
+    let route = NavigationRoute(originName: "Earth",
+                                waypointName: "Moon",
+                                destinationName: "Earth",
+                                points: [
+                                    SIMD3<Float>(-1, 0, 0),
+                                    SIMD3<Float>(1, 0, 0)
+                                ],
+                                cumulativeDistances: [0, 2],
+                                totalDistance: 2,
+                                estimatedDuration: 16,
+                                overviewPaddingRadius: 0.25,
+                                overviewCenter: .zero)
+
+    #expect(abs(OverviewCameraFraming.navigationRouteRadius(route: route) - 1.25) < 0.0001)
+}
+
 private func makeNavigationCameraTestRoute() -> NavigationRoute {
     NavigationRoute(originName: "Earth",
                     destinationName: "Mars",
@@ -498,6 +634,25 @@ private func makeNavigationCameraTestRoute() -> NavigationRoute {
                     totalDistance: 3,
                     estimatedDuration: 12,
                     overviewCenter: SIMD3<Float>(1.5, 0, 0))
+}
+
+private func makeArtemisNavigationCameraTestRoute() -> NavigationRoute {
+    let points = [
+        SIMD3<Float>(0, 0, 0),
+        SIMD3<Float>(1, 0, 1),
+        SIMD3<Float>(2, 0, 0),
+        SIMD3<Float>(1, 0, -1),
+        SIMD3<Float>(0, 0, 0)
+    ]
+    let cumulativeDistances = RoutePathBuilder.makeCumulativeDistances(points: points)
+    return NavigationRoute(originName: "Earth",
+                           waypointName: "Moon",
+                           destinationName: "Earth",
+                           points: points,
+                           cumulativeDistances: cumulativeDistances,
+                           totalDistance: cumulativeDistances.last ?? 0,
+                           estimatedDuration: 16,
+                           overviewCenter: SIMD3<Float>(1, 0, 0))
 }
 
 private func overviewDistance(route: NavigationRoute,
@@ -555,6 +710,9 @@ private extension UniverseSceneSnapshot {
                                 navigationCameraTestPacket(name: "Earth",
                                                            worldPosition: SIMD3<Float>(0, 0, 0),
                                                            framingRadius: 0.1),
+                                navigationCameraTestPacket(name: "Moon",
+                                                           worldPosition: SIMD3<Float>(2, 0, 0),
+                                                           framingRadius: 0.05),
                                 navigationCameraTestPacket(name: "Mars",
                                                            worldPosition: SIMD3<Float>(4, 0, 0),
                                                            framingRadius: 0.2)

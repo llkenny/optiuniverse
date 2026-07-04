@@ -89,7 +89,46 @@ import Testing
     #expect(simd_distance(midpoint, waypointPosition) < 0.0001)
     #expect(simd_distance(lastPoint, originPosition) < 0.0001)
     #expect(route.totalDistance > simd_distance(originPosition, waypointPosition) * 2)
-    #expect((route.points.map { abs($0.z) }.max() ?? 0) > 0.03)
+    #expect((route.points.map { abs($0.z) }.max() ?? 0) >
+            simd_distance(originPosition, waypointPosition) * 0.1)
+
+    for index in route.cumulativeDistances.indices.dropFirst() {
+        #expect(route.cumulativeDistances[index] >= route.cumulativeDistances[index - 1])
+    }
+}
+
+@Test func routeBuilderAnchorsEarthMoonEarthRouteNearBodySurfaces() throws {
+    let originPosition = SIMD3<Float>(1, 0, 0)
+    let waypointPosition = SIMD3<Float>(1.2, 0, 0)
+    let originSurfaceRadius: Float = 0.02
+    let waypointSurfaceRadius: Float = 0.01
+    let route = try #require(RoutePathBuilder(sampleCount: 24).makeRoute(input: RouteBuildInput(
+        originName: "Earth",
+        waypointName: "Moon",
+        destinationName: "Earth",
+        planets: testPlanets,
+        originPosition: originPosition,
+        waypointPosition: waypointPosition,
+        originSurfaceRadius: originSurfaceRadius,
+        waypointSurfaceRadius: waypointSurfaceRadius,
+        destinationSurfaceRadius: originSurfaceRadius,
+        earthSunDirection: SIMD3<Float>(1, 0, 0),
+        sunPosition: .zero,
+        destinationPosition: originPosition,
+        estimatedDuration: 16
+    )))
+    let direction = normalize(waypointPosition - originPosition)
+    let firstPoint = try #require(route.points.first)
+    let flybyPoint = route.points[route.points.count / 2]
+    let lastPoint = try #require(route.points.last)
+
+    expectVector(firstPoint,
+                 equals: originPosition + direction * originSurfaceRadius * 1.12)
+    expectVector(flybyPoint,
+                 equals: waypointPosition - direction * waypointSurfaceRadius * 1.12)
+    expectVector(lastPoint,
+                 equals: originPosition - direction * originSurfaceRadius * 1.12)
+    #expect(abs(route.overviewPaddingRadius - originSurfaceRadius * 1.2) < 0.0001)
 
     for index in route.cumulativeDistances.indices.dropFirst() {
         #expect(route.cumulativeDistances[index] >= route.cumulativeDistances[index - 1])
@@ -111,6 +150,12 @@ import Testing
     ))
 
     #expect(route == nil)
+}
+
+private func expectVector(_ lhs: SIMD3<Float>,
+                          equals rhs: SIMD3<Float>,
+                          tolerance: Float = 0.0001) {
+    #expect(simd_distance(lhs, rhs) < tolerance)
 }
 
 @Test func routeBuilderRejectsUnsupportedDestinations() {

@@ -6,12 +6,23 @@
 //
 
 import CoreGraphics
+import Foundation
 import simd
 
 final class NavigationCameraMode {
     struct ArrivalRecovery: Equatable {
         let startFrame: CameraTransition.Frame
         let startProgress: Float
+    }
+
+    private struct DepartureFrameContext {
+        let phaseEnd: Float
+        let origin: SIMD3<Float>
+        let originDistance: Float
+        let overviewDistance: Float
+        let overviewCenter: SIMD3<Float>
+        let currentPose: CameraPose
+        let estimatedDuration: TimeInterval
     }
 
     private let departurePhaseEnd: Float = 0.1
@@ -31,43 +42,37 @@ final class NavigationCameraMode {
         }
 
         let progress = simd_clamp(state.progress, 0, 1)
-        let origin = snapshot?.worldPosition(ofPlanetNamed: route.originName) ?? originFallback
         let destination = snapshot?.worldPosition(ofPlanetNamed: route.destinationName) ?? destinationFallback
-        let originDistance = fitDistance(for: route.originName,
-                                         fallbackDistance: currentPose.distance,
-                                         snapshot: snapshot,
-                                         viewportSize: viewportSize)
         let destinationDistance = fitDistance(for: route.destinationName,
                                               fallbackDistance: currentPose.distance,
                                               snapshot: snapshot,
                                               viewportSize: viewportSize)
-        let overviewDistance = OverviewCameraFraming.navigationOverviewDistance(
+        let departureContext = makeDepartureContext(
             route: route,
-            currentDistance: currentPose.distance,
-            viewportSize: viewportSize
+            snapshot: snapshot,
+            viewportSize: viewportSize,
+            currentPose: currentPose,
+            originFallback: originFallback
         )
 
-        if progress <= departurePhaseEnd {
+        if progress <= departureContext.phaseEnd {
             return makeCameraTransaction(
-                frame: makeDepartureFrame(progress: progress,
-                                          origin: origin,
-                                          originDistance: originDistance,
-                                          overviewDistance: overviewDistance,
-                                          overviewCenter: route.overviewCenter,
-                                          currentPose: currentPose)
+                frame: makeDepartureFrame(route: route,
+                                          progress: progress,
+                                          context: departureContext)
             )
         }
 
         if progress < arrivalPhaseStart {
             return makeCameraTransaction(
                 frame: makeOverviewFrame(center: route.overviewCenter,
-                                         distance: overviewDistance)
+                                         distance: departureContext.overviewDistance)
             )
         }
 
         let arrivalFrame = makeArrivalFrame(progress: progress,
                                             overviewCenter: route.overviewCenter,
-                                            overviewDistance: overviewDistance,
+                                            overviewDistance: departureContext.overviewDistance,
                                             destination: destination,
                                             destinationDistance: destinationDistance)
         if let arrivalRecovery {
@@ -92,26 +97,97 @@ final class NavigationCameraMode {
                                 cameraOrientation: frame.orientation)
     }
 
-    private func makeDepartureFrame(progress: Float,
-                                    origin: SIMD3<Float>,
-                                    originDistance: Float,
-                                    overviewDistance: Float,
-                                    overviewCenter: SIMD3<Float>,
-                                    currentPose: CameraPose) -> CameraTransition.Frame {
-        let phaseProgress = progress / departurePhaseEnd
+    private func makeDepartureContext(route: NavigationRoute,
+                                      snapshot: UniverseSceneSnapshot?,
+                                      viewportSize: CGSize,
+                                      currentPose: CameraPose,
+                                      originFallback: SIMD3<Float>) -> DepartureFrameContext {
+        DepartureFrameContext(
+            phaseEnd: departurePhaseEnd(for: route),
+            origin: snapshot?.worldPosition(ofPlanetNamed: route.originName) ?? originFallback,
+            originDistance: fitDistance(for: route.originName,
+                                        fallbackDistance: currentPose.distance,
+                                        snapshot: snapshot,
+                                        viewportSize: viewportSize),
+            overviewDistance: OverviewCameraFraming.navigationOverviewDistance(
+                route: route,
+                currentDistance: currentPose.distance,
+                viewportSize: viewportSize
+            ),
+            overviewCenter: route.overviewCenter,
+            currentPose: currentPose,
+            estimatedDuration: route.estimatedDuration
+        )
+    }
+
+    private func makeDepartureFrame(route: NavigationRoute,
+                                    progress: Float,
+                                    context: DepartureFrameContext) -> CameraTransition.Frame {
+        if isArtemisRoute(route) {
+            return makeArtemisOpeningFrame(route: route,
+                                           progress: progress,
+                                           context: context)
+        }
+
+        return makeStandardDepartureFrame(progress: progress,
+                                          context: context)
+    }
+
+    private func makeStandardDepartureFrame(progress: Float,
+                                            context: DepartureFrameContext) -> CameraTransition.Frame {
+        let phaseProgress = progress / context.phaseEnd
         return CameraTransition.Frame(
-            target: interpolate(from: origin,
-                                to: overviewCenter,
+            target: interpolate(from: context.origin,
+                                to: context.overviewCenter,
                                 progress: phaseProgress),
-            distance: interpolate(from: originDistance,
-                                  to: overviewDistance,
+            distance: interpolate(from: context.originDistance,
+                                  to: context.overviewDistance,
                                   progress: phaseProgress),
             orientation: simd_normalize(
-                simd_slerp(currentPose.orientation,
+                simd_slerp(context.currentPose.orientation,
                            OverviewCameraFraming.orientation,
                            phaseProgress)
             )
         )
+    }
+
+    private func makeArtemisOpeningFrame(route: NavigationRoute,
+                                         progress: Float,
+                                         context: DepartureFrameContext) -> CameraTransition.Frame {
+        let phaseProgress = ArtemisRouteProfile.easedOpeningProgress(
+            routeProgress: progress,
+            estimatedDuration: context.estimatedDuration
+        )
+        return CameraTransition.Frame(
+            target: makeArtemisOpeningTarget(route: route,
+                                             progress: progress,
+                                             phaseProgress: phaseProgress,
+                                             context: context),
+            distance: interpolate(from: context.originDistance,
+                                  to: context.overviewDistance,
+                                  progress: phaseProgress),
+            orientation: OverviewCameraFraming.orientation
+        )
+    }
+
+    private func makeArtemisOpeningTarget(route: NavigationRoute,
+                                          progress: Float,
+                                          phaseProgress: Float,
+                                          context: DepartureFrameContext) -> SIMD3<Float> {
+        let markerPoint = route.point(at: progress) ?? context.origin
+        let markerFocusEnd: Float = 0.45
+        guard phaseProgress > markerFocusEnd else {
+            return interpolate(from: context.origin,
+                               to: markerPoint,
+                               progress: CameraTransition.easeInOutCubic(phaseProgress / markerFocusEnd))
+        }
+
+        let overviewProgress = CameraTransition.easeInOutCubic(
+            (phaseProgress - markerFocusEnd) / (1 - markerFocusEnd)
+        )
+        return interpolate(from: markerPoint,
+                           to: context.overviewCenter,
+                           progress: overviewProgress)
     }
 
     private func makeOverviewFrame(center: SIMD3<Float>,
@@ -203,6 +279,16 @@ final class NavigationCameraMode {
         CameraFit.distanceToFit(radius: snapshot?.framingRadius(ofPlanetNamed: planetName) ?? 0,
                                 currentDistance: fallbackDistance,
                                 viewportSize: viewportSize)
+    }
+
+    private func departurePhaseEnd(for route: NavigationRoute) -> Float {
+        ArtemisRouteProfile.isArtemisRoute(route)
+            ? ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: route.estimatedDuration)
+            : departurePhaseEnd
+    }
+
+    private func isArtemisRoute(_ route: NavigationRoute) -> Bool {
+        ArtemisRouteProfile.isArtemisRoute(route)
     }
 
     private func interpolate(from start: SIMD3<Float>,
