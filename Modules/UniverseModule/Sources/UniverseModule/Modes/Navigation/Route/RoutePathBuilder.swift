@@ -137,10 +137,8 @@ struct RoutePathBuilder: RouteBuilding {
             return nil
         }
 
-        let predictedWaypointPosition = Self.predictedArtemisWaypointPosition(input: input)
-            ?? waypointPosition
         let routePoints = Self.makeCislunarLoopPoints(originPosition: originPosition,
-                                                      waypointPosition: predictedWaypointPosition,
+                                                      waypointPosition: waypointPosition,
                                                       destinationPosition: destinationPosition,
                                                       originSurfaceRadius: input.originSurfaceRadius,
                                                       waypointSurfaceRadius: input.waypointSurfaceRadius,
@@ -166,7 +164,7 @@ struct RoutePathBuilder: RouteBuilding {
                                ),
                                overviewCenter: Self.cislunarLoopOverviewCenter(
                                 originPosition: originPosition,
-                                waypointPosition: predictedWaypointPosition,
+                                waypointPosition: waypointPosition,
                                 destinationPosition: destinationPosition
                                ))
     }
@@ -259,36 +257,35 @@ struct RoutePathBuilder: RouteBuilding {
             ),
             fallback: majorDirection
         )
-        let moonApproach = waypointPosition
-            - majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyApproachMajorScale
-            - sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyApproachLateralScale
-            + sceneUp * lunarFlybyRadius * 0.04
-        let lunarHook = waypointPosition
-            + majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyHookMajorScale
-            + sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyHookLateralScale
-            + sceneUp * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyTiltScale
         let returnDirection = normalizeOrFallback(returnPosition - waypointPosition,
                                                   fallback: -majorDirection)
-        let moonDeparture = waypointPosition
-            - majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyExitMajorScale
-            + sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyExitLateralScale
-            + sceneUp * lunarFlybyRadius * 0.08
-        let lunarEntryTangent = normalizeOrFallback(lunarHook - moonApproach,
-                                                    fallback: majorDirection)
-        let lunarHookTangent = normalizeOrFallback(moonDeparture - moonApproach,
-                                                   fallback: sideDirection)
-        let lunarDepartureTangent = normalizeOrFallback(moonDeparture - lunarHook,
-                                                        fallback: -majorDirection)
+        let earthwardDirection = -majorDirection
+        let lunarFlybyEntry = waypointPosition
+            + earthwardDirection * lunarFlybyRadius * 1.45
+            - sideDirection * lunarFlybyRadius * 0.58
+            + sceneUp * lunarFlybyRadius * 0.04
+        let lunarFlybyExit = waypointPosition
+            + earthwardDirection * lunarFlybyRadius * 1.42
+            + sideDirection * lunarFlybyRadius * 0.62
+            + sceneUp * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyTiltScale
+        let lunarFlybyEntryTangent = normalizeOrFallback(
+            -earthwardDirection - sideDirection * 0.22,
+            fallback: -earthwardDirection
+        )
+        let lunarFlybyExitTangent = normalizeOrFallback(
+            earthwardDirection - sideDirection * 0.24,
+            fallback: earthwardDirection
+        )
         let returnAnchor = returnPosition - returnDirection * destinationClearance
         let minimumCount = max(sampleCount, 48)
         let earthLoopCount = max(10, Int(Float(minimumCount) * ArtemisRouteProfile.earthLoopSampleRatio))
         let outboundCount = max(16, Int(Float(minimumCount) * ArtemisRouteProfile.outboundSampleRatio))
-        let lunarLoopCount = max(12, Int(Float(minimumCount) * ArtemisRouteProfile.lunarFlybySampleRatio))
-        let lunarInboundCount = max(6, lunarLoopCount / 2)
-        let lunarOutboundCount = max(6, lunarLoopCount - lunarInboundCount + 1)
+        let lunarLoopCount = max(24, Int(Float(minimumCount) * ArtemisRouteProfile.lunarFlybySampleRatio))
         let launchCount = max(5, Int(Float(minimumCount) * 0.08))
         let returnCount = max(16, minimumCount - launchCount - earthLoopCount - outboundCount - lunarLoopCount)
         let outboundControlScale = max(fullMajorDistance, 0.1)
+        let lunarFlybyEntryHandleScale = max(lunarFlybyRadius * 2.8, outboundControlScale * 0.1)
+        let lunarFlybyExitHandleScale = max(lunarFlybyRadius * 2.6, outboundControlScale * 0.09)
 
         let launchPoints = quadraticBezierPoints(
             start: launchAnchor,
@@ -310,38 +307,25 @@ struct RoutePathBuilder: RouteBuilding {
             start: earthLoopEnd,
             controlA: earthLoopEnd
                 + earthLoopExitTangent * outboundControlScale * 0.22,
-            controlB: moonApproach
-                - lunarEntryTangent * outboundControlScale * 0.18,
-            end: moonApproach,
+            controlB: lunarFlybyEntry
+                - lunarFlybyEntryTangent * lunarFlybyEntryHandleScale,
+            end: lunarFlybyEntry,
             count: outboundCount
         )
-        let lunarInboundPoints = cubicBezierPoints(
-            start: moonApproach,
-            controlA: moonApproach
-                + lunarEntryTangent * lunarFlybyRadius * 0.48,
-            controlB: lunarHook
-                - lunarHookTangent * lunarFlybyRadius * 0.52,
-            end: lunarHook,
-            count: lunarInboundCount
+        let lunarLoopPoints = cubicBezierPoints(
+            start: lunarFlybyEntry,
+            controlA: lunarFlybyEntry
+                + lunarFlybyEntryTangent * lunarFlybyEntryHandleScale,
+            controlB: lunarFlybyExit
+                - lunarFlybyExitTangent * lunarFlybyExitHandleScale,
+            end: lunarFlybyExit,
+            count: lunarLoopCount
         )
-        let lunarOutboundPoints = cubicBezierPoints(
-            start: lunarHook,
-            controlA: lunarHook
-                + lunarHookTangent * lunarFlybyRadius * 0.52,
-            controlB: moonDeparture
-                - lunarDepartureTangent * lunarFlybyRadius * 0.48,
-            end: moonDeparture,
-            count: lunarOutboundCount
-        )
-        var lunarLoopPoints: [SIMD3<Float>] = []
-        lunarLoopPoints.reserveCapacity(lunarInboundPoints.count + lunarOutboundPoints.count)
-        appendSegment(lunarInboundPoints, to: &lunarLoopPoints)
-        appendSegment(lunarOutboundPoints, to: &lunarLoopPoints)
-        let lunarLoopEnd = lunarLoopPoints.last ?? moonApproach
+        let lunarLoopEnd = lunarLoopPoints.last ?? lunarFlybyExit
         let returnPoints = cubicBezierPoints(
             start: lunarLoopEnd,
             controlA: lunarLoopEnd
-                + lunarDepartureTangent * outboundControlScale * 0.24,
+                + lunarFlybyExitTangent * lunarFlybyExitHandleScale,
             controlB: returnAnchor
                 + majorDirection * outboundControlScale * 0.38
                 - sideDirection * outboundControlScale * ArtemisRouteProfile.returnBranchLateralScale

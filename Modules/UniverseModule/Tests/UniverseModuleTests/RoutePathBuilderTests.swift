@@ -86,27 +86,10 @@ import Testing
     let route = try #require(RoutePathBuilder(sampleCount: 96).makeRoute(input: input))
     let firstPoint = try #require(route.points.first)
     let lastPoint = try #require(route.points.last)
-    let predictedMoon = try #require(RoutePathBuilder.predictedArtemisWaypointPosition(input: input))
-    let direction = normalize(predictedMoon - originPosition)
-    let sideDirection = artemisSideDirection(originPosition: originPosition,
-                                             waypointPosition: predictedMoon)
-    let lunarFlybyRadius = max(
-        waypointSurfaceRadius * ArtemisRouteProfile.lunarFlybyRadiusScale,
-        simd_distance(originPosition, predictedMoon) * ArtemisRouteProfile.lunarFlybyDistanceScale,
-        0.01
-    )
-    let lunarApproach = predictedMoon
-        - direction * lunarFlybyRadius * ArtemisFlybyTestProfile.approachMajorScale
-        - sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.approachLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * 0.04
-    let lunarHook = predictedMoon
-        + direction * lunarFlybyRadius * ArtemisFlybyTestProfile.hookMajorScale
-        + sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.hookLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * ArtemisFlybyTestProfile.tiltScale
-    let lunarDeparture = predictedMoon
-        - direction * lunarFlybyRadius * ArtemisFlybyTestProfile.exitMajorScale
-        + sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.exitLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * 0.08
+    let direction = normalize(waypointPosition - originPosition)
+    let flybyGeometry = artemisLunarFlybyGeometry(originPosition: originPosition,
+                                                 waypointPosition: waypointPosition,
+                                                 waypointSurfaceRadius: waypointSurfaceRadius)
 
     #expect(route.originName == "Earth")
     #expect(route.waypointName == "Moon")
@@ -116,36 +99,23 @@ import Testing
                  equals: originPosition + direction * originSurfaceRadius * 1.12)
     expectVector(lastPoint,
                  equals: originPosition + direction * originSurfaceRadius * 1.12)
-    #expect(route.points.contains { simd_distance($0, lunarApproach) < 0.0001 })
-    #expect(route.points.contains { simd_distance($0, lunarHook) < 0.0001 })
-    #expect(route.points.contains { simd_distance($0, lunarDeparture) < 0.0001 })
-    let departureIndex = try #require(route.points.firstIndex {
-        simd_distance($0, lunarDeparture) < 0.0001
-    })
-    let postDepartureIndex = try #require(route.points.indices.contains(departureIndex + 1)
-                                          ? departureIndex + 1
-                                          : nil)
-    #expect(simd_dot(route.points[postDepartureIndex] - route.points[departureIndex],
-                     direction) < 0)
-    let lunarLateralOffsets = route.points
-        .filter { simd_distance($0, predictedMoon) < lunarFlybyRadius * 3 }
-        .map { simd_dot($0 - predictedMoon, sideDirection) }
-    #expect((lunarLateralOffsets.max() ?? 0) >
-            lunarFlybyRadius * ArtemisFlybyTestProfile.exitLateralScale)
-    #expect((lunarLateralOffsets.min() ?? 0) <
-            -lunarFlybyRadius * ArtemisFlybyTestProfile.approachLateralScale * 0.5)
+    try expectArtemisLunarFlybyShape(route: route,
+                                     geometry: flybyGeometry,
+                                     center: waypointPosition,
+                                     surfaceRadius: waypointSurfaceRadius,
+                                     sampleCount: 96)
     #expect(route.totalDistance > simd_distance(originPosition, waypointPosition) * 2)
     #expect((route.points.map { abs($0.z) }.max() ?? 0) >
             simd_distance(originPosition, waypointPosition) * 0.08)
     #expect((route.points.map { abs($0.y) }.max() ?? 0) >
-            lunarFlybyRadius * 0.1)
+            flybyGeometry.radius * 0.1)
 
     for index in route.cumulativeDistances.indices.dropFirst() {
         #expect(route.cumulativeDistances[index] >= route.cumulativeDistances[index - 1])
     }
 }
 
-@Test func routeBuilderTargetsPredictedMoonPosition() throws {
+@Test func routeBuilderCentersArtemisLoopOnCurrentMoonPosition() throws {
     let originPosition = SIMD3<Float>(1, 0, 0)
     let simulationTime: Float = 10
     let planets = artemisTestPlanets(moonOrbitSpeed: 0.4)
@@ -178,9 +148,14 @@ import Testing
     let currentMoonMinimumDistance = route.points.map {
         simd_distance($0, currentMoonPosition)
     }.min() ?? .greatestFiniteMagnitude
+    let flybyGeometry = artemisLunarFlybyGeometry(originPosition: originPosition,
+                                                 waypointPosition: currentMoonPosition,
+                                                 waypointSurfaceRadius: waypointSurfaceRadius)
 
     #expect(simd_distance(predictedMoonPosition, currentMoonPosition) > 0.1)
-    #expect(predictedMoonMinimumDistance < currentMoonMinimumDistance)
+    #expect(currentMoonMinimumDistance < predictedMoonMinimumDistance)
+    #expect(currentMoonMinimumDistance > waypointSurfaceRadius * 1.05)
+    #expect(currentMoonMinimumDistance < flybyGeometry.radius)
     #expect(abs(route.overviewPaddingRadius - originSurfaceRadius * 1.2) < 0.0001)
 }
 
@@ -284,27 +259,6 @@ private func maximumTurnAngle(points: [SIMD3<Float>]) -> Float {
     }
 
     return maximumAngle
-}
-
-private enum ArtemisFlybyTestProfile {
-    static let approachMajorScale: Float = 1.08
-    static let approachLateralScale: Float = 0.45
-    static let hookMajorScale: Float = 0.55
-    static let hookLateralScale: Float = 0.95
-    static let exitMajorScale: Float = 0.78
-    static let exitLateralScale: Float = 0.55
-    static let tiltScale: Float = 0.16
-}
-
-private func artemisSideDirection(originPosition: SIMD3<Float>,
-                                  waypointPosition: SIMD3<Float>) -> SIMD3<Float> {
-    let majorVector = waypointPosition - originPosition
-    let horizontalMajor = SIMD3<Float>(majorVector.x, 0, majorVector.z)
-    guard simd_length_squared(horizontalMajor) > 0.000_001 else {
-        return SIMD3<Float>(0, 1, 0)
-    }
-
-    return normalize(SIMD3<Float>(-horizontalMajor.z, 0, horizontalMajor.x))
 }
 
 private func artemisTestPlanets(earthOrbitSpeed: Float = 0,

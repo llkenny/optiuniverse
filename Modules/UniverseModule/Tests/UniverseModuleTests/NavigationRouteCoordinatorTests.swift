@@ -119,39 +119,23 @@ import Testing
         routeProgress: playback.progress
     )
     let predictedMoonPosition = try #require(RoutePathBuilder.predictedArtemisWaypointPosition(input: input))
-    let direction = normalize(predictedMoonPosition - earthPosition)
-    let sideDirection = artemisSideDirection(originPosition: earthPosition,
-                                             waypointPosition: predictedMoonPosition)
-    let lunarFlybyRadius = max(
-        (refreshedSnapshot.surfaceRadius(ofPlanetNamed: "Moon") ?? 0)
-            * ArtemisRouteProfile.lunarFlybyRadiusScale,
-        simd_distance(earthPosition, predictedMoonPosition)
-            * ArtemisRouteProfile.lunarFlybyDistanceScale,
-        0.01
-    )
-    let lunarApproach = predictedMoonPosition
-        - direction * lunarFlybyRadius * ArtemisFlybyTestProfile.approachMajorScale
-        - sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.approachLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * 0.04
-    let lunarHook = predictedMoonPosition
-        + direction * lunarFlybyRadius * ArtemisFlybyTestProfile.hookMajorScale
-        + sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.hookLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * ArtemisFlybyTestProfile.tiltScale
-    let lunarDeparture = predictedMoonPosition
-        - direction * lunarFlybyRadius * ArtemisFlybyTestProfile.exitMajorScale
-        + sideDirection * lunarFlybyRadius * ArtemisFlybyTestProfile.exitLateralScale
-        + SIMD3<Float>(0, 1, 0) * lunarFlybyRadius * 0.08
+    let moonSurfaceRadius = refreshedSnapshot.surfaceRadius(ofPlanetNamed: "Moon") ?? 0
+    let flybyGeometry = artemisLunarFlybyGeometry(originPosition: earthPosition,
+                                                 waypointPosition: currentMoonPosition,
+                                                 waypointSurfaceRadius: moonSurfaceRadius)
+    let currentMoonMinimumDistance = route.points.map {
+        simd_distance($0, currentMoonPosition)
+    }.min() ?? .greatestFiniteMagnitude
+    let predictedMoonMinimumDistance = route.points.map {
+        simd_distance($0, predictedMoonPosition)
+    }.min() ?? .greatestFiniteMagnitude
 
-    #expect(route.points.contains { simd_distance($0, lunarApproach) < 0.0001 })
-    #expect(route.points.contains { simd_distance($0, lunarHook) < 0.0001 })
-    let departureIndex = try #require(route.points.firstIndex {
-        simd_distance($0, lunarDeparture) < 0.0001
-    })
-    let postDepartureIndex = try #require(route.points.indices.contains(departureIndex + 1)
-                                          ? departureIndex + 1
-                                          : nil)
-    #expect(simd_dot(route.points[postDepartureIndex] - route.points[departureIndex],
-                     direction) < 0)
+    #expect(currentMoonMinimumDistance < predictedMoonMinimumDistance)
+    try expectArtemisLunarFlybyShape(route: route,
+                                     geometry: flybyGeometry,
+                                     center: currentMoonPosition,
+                                     surfaceRadius: moonSurfaceRadius,
+                                     sampleCount: 96)
     let routeEnd = try #require(route.points.last)
     let predictedDestination = try #require(RoutePathBuilder.predictedArtemisDestinationPosition(input: input))
     #expect(simd_distance(predictedDestination, earthPosition) > 0.1)
@@ -176,27 +160,6 @@ private func makeTestNavigationRoute(transferOrbit: HohmannTransferOrbit,
                            cumulativeDistances: cumulativeDistances,
                            totalDistance: totalDistance,
                            estimatedDuration: 12)
-}
-
-private func artemisSideDirection(originPosition: SIMD3<Float>,
-                                  waypointPosition: SIMD3<Float>) -> SIMD3<Float> {
-    let majorVector = waypointPosition - originPosition
-    let horizontalMajor = SIMD3<Float>(majorVector.x, 0, majorVector.z)
-    guard simd_length_squared(horizontalMajor) > 0.000_001 else {
-        return SIMD3<Float>(0, 1, 0)
-    }
-
-    return normalize(SIMD3<Float>(-horizontalMajor.z, 0, horizontalMajor.x))
-}
-
-private enum ArtemisFlybyTestProfile {
-    static let approachMajorScale: Float = 1.08
-    static let approachLateralScale: Float = 0.45
-    static let hookMajorScale: Float = 0.55
-    static let hookLateralScale: Float = 0.95
-    static let exitMajorScale: Float = 0.78
-    static let exitLateralScale: Float = 0.55
-    static let tiltScale: Float = 0.16
 }
 
 private struct StaticNavigationRouteBuilder: RouteBuilding {
