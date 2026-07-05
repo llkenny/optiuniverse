@@ -181,7 +181,9 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
     func replacingPath(points: [SIMD3<Float>],
                        cumulativeDistances: [Float],
-                       totalDistance: Float) -> NavigationRoute {
+                       totalDistance: Float,
+                       overviewPaddingRadius: Float? = nil,
+                       overviewCenter: SIMD3<Float>? = nil) -> NavigationRoute {
         NavigationRoute(id: id,
                         originName: originName,
                         waypointName: waypointName,
@@ -190,8 +192,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         cumulativeDistances: cumulativeDistances,
                         totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration,
-                        overviewPaddingRadius: overviewPaddingRadius,
-                        overviewCenter: overviewCenter)
+                        overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
+                        overviewCenter: overviewCenter ?? self.overviewCenter)
     }
 }
 

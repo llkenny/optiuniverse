@@ -69,7 +69,9 @@ final class NavigationRouteCoordinator {
                 sunPosition: sunPosition,
                 destinationPosition: destinationPosition,
                 estimatedDuration: estimatedDuration(originName: originName,
-                                                     destinationName: destinationName)
+                                                     destinationName: destinationName),
+                simulationTime: snapshot.simulationTime,
+                routeProgress: 0
               )) else {
             self.route = nil
             playback.cancel()
@@ -124,6 +126,48 @@ final class NavigationRouteCoordinator {
         self.route = route.replacingPath(points: routePoints,
                                          cumulativeDistances: cumulativeDistances,
                                          totalDistance: totalDistance)
+    }
+
+    func refreshArtemisRoute(planets: [Planet],
+                             snapshot: UniverseSceneSnapshot) {
+        guard let route,
+              ArtemisRouteProfile.isArtemisRoute(route),
+              state == .running || state == .paused || state == .completed,
+              let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
+              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
+              let originPosition = snapshot.worldPosition(ofPlanetNamed: route.originName),
+              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName),
+              let refreshedRoute = routeBuilder.makeRoute(input: RouteBuildInput(
+                originName: route.originName,
+                waypointName: route.waypointName,
+                destinationName: route.destinationName,
+                planets: planets,
+                originPosition: originPosition,
+                waypointPosition: route.waypointName.flatMap {
+                    snapshot.worldPosition(ofPlanetNamed: $0)
+                },
+                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: route.originName) ?? 0,
+                waypointSurfaceRadius: route.waypointName.flatMap {
+                    snapshot.surfaceRadius(ofPlanetNamed: $0)
+                } ?? 0,
+                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: route.destinationName) ?? 0,
+                earthSunDirection: earthPosition - sunPosition,
+                sunPosition: sunPosition,
+                destinationPosition: destinationPosition,
+                estimatedDuration: route.estimatedDuration,
+                simulationTime: snapshot.simulationTime,
+                routeProgress: renderProgress
+              )) else {
+            return
+        }
+
+        self.route = route.replacingPath(
+            points: refreshedRoute.points,
+            cumulativeDistances: refreshedRoute.cumulativeDistances,
+            totalDistance: refreshedRoute.totalDistance,
+            overviewPaddingRadius: refreshedRoute.overviewPaddingRadius,
+            overviewCenter: refreshedRoute.overviewCenter
+        )
     }
 
     private func currentDestinationArcSampleCount(route: NavigationRoute,

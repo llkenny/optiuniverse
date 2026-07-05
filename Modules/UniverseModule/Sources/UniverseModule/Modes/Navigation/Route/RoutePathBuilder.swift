@@ -27,6 +27,8 @@ struct RouteBuildInput {
     let sunPosition: SIMD3<Float>
     let destinationPosition: SIMD3<Float>?
     let estimatedDuration: TimeInterval
+    let simulationTime: Float
+    let routeProgress: Float
 
     init(originName: String = "Earth",
          waypointName: String? = nil,
@@ -40,7 +42,9 @@ struct RouteBuildInput {
          earthSunDirection: SIMD3<Float>,
          sunPosition: SIMD3<Float>,
          destinationPosition: SIMD3<Float>?,
-         estimatedDuration: TimeInterval) {
+         estimatedDuration: TimeInterval,
+         simulationTime: Float = 0,
+         routeProgress: Float = 0) {
         self.originName = originName
         self.waypointName = waypointName
         self.destinationName = destinationName
@@ -54,6 +58,8 @@ struct RouteBuildInput {
         self.sunPosition = sunPosition
         self.destinationPosition = destinationPosition
         self.estimatedDuration = estimatedDuration
+        self.simulationTime = simulationTime
+        self.routeProgress = routeProgress
     }
 }
 
@@ -77,6 +83,7 @@ protocol RouteBuilding {
 /// - Depends on `HohmannTransferOrbit` for transfer-orbit geometry but does not own transfer preview
 ///   state or render state.
 /// - Returns immutable `NavigationRoute` values to `NavigationRouteCoordinator`.
+// swiftlint:disable:next type_body_length
 struct RoutePathBuilder: RouteBuilding {
     private let sampleCount: Int
 
@@ -130,8 +137,11 @@ struct RoutePathBuilder: RouteBuilding {
             return nil
         }
 
+        let predictedWaypointPosition = Self.predictedArtemisWaypointPosition(input: input)
+            ?? waypointPosition
         let routePoints = Self.makeCislunarLoopPoints(originPosition: originPosition,
-                                                      waypointPosition: waypointPosition,
+                                                      waypointPosition: predictedWaypointPosition,
+                                                      destinationPosition: destinationPosition,
                                                       originSurfaceRadius: input.originSurfaceRadius,
                                                       waypointSurfaceRadius: input.waypointSurfaceRadius,
                                                       destinationSurfaceRadius: input.destinationSurfaceRadius,
@@ -156,7 +166,8 @@ struct RoutePathBuilder: RouteBuilding {
                                ),
                                overviewCenter: Self.cislunarLoopOverviewCenter(
                                 originPosition: originPosition,
-                                waypointPosition: waypointPosition
+                                waypointPosition: predictedWaypointPosition,
+                                destinationPosition: destinationPosition
                                ))
     }
 
@@ -198,59 +209,179 @@ struct RoutePathBuilder: RouteBuilding {
         return transferOrbit.points + orbitPoints
     }
 
+    // swiftlint:disable:next function_body_length
     static func makeCislunarLoopPoints(originPosition: SIMD3<Float>,
                                        waypointPosition: SIMD3<Float>,
+                                       destinationPosition: SIMD3<Float>? = nil,
                                        originSurfaceRadius: Float = 0,
                                        waypointSurfaceRadius: Float = 0,
                                        destinationSurfaceRadius: Float = 0,
                                        sampleCount: Int = 192) -> [SIMD3<Float>] {
-        let minimumCount = max(sampleCount, 3)
-        let count = minimumCount.isMultiple(of: 2) ? minimumCount + 1 : minimumCount
-        let majorVector = (waypointPosition - originPosition) * 0.5
         let fullMajorVector = waypointPosition - originPosition
         let fullMajorDistance = simd_length(fullMajorVector)
         let majorDirection = fullMajorDistance > 0.000_001
             ? fullMajorVector / fullMajorDistance
             : SIMD3<Float>(1, 0, 0)
-        let center = originPosition + majorVector
-        let majorDistance = simd_length(majorVector)
-        let minorDistance = max(majorDistance * 0.55, 0.03)
-        let minorVector = makeCislunarMinorAxis(majorVector: majorVector,
-                                                length: minorDistance)
+        let sideDirection = normalizeOrFallback(
+            makeCislunarMinorAxis(majorVector: fullMajorVector, length: 1),
+            fallback: SIMD3<Float>(0, 0, 1)
+        )
+        let sceneUp = SIMD3<Float>(0, 1, 0)
+        let returnPosition = destinationPosition ?? originPosition
         let originClearance = ArtemisRouteProfile.anchorClearance(
             radius: originSurfaceRadius,
-            maximumDistance: fullMajorDistance
-        )
-        let waypointClearance = ArtemisRouteProfile.anchorClearance(
-            radius: waypointSurfaceRadius,
             maximumDistance: fullMajorDistance
         )
         let destinationClearance = ArtemisRouteProfile.anchorClearance(
             radius: destinationSurfaceRadius,
             maximumDistance: fullMajorDistance
         )
+        let earthLoopRadius = max(originSurfaceRadius * ArtemisRouteProfile.earthLoopRadiusScale,
+                                  fullMajorDistance * ArtemisRouteProfile.earthLoopDistanceScale,
+                                  0.03)
+        let lunarFlybyRadius = max(
+            waypointSurfaceRadius * ArtemisRouteProfile.lunarFlybyRadiusScale,
+            fullMajorDistance * ArtemisRouteProfile.lunarFlybyDistanceScale,
+            0.01
+        )
         let launchAnchor = originPosition + majorDirection * originClearance
-        let moonFlybyAnchor = waypointPosition - majorDirection * waypointClearance
-        let returnAnchor = originPosition - majorDirection * destinationClearance
-        let outboundControl = center + minorVector
-        let returnControl = center - minorVector
-        let halfIndex = count / 2
+        let earthLoopStart = originPosition + majorDirection * earthLoopRadius
+        let earthLoopEndAngle: Float = -1.35 * .pi
+        let earthLoopAxisA = majorDirection * earthLoopRadius
+        let earthLoopAxisB = sideDirection * earthLoopRadius * 0.58
+        let earthLoopExit = originPosition
+            + earthLoopAxisA * cos(earthLoopEndAngle)
+            + earthLoopAxisB * sin(earthLoopEndAngle)
+        let earthLoopExitTangent = normalizeOrFallback(
+            earthLoopEndAngle * (
+                -earthLoopAxisA * sin(earthLoopEndAngle)
+                + earthLoopAxisB * cos(earthLoopEndAngle)
+            ),
+            fallback: majorDirection
+        )
+        let moonApproach = waypointPosition
+            - majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyApproachMajorScale
+            - sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyApproachLateralScale
+            + sceneUp * lunarFlybyRadius * 0.04
+        let lunarHook = waypointPosition
+            + majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyHookMajorScale
+            + sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyHookLateralScale
+            + sceneUp * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyTiltScale
+        let returnDirection = normalizeOrFallback(returnPosition - waypointPosition,
+                                                  fallback: -majorDirection)
+        let moonDeparture = waypointPosition
+            - majorDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyExitMajorScale
+            + sideDirection * lunarFlybyRadius * ArtemisRouteProfile.lunarFlybyExitLateralScale
+            + sceneUp * lunarFlybyRadius * 0.08
+        let lunarEntryTangent = normalizeOrFallback(lunarHook - moonApproach,
+                                                    fallback: majorDirection)
+        let lunarHookTangent = normalizeOrFallback(moonDeparture - moonApproach,
+                                                   fallback: sideDirection)
+        let lunarDepartureTangent = normalizeOrFallback(moonDeparture - lunarHook,
+                                                        fallback: -majorDirection)
+        let returnAnchor = returnPosition - returnDirection * destinationClearance
+        let minimumCount = max(sampleCount, 48)
+        let earthLoopCount = max(10, Int(Float(minimumCount) * ArtemisRouteProfile.earthLoopSampleRatio))
+        let outboundCount = max(16, Int(Float(minimumCount) * ArtemisRouteProfile.outboundSampleRatio))
+        let lunarLoopCount = max(12, Int(Float(minimumCount) * ArtemisRouteProfile.lunarFlybySampleRatio))
+        let lunarInboundCount = max(6, lunarLoopCount / 2)
+        let lunarOutboundCount = max(6, lunarLoopCount - lunarInboundCount + 1)
+        let launchCount = max(5, Int(Float(minimumCount) * 0.08))
+        let returnCount = max(16, minimumCount - launchCount - earthLoopCount - outboundCount - lunarLoopCount)
+        let outboundControlScale = max(fullMajorDistance, 0.1)
 
-        return (0..<count).map { index in
-            if index <= halfIndex {
-                let progress = Float(index) / Float(max(halfIndex, 1))
-                return quadraticBezier(start: launchAnchor,
-                                       control: outboundControl,
-                                       end: moonFlybyAnchor,
-                                       progress: progress)
-            }
+        let launchPoints = quadraticBezierPoints(
+            start: launchAnchor,
+            control: earthLoopStart
+                + sideDirection * earthLoopRadius * 0.38,
+            end: earthLoopStart,
+            count: launchCount
+        )
+        let earthLoopPoints = ellipticalArcPoints(
+            center: originPosition,
+            axisA: earthLoopAxisA,
+            axisB: earthLoopAxisB,
+            startAngle: 0,
+            endAngle: earthLoopEndAngle,
+            count: earthLoopCount
+        )
+        let earthLoopEnd = earthLoopPoints.last ?? earthLoopExit
+        let outboundPoints = cubicBezierPoints(
+            start: earthLoopEnd,
+            controlA: earthLoopEnd
+                + earthLoopExitTangent * outboundControlScale * 0.22,
+            controlB: moonApproach
+                - lunarEntryTangent * outboundControlScale * 0.18,
+            end: moonApproach,
+            count: outboundCount
+        )
+        let lunarInboundPoints = cubicBezierPoints(
+            start: moonApproach,
+            controlA: moonApproach
+                + lunarEntryTangent * lunarFlybyRadius * 0.48,
+            controlB: lunarHook
+                - lunarHookTangent * lunarFlybyRadius * 0.52,
+            end: lunarHook,
+            count: lunarInboundCount
+        )
+        let lunarOutboundPoints = cubicBezierPoints(
+            start: lunarHook,
+            controlA: lunarHook
+                + lunarHookTangent * lunarFlybyRadius * 0.52,
+            controlB: moonDeparture
+                - lunarDepartureTangent * lunarFlybyRadius * 0.48,
+            end: moonDeparture,
+            count: lunarOutboundCount
+        )
+        var lunarLoopPoints: [SIMD3<Float>] = []
+        lunarLoopPoints.reserveCapacity(lunarInboundPoints.count + lunarOutboundPoints.count)
+        appendSegment(lunarInboundPoints, to: &lunarLoopPoints)
+        appendSegment(lunarOutboundPoints, to: &lunarLoopPoints)
+        let lunarLoopEnd = lunarLoopPoints.last ?? moonApproach
+        let returnPoints = cubicBezierPoints(
+            start: lunarLoopEnd,
+            controlA: lunarLoopEnd
+                + lunarDepartureTangent * outboundControlScale * 0.24,
+            controlB: returnAnchor
+                + majorDirection * outboundControlScale * 0.38
+                - sideDirection * outboundControlScale * ArtemisRouteProfile.returnBranchLateralScale
+                + sceneUp * outboundControlScale * 0.015,
+            end: returnAnchor,
+            count: returnCount
+        )
 
-            let progress = Float(index - halfIndex) / Float(max(count - 1 - halfIndex, 1))
-            return quadraticBezier(start: moonFlybyAnchor,
-                                   control: returnControl,
-                                   end: returnAnchor,
-                                   progress: progress)
+        var points: [SIMD3<Float>] = []
+        points.reserveCapacity(launchPoints.count + earthLoopPoints.count + outboundPoints.count
+                               + lunarLoopPoints.count + returnPoints.count)
+        appendSegment(launchPoints, to: &points)
+        appendSegment(earthLoopPoints, to: &points)
+        appendSegment(outboundPoints, to: &points)
+        appendSegment(lunarLoopPoints, to: &points)
+        appendSegment(returnPoints, to: &points)
+        return points
+    }
+
+    static func predictedArtemisWaypointPosition(input: RouteBuildInput) -> SIMD3<Float>? {
+        guard let waypointName = input.waypointName else {
+            return nil
         }
+
+        return predictedWorldPosition(
+            ofPlanetNamed: waypointName,
+            planets: input.planets,
+            simulationTime: predictionSimulationTime(
+                targetProgress: ArtemisRouteProfile.lunarEncounterProgress,
+                input: input
+            )
+        )
+    }
+
+    static func predictedArtemisDestinationPosition(input: RouteBuildInput) -> SIMD3<Float>? {
+        predictedWorldPosition(
+            ofPlanetNamed: input.destinationName,
+            planets: input.planets,
+            simulationTime: predictionSimulationTime(targetProgress: 1, input: input)
+        )
     }
 
     static func makeCumulativeDistances(points: [SIMD3<Float>]) -> [Float] {
@@ -271,8 +402,9 @@ struct RoutePathBuilder: RouteBuilding {
     }
 
     private static func cislunarLoopOverviewCenter(originPosition: SIMD3<Float>,
-                                                   waypointPosition: SIMD3<Float>) -> SIMD3<Float> {
-        originPosition + (waypointPosition - originPosition) * 0.5
+                                                   waypointPosition: SIMD3<Float>,
+                                                   destinationPosition: SIMD3<Float>) -> SIMD3<Float> {
+        (originPosition + waypointPosition + destinationPosition) / 3
     }
 
     private static func makeCislunarMinorAxis(majorVector: SIMD3<Float>,
@@ -302,6 +434,114 @@ struct RoutePathBuilder: RouteBuilding {
         let controlWeight = 2 * inverseProgress * clampedProgress
         let endWeight = clampedProgress * clampedProgress
         return startWeight * start + controlWeight * control + endWeight * end
+    }
+
+    private static func cubicBezier(start: SIMD3<Float>,
+                                    controlA: SIMD3<Float>,
+                                    controlB: SIMD3<Float>,
+                                    end: SIMD3<Float>,
+                                    progress: Float) -> SIMD3<Float> {
+        let clampedProgress = simd_clamp(progress, 0, 1)
+        let inverseProgress = 1 - clampedProgress
+        return inverseProgress * inverseProgress * inverseProgress * start
+            + 3 * inverseProgress * inverseProgress * clampedProgress * controlA
+            + 3 * inverseProgress * clampedProgress * clampedProgress * controlB
+            + clampedProgress * clampedProgress * clampedProgress * end
+    }
+
+    private static func quadraticBezierPoints(start: SIMD3<Float>,
+                                              control: SIMD3<Float>,
+                                              end: SIMD3<Float>,
+                                              count: Int) -> [SIMD3<Float>] {
+        sampledPoints(count: count) { progress in
+            quadraticBezier(start: start,
+                            control: control,
+                            end: end,
+                            progress: progress)
+        }
+    }
+
+    private static func cubicBezierPoints(start: SIMD3<Float>,
+                                          controlA: SIMD3<Float>,
+                                          controlB: SIMD3<Float>,
+                                          end: SIMD3<Float>,
+                                          count: Int) -> [SIMD3<Float>] {
+        sampledPoints(count: count) { progress in
+            cubicBezier(start: start,
+                        controlA: controlA,
+                        controlB: controlB,
+                        end: end,
+                        progress: progress)
+        }
+    }
+
+    private static func ellipticalArcPoints(center: SIMD3<Float>,
+                                            axisA: SIMD3<Float>,
+                                            axisB: SIMD3<Float>,
+                                            startAngle: Float,
+                                            endAngle: Float,
+                                            count: Int) -> [SIMD3<Float>] {
+        sampledPoints(count: count) { progress in
+            let angle = startAngle + (endAngle - startAngle) * progress
+            return center + axisA * cos(angle) + axisB * sin(angle)
+        }
+    }
+
+    private static func sampledPoints(count: Int,
+                                      point: (Float) -> SIMD3<Float>) -> [SIMD3<Float>] {
+        let resolvedCount = max(count, 2)
+        return (0..<resolvedCount).map { index in
+            point(Float(index) / Float(resolvedCount - 1))
+        }
+    }
+
+    private static func appendSegment(_ segment: [SIMD3<Float>],
+                                      to points: inout [SIMD3<Float>]) {
+        guard !segment.isEmpty else { return }
+        if points.isEmpty {
+            points.append(contentsOf: segment)
+        } else {
+            points.append(contentsOf: segment.dropFirst())
+        }
+    }
+
+    private static func predictionSimulationTime(targetProgress: Float,
+                                                 input: RouteBuildInput) -> Float {
+        let remainingProgress = max(simd_clamp(targetProgress, 0, 1)
+                                    - simd_clamp(input.routeProgress, 0, 1), 0)
+        return input.simulationTime + Float(input.estimatedDuration) * remainingProgress
+    }
+
+    private static func predictedWorldPosition(ofPlanetNamed planetName: String,
+                                               planets: [Planet],
+                                               simulationTime: Float) -> SIMD3<Float>? {
+        var worldPositionsByName: [String: SIMD3<Float>] = [:]
+        for planet in planets {
+            let parentWorldPosition = planet.parentName.flatMap {
+                worldPositionsByName[$0]
+            }
+            let orbitTransformMatrix = planet.orbitTransformMatrix(
+                at: simulationTime,
+                parentWorldPosition: parentWorldPosition
+            )
+            let worldPosition4 = orbitTransformMatrix * SIMD4<Float>(0, 0, 0, 1)
+            let worldPosition = SIMD3<Float>(worldPosition4.x,
+                                             worldPosition4.y,
+                                             worldPosition4.z)
+            worldPositionsByName[planet.name] = worldPosition
+        }
+
+        return worldPositionsByName[planetName]
+    }
+
+    private static func normalizeOrFallback(_ vector: SIMD3<Float>,
+                                            fallback: SIMD3<Float>) -> SIMD3<Float> {
+        let epsilon: Float = 0.000_001
+        guard simd_length_squared(vector) > epsilon else {
+            return fallback
+        }
+
+        return normalize(vector)
     }
 
     private static func positiveAngle(from source: SIMD3<Float>,

@@ -88,6 +88,10 @@ final class NavigationController {
             pendingNavigationRequest = nil
         }
 
+        if let snapshot {
+            navigationRouteCoordinator.refreshArtemisRoute(planets: planets,
+                                                           snapshot: snapshot)
+        }
         navigationRouteCoordinator.update()
     }
 

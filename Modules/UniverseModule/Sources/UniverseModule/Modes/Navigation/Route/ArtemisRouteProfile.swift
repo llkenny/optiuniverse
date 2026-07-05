@@ -14,6 +14,22 @@ enum ArtemisRouteProfile {
     static let maximumOpeningPhaseEnd: Float = 0.2
     static let bodyAnchorClearanceScale: Float = 1.12
     static let overviewPaddingScale: Float = 1.2
+    static let lunarEncounterProgress: Float = 0.58
+    static let earthLoopDistanceScale: Float = 0.1
+    static let earthLoopRadiusScale: Float = 5.5
+    static let lunarFlybyDistanceScale: Float = 0.055
+    static let lunarFlybyRadiusScale: Float = 5.5
+    static let lunarFlybyApproachMajorScale: Float = 1.08
+    static let lunarFlybyApproachLateralScale: Float = 0.45
+    static let lunarFlybyHookMajorScale: Float = 0.55
+    static let lunarFlybyHookLateralScale: Float = 0.95
+    static let lunarFlybyExitMajorScale: Float = 0.78
+    static let lunarFlybyExitLateralScale: Float = 0.55
+    static let lunarFlybyTiltScale: Float = 0.16
+    static let returnBranchLateralScale: Float = 0.18
+    static let earthLoopSampleRatio: Float = 0.14
+    static let outboundSampleRatio: Float = 0.4
+    static let lunarFlybySampleRatio: Float = 0.18
 
     static func isArtemisRoute(originName: String,
                                waypointName: String?,
