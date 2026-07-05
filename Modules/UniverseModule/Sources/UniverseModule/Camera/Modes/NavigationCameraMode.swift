@@ -64,6 +64,16 @@ final class NavigationCameraMode {
         }
 
         if progress < arrivalPhaseStart {
+            if let flybyFrame = makeArtemisFlybyFrame(
+                route: route,
+                progress: progress,
+                snapshot: snapshot,
+                viewportSize: viewportSize,
+                overviewDistance: departureContext.overviewDistance
+            ) {
+                return makeCameraTransaction(frame: flybyFrame)
+            }
+
             return makeCameraTransaction(
                 frame: makeOverviewFrame(center: route.overviewCenter,
                                          distance: departureContext.overviewDistance)
@@ -197,6 +207,67 @@ final class NavigationCameraMode {
                                orientation: OverviewCameraFraming.orientation)
     }
 
+    private func makeArtemisFlybyFrame(route: NavigationRoute,
+                                       progress: Float,
+                                       snapshot: UniverseSceneSnapshot?,
+                                       viewportSize: CGSize,
+                                       overviewDistance: Float) -> CameraTransition.Frame? {
+        guard isArtemisRoute(route),
+              let waypointName = route.waypointName else {
+            return nil
+        }
+
+        let closeUpProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: progress)
+        guard closeUpProgress > 0 else {
+            return nil
+        }
+
+        let waypoint = snapshot?.worldPosition(ofPlanetNamed: waypointName)
+            ?? route.point(at: ArtemisRouteProfile.lunarEncounterProgress)
+        guard let waypoint else {
+            return nil
+        }
+
+        let waypointRadius = snapshot?.framingRadius(ofPlanetNamed: waypointName) ?? 0
+        let markerLookAheadDistance = max(waypointRadius * 2.4,
+                                          route.totalDistance * 0.015)
+        let markerPoint = route.lookAheadPoint(at: progress,
+                                               distance: markerLookAheadDistance)
+            ?? route.point(at: progress)
+            ?? waypoint
+        let closeUpTarget = interpolate(from: waypoint,
+                                        to: markerPoint,
+                                        progress: ArtemisRouteProfile.lunarFlybyMarkerBlend)
+        let closeUpDistance = lunarFlybyCloseUpDistance(waypointRadius: waypointRadius,
+                                                        overviewDistance: overviewDistance,
+                                                        viewportSize: viewportSize)
+
+        return CameraTransition.Frame(
+            target: interpolate(from: route.overviewCenter,
+                                to: closeUpTarget,
+                                progress: closeUpProgress),
+            distance: interpolate(from: overviewDistance,
+                                  to: closeUpDistance,
+                                  progress: closeUpProgress),
+            orientation: OverviewCameraFraming.orientation
+        )
+    }
+
+    private func lunarFlybyCloseUpDistance(waypointRadius: Float,
+                                           overviewDistance: Float,
+                                           viewportSize: CGSize) -> Float {
+        guard waypointRadius > 0 else {
+            return overviewDistance * ArtemisRouteProfile.lunarFlybyCloseUpDistanceMultiplier
+        }
+
+        let fittedDistance = CameraFit.distanceToFit(radius: waypointRadius,
+                                                     currentDistance: overviewDistance,
+                                                     viewportSize: viewportSize)
+        let minimumDistance = CameraFit.minimumDistanceOutsideBody(radius: waypointRadius)
+        return max(fittedDistance * ArtemisRouteProfile.lunarFlybyCloseUpDistanceMultiplier,
+                   minimumDistance)
+    }
+
     private func makeArrivalFrame(progress: Float,
                                   overviewCenter: SIMD3<Float>,
                                   overviewDistance: Float,
@@ -248,9 +319,33 @@ final class NavigationCameraMode {
     func minimumCameraDistance(state: NavigationRouteRenderState,
                                snapshot: UniverseSceneSnapshot?,
                                baseMinimumDistance: Float) -> Float? {
+        if let flybyMinimumDistance = lunarFlybyMinimumCameraDistance(
+            state: state,
+            snapshot: snapshot,
+            baseMinimumDistance: baseMinimumDistance
+        ) {
+            return flybyMinimumDistance
+        }
+
         guard let route = state.route,
               simd_clamp(state.progress, 0, 1) >= arrivalPhaseStart,
               let framingRadius = snapshot?.framingRadius(ofPlanetNamed: route.destinationName) else {
+            return nil
+        }
+
+        return CameraFit.minimumDistanceOutsideBody(radius: framingRadius,
+                                                    baseMinimumDistance: baseMinimumDistance)
+    }
+
+    private func lunarFlybyMinimumCameraDistance(state: NavigationRouteRenderState,
+                                                 snapshot: UniverseSceneSnapshot?,
+                                                 baseMinimumDistance: Float) -> Float? {
+        guard state.isCameraAutoFramingEnabled,
+              let route = state.route,
+              isArtemisRoute(route),
+              let waypointName = route.waypointName,
+              ArtemisRouteProfile.isLunarFlybyCloseUpActive(routeProgress: simd_clamp(state.progress, 0, 1)),
+              let framingRadius = snapshot?.framingRadius(ofPlanetNamed: waypointName) else {
             return nil
         }
 

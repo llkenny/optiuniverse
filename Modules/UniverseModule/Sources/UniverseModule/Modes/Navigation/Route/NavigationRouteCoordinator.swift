@@ -225,7 +225,7 @@ final class NavigationRouteCoordinator {
     var renderProgress: Float {
         switch state {
         case .running, .paused, .completed:
-            return playback.progress
+            return routeProgress(linearProgress: playback.progress)
         case .idle, .preparing, .cancelled:
             return 0
         }
@@ -250,6 +250,18 @@ final class NavigationRouteCoordinator {
         }
 
         return 12
+    }
+
+    private func routeProgress(linearProgress: Float) -> Float {
+        guard let route,
+              ArtemisRouteProfile.isArtemisRoute(route) else {
+            return linearProgress
+        }
+
+        return ArtemisRouteProfile.routeProgress(
+            linearProgress: linearProgress,
+            estimatedDuration: route.estimatedDuration
+        )
     }
 
     var activeRouteForRendering: NavigationRoute? {
@@ -282,7 +294,7 @@ final class NavigationRouteCoordinator {
                                            estimatedDuration: 0)
         }
 
-        let progress = state == .completed ? 1 : playback.progress
+        let progress = state == .completed ? 1 : renderProgress
         let elapsedTime = state == .completed ? route.estimatedDuration : playback.elapsedTime
         let remainingTime = max(route.estimatedDuration - elapsedTime, 0)
 

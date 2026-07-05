@@ -15,6 +15,12 @@ enum ArtemisRouteProfile {
     static let bodyAnchorClearanceScale: Float = 1.12
     static let overviewPaddingScale: Float = 1.2
     static let lunarEncounterProgress: Float = 0.58
+    static let lunarFlybyCloseUpStartProgress: Float = 0.48
+    static let lunarFlybyCloseUpPeakProgress: Float = lunarEncounterProgress
+    static let lunarFlybyCloseUpEndProgress: Float = 0.7
+    static let lunarFlybyMarkerBlend: Float = 0.38
+    static let lunarFlybyCloseUpDistanceMultiplier: Float = 0.68
+    static let minimumLunarFlybyCloseUpDuration: TimeInterval = 10
     static let earthLoopDistanceScale: Float = 0.1
     static let earthLoopRadiusScale: Float = 5.5
     static let lunarFlybyDistanceScale: Float = 0.055
@@ -61,6 +67,66 @@ enum ArtemisRouteProfile {
         return easeInOutCubic(routeProgress / phaseEnd)
     }
 
+    static func lunarFlybyCloseUpProgress(routeProgress: Float) -> Float {
+        guard routeProgress >= lunarFlybyCloseUpStartProgress,
+              routeProgress <= lunarFlybyCloseUpEndProgress else {
+            return 0
+        }
+
+        if routeProgress <= lunarFlybyCloseUpPeakProgress {
+            let inboundDuration = max(lunarFlybyCloseUpPeakProgress - lunarFlybyCloseUpStartProgress,
+                                      .leastNonzeroMagnitude)
+            return easeInOutCubic((routeProgress - lunarFlybyCloseUpStartProgress) / inboundDuration)
+        }
+
+        let outboundDuration = max(lunarFlybyCloseUpEndProgress - lunarFlybyCloseUpPeakProgress,
+                                   .leastNonzeroMagnitude)
+        return 1 - easeInOutCubic((routeProgress - lunarFlybyCloseUpPeakProgress) / outboundDuration)
+    }
+
+    static func isLunarFlybyCloseUpActive(routeProgress: Float) -> Bool {
+        lunarFlybyCloseUpProgress(routeProgress: routeProgress) > 0
+    }
+
+    static func routeProgress(linearProgress: Float,
+                              estimatedDuration: TimeInterval) -> Float {
+        let clampedProgress = simd_clamp(linearProgress, 0, 1)
+        guard estimatedDuration > minimumLunarFlybyCloseUpDuration else {
+            return clampedProgress
+        }
+
+        let closeUpStart = lunarFlybyCloseUpStartProgress
+        let closeUpEnd = lunarFlybyCloseUpEndProgress
+        let routeCloseUpWindow = closeUpEnd - closeUpStart
+        let timeCloseUpWindow = simd_clamp(
+            max(routeCloseUpWindow, Float(minimumLunarFlybyCloseUpDuration / estimatedDuration)),
+            routeCloseUpWindow,
+            1
+        )
+        let timeCloseUpCenter = (closeUpStart + closeUpEnd) * 0.5
+        let timeCloseUpStart = simd_clamp(timeCloseUpCenter - timeCloseUpWindow * 0.5,
+                                          0,
+                                          1 - timeCloseUpWindow)
+        let timeCloseUpEnd = timeCloseUpStart + timeCloseUpWindow
+
+        if clampedProgress < timeCloseUpStart {
+            return interpolate(from: 0,
+                               to: closeUpStart,
+                               progress: clampedProgress / max(timeCloseUpStart, .leastNonzeroMagnitude))
+        }
+
+        if clampedProgress <= timeCloseUpEnd {
+            return interpolate(from: closeUpStart,
+                               to: closeUpEnd,
+                               progress: (clampedProgress - timeCloseUpStart) / timeCloseUpWindow)
+        }
+
+        return interpolate(from: closeUpEnd,
+                           to: 1,
+                           progress: (clampedProgress - timeCloseUpEnd)
+                            / max(1 - timeCloseUpEnd, .leastNonzeroMagnitude))
+    }
+
     static func anchorClearance(radius: Float,
                                 maximumDistance: Float) -> Float {
         guard radius.isFinite,
@@ -88,5 +154,11 @@ enum ArtemisRouteProfile {
 
         let inverseProgress = -2 * clampedValue + 2
         return 1 - (inverseProgress * inverseProgress * inverseProgress) / 2
+    }
+
+    private static func interpolate(from start: Float,
+                                    to end: Float,
+                                    progress: Float) -> Float {
+        start + (end - start) * simd_clamp(progress, 0, 1)
     }
 }
