@@ -16,10 +16,9 @@ enum ArtemisRouteProfile {
     static let overviewPaddingScale: Float = 1.2
     static let lunarEncounterProgress: Float = 0.58
     static let lunarFlybyCloseUpStartProgress: Float = 0.48
-    static let lunarFlybyCloseUpPeakProgress: Float = lunarEncounterProgress
+    static let lunarFlybyCloseUpFullStartProgress: Float = 0.52
+    static let lunarFlybyCloseUpFullEndProgress: Float = 0.66
     static let lunarFlybyCloseUpEndProgress: Float = 0.7
-    static let lunarFlybyMarkerBlend: Float = 0.38
-    static let lunarFlybyCloseUpDistanceMultiplier: Float = 0.68
     static let minimumLunarFlybyCloseUpDuration: TimeInterval = 10
     static let earthLoopDistanceScale: Float = 0.1
     static let earthLoopRadiusScale: Float = 5.5
@@ -67,15 +66,19 @@ enum ArtemisRouteProfile {
             return 0
         }
 
-        if routeProgress <= lunarFlybyCloseUpPeakProgress {
-            let inboundDuration = max(lunarFlybyCloseUpPeakProgress - lunarFlybyCloseUpStartProgress,
+        if routeProgress < lunarFlybyCloseUpFullStartProgress {
+            let inboundDuration = max(lunarFlybyCloseUpFullStartProgress - lunarFlybyCloseUpStartProgress,
                                       .leastNonzeroMagnitude)
             return easeInOutCubic((routeProgress - lunarFlybyCloseUpStartProgress) / inboundDuration)
         }
 
-        let outboundDuration = max(lunarFlybyCloseUpEndProgress - lunarFlybyCloseUpPeakProgress,
+        if routeProgress <= lunarFlybyCloseUpFullEndProgress {
+            return 1
+        }
+
+        let outboundDuration = max(lunarFlybyCloseUpEndProgress - lunarFlybyCloseUpFullEndProgress,
                                    .leastNonzeroMagnitude)
-        return 1 - easeInOutCubic((routeProgress - lunarFlybyCloseUpPeakProgress) / outboundDuration)
+        return 1 - easeInOutCubic((routeProgress - lunarFlybyCloseUpFullEndProgress) / outboundDuration)
     }
 
     static func isLunarFlybyCloseUpActive(routeProgress: Float) -> Bool {

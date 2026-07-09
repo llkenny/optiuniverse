@@ -168,6 +168,58 @@ import Testing
     #expect(simd_distance(markerFocusTarget, route.overviewCenter) > 0.0001)
 }
 
+@Test func artemisLunarFlybyCloseUpProgressHoldsFullFocusThroughFlybyCore() {
+    let rampInProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: 0.50)
+    let fullStartProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: 0.52)
+    let encounterProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: 0.58)
+    let fullEndProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: 0.66)
+    let rampOutProgress = ArtemisRouteProfile.lunarFlybyCloseUpProgress(routeProgress: 0.68)
+
+    #expect(rampInProgress > 0)
+    #expect(rampInProgress < 1)
+    #expect(abs(fullStartProgress - 1) < 0.0001)
+    #expect(abs(encounterProgress - 1) < 0.0001)
+    #expect(abs(fullEndProgress - 1) < 0.0001)
+    #expect(rampOutProgress > 0)
+    #expect(rampOutProgress < 1)
+}
+
+@Test func navigationCameraModeAttachesArtemisFlybyCameraToRouteMarkerAndLooksAtMoon() throws {
+    let mode = NavigationCameraMode()
+    let route = makeArtemisNavigationCameraTestRoute()
+    let currentPose = CameraPose(target: SIMD3<Float>(12, 3, 4),
+                                 distance: 7,
+                                 orientation: simd_quatf(angle: .pi / 4,
+                                                         axis: SIMD3<Float>(0, 1, 0)))
+    let viewportSize = CGSize(width: 400, height: 400)
+    let moonPosition = SIMD3<Float>(2, 0, 0)
+
+    for progress in [Float(0.52), 0.58, 0.66] {
+        let marker = try #require(route.point(at: progress))
+        let transaction = try #require(mode.makeNavigationTransaction(
+            state: NavigationRouteRenderState(route: route,
+                                              progress: progress,
+                                              elapsedTime: Double(progress) * route.estimatedDuration),
+            snapshot: .navigationCameraTestSnapshot,
+            viewportSize: viewportSize,
+            currentPose: currentPose
+        ))
+
+        expectVector(try #require(transaction.cameraTarget),
+                     equals: moonPosition)
+
+        let distance = try #require(transaction.cameraDistance)
+        let orientation = try #require(transaction.cameraOrientation)
+        let cameraPosition = moonPosition + orientation.act(SIMD3<Float>(0, 0, distance))
+        expectVector(cameraPosition,
+                     equals: marker)
+
+        let viewDirection = simd_normalize(moonPosition - cameraPosition)
+        let markerToMoonDirection = simd_normalize(moonPosition - marker)
+        #expect(simd_dot(viewDirection, markerToMoonDirection) > 0.999)
+    }
+}
+
 @Test func navigationCameraModeUsesOverviewForMiddlePhase() throws {
     let mode = NavigationCameraMode()
     let route = makeNavigationCameraTestRoute()

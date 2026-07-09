@@ -229,43 +229,41 @@ final class NavigationCameraMode {
         }
 
         let waypointRadius = snapshot?.framingRadius(ofPlanetNamed: waypointName) ?? 0
-        let markerLookAheadDistance = max(waypointRadius * 2.4,
-                                          route.totalDistance * 0.015)
-        let markerPoint = route.lookAheadPoint(at: progress,
-                                               distance: markerLookAheadDistance)
-            ?? route.point(at: progress)
+        let marker = route.point(at: progress)
+            ?? route.point(at: ArtemisRouteProfile.lunarEncounterProgress)
             ?? waypoint
-        let closeUpTarget = interpolate(from: waypoint,
-                                        to: markerPoint,
-                                        progress: ArtemisRouteProfile.lunarFlybyMarkerBlend)
-        let closeUpDistance = lunarFlybyCloseUpDistance(waypointRadius: waypointRadius,
-                                                        overviewDistance: overviewDistance,
-                                                        viewportSize: viewportSize)
+        let closeUpFrame = makeLunarFlybyMarkerFrame(marker: marker,
+                                                     waypoint: waypoint,
+                                                     waypointRadius: waypointRadius)
 
-        return CameraTransition.Frame(
-            target: interpolate(from: route.overviewCenter,
-                                to: closeUpTarget,
-                                progress: closeUpProgress),
-            distance: interpolate(from: overviewDistance,
-                                  to: closeUpDistance,
-                                  progress: closeUpProgress),
-            orientation: OverviewCameraFraming.orientation
+        return CameraTransition.interpolate(
+            from: makeOverviewFrame(center: route.overviewCenter,
+                                    distance: overviewDistance),
+            to: closeUpFrame,
+            progress: closeUpProgress
         )
     }
 
-    private func lunarFlybyCloseUpDistance(waypointRadius: Float,
-                                           overviewDistance: Float,
-                                           viewportSize: CGSize) -> Float {
-        guard waypointRadius > 0 else {
-            return overviewDistance * ArtemisRouteProfile.lunarFlybyCloseUpDistanceMultiplier
-        }
+    private func makeLunarFlybyMarkerFrame(marker: SIMD3<Float>,
+                                           waypoint: SIMD3<Float>,
+                                           waypointRadius: Float) -> CameraTransition.Frame {
+        let markerOffset = marker - waypoint
+        let markerDistance = simd_length(markerOffset)
+        let minimumDistance = CameraFit.minimumDistanceOutsideBody(radius: waypointRadius,
+                                                                  baseMinimumDistance: CameraFit.minimumNearPlane)
+        let distance = max(markerDistance, minimumDistance)
+        let offsetDirection = markerDistance > lunarFlybyOrientationEpsilon
+            ? markerOffset / markerDistance
+            : OverviewCameraFraming.orientation.act(SIMD3<Float>(0, 0, 1))
 
-        let fittedDistance = CameraFit.distanceToFit(radius: waypointRadius,
-                                                     currentDistance: overviewDistance,
-                                                     viewportSize: viewportSize)
-        let minimumDistance = CameraFit.minimumDistanceOutsideBody(radius: waypointRadius)
-        return max(fittedDistance * ArtemisRouteProfile.lunarFlybyCloseUpDistanceMultiplier,
-                   minimumDistance)
+        return CameraTransition.Frame(
+            target: waypoint,
+            distance: distance,
+            orientation: makeLunarFlybyCameraOrientation(
+                offsetDirection: offsetDirection,
+                upSeed: OverviewCameraFraming.orientation.act(SIMD3<Float>(0, 1, 0))
+            )
+        )
     }
 
     private func makeArrivalFrame(progress: Float,
@@ -397,4 +395,38 @@ final class NavigationCameraMode {
                              progress: Float) -> Float {
         start + (end - start) * simd_clamp(progress, 0, 1)
     }
+}
+
+private let lunarFlybyOrientationEpsilon: Float = 0.000_001
+
+private func makeLunarFlybyCameraOrientation(offsetDirection: SIMD3<Float>,
+                                             upSeed: SIMD3<Float>) -> simd_quatf {
+    let epsilonSquared = lunarFlybyOrientationEpsilon * lunarFlybyOrientationEpsilon
+    let normalizedOffset = simd_length_squared(offsetDirection) > epsilonSquared
+        ? simd_normalize(offsetDirection)
+        : SIMD3<Float>(0, 0, 1)
+    let normalizedUpSeed = simd_length_squared(upSeed) > epsilonSquared
+        ? simd_normalize(upSeed)
+        : SIMD3<Float>(0, 1, 0)
+    let candidateUp = abs(simd_dot(normalizedOffset, normalizedUpSeed)) > 0.94
+        ? lunarFlybyFallbackUpVector(offsetDirection: normalizedOffset)
+        : normalizedUpSeed
+    let right = simd_normalize(simd_cross(candidateUp, normalizedOffset))
+    let cameraUpDirection = simd_normalize(simd_cross(normalizedOffset, right))
+
+    return simd_normalize(simd_quatf(
+        float3x3(columns: (right, cameraUpDirection, normalizedOffset))
+    ))
+}
+
+private func lunarFlybyFallbackUpVector(offsetDirection: SIMD3<Float>) -> SIMD3<Float> {
+    let candidates = [
+        SIMD3<Float>(1, 0, 0),
+        SIMD3<Float>(0, 1, 0),
+        SIMD3<Float>(0, 0, 1)
+    ]
+
+    return candidates.min {
+        abs(simd_dot(offsetDirection, $0)) < abs(simd_dot(offsetDirection, $1))
+    } ?? SIMD3<Float>(0, 1, 0)
 }
