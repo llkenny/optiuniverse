@@ -17,7 +17,7 @@ enum OverviewCameraFraming {
             max(partialResult, simd_distance(point, route.overviewCenter))
         }
 
-        return max(radius, 0.001)
+        return max(radius + route.overviewPaddingRadius, 0.001)
     }
 
     static func navigationOverviewDistance(route: NavigationRoute,

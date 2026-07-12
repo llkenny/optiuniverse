@@ -56,7 +56,7 @@ struct VisionUniverseControlView: View {
 
     private var loadedContent: some View {
         ZStack(alignment: .bottom) {
-            HomeView()
+            HomeView(onMissionSelected: { _ in })
 
             VStack(spacing: 10) {
                 Text(controlTitle)

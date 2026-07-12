@@ -34,28 +34,34 @@ public enum NavigationRouteState: Sendable, Equatable {
 public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let id: UUID
     public let originName: String
+    public let waypointName: String?
     public let destinationName: String
     public let points: [SIMD3<Float>]
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
+    let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
 
     init(id: UUID = UUID(),
          originName: String,
+         waypointName: String? = nil,
          destinationName: String,
          points: [SIMD3<Float>],
          cumulativeDistances: [Float],
          totalDistance: Float,
          estimatedDuration: TimeInterval,
+         overviewPaddingRadius: Float = 0,
          overviewCenter: SIMD3<Float>? = nil) {
         self.id = id
         self.originName = originName
+        self.waypointName = waypointName
         self.destinationName = destinationName
         self.points = points
         self.cumulativeDistances = cumulativeDistances
         self.totalDistance = totalDistance
         self.estimatedDuration = estimatedDuration
+        self.overviewPaddingRadius = overviewPaddingRadius
         self.overviewCenter = overviewCenter ?? points.first ?? .zero
     }
 
@@ -109,6 +115,40 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         return point(atDistance: targetDistance)
     }
 
+    func prefixPoints(through progress: Float) -> [SIMD3<Float>] {
+        guard let first = points.first,
+              points.count == cumulativeDistances.count else {
+            return []
+        }
+        guard totalDistance > 0 else { return [first] }
+
+        let clampedProgress = min(max(progress, 0), 1)
+        guard clampedProgress > 0 else { return [first] }
+        guard clampedProgress < 1 else { return points }
+
+        let targetDistance = distance(at: clampedProgress)
+        let epsilon: Float = 0.000_001
+        var prefix = [first]
+        prefix.reserveCapacity(points.count)
+
+        for upperIndex in 1..<points.count {
+            let upperDistance = cumulativeDistances[upperIndex]
+            if upperDistance < targetDistance - epsilon {
+                prefix.append(points[upperIndex])
+                continue
+            }
+
+            if abs(upperDistance - targetDistance) <= epsilon {
+                prefix.append(points[upperIndex])
+            } else if let point = point(atDistance: targetDistance) {
+                prefix.append(point)
+            }
+            break
+        }
+
+        return prefix
+    }
+
     private func point(atDistance targetDistance: Float) -> SIMD3<Float>? {
         guard let first = points.first,
               points.count == cumulativeDistances.count else {
@@ -141,15 +181,19 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
     func replacingPath(points: [SIMD3<Float>],
                        cumulativeDistances: [Float],
-                       totalDistance: Float) -> NavigationRoute {
+                       totalDistance: Float,
+                       overviewPaddingRadius: Float? = nil,
+                       overviewCenter: SIMD3<Float>? = nil) -> NavigationRoute {
         NavigationRoute(id: id,
                         originName: originName,
+                        waypointName: waypointName,
                         destinationName: destinationName,
                         points: points,
                         cumulativeDistances: cumulativeDistances,
                         totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration,
-                        overviewCenter: overviewCenter)
+                        overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
+                        overviewCenter: overviewCenter ?? self.overviewCenter)
     }
 }
 
@@ -166,6 +210,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 public struct NavigationRouteSnapshot: Sendable, Equatable {
     public let routeID: UUID?
     public let state: NavigationRouteState
+    public let originName: String?
+    public let waypointName: String?
     public let destinationName: String?
     public let progress: Float
     public let elapsedTime: TimeInterval
@@ -174,6 +220,8 @@ public struct NavigationRouteSnapshot: Sendable, Equatable {
 
     public static let idle = NavigationRouteSnapshot(routeID: nil,
                                                      state: .idle,
+                                                     originName: nil,
+                                                     waypointName: nil,
                                                      destinationName: nil,
                                                      progress: 0,
                                                      elapsedTime: 0,
