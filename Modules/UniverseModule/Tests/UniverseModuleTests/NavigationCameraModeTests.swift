@@ -477,6 +477,105 @@ import Testing
 }
 
 @MainActor
+@Test func cameraCoordinatorNavigationHandoffPreservesMarkerScreenPosition() throws {
+    let source = NavigationCameraSnapshotSource(latestSnapshot: .navigationCameraTestSnapshot)
+    let cameraState = CameraState()
+    let snapshotProvider = SnapshotProvider(cameraState: cameraState,
+                                            snapshotSource: source)
+    let coordinator = CameraCoordinator(cameraState: cameraState,
+                                        snapshotProvider: snapshotProvider)
+    let route = makeNavigationCameraTestRoute()
+    let viewportSize = CGSize(width: 400, height: 400)
+    let progress: Float = 0.25
+    let marker = try #require(route.point(at: progress))
+    let navigationState = NavigationRouteRenderState(route: route,
+                                                     progress: progress,
+                                                     elapsedTime: 3)
+    let expectedTransaction = try #require(NavigationCameraMode().makeNavigationTransaction(
+        state: navigationState,
+        snapshot: source.latestSnapshot,
+        viewportSize: viewportSize,
+        currentPose: cameraState.pose
+    ))
+    let expectedNavigationPose = CameraPose(
+        target: try #require(expectedTransaction.cameraTarget),
+        distance: try #require(expectedTransaction.cameraDistance),
+        orientation: try #require(expectedTransaction.cameraOrientation)
+    )
+    let initialMarkerScreenPosition = projectedScreenPosition(point: marker,
+                                                              pose: expectedNavigationPose,
+                                                              viewportSize: viewportSize)
+
+    coordinator.handOffNavigationCameraControl(navigation: navigationState,
+                                               snapshot: source.latestSnapshot,
+                                               viewportSize: viewportSize)
+    let handoffPose = cameraState.pose
+
+    #expect(simd_distance(marker, route.overviewCenter) > 0.0001)
+    #expect(simd_distance(cameraState.cameraTarget, marker) > 0.0001)
+    expectVector(handoffPose.position,
+                 equals: expectedNavigationPose.position)
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: marker,
+                                                      pose: handoffPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+
+    let markerDistanceBeforeRotation = simd_distance(marker, cameraState.pose.position)
+    coordinator.makeRotation(with: CGPoint(x: 0, y: 12),
+                             velocity: .zero)
+    let rotatedPose = cameraState.pose
+
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: marker,
+                                                      pose: rotatedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    #expect(simd_distance(rotatedPose.position, handoffPose.position) > 0.0001)
+    #expect(abs(simd_distance(marker, rotatedPose.position) - markerDistanceBeforeRotation) < 0.0001)
+
+    let markerDelta = SIMD3<Float>(0.18, -0.07, 0.04)
+    let refreshedRoute = route.replacingPath(
+        points: route.points.map { $0 + markerDelta },
+        cumulativeDistances: route.cumulativeDistances,
+        totalDistance: route.totalDistance,
+        overviewPaddingRadius: route.overviewPaddingRadius,
+        overviewCenter: route.overviewCenter + markerDelta
+    )
+    let refreshedMarker = try #require(refreshedRoute.point(at: progress))
+
+    coordinator.handOffNavigationCameraControl(
+        navigation: NavigationRouteRenderState(route: refreshedRoute,
+                                               progress: progress,
+                                               elapsedTime: 3,
+                                               isCameraAutoFramingEnabled: false),
+        snapshot: source.latestSnapshot,
+        viewportSize: viewportSize
+    )
+    let refreshedPose = cameraState.pose
+
+    expectVector(refreshedPose.target,
+                 equals: rotatedPose.target + markerDelta)
+    expectVector(refreshedPose.position,
+                 equals: rotatedPose.position + markerDelta)
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: refreshedMarker,
+                                                      pose: refreshedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    expectOrientation(cameraState.cameraOrientation,
+                      equals: rotatedPose.orientation)
+
+    let markerDistanceBeforeZoom = simd_distance(refreshedMarker, cameraState.pose.position)
+    coordinator.makeScale(with: 1.2,
+                          velocity: 0)
+    let zoomedPose = cameraState.pose
+
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: refreshedMarker,
+                                                      pose: zoomedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    #expect(simd_distance(refreshedMarker, zoomedPose.position) < markerDistanceBeforeZoom)
+}
+
+@MainActor
 @Test func cameraCoordinatorNavigationAutoFramingDisabledPreservesManualView() throws {
     let source = NavigationCameraSnapshotSource(latestSnapshot: .navigationCameraTestSnapshot)
     let cameraState = CameraState()
@@ -732,6 +831,25 @@ private func expectVector(_ lhs: SIMD3<Float>,
                           equals rhs: SIMD3<Float>,
                           tolerance: Float = 0.0001) {
     #expect(simd_distance(lhs, rhs) < tolerance)
+}
+
+private func projectedScreenPosition(point: SIMD3<Float>,
+                                     pose: CameraPose,
+                                     viewportSize: CGSize,
+                                     projection: CameraProjectionParameters = CameraProjectionParameters(
+                                        nearPlane: 0.1,
+                                        farPlane: 100
+                                     )) -> SIMD2<Float> {
+    let aspect = Float(viewportSize.width / viewportSize.height)
+    let projectionMatrix = float4x4.perspective(fov: projection.verticalFieldOfView,
+                                                aspect: aspect,
+                                                near: projection.nearPlane,
+                                                far: projection.farPlane,
+                                                verticalCenterOffset: projection.verticalCenterOffset)
+    let clipPosition = projectionMatrix * pose.makeRenderViewMatrix() * SIMD4<Float>(point - pose.target, 1)
+
+    return SIMD2<Float>(clipPosition.x / clipPosition.w,
+                        clipPosition.y / clipPosition.w)
 }
 
 private func expectOrientation(_ lhs: simd_quatf,

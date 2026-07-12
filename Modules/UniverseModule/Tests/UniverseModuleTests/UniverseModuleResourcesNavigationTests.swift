@@ -60,6 +60,70 @@ import Testing
     #expect(resources.navigationSnapshot.state == .running)
 }
 
+@MainActor
+@Test func universeModuleResourcesPausedArtemisManualControlKeepsRoutePivot() async throws {
+    let resources = UniverseModuleResources()
+    let viewportSize = CGSize(width: 400, height: 400)
+    resources.setViewportSize(viewportSize)
+    _ = try await prepareCislunarSnapshot(for: resources)
+
+    resources.navigation.startNavigation(from: "Earth", via: "Moon", to: "Earth")
+    resources.navigation.pauseNavigation()
+    resources.sceneCoordinator.update(deltaTime: 1.0 / 60.0)
+
+    let pausedRenderState = resources.navigationController.routeRenderState
+    let pausedRoute = try #require(pausedRenderState.route)
+    let marker = try #require(pausedRoute.point(at: pausedRenderState.progress))
+    let pausedNavigationPose = resources.cameraCoordinator.currentCameraPose
+    let initialMarkerScreenPosition = projectedScreenPosition(point: marker,
+                                                              pose: pausedNavigationPose,
+                                                              viewportSize: viewportSize)
+    let markerDistanceBeforeRotation = simd_distance(marker, pausedNavigationPose.position)
+
+    resources.rotateCamera(translation: CGSize(width: 0, height: 14),
+                           velocity: .zero)
+    let rotatedPose = resources.cameraCoordinator.currentCameraPose
+
+    #expect(resources.navigationSnapshot.state == .paused)
+    #expect(resources.navigationController.routeRenderState.route?.id == pausedRoute.id)
+    #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: marker,
+                                                      pose: rotatedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    #expect(simd_distance(rotatedPose.position, pausedNavigationPose.position) > 0.0001)
+    #expect(abs(simd_distance(marker, rotatedPose.position) - markerDistanceBeforeRotation) < 0.0001)
+
+    for _ in 0..<3 {
+        resources.sceneCoordinator.update(deltaTime: 1.0 / 60.0)
+    }
+    let refreshedRenderState = resources.navigationController.routeRenderState
+    let refreshedRoute = try #require(refreshedRenderState.route)
+    let refreshedMarker = try #require(refreshedRoute.point(at: refreshedRenderState.progress))
+    let refreshedPose = resources.cameraCoordinator.currentCameraPose
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: refreshedMarker,
+                                                      pose: refreshedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+
+    let markerDistanceBeforeZoom = simd_distance(refreshedMarker, refreshedPose.position)
+    resources.scaleCamera(by: 1.2,
+                          velocity: 0)
+    let zoomedPose = resources.cameraCoordinator.currentCameraPose
+
+    #expect(resources.navigationSnapshot.state == .paused)
+    #expect(resources.navigationController.routeRenderState.route?.id == pausedRoute.id)
+    #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
+    let zoomedRenderState = resources.navigationController.routeRenderState
+    let zoomedRoute = try #require(zoomedRenderState.route)
+    let zoomedMarker = try #require(zoomedRoute.point(at: zoomedRenderState.progress))
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: zoomedMarker,
+                                                      pose: zoomedPose,
+                                                      viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    #expect(simd_distance(zoomedMarker, zoomedPose.position) < markerDistanceBeforeZoom)
+}
+
 #if os(visionOS)
 @MainActor
 @Test func transferPreviewTemporarilyOverridesAndThenPersistsImmersiveFocus() throws {
@@ -165,6 +229,61 @@ import Testing
 
 private func decodeDestinationObjects(_ json: String) throws -> [DestinationObject] {
     try JSONDecoder().decode([DestinationObject].self, from: Data(json.utf8))
+}
+
+@MainActor
+private func prepareCislunarSnapshot(for resources: UniverseModuleResources) async throws
+-> UniverseSceneSnapshot {
+    let metrics = CelestialBodyPresentationMetrics(renderRadius: 0.05,
+                                                   framingRadius: 0.05,
+                                                   surfaceRadius: 0.05)
+    resources.sceneSnapshotPipeline.setPresentationMetrics([
+        "Sun": CelestialBodyPresentationMetrics(renderRadius: 0.2,
+                                                framingRadius: 0.2,
+                                                surfaceRadius: 0.2),
+        "Earth": metrics,
+        "Moon": CelestialBodyPresentationMetrics(renderRadius: 0.02,
+                                                 framingRadius: 0.02,
+                                                 surfaceRadius: 0.02)
+    ])
+    resources.sceneSnapshotPipeline.requestPreparation(simulationTime: 0)
+
+    for _ in 0..<50 {
+        await Task.yield()
+        if let snapshot = resources.snapshotProvider.latestSnapshot,
+           snapshot.worldPosition(ofPlanetNamed: "Sun") != nil,
+           snapshot.worldPosition(ofPlanetNamed: "Earth") != nil,
+           snapshot.worldPosition(ofPlanetNamed: "Moon") != nil {
+            return snapshot
+        }
+    }
+
+    return try #require(resources.snapshotProvider.latestSnapshot)
+}
+
+private func expectVector(_ lhs: SIMD3<Float>,
+                          equals rhs: SIMD3<Float>,
+                          tolerance: Float = 0.0001) {
+    #expect(simd_distance(lhs, rhs) < tolerance)
+}
+
+private func projectedScreenPosition(point: SIMD3<Float>,
+                                     pose: CameraPose,
+                                     viewportSize: CGSize,
+                                     projection: CameraProjectionParameters = CameraProjectionParameters(
+                                        nearPlane: 0.1,
+                                        farPlane: 100
+                                     )) -> SIMD2<Float> {
+    let aspect = Float(viewportSize.width / viewportSize.height)
+    let projectionMatrix = float4x4.perspective(fov: projection.verticalFieldOfView,
+                                                aspect: aspect,
+                                                near: projection.nearPlane,
+                                                far: projection.farPlane,
+                                                verticalCenterOffset: projection.verticalCenterOffset)
+    let clipPosition = projectionMatrix * pose.makeRenderViewMatrix() * SIMD4<Float>(point - pose.target, 1)
+
+    return SIMD2<Float>(clipPosition.x / clipPosition.w,
+                        clipPosition.y / clipPosition.w)
 }
 
 private extension UniverseSceneSnapshot {
