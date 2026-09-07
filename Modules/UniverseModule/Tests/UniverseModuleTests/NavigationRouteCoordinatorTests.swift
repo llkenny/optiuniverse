@@ -96,8 +96,8 @@ import Testing
     playback.setProgress(0.25)
     let refreshedSnapshot = artemisSnapshot(planets: planets,
                                             simulationTime: 20)
-    coordinator.refreshArtemisRoute(planets: planets,
-                                    snapshot: refreshedSnapshot)
+    coordinator.refreshRoute(planets: planets,
+                             snapshot: refreshedSnapshot)
     let route = try #require(coordinator.route)
     let earthPosition = try #require(refreshedSnapshot.worldPosition(ofPlanetNamed: "Earth"))
     let currentMoonPosition = try #require(refreshedSnapshot.worldPosition(ofPlanetNamed: "Moon"))

@@ -28,6 +28,7 @@ final class NavigationRouteCoordinator {
 
     private let routeBuilder: RouteBuilding
     private let playback: RoutePlayback
+    private let missionRouteHandler: any NavigationRouteMissionHandling
     private let snapshotPublisher: (NavigationRouteSnapshot) -> Void
 
     private(set) var route: NavigationRoute?
@@ -36,9 +37,11 @@ final class NavigationRouteCoordinator {
 
     init(routeBuilder: RouteBuilding = RoutePathBuilder(),
          playback: RoutePlayback = RoutePlaybackController(),
+         missionRouteHandler: any NavigationRouteMissionHandling = MissionRouteHandler(),
          snapshotPublisher: @escaping (NavigationRouteSnapshot) -> Void) {
         self.routeBuilder = routeBuilder
         self.playback = playback
+        self.missionRouteHandler = missionRouteHandler
         self.snapshotPublisher = snapshotPublisher
     }
 
@@ -128,46 +131,21 @@ final class NavigationRouteCoordinator {
                                          totalDistance: totalDistance)
     }
 
-    func refreshArtemisRoute(planets: [Planet],
-                             snapshot: UniverseSceneSnapshot) {
+    func refreshRoute(planets: [Planet],
+                      snapshot: UniverseSceneSnapshot) {
         guard let route,
-              ArtemisRouteProfile.isArtemisRoute(route),
-              state == .running || state == .paused || state == .completed,
-              let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
-              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
-              let originPosition = snapshot.worldPosition(ofPlanetNamed: route.originName),
-              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: route.destinationName),
-              let refreshedRoute = routeBuilder.makeRoute(input: RouteBuildInput(
-                originName: route.originName,
-                waypointName: route.waypointName,
-                destinationName: route.destinationName,
+              let refreshedRoute = missionRouteHandler.refreshedRoute(
+                for: route,
+                state: state,
+                progress: renderProgress,
                 planets: planets,
-                originPosition: originPosition,
-                waypointPosition: route.waypointName.flatMap {
-                    snapshot.worldPosition(ofPlanetNamed: $0)
-                },
-                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: route.originName) ?? 0,
-                waypointSurfaceRadius: route.waypointName.flatMap {
-                    snapshot.surfaceRadius(ofPlanetNamed: $0)
-                } ?? 0,
-                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: route.destinationName) ?? 0,
-                earthSunDirection: earthPosition - sunPosition,
-                sunPosition: sunPosition,
-                destinationPosition: destinationPosition,
-                estimatedDuration: route.estimatedDuration,
-                simulationTime: snapshot.simulationTime,
-                routeProgress: renderProgress
-              )) else {
+                snapshot: snapshot,
+                routeBuilder: routeBuilder
+              ) else {
             return
         }
 
-        self.route = route.replacingPath(
-            points: refreshedRoute.points,
-            cumulativeDistances: refreshedRoute.cumulativeDistances,
-            totalDistance: refreshedRoute.totalDistance,
-            overviewPaddingRadius: refreshedRoute.overviewPaddingRadius,
-            overviewCenter: refreshedRoute.overviewCenter
-        )
+        self.route = refreshedRoute
     }
 
     private func currentDestinationArcSampleCount(route: NavigationRoute,
@@ -254,14 +232,14 @@ final class NavigationRouteCoordinator {
 
     private func routeProgress(linearProgress: Float) -> Float {
         guard let route,
-              ArtemisRouteProfile.isArtemisRoute(route) else {
+              let missionProgress = missionRouteHandler.routeProgress(
+                linearProgress: linearProgress,
+                route: route
+              ) else {
             return linearProgress
         }
 
-        return ArtemisRouteProfile.routeProgress(
-            linearProgress: linearProgress,
-            estimatedDuration: route.estimatedDuration
-        )
+        return missionProgress
     }
 
     var activeRouteForRendering: NavigationRoute? {

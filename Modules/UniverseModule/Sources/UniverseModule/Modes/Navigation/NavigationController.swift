@@ -89,8 +89,8 @@ final class NavigationController {
         }
 
         if let snapshot {
-            navigationRouteCoordinator.refreshArtemisRoute(planets: planets,
-                                                           snapshot: snapshot)
+            navigationRouteCoordinator.refreshRoute(planets: planets,
+                                                    snapshot: snapshot)
         }
         navigationRouteCoordinator.update()
     }
