@@ -39,6 +39,7 @@ final class CameraCoordinator {
 
     private var activeCameraMotionRevision = 0
     private var navigationArrivalRecovery: NavigationArrivalRecovery?
+    private var manualNavigationPivot: ManualNavigationPivot?
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
         cameraState.currentCameraTransitionFrame
@@ -138,6 +139,38 @@ final class CameraCoordinator {
         followCameraOwner.beginManualCameraControl()
     }
 
+    func handOffNavigationCameraControl(navigation: NavigationRouteRenderState,
+                                        snapshot: UniverseSceneSnapshot?,
+                                        viewportSize: CGSize) {
+        guard let route = navigation.route,
+              let marker = route.point(at: navigation.progress) else {
+            manualNavigationPivot = nil
+            return
+        }
+
+        guard navigation.isCameraAutoFramingEnabled else {
+            updateManualNavigationPivot(route: route,
+                                        marker: marker)
+            return
+        }
+
+        let modeState = CameraFrameModeState(
+            transferPreviewActive: false,
+            transfer: nil,
+            navigation: navigation
+        )
+        commitNavigationCameraTransaction(snapshot: snapshot,
+                                          viewportSize: viewportSize,
+                                          modeState: modeState)
+        refreshCamera(snapshot: snapshot,
+                      maximumDistance: maximumCameraDistance(modeState: modeState,
+                                                             viewportSize: viewportSize),
+                      minimumDistance: minimumCameraDistance(snapshot: snapshot,
+                                                             modeState: modeState))
+        manualNavigationPivot = ManualNavigationPivot(routeID: route.id,
+                                                      marker: marker)
+    }
+
     /// Advances all camera-layer per-frame work for the current render iteration.
     ///
     /// Route playback and transfer-orbit geometry remain owned by their controllers. This entry point
@@ -147,6 +180,7 @@ final class CameraCoordinator {
                            delta: Float,
                            viewportSize: CGSize,
                            modeState: CameraFrameModeState) {
+        updateManualNavigationPivot(navigation: modeState.navigation)
         updateManualCameraInertia(delta: delta)
 
         let isSuppressed = modeState.transferPreviewActive || modeState.navigationActive
@@ -236,7 +270,7 @@ final class CameraCoordinator {
 
     private func commitManualCameraTransaction(_ transaction: CameraState.Transaction?) {
         guard let transaction else { return }
-        cameraState.commit(transaction)
+        cameraState.commit(manualNavigationPivotTransaction(for: transaction) ?? transaction)
     }
 
     private func commitNavigationCameraTransaction(snapshot: UniverseSceneSnapshot?,
@@ -244,11 +278,16 @@ final class CameraCoordinator {
                                                    modeState: CameraFrameModeState) {
         guard !modeState.transferPreviewActive else {
             navigationArrivalRecovery = nil
+            manualNavigationPivot = nil
             return
         }
         guard let route = modeState.navigation.route else {
             navigationArrivalRecovery = nil
+            manualNavigationPivot = nil
             return
+        }
+        if manualNavigationPivot?.routeID != route.id {
+            manualNavigationPivot = nil
         }
         guard modeState.navigation.isCameraAutoFramingEnabled ||
               navigationCameraMode.isArrivalPhase(state: modeState.navigation) else {
@@ -314,9 +353,82 @@ final class CameraCoordinator {
             baseMinimumDistance: cameraState.minDistance
         )
     }
+
+    private func manualNavigationPivotTransaction(for transaction: CameraState.Transaction)
+    -> CameraState.Transaction? {
+        guard let manualNavigationPivot else {
+            return nil
+        }
+        guard transaction.cameraTarget == nil else {
+            self.manualNavigationPivot = nil
+            return nil
+        }
+
+        let currentPose = cameraState.pose
+        let newDistance = transaction.cameraDistance ?? currentPose.distance
+        guard newDistance.isFinite,
+              newDistance > Self.manualNavigationPivotEpsilon,
+              currentPose.distance > Self.manualNavigationPivotEpsilon else {
+            return nil
+        }
+
+        let newOrientation = transaction.cameraOrientation ?? currentPose.orientation
+        var markerToCamera = currentPose.position - manualNavigationPivot.marker
+
+        if transaction.cameraOrientation != nil {
+            let orientationDelta = simd_normalize(newOrientation * currentPose.orientation.inverse)
+            markerToCamera = orientationDelta.act(markerToCamera)
+        }
+        if transaction.cameraDistance != nil {
+            markerToCamera *= newDistance / currentPose.distance
+        }
+
+        let newCameraPosition = manualNavigationPivot.marker + markerToCamera
+        let newCameraTarget = newCameraPosition - newOrientation.act(SIMD3<Float>(0, 0, newDistance))
+        return CameraState.Transaction(cameraTarget: newCameraTarget,
+                                       cameraDistance: transaction.cameraDistance,
+                                       cameraOrientation: transaction.cameraOrientation)
+    }
+
+    private func updateManualNavigationPivot(navigation: NavigationRouteRenderState) {
+        guard let route = navigation.route,
+              let marker = route.point(at: navigation.progress) else {
+            manualNavigationPivot = nil
+            return
+        }
+
+        updateManualNavigationPivot(route: route,
+                                    marker: marker)
+    }
+
+    private func updateManualNavigationPivot(route: NavigationRoute,
+                                             marker: SIMD3<Float>) {
+        guard let currentPivot = manualNavigationPivot else {
+            return
+        }
+        guard currentPivot.routeID == route.id else {
+            manualNavigationPivot = nil
+            return
+        }
+
+        let markerDelta = marker - currentPivot.marker
+        if simd_length_squared(markerDelta) > Self.manualNavigationPivotEpsilon *
+            Self.manualNavigationPivotEpsilon {
+            cameraState.commit(CameraState.Transaction(cameraTarget: cameraState.cameraTarget + markerDelta))
+        }
+        manualNavigationPivot = ManualNavigationPivot(routeID: route.id,
+                                                      marker: marker)
+    }
+
+    private static let manualNavigationPivotEpsilon: Float = 0.000_001
 }
 
 private struct NavigationArrivalRecovery {
     let routeID: UUID
     let recovery: NavigationCameraMode.ArrivalRecovery
+}
+
+private struct ManualNavigationPivot {
+    let routeID: UUID
+    let marker: SIMD3<Float>
 }

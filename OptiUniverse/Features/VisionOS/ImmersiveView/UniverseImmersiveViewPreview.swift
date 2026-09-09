@@ -26,6 +26,8 @@ private final class UniverseImmersivePreviewResources: UniverseModuleResourcesPr
 private final class UniverseImmersivePreviewNavigation: UniverseNavigationControlling {
     let navigationSnapshot: NavigationRouteSnapshot = .idle
 
+    func startNavigation(from originName: String, via waypointName: String?, to destinationName: String) {}
+    func startNavigation(from originName: String, to destinationName: String) {}
     func startNavigation(to name: String) {}
     func pauseNavigation() {}
     func resumeNavigation() {}

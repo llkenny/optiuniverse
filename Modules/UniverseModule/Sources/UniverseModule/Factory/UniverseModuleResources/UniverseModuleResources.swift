@@ -198,10 +198,17 @@ public final class UniverseModuleResources {
     }
 
     func beginManualCameraControl() {
+        let navigationRenderState = navigationController.routeRenderState
+
         transferOrbitController.beginManualCameraControl()
-        navigationController.beginManualCameraControl()
         sceneCoordinator.clearImmersiveTransferOverview()
         cameraCoordinator.beginManualCameraControl()
+        cameraCoordinator.handOffNavigationCameraControl(
+            navigation: navigationRenderState,
+            snapshot: snapshotProvider.latestSnapshot,
+            viewportSize: viewportSize
+        )
+        navigationController.beginManualCameraControl()
     }
 
     public func rotateCamera(translation: CGSize, velocity: CGSize = .zero) {

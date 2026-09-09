@@ -28,6 +28,7 @@ final class NavigationRouteCoordinator {
 
     private let routeBuilder: RouteBuilding
     private let playback: RoutePlayback
+    private let missionRouteHandler: any NavigationRouteMissionHandling
     private let snapshotPublisher: (NavigationRouteSnapshot) -> Void
 
     private(set) var route: NavigationRoute?
@@ -36,28 +37,44 @@ final class NavigationRouteCoordinator {
 
     init(routeBuilder: RouteBuilding = RoutePathBuilder(),
          playback: RoutePlayback = RoutePlaybackController(),
+         missionRouteHandler: any NavigationRouteMissionHandling = MissionRouteHandler(),
          snapshotPublisher: @escaping (NavigationRouteSnapshot) -> Void) {
         self.routeBuilder = routeBuilder
         self.playback = playback
+        self.missionRouteHandler = missionRouteHandler
         self.snapshotPublisher = snapshotPublisher
     }
 
-    func start(destinationName: String,
+    func start(originName: String = "Earth",
+               waypointName: String? = nil,
+               destinationName: String,
                planets: [Planet],
                snapshot: UniverseSceneSnapshot) -> Bool {
         state = .preparing
-        publishSnapshot()
 
         guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
+              let originPosition = snapshot.worldPosition(ofPlanetNamed: originName),
               let destinationPosition = snapshot.worldPosition(ofPlanetNamed: destinationName),
               let route = routeBuilder.makeRoute(input: RouteBuildInput(
+                originName: originName,
+                waypointName: waypointName,
                 destinationName: destinationName,
                 planets: planets,
+                originPosition: originPosition,
+                waypointPosition: waypointName.flatMap { snapshot.worldPosition(ofPlanetNamed: $0) },
+                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: originName) ?? 0,
+                waypointSurfaceRadius: waypointName.flatMap {
+                    snapshot.surfaceRadius(ofPlanetNamed: $0)
+                } ?? 0,
+                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: destinationName) ?? 0,
                 earthSunDirection: earthPosition - sunPosition,
                 sunPosition: sunPosition,
                 destinationPosition: destinationPosition,
-                estimatedDuration: 12
+                estimatedDuration: estimatedDuration(originName: originName,
+                                                     destinationName: destinationName),
+                simulationTime: snapshot.simulationTime,
+                routeProgress: 0
               )) else {
             self.route = nil
             playback.cancel()
@@ -112,6 +129,23 @@ final class NavigationRouteCoordinator {
         self.route = route.replacingPath(points: routePoints,
                                          cumulativeDistances: cumulativeDistances,
                                          totalDistance: totalDistance)
+    }
+
+    func refreshRoute(planets: [Planet],
+                      snapshot: UniverseSceneSnapshot) {
+        guard let route,
+              let refreshedRoute = missionRouteHandler.refreshedRoute(
+                for: route,
+                state: state,
+                progress: renderProgress,
+                planets: planets,
+                snapshot: snapshot,
+                routeBuilder: routeBuilder
+              ) else {
+            return
+        }
+
+        self.route = refreshedRoute
     }
 
     private func currentDestinationArcSampleCount(route: NavigationRoute,
@@ -169,7 +203,7 @@ final class NavigationRouteCoordinator {
     var renderProgress: Float {
         switch state {
         case .running, .paused, .completed:
-            return playback.progress
+            return routeProgress(linearProgress: playback.progress)
         case .idle, .preparing, .cancelled:
             return 0
         }
@@ -185,6 +219,27 @@ final class NavigationRouteCoordinator {
 
     var currentRoutePoint: SIMD3<Float>? {
         activeRouteForRendering?.point(at: renderProgress)
+    }
+
+    private func estimatedDuration(originName: String,
+                                   destinationName: String) -> TimeInterval {
+        if originName == "Earth" && destinationName == "Earth" {
+            return 16
+        }
+
+        return 12
+    }
+
+    private func routeProgress(linearProgress: Float) -> Float {
+        guard let route,
+              let missionProgress = missionRouteHandler.routeProgress(
+                linearProgress: linearProgress,
+                route: route
+              ) else {
+            return linearProgress
+        }
+
+        return missionProgress
     }
 
     var activeRouteForRendering: NavigationRoute? {
@@ -208,6 +263,8 @@ final class NavigationRouteCoordinator {
         guard let route else {
             return NavigationRouteSnapshot(routeID: nil,
                                            state: state,
+                                           originName: nil,
+                                           waypointName: nil,
                                            destinationName: nil,
                                            progress: 0,
                                            elapsedTime: 0,
@@ -215,12 +272,14 @@ final class NavigationRouteCoordinator {
                                            estimatedDuration: 0)
         }
 
-        let progress = state == .completed ? 1 : playback.progress
+        let progress = state == .completed ? 1 : renderProgress
         let elapsedTime = state == .completed ? route.estimatedDuration : playback.elapsedTime
         let remainingTime = max(route.estimatedDuration - elapsedTime, 0)
 
         return NavigationRouteSnapshot(routeID: route.id,
                                        state: state,
+                                       originName: route.originName,
+                                       waypointName: route.waypointName,
                                        destinationName: route.destinationName,
                                        progress: progress,
                                        elapsedTime: elapsedTime,

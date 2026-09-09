@@ -21,6 +21,8 @@ struct RootContainerView: View {
     @Environment(AppEnvironment.self) var appEnvironment
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
+    @State var missionFlowState: MissionFlowState?
+    @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
     @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
     @GestureState var objectInfoDragOffset: CGFloat = 0
@@ -53,7 +55,7 @@ struct RootContainerView: View {
 
                         switch appEnvironment.currentScreen {
                         case .home:
-                            HomeView()
+                            HomeView(onMissionSelected: startMission)
                                 .transition(.opacity)
                         case .objects:
                             switch objectsViewState {
@@ -97,13 +99,8 @@ struct RootContainerView: View {
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
             objectsViewState = .raw
         }
-        .onChange(of: universeResources.navigation.navigationSnapshot.state) { _, newState in
-            guard objectsViewState == .navigation,
-                  newState == .cancelled else {
-                return
-            }
-
-            objectsViewState = .raw
+        .onChange(of: universeResources.navigation.navigationSnapshot) { _, snapshot in
+            handleNavigationSnapshotChange(snapshot)
         }
         .task(id: loadingAttempt) {
             do {
@@ -134,6 +131,69 @@ struct RootContainerView: View {
                                                    viewportHeight: 0)
         universeResources.transferOrbit.clearTransferOrbit()
         universeResources.navigation.cancelNavigation()
+        missionFlowState = nil
+        pendingMissionAdvance = nil
+        objectsViewState = .raw
+    }
+
+    private func startMission(_ mission: Mission) {
+        let plan = MissionLaunchPlan(mission: mission)
+        let route = plan.route
+
+        missionFlowState = plan.flowState
+        pendingMissionAdvance = nil
+        appEnvironment.selectedDestinationID = plan.selectedDestinationID
+        appEnvironment.selectedPlanet = plan.selectedPlanet
+        appEnvironment.currentScreen = plan.screen
+        objectsViewState = plan.objectsViewState
+        universeResources.navigation.startNavigation(from: route.originName,
+                                                     via: route.waypointName,
+                                                     to: route.destinationName)
+    }
+
+    private func handleNavigationSnapshotChange(_ snapshot: NavigationRouteSnapshot) {
+        guard objectsViewState == .navigation else { return }
+
+        switch snapshot.state {
+        case .completed:
+            queueMissionAdvanceIfNeeded(snapshot: snapshot)
+        case .cancelled:
+            handleNavigationCancelled()
+        case .idle, .preparing, .running, .paused:
+            break
+        }
+    }
+
+    private func queueMissionAdvanceIfNeeded(snapshot: NavigationRouteSnapshot) {
+        guard pendingMissionAdvance == nil,
+              let flowState = missionFlowState else {
+            return
+        }
+
+        let advance = flowState.handleCompletedNavigation(originName: snapshot.originName,
+                                                          waypointName: snapshot.waypointName,
+                                                          destinationName: snapshot.destinationName)
+        guard advance != .noChange else { return }
+
+        missionFlowState = flowState
+        pendingMissionAdvance = advance
+    }
+
+    private func handleNavigationCancelled() {
+        if let pendingMissionAdvance {
+            self.pendingMissionAdvance = nil
+            switch pendingMissionAdvance {
+            case .complete:
+                missionFlowState = nil
+                appEnvironment.selectedPlanet = nil
+                objectsViewState = .raw
+            case .noChange:
+                break
+            }
+            return
+        }
+
+        missionFlowState = nil
         objectsViewState = .raw
     }
 }

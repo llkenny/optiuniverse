@@ -41,6 +41,14 @@ func isHomeScreen(_ screen: AppEnvironment.Screen) -> Bool {
     return false
 }
 
+func isObjectsScreen(_ screen: AppEnvironment.Screen) -> Bool {
+    if case .objects = screen {
+        return true
+    }
+
+    return false
+}
+
 func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
     try JSONDecoder().decode([FeaturedObject].self, from: Data("""
     [

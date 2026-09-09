@@ -54,6 +54,47 @@ import Testing
     #expect(abs(RealityProceduralSceneContent.navigationRouteColor.w - 0.45) < 0.0001)
 }
 
+@MainActor
+@Test func proceduralNavigationRouteRevealsArtemisPrefixDuringOpening() throws {
+    let route = makeProceduralArtemisRoute()
+    let openingEnd = ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: route.estimatedDuration)
+    let hiddenAtLaunch = RealityProceduralSceneContent.navigationRenderPoints(route: route,
+                                                                              progress: 0)
+    let midpoint = RealityProceduralSceneContent.navigationRenderPoints(route: route,
+                                                                        progress: openingEnd * 0.5)
+    let fullRoute = RealityProceduralSceneContent.navigationRenderPoints(route: route,
+                                                                         progress: openingEnd)
+
+    #expect(hiddenAtLaunch.count == 1)
+    #expect(midpoint.count > 1)
+    #expect(midpoint.count < route.points.count)
+    #expect(midpoint.first == route.points.first)
+    #expect(fullRoute == route.points)
+}
+
+@MainActor
+@Test func proceduralNavigationRoutePrefixKeepsMarkerOnRevealedArtemisLine() {
+    let route = makeProceduralArtemisRoute()
+    let openingEnd = ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: route.estimatedDuration)
+    let earlyProgress = openingEnd * 0.04
+    let revealedPoints = RealityProceduralSceneContent.navigationRenderPoints(route: route,
+                                                                              progress: earlyProgress)
+    let revealedDistance = RoutePathBuilder.makeCumulativeDistances(points: revealedPoints).last ?? 0
+
+    #expect(revealedDistance >= route.distance(at: earlyProgress))
+    #expect(revealedPoints.count < route.points.count)
+}
+
+@MainActor
+@Test func proceduralNavigationRouteKeepsNonArtemisRouteFullyVisible() {
+    let route = makeProceduralNavigationRoute(originName: "Earth",
+                                              waypointName: nil,
+                                              destinationName: "Mars")
+
+    #expect(RealityProceduralSceneContent.navigationRenderPoints(route: route,
+                                                                 progress: 0) == route.points)
+}
+
 @Test func realityRibbonMaintainsScreenSpaceWidthAcrossCameraDepths() {
     let fov: Float = .pi / 3
     let viewportHeight: Float = 844
@@ -123,4 +164,31 @@ private func projectedLineWidth(halfWidth: Float,
                                 fov: Float,
                                 viewportHeight: Float) -> Float {
     halfWidth * viewportHeight / (depth * tan(fov / 2))
+}
+
+private func makeProceduralArtemisRoute() -> NavigationRoute {
+    makeProceduralNavigationRoute(originName: "Earth",
+                                  waypointName: "Moon",
+                                  destinationName: "Earth")
+}
+
+private func makeProceduralNavigationRoute(originName: String,
+                                           waypointName: String?,
+                                           destinationName: String) -> NavigationRoute {
+    let points = [
+        SIMD3<Float>(0, 0, 0),
+        SIMD3<Float>(1, 0, 1),
+        SIMD3<Float>(2, 0, 0),
+        SIMD3<Float>(1, 0, -1),
+        SIMD3<Float>(0, 0, 0)
+    ]
+    let cumulativeDistances = RoutePathBuilder.makeCumulativeDistances(points: points)
+    return NavigationRoute(originName: originName,
+                           waypointName: waypointName,
+                           destinationName: destinationName,
+                           points: points,
+                           cumulativeDistances: cumulativeDistances,
+                           totalDistance: cumulativeDistances.last ?? 0,
+                           estimatedDuration: 16,
+                           overviewCenter: SIMD3<Float>(1, 0, 0))
 }

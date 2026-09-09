@@ -8,13 +8,23 @@
 import SwiftUI
 
 struct TitleSectionView: View {
-    let name: String
+    let missions: [Mission]
+    let onMissionSelected: (Mission) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Hi \(name),")
-                .font(Typography.greeting)
-                .foregroundStyle(OptiColor.textSecondary)
+        VStack(alignment: .leading, spacing: 12) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 10) {
+                    ForEach(missions) { mission in
+                        MissionCardView(mission: mission)
+                            .onTapGesture {
+                                onMissionSelected(mission)
+                            }
+                    }
+                }
+            }
+            .frame(height: 82)
+
             HStack {
                 Text("Where do you wanna go?")
                     .font(Typography.screenTitle)
@@ -28,7 +38,8 @@ struct TitleSectionView: View {
 
 #Preview {
     VStack {
-        TitleSectionView(name: "Stranger")
+        TitleSectionView(missions: Mission.available,
+                         onMissionSelected: { _ in })
         Spacer()
     }
     .padding(.horizontal)

@@ -148,19 +148,45 @@ final class RealityProceduralSceneContent {
             return
         }
 
-        navigationPath.update(points: route.points,
-                              sceneOrigin: sceneOrigin,
-                              cameraPosition: cameraPosition,
-                              cameraUp: cameraUp,
-                              renderViewMatrix: renderViewMatrix,
-                              verticalFieldOfView: verticalFieldOfView,
-                              viewportHeight: viewportHeight,
-                              color: Self.navigationRouteColor)
+        let visiblePoints = Self.navigationRenderPoints(route: route,
+                                                        progress: state.progress)
+        if visiblePoints.count >= 2 {
+            navigationPath.update(points: visiblePoints,
+                                  sceneOrigin: sceneOrigin,
+                                  cameraPosition: cameraPosition,
+                                  cameraUp: cameraUp,
+                                  renderViewMatrix: renderViewMatrix,
+                                  verticalFieldOfView: verticalFieldOfView,
+                                  viewportHeight: viewportHeight,
+                                  color: Self.navigationRouteColor)
+        } else {
+            navigationPath.hide()
+        }
         navigationMarker.isEnabled = true
         navigationMarker.position = markerPosition - sceneOrigin
         let cameraDistance = max(simd_distance(navigationMarker.position, cameraPosition), 0.001)
         let pulse = 1 + 0.08 * sin(Float(elapsedTime) * 6)
         navigationMarker.scale = SIMD3<Float>(repeating: cameraDistance * 0.008 * pulse)
+    }
+
+    static func navigationRenderPoints(route: NavigationRoute,
+                                       progress: Float) -> [SIMD3<Float>] {
+        guard ArtemisRouteProfile.isArtemisRoute(route) else {
+            return route.points
+        }
+
+        let openingPhaseEnd = ArtemisRouteProfile.openingPhaseEnd(
+            estimatedDuration: route.estimatedDuration
+        )
+        guard progress < openingPhaseEnd else {
+            return route.points
+        }
+
+        let easedProgress = ArtemisRouteProfile.easedOpeningProgress(
+            routeProgress: progress,
+            estimatedDuration: route.estimatedDuration
+        )
+        return route.prefixPoints(through: max(progress, easedProgress))
     }
 
     static func circlePoints(center: SIMD3<Float>, radius: Float) -> [SIMD3<Float>] {

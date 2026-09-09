@@ -15,6 +15,52 @@ import Testing
 }
 
 @MainActor
+@Test func navigationControllerStartsContinuousEarthMoonEarthNavigation() throws {
+    let fixture = NavigationControllerFixture(snapshot: .cislunarNavigationControllerTestSnapshot)
+
+    fixture.controller.startNavigation(from: "Earth", via: "Moon", to: "Earth")
+
+    let route = try #require(fixture.controller.routeRenderState.route)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.originName == "Earth")
+    #expect(fixture.controller.navigationSnapshot.waypointName == "Moon")
+    #expect(fixture.controller.navigationSnapshot.destinationName == "Earth")
+    #expect(route.originName == "Earth")
+    #expect(route.waypointName == "Moon")
+    #expect(route.destinationName == "Earth")
+    #expect(route.estimatedDuration == 16)
+}
+
+@MainActor
+@Test func navigationControllerPublishesPreparingSnapshotForPendingMissionNavigation() throws {
+    let fixture = NavigationControllerFixture(snapshot: nil)
+
+    fixture.controller.startNavigation(from: "Earth", via: "Moon", to: "Earth")
+
+    #expect(fixture.controller.navigationSnapshot.state == .preparing)
+    #expect(fixture.controller.navigationSnapshot.originName == "Earth")
+    #expect(fixture.controller.navigationSnapshot.waypointName == "Moon")
+    #expect(fixture.controller.navigationSnapshot.destinationName == "Earth")
+    #expect(fixture.controller.routeRenderState.route == nil)
+}
+
+@MainActor
+@Test func navigationControllerAppliesPendingMissionNavigationWhenSnapshotArrives() throws {
+    let fixture = NavigationControllerFixture(snapshot: nil)
+
+    fixture.controller.startNavigation(from: "Earth", via: "Moon", to: "Earth")
+    fixture.source.latestSnapshot = .cislunarNavigationControllerTestSnapshot
+    fixture.controller.update(snapshot: .cislunarNavigationControllerTestSnapshot,
+                              delta: 0.1)
+
+    let route = try #require(fixture.controller.routeRenderState.route)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(route.originName == "Earth")
+    #expect(route.waypointName == "Moon")
+    #expect(route.destinationName == "Earth")
+}
+
+@MainActor
 @Test func navigationControllerStartDoesNotMutateCameraState() {
     let fixture = NavigationControllerFixture()
     let initialRevision = fixture.cameraState.revision
@@ -170,13 +216,15 @@ import Testing
 
 @MainActor
 private struct NavigationControllerFixture {
-    let snapshot = UniverseSceneSnapshot.navigationControllerTestSnapshot
+    let snapshot: UniverseSceneSnapshot
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
     let cameraState: CameraState
     let controller: NavigationController
 
-    init(routePlayback: RoutePlayback = RoutePlaybackController()) {
+    init(snapshot: UniverseSceneSnapshot? = .navigationControllerTestSnapshot,
+         routePlayback: RoutePlayback = RoutePlaybackController()) {
+        self.snapshot = snapshot ?? .navigationControllerTestSnapshot
         source = FakeNavigationSnapshotSource(latestSnapshot: snapshot)
         cameraState = CameraState()
         provider = SnapshotProvider(cameraState: cameraState,
@@ -290,6 +338,22 @@ private extension UniverseSceneSnapshot {
                                 testPacket(name: "Mars",
                                            worldPosition: SIMD3<Float>(0, 0, -1.52),
                                            framingRadius: 0.05)
+                               ])
+    }
+
+    static var cislunarNavigationControllerTestSnapshot: UniverseSceneSnapshot {
+        UniverseSceneSnapshot(frameID: 1,
+                               simulationTime: 0,
+                               planets: [
+                                testPacket(name: "Sun",
+                                           worldPosition: SIMD3<Float>(0, 0, 0),
+                                           framingRadius: 0.2),
+                                testPacket(name: "Earth",
+                                           worldPosition: SIMD3<Float>(1, 0, 0),
+                                           framingRadius: 0.05),
+                                testPacket(name: "Moon",
+                                           worldPosition: SIMD3<Float>(1.2, 0, 0),
+                                           framingRadius: 0.02)
                                ])
     }
 

@@ -6,14 +6,30 @@
 //
 
 extension NavigationController: UniverseNavigationControlling {
-    func startNavigation(to name: String) {
+    func startNavigation(from originName: String, via waypointName: String?, to destinationName: String) {
         guard let snapshot = snapshotProvider.latestSnapshot,
-              applyNavigation(named: name, snapshot: snapshot) else {
-            pendingNavigationDestinationName = name
+              applyNavigation(from: originName,
+                              via: waypointName,
+                              to: destinationName,
+                              snapshot: snapshot) else {
+            pendingNavigationRequest = NavigationRequest(originName: originName,
+                                                         waypointName: waypointName,
+                                                         destinationName: destinationName)
+            publishNavigationSnapshot(
+                NavigationRouteSnapshot(routeID: nil,
+                                        state: .preparing,
+                                        originName: originName,
+                                        waypointName: waypointName,
+                                        destinationName: destinationName,
+                                        progress: 0,
+                                        elapsedTime: 0,
+                                        remainingTime: 0,
+                                        estimatedDuration: 0)
+            )
             return
         }
 
-        pendingNavigationDestinationName = nil
+        pendingNavigationRequest = nil
     }
 
     func pauseNavigation() {
@@ -27,7 +43,7 @@ extension NavigationController: UniverseNavigationControlling {
     func cancelNavigation() {
         navigationRouteCoordinator.cancel()
         isCameraAutoFramingEnabled = false
-        pendingNavigationDestinationName = nil
+        pendingNavigationRequest = nil
     }
 
     func doneNavigation() {
@@ -39,7 +55,7 @@ extension NavigationController: UniverseNavigationControlling {
         let completedDestinationName = navigationSnapshot.destinationName
         navigationRouteCoordinator.cancel()
         isCameraAutoFramingEnabled = false
-        pendingNavigationDestinationName = nil
+        pendingNavigationRequest = nil
         if let completedDestinationName {
             navigationDidComplete?(completedDestinationName)
         }
@@ -47,8 +63,20 @@ extension NavigationController: UniverseNavigationControlling {
 
     func applyNavigation(named name: String,
                          snapshot: UniverseSceneSnapshot) -> Bool {
+        applyNavigation(from: "Earth",
+                        via: nil,
+                        to: name,
+                        snapshot: snapshot)
+    }
+
+    func applyNavigation(from originName: String,
+                         via waypointName: String? = nil,
+                         to destinationName: String,
+                         snapshot: UniverseSceneSnapshot) -> Bool {
         isCameraAutoFramingEnabled = true
-        guard navigationRouteCoordinator.start(destinationName: name,
+        guard navigationRouteCoordinator.start(originName: originName,
+                                               waypointName: waypointName,
+                                               destinationName: destinationName,
                                                planets: planets,
                                                snapshot: snapshot),
               navigationRouteCoordinator.route != nil else {

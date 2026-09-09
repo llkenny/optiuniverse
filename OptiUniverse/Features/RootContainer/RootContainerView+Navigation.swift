@@ -21,6 +21,8 @@ extension RootContainerView {
             }
 
             universeResources.navigation.startNavigation(to: destination.object)
+            missionFlowState = nil
+            pendingMissionAdvance = nil
             objectsViewState = .navigation
         } label: {
             Image(systemName: "paperplane")
@@ -111,18 +113,43 @@ extension RootContainerView {
 
     private func cancelNavigationAndDismissOverlays() {
         universeResources.navigation.cancelNavigation()
+        missionFlowState = nil
+        pendingMissionAdvance = nil
         objectsViewState = .raw
     }
 
     private func navigationTitle(snapshot: NavigationRouteSnapshot) -> String {
+        if let missionFlowState {
+            if snapshot.state == .completed {
+                return "\(missionFlowState.mission.title) complete"
+            }
+
+            return missionFlowState.mission.title
+        }
+
         if snapshot.state == .completed {
             return "Arrived"
+        }
+
+        if let originName = snapshot.originName,
+           let waypointName = snapshot.waypointName,
+           let destinationName = snapshot.destinationName {
+            return "Navigating \(originName) → \(waypointName) → \(destinationName)"
+        }
+
+        if let originName = snapshot.originName,
+           let destinationName = snapshot.destinationName {
+            return "Navigating \(originName) → \(destinationName)"
         }
 
         return "Navigating to \(snapshot.destinationName ?? "destination")"
     }
 
     private func navigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+        if missionFlowState != nil {
+            return missionNavigationSubtitle(snapshot: snapshot)
+        }
+
         switch snapshot.state {
         case .running:
             return "ETA \(formatTime(snapshot.remainingTime))"
@@ -133,6 +160,38 @@ extension RootContainerView {
         case .idle, .preparing, .cancelled:
             return ""
         }
+    }
+
+    private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+        let routeText = navigationRouteText(snapshot: snapshot)
+
+        switch snapshot.state {
+        case .preparing:
+            return "Preparing \(routeText)"
+        case .running:
+            return "\(routeText) · ETA \(formatTime(snapshot.remainingTime))"
+        case .paused:
+            return "\(routeText) · Paused"
+        case .completed:
+            return routeText
+        case .idle, .cancelled:
+            return routeText
+        }
+    }
+
+    private func navigationRouteText(snapshot: NavigationRouteSnapshot) -> String {
+        if let originName = snapshot.originName,
+           let waypointName = snapshot.waypointName,
+           let destinationName = snapshot.destinationName {
+            return "\(originName) → \(waypointName) → \(destinationName)"
+        }
+
+        if let originName = snapshot.originName,
+           let destinationName = snapshot.destinationName {
+            return "\(originName) → \(destinationName)"
+        }
+
+        return "Earth → Moon → Earth"
     }
 
     private func formatTime(_ time: TimeInterval) -> String {

@@ -11,6 +11,7 @@ import BaseModule
 struct HomeView: View {
 
     @Environment(AppEnvironment.self) private var appEnvironment
+    let onMissionSelected: (Mission) -> Void
 
     @State private var currentCarouselIndex: Int = 0
     @State private var totalCount: Int = 0
@@ -20,7 +21,8 @@ struct HomeView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                TitleSectionView(name: appEnvironment.username)
+                TitleSectionView(missions: Mission.available,
+                                 onMissionSelected: onMissionSelected)
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                 HeroCarouselView(
@@ -43,6 +45,6 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(onMissionSelected: { _ in })
         .environment(AppEnvironment())
 }

@@ -19,6 +19,10 @@ struct UniverseSceneSnapshot: Sendable {
         planet(named: name)?.framingRadius
     }
 
+    nonisolated func surfaceRadius(ofPlanetNamed name: String) -> Float? {
+        planet(named: name)?.surfaceRadius
+    }
+
     nonisolated func worldPosition(ofPlanetNamed name: String) -> SIMD3<Float>? {
         planet(named: name)?.worldPosition
     }
