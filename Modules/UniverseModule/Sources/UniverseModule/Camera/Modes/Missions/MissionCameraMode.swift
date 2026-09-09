@@ -5,6 +5,7 @@
 //  Created by Codex on 07.09.2026.
 //
 
+import Foundation
 import simd
 
 final class MissionCameraMode {
@@ -67,16 +68,38 @@ final class MissionCameraMode {
         let marker = route.point(at: progress)
             ?? route.point(at: ArtemisRouteProfile.lunarEncounterProgress)
             ?? waypoint
-        let closeUpFrame = makeLunarFlybyMarkerFrame(marker: marker,
-                                                     waypoint: waypoint,
-                                                     waypointRadius: waypointRadius)
+        let markerOffset = marker - waypoint
+        let minimumDistance = CameraFit.minimumDistanceOutsideBody(
+            radius: waypointRadius,
+            baseMinimumDistance: CameraFit.minimumNearPlane
+        )
+        let markerDistance = simd_length(markerOffset)
+        let pitch = markerDistance > lunarFlybyOrientationEpsilon
+            ? -asin(simd_clamp(markerOffset.y / markerDistance, -1, 1))
+            : -.pi * 0.25
 
-        return CameraTransition.interpolate(
-            from: CameraTransition.Frame(target: route.overviewCenter,
-                                         distance: overviewDistance,
-                                         orientation: OverviewCameraFraming.orientation),
-            to: closeUpFrame,
-            progress: closeUpProgress
+        // Unwrap the heading along the route instead of choosing a new shortest quaternion
+        // arc every frame. Each blend is anchored at its overview boundary, so rounding
+        // the Moon cannot change the direction of the transition midway through it.
+        let boundary = progress < ArtemisRouteProfile.lunarFlybyCloseUpFullStartProgress
+            ? ArtemisRouteProfile.lunarFlybyCloseUpStartProgress
+            : ArtemisRouteProfile.lunarFlybyCloseUpEndProgress
+        let yaw = lunarFlybyHeading(route: route,
+                                   waypoint: waypoint,
+                                   boundary: boundary,
+                                   progress: progress)
+        let orientation = simd_quatf(angle: yaw * closeUpProgress, axis: SIMD3<Float>(0, 1, 0))
+            * simd_quatf(angle: interpolate(from: -.pi * 0.25,
+                                            to: pitch,
+                                            progress: closeUpProgress),
+                         axis: SIMD3<Float>(1, 0, 0))
+
+        return CameraTransition.Frame(
+            target: interpolate(from: route.overviewCenter, to: waypoint, progress: closeUpProgress),
+            distance: interpolate(from: overviewDistance,
+                                  to: max(markerDistance, minimumDistance),
+                                  progress: closeUpProgress),
+            orientation: simd_normalize(orientation)
         )
     }
 
@@ -117,26 +140,37 @@ final class MissionCameraMode {
                            progress: overviewProgress)
     }
 
-    private func makeLunarFlybyMarkerFrame(marker: SIMD3<Float>,
-                                           waypoint: SIMD3<Float>,
-                                           waypointRadius: Float) -> CameraTransition.Frame {
-        let markerOffset = marker - waypoint
-        let markerDistance = simd_length(markerOffset)
-        let minimumDistance = CameraFit.minimumDistanceOutsideBody(radius: waypointRadius,
-                                                                  baseMinimumDistance: CameraFit.minimumNearPlane)
-        let distance = max(markerDistance, minimumDistance)
-        let offsetDirection = markerDistance > lunarFlybyOrientationEpsilon
-            ? markerOffset / markerDistance
-            : OverviewCameraFraming.orientation.act(SIMD3<Float>(0, 0, 1))
+    private func lunarFlybyHeading(route: NavigationRoute,
+                                   waypoint: SIMD3<Float>,
+                                   boundary: Float,
+                                   progress: Float) -> Float {
+        var heading: Float = 0
+        func follow(_ point: SIMD3<Float>) {
+            let offset = point - waypoint
+            // Retain the heading if the marker is directly above or below the Moon.
+            guard offset.x * offset.x + offset.z * offset.z
+                    > lunarFlybyOrientationEpsilon * lunarFlybyOrientationEpsilon else { return }
+            let angle = atan2(offset.x, offset.z)
+            let delta = angle - heading
+            heading += atan2(sin(delta), cos(delta))
+        }
 
-        return CameraTransition.Frame(
-            target: waypoint,
-            distance: distance,
-            orientation: makeLunarFlybyCameraOrientation(
-                offsetDirection: offsetDirection,
-                upSeed: OverviewCameraFraming.orientation.act(SIMD3<Float>(0, 1, 0))
-            )
-        )
+        if let point = route.point(at: boundary) { follow(point) }
+        let boundaryDistance = route.distance(at: boundary)
+        let currentDistance = route.distance(at: progress)
+        let forward = boundary <= progress
+        let indices = stride(from: forward ? 0 : route.points.count - 1,
+                             to: forward ? route.points.count : -1,
+                             by: forward ? 1 : -1)
+        for index in indices where index < route.cumulativeDistances.count {
+            let distance = route.cumulativeDistances[index]
+            if distance > min(boundaryDistance, currentDistance),
+               distance < max(boundaryDistance, currentDistance) {
+                follow(route.points[index])
+            }
+        }
+        if let point = route.point(at: progress) { follow(point) }
+        return heading
     }
 
     private func interpolate(from start: SIMD3<Float>,
@@ -153,35 +187,3 @@ final class MissionCameraMode {
 }
 
 private let lunarFlybyOrientationEpsilon: Float = 0.000_001
-
-private func makeLunarFlybyCameraOrientation(offsetDirection: SIMD3<Float>,
-                                             upSeed: SIMD3<Float>) -> simd_quatf {
-    let epsilonSquared = lunarFlybyOrientationEpsilon * lunarFlybyOrientationEpsilon
-    let normalizedOffset = simd_length_squared(offsetDirection) > epsilonSquared
-        ? simd_normalize(offsetDirection)
-        : SIMD3<Float>(0, 0, 1)
-    let normalizedUpSeed = simd_length_squared(upSeed) > epsilonSquared
-        ? simd_normalize(upSeed)
-        : SIMD3<Float>(0, 1, 0)
-    let candidateUp = abs(simd_dot(normalizedOffset, normalizedUpSeed)) > 0.94
-        ? lunarFlybyFallbackUpVector(offsetDirection: normalizedOffset)
-        : normalizedUpSeed
-    let right = simd_normalize(simd_cross(candidateUp, normalizedOffset))
-    let cameraUpDirection = simd_normalize(simd_cross(normalizedOffset, right))
-
-    return simd_normalize(simd_quatf(
-        float3x3(columns: (right, cameraUpDirection, normalizedOffset))
-    ))
-}
-
-private func lunarFlybyFallbackUpVector(offsetDirection: SIMD3<Float>) -> SIMD3<Float> {
-    let candidates = [
-        SIMD3<Float>(1, 0, 0),
-        SIMD3<Float>(0, 1, 0),
-        SIMD3<Float>(0, 0, 1)
-    ]
-
-    return candidates.min {
-        abs(simd_dot(offsetDirection, $0)) < abs(simd_dot(offsetDirection, $1))
-    } ?? SIMD3<Float>(0, 1, 0)
-}
