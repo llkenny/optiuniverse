@@ -14,16 +14,18 @@ struct TitleSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
+                HStack(spacing: 10) {
                     ForEach(missions) { mission in
-                        MissionCardView(mission: mission)
-                            .onTapGesture {
-                                onMissionSelected(mission)
-                            }
+                        Button {
+                            onMissionSelected(mission)
+                        } label: {
+                            MissionCardView(mission: mission)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Start mission")
                     }
                 }
             }
-            .frame(height: 82)
 
             HStack {
                 Text("Where do you wanna go?")

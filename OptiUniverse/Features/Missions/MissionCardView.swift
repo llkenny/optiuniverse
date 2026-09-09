@@ -4,38 +4,54 @@ struct MissionCardView: View {
     let mission: Mission
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Image(systemName: "location.north.line")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(OptiColor.overlayTextPrimary)
+        HStack(spacing: 12) {
+            Image(systemName: "location.north.line")
+                .font(Typography.destinationTitle)
+                .foregroundStyle(OptiColor.controlSelectedText)
+                .frame(width: 36, height: 36)
+                .background(OptiColor.controlSelected, in: Circle())
+                .accessibilityHidden(true)
 
+            VStack(alignment: .leading, spacing: 4) {
                 Text(mission.title)
-                    .font(Typography.navigationTitle)
-                    .foregroundStyle(OptiColor.overlayTextPrimary)
-                    .lineLimit(1)
-            }
+                    .font(Typography.destinationTitle)
+                    .foregroundStyle(OptiColor.textPrimary)
 
-            Text(mission.description)
-                .font(Typography.navigationSubtitle)
-                .foregroundStyle(OptiColor.overlayTextSecondary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(mission.description)
+                    .font(Typography.navigationSubtitle)
+                    .foregroundStyle(OptiColor.textSecondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Image(systemName: "chevron.right")
+                .font(Typography.navigationControl)
+                .foregroundStyle(OptiColor.textTertiary)
+                .accessibilityHidden(true)
         }
-        .padding(12)
-        .frame(width: 184, height: 82, alignment: .leading)
-        .background(OptiColor.overlaySurface.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard, style: .continuous))
+        .padding(16)
+        .frame(width: 280, alignment: .leading)
+        .background(OptiColor.screenBackground)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: CornerRadius.detailCard, style: .continuous)
-                .stroke(OptiColor.overlayBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: CornerRadius.card, style: .continuous)
+                .strokeBorder(OptiColor.controlInactiveStroke, lineWidth: 1)
         }
-        .contentShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: CornerRadius.card, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
-#Preview {
+#Preview("Light") {
     MissionCardView(mission: .artemisII)
         .padding()
         .background(OptiColor.screenBackground)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    MissionCardView(mission: .artemisII)
+        .padding()
+        .background(OptiColor.screenBackground)
+        .preferredColorScheme(.dark)
 }
