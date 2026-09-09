@@ -9,6 +9,14 @@ import Foundation
 import simd
 
 final class MissionCameraMode {
+    private struct FlybyHeadingReference {
+        var routeID: UUID?
+        var approach: Float = 0
+        var departure: Float = 0
+    }
+
+    private var flybyHeadingReference = FlybyHeadingReference()
+
     func departurePhaseEnd(route: NavigationRoute) -> Float? {
         guard ArtemisRouteProfile.isArtemisRoute(route) else {
             return nil
@@ -79,8 +87,8 @@ final class MissionCameraMode {
             : -.pi * 0.25
 
         // Unwrap the heading along the route instead of choosing a new shortest quaternion
-        // arc every frame. Each blend is anchored at its overview boundary, so rounding
-        // the Moon cannot change the direction of the transition midway through it.
+        // arc every frame. Each blend retains its overview boundary's unwrapped heading
+        // across refreshed geometry, so crossing the angle seam cannot reverse the blend.
         let boundary = progress < ArtemisRouteProfile.lunarFlybyCloseUpFullStartProgress
             ? ArtemisRouteProfile.lunarFlybyCloseUpStartProgress
             : ArtemisRouteProfile.lunarFlybyCloseUpEndProgress
@@ -144,7 +152,11 @@ final class MissionCameraMode {
                                    waypoint: SIMD3<Float>,
                                    boundary: Float,
                                    progress: Float) -> Float {
-        var heading: Float = 0
+        if flybyHeadingReference.routeID != route.id {
+            flybyHeadingReference = FlybyHeadingReference(routeID: route.id)
+        }
+        let isApproach = boundary == ArtemisRouteProfile.lunarFlybyCloseUpStartProgress
+        var heading = isApproach ? flybyHeadingReference.approach : flybyHeadingReference.departure
         func follow(_ point: SIMD3<Float>) {
             let offset = point - waypoint
             // Retain the heading if the marker is directly above or below the Moon.
@@ -156,6 +168,13 @@ final class MissionCameraMode {
         }
 
         if let point = route.point(at: boundary) { follow(point) }
+        // Store the boundary heading, not the marker heading: route traversal below
+        // must not accumulate an extra revolution when the same frame is evaluated again.
+        if isApproach {
+            flybyHeadingReference.approach = heading
+        } else {
+            flybyHeadingReference.departure = heading
+        }
         let boundaryDistance = route.distance(at: boundary)
         let currentDistance = route.distance(at: progress)
         let forward = boundary <= progress
