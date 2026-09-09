@@ -220,6 +220,49 @@ import Testing
     }
 }
 
+@Test func artemisFlybyCameraKeepsContinuousOrientationThroughApproachAndDeparture() throws {
+    // Exercise different Moon positions, including the quaternion wrap at +/- pi.
+    for azimuthIndex in 0..<24 {
+        let azimuth = Float(azimuthIndex) * .pi / 12
+        let moon = SIMD3<Float>(2 * cos(azimuth), 0, 2 * sin(azimuth))
+        let route = try #require(RoutePathBuilder().makeRoute(input: RouteBuildInput(
+            originName: "Earth", waypointName: "Moon", destinationName: "Earth",
+            planets: [], originPosition: .zero, waypointPosition: moon,
+            originSurfaceRadius: 0.1, waypointSurfaceRadius: 0.05,
+            destinationSurfaceRadius: 0.1, earthSunDirection: SIMD3<Float>(1, 0, 0),
+            sunPosition: SIMD3<Float>(100, 0, 0), destinationPosition: .zero,
+            estimatedDuration: 16
+        )))
+        let snapshot = UniverseSceneSnapshot(
+            frameID: 1, simulationTime: 0,
+            planets: [UniverseSceneSnapshot.navigationCameraTestPacket(
+                name: "Moon", worldPosition: moon, framingRadius: 0.05
+            )]
+        )
+        let mode = MissionCameraMode()
+        var previous = OverviewCameraFraming.orientation
+        var minimumAdjacentDot: Float = 1
+        for step in 0...2400 {
+            let progress = Float(0.47) + Float(step) * 0.0001
+            let frame = mode.makeCruiseFrame(route: route, progress: progress,
+                                            snapshot: snapshot, overviewDistance: 5)
+            let orientation = frame?.orientation ?? OverviewCameraFraming.orientation
+            minimumAdjacentDot = min(minimumAdjacentDot,
+                                     abs(simd_dot(previous.vector, orientation.vector)))
+            if progress >= 0.52, progress <= 0.66 {
+                let frame = try #require(frame)
+                let marker = try #require(route.point(at: progress))
+                expectVector(frame.target + orientation.act(SIMD3<Float>(0, 0, frame.distance)),
+                             equals: marker)
+                #expect(orientation.act(SIMD3<Float>(0, 1, 0)).y > 0)
+            }
+            previous = orientation
+        }
+        // A small playback step must never produce a visible orientation jump.
+        #expect(minimumAdjacentDot > cos(Float(0.05)), "Moon azimuth: \(azimuth)")
+    }
+}
+
 @Test func navigationCameraModeUsesOverviewForMiddlePhase() throws {
     let mode = NavigationCameraMode()
     let route = makeNavigationCameraTestRoute()
