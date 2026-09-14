@@ -13,6 +13,10 @@ import UniverseModule
 struct OptiUniverseApp: App {
     @State private var appEnvironment = AppEnvironment()
     @State private var universeResources = UniverseModuleFactory.makeResources()
+    #if os(iOS)
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var reviewCoordinator = ReviewRequestCoordinator()
+    #endif
 
     var body: some Scene {
         #if os(visionOS)
@@ -30,7 +34,15 @@ struct OptiUniverseApp: App {
         WindowGroup {
             RootContainerView(universeResources: universeResources)
                 .environment(appEnvironment)
+                #if os(iOS)
+                .environment(reviewCoordinator)
+                #endif
         }
+        #if os(iOS)
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            reviewCoordinator.scenePhaseChanged(phase)
+        }
+        #endif
         #endif
     }
 }

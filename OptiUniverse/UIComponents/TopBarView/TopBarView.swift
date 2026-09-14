@@ -13,7 +13,7 @@ struct TopBarView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     // Hidden for version 1 release in #239
 //    @State private var isShowingProfile: Bool = false
-    @State private var isShowingLegalCredits: Bool = false
+    @Binding var isShowingLegalCredits: Bool
 
     var body: some View {
         HStack {
@@ -71,8 +71,9 @@ struct TopBarView: View {
 }
 
 #Preview {
+    @Previewable @State var isShowingLegalCredits = false
     VStack {
-        TopBarView()
+        TopBarView(isShowingLegalCredits: $isShowingLegalCredits)
         Spacer()
     }
     .padding()

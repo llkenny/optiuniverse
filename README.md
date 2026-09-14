@@ -76,6 +76,12 @@ OptiUniverse demonstrates work across the parts of iOS development that are ofte
 - Asset-heavy app organization with JSON configuration and catalogs.
 - Documentation of technical decisions through RFCs and ADRs.
 
+## Ratings and Reviews
+
+On iOS, OptiUniverse becomes eligible for Apple's native review prompt after either three foreground sessions or two successfully started navigation routes (including missions). Returning from the background counts as a session; temporary system interruptions, failed route starts, and pause/resume do not add counts.
+
+The app waits until loading succeeds, navigation completes or is cancelled, and legal/object-info presentations are dismissed, then allows two seconds for the active interface to settle. Counters persist across updates. Another request requires a newer marketing version and at least 120 days since the last attempt. Existing installations start with zero tracked activity. StoreKit controls whether the prompt actually appears and does not report review submission; no custom rating screen is shown.
+
 ## Requirements
 
 - Xcode with iOS Simulator support
