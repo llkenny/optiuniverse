@@ -9,6 +9,7 @@ import SwiftUI
 import UniverseModule
 import BaseModule
 import Foundation
+import StoreKit
 
 struct RootContainerView: View {
 
@@ -19,6 +20,12 @@ struct RootContainerView: View {
     }
 
     @Environment(AppEnvironment.self) var appEnvironment
+    #if os(iOS)
+    @Environment(ReviewRequestCoordinator.self) private var reviewCoordinator
+    @Environment(\.requestReview) private var requestReview
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
+    @State private var isShowingLegalCredits = false
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
     @State var missionFlowState: MissionFlowState?
@@ -40,7 +47,7 @@ struct RootContainerView: View {
             switch loadingState {
             case .loaded:
                 VStack(spacing: 0) {
-                    TopBarView()
+                    TopBarView(isShowingLegalCredits: $isShowingLegalCredits)
                         .padding(.horizontal)
                         .padding(.bottom, 16)
 
@@ -100,8 +107,20 @@ struct RootContainerView: View {
             objectsViewState = .raw
         }
         .onChange(of: universeResources.navigation.navigationSnapshot) { _, snapshot in
+            #if os(iOS)
+            reviewCoordinator.navigationChanged(routeID: snapshot.routeID, state: snapshot.state)
+            #endif
             handleNavigationSnapshotChange(snapshot)
         }
+        #if os(iOS)
+        .onChange(of: reviewPresentationContext, initial: true) { _, context in
+            let action = requestReview
+            reviewCoordinator.updatePresentation(context, requestReview: { action() })
+        }
+        .onDisappear {
+            reviewCoordinator.stopPresenting()
+        }
+        #endif
         .task(id: loadingAttempt) {
             do {
                 try await universeResources.prepare()
@@ -124,6 +143,22 @@ struct RootContainerView: View {
         .animation(.default, value: objectsViewState)
         .animation(.default, value: objectInfoOverlayPresentationID)
     }
+
+    #if os(iOS)
+    private var reviewPresentationContext: ReviewRequestCoordinator.PresentationContext {
+        let isObjectInfoPresented: Bool
+        if case .info = objectsViewState {
+            isObjectInfoPresented = true
+        } else {
+            isObjectInfoPresented = false
+        }
+        return .init(isLoaded: loadingState == .loaded,
+                     isSceneActive: scenePhase == .active,
+                     navigationState: universeResources.navigation.navigationSnapshot.state,
+                     isLegalSheetPresented: isShowingLegalCredits,
+                     isObjectInfoPresented: isObjectInfoPresented)
+    }
+    #endif
 
     private func cancelObjectPresentationModes() {
         universeResources.setObjectInfoOverlayFraming(isPresented: false,
@@ -233,4 +268,5 @@ private struct UniverseLoadingFailureView: View {
 #Preview {
     RootContainerView(universeResources: UniverseModuleFactory.makeResources())
         .environment(AppEnvironment())
+        .environment(ReviewRequestCoordinator(defaults: UserDefaults(suiteName: "OptiUniverse.ReviewPreview")!))
 }
