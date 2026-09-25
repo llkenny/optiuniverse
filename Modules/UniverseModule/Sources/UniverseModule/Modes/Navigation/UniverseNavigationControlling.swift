@@ -23,8 +23,6 @@ public protocol UniverseNavigationControlling: AnyObject {
     func startNavigation(from originName: String, via waypointName: String?, to destinationName: String)
     func startNavigation(from originName: String, to destinationName: String)
     func startNavigation(to name: String)
-    func pauseNavigation()
-    func resumeNavigation()
     func cancelNavigation()
     func doneNavigation()
 }

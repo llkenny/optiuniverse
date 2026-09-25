@@ -21,6 +21,7 @@ public final class UniverseModuleResources {
     let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
     let assetRepository: RealityAssetRepository
     private let celestialAssetManifestLoader: () throws -> CelestialAssetManifest
+    public internal(set) var transferPreviewSnapshot: TransferPreviewSnapshot = .inactive
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
     @ObservationIgnored private(set) var navigationController: NavigationController!
@@ -52,7 +53,7 @@ public final class UniverseModuleResources {
             try CelestialAssetManifestLoader.load()
         }
     ) {
-        planets = SolarSystemLoader.loadPlanets(from: "planets")
+        planets = (try? SolarSystemLoader.loadPlanets(from: "planets")) ?? []
         sceneSnapshotPipeline = UniverseSceneSnapshotPipeline(planets: planets)
         cameraState = CameraState()
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
@@ -70,6 +71,9 @@ public final class UniverseModuleResources {
                 self?.viewportSize ?? .zero
             }
         )
+        transferOrbitController.snapshotDidChange = { [weak self] snapshot in
+            self?.transferPreviewSnapshot = snapshot
+        }
         navigationController = NavigationController(
             snapshotProvider: snapshotProvider,
             planets: planets
@@ -94,6 +98,7 @@ public final class UniverseModuleResources {
     }
 
     public func prepare() async throws {
+        guard !planets.isEmpty else { throw UniverseModulePreparationError.invalidOrbitalData }
         guard !isPrepared else { return }
 
         if let preparationTask {

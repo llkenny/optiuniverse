@@ -7,6 +7,7 @@ public struct UniverseView: View {
     private static let immersiveControlsAttachmentID = "immersiveControls"
     #endif
 
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(AppEnvironment.self) private var appEnvironment
     @State private var installationID = UUID()
     let resources: UniverseModuleResources
@@ -71,12 +72,15 @@ public struct UniverseView: View {
                 #endif
             }
             .onAppear {
-                resources.sceneCoordinator.setPresentationActive(isActive)
+                resources.sceneCoordinator.setPresentationActive(isActive && scenePhase == .active)
                 resources.setViewportSize(geometry.size)
                 synchronizeSelection()
             }
             .onChange(of: isActive) { _, isActive in
-                resources.sceneCoordinator.setPresentationActive(isActive)
+                resources.sceneCoordinator.setPresentationActive(isActive && scenePhase == .active)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                resources.sceneCoordinator.setPresentationActive(isActive && phase == .active)
             }
             .onChange(of: geometry.size) { _, size in
                 resources.setViewportSize(size)

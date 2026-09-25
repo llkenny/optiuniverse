@@ -16,8 +16,8 @@ public enum NavigationRouteState: Sendable, Equatable {
     case idle
     case preparing
     case running
-    case paused
     case completed
+    case failed
     case cancelled
 }
 
@@ -40,6 +40,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
+    let transfer: TransferSolution?
     let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
 
@@ -52,7 +53,9 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          totalDistance: Float,
          estimatedDuration: TimeInterval,
          overviewPaddingRadius: Float = 0,
-         overviewCenter: SIMD3<Float>? = nil) {
+         overviewCenter: SIMD3<Float>? = nil,
+         transfer: TransferSolution? = nil) {
+        self.transfer = transfer
         self.id = id
         self.originName = originName
         self.waypointName = waypointName
@@ -66,12 +69,19 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
-        point(atDistance: distance(at: progress))
+        if let transfer { return transfer.position(at: Double(progress)) }
+        return point(atDistance: distance(at: progress))
     }
 
     func distance(at progress: Float) -> Float {
         guard totalDistance.isFinite, totalDistance > 0 else { return 0 }
         let clampedProgress = min(max(progress, 0), 1)
+        if transfer != nil, points.count > 1 {
+            let sample = clampedProgress * Float(points.count - 1)
+            let lower = min(Int(sample), points.count - 2)
+            let fraction = sample - Float(lower)
+            return cumulativeDistances[lower] + fraction * (cumulativeDistances[lower + 1] - cumulativeDistances[lower])
+        }
         return totalDistance * clampedProgress
     }
 
@@ -80,6 +90,10 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     func motionDirection(at progress: Float) -> SIMD3<Float>? {
+        if let transfer,
+           let state = try? transfer.trajectory.state(after: Double(min(1, max(0, progress))) * transfer.flightDuration) {
+            return normalize(OrbitalState.scenePosition(state.velocity))
+        }
         guard points.count >= 2,
               points.count == cumulativeDistances.count else {
             return nil
@@ -140,7 +154,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
             if abs(upperDistance - targetDistance) <= epsilon {
                 prefix.append(points[upperIndex])
-            } else if let point = point(atDistance: targetDistance) {
+            } else if let point = point(at: progress) {
                 prefix.append(point)
             }
             break

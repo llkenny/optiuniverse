@@ -1,8 +1,8 @@
 import Testing
 @testable import UniverseModule
 
-@Test func solarSystemLoaderContainsVersionOneCanonicalBodies() {
-    let planets = SolarSystemLoader.loadPlanets(from: "planets")
+@Test func solarSystemLoaderContainsVersionOneCanonicalBodies() throws {
+    let planets = try SolarSystemLoader.loadPlanets(from: "planets")
     let planetNames = Set(planets.map(\.name))
     let versionOneBodies = [
         "Sun",
@@ -23,7 +23,7 @@ import Testing
 }
 
 @Test func solarSystemLoaderScalesVersionOnePlanetData() throws {
-    let planets = SolarSystemLoader.loadPlanets(from: "planets")
+    let planets = try SolarSystemLoader.loadPlanets(from: "planets")
     let sun = try #require(planets.first { $0.name == "Sun" })
     let earth = try #require(planets.first { $0.name == "Earth" })
     let moon = try #require(planets.first { $0.name == "Moon" })
@@ -36,7 +36,7 @@ import Testing
 
     #expect(abs(sun.distance - 0) < 0.0001)
     #expect(abs(sun.radius - 0.696) < 0.0001)
-    #expect(abs(earth.distance - 149.598) < 0.0001)
+    #expect(abs(earth.distance - Float(1.00000261 * 149.5978707)) < 0.0001)
     #expect(abs(earth.radius - 0.006378) < 0.000001)
     #expect(moon.parentName == "Earth")
     #expect(abs(moon.distance - 0.3844) < 0.0001)

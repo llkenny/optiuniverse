@@ -5,6 +5,7 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 ## Highlights
 
 - Real-time 3D solar-system rendering with RealityKit and `RealityView`.
+- Inclined Keplerian ellipses, variable orbital speed, and synchronized two-body interplanetary transfers.
 - SwiftUI interface with a featured-object carousel, destination cards, category filtering, and shared app state through Observation.
 - Per-body USDZ model loading through RealityKit.
 - JSON-driven object metadata for destination lists, featured objects, and planet simulation parameters.
@@ -62,9 +63,26 @@ vfx_scripts/           Experimental volume-noise export utilities
 
 ## Content Model
 
-The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, and Neptune. Featured-object content is driven by JSON and backed by image assets for Saturn, Neptune, and Mars.
+The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, and Neptune. Featured-object content is driven by JSON and backed by image assets for Jupiter, Saturn, and Moon Base.
 
 Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/Models/planets.json`, while UI destination content lives in `OptiUniverse/Resources/DestinationObjects.json` and `OptiUniverse/Resources/FeaturedObjects.json`.
+
+## Orbital simulation and transfers
+
+The offline simulation starts at J2000 (JD 2451545.0 TDB) and advances one simulated day per active second. Each body uses fixed semi-major axis, eccentricity, inclination, ascending node, argument of periapsis, initial mean anomaly, and period. Solving Kepler’s equation gives faster motion at periapsis and slower motion at apoapsis. Positions and velocities use double precision in ecliptic km and km/s; rendering maps `(x, y, z)` to `(x, z, -y)` at 0.000001 scene units per km.
+
+Data sources:
+
+- Mercury through Neptune: [JPL approximate planetary elements, Table 1](https://ssd.jpl.nasa.gov/planets/approx_pos.html), frozen at J2000, with [JPL sidereal orbital periods](https://ssd.jpl.nasa.gov/planets/phys_par.html) converted from Julian years of 365.25 days. Argument of periapsis is longitude of perihelion minus ascending node; initial mean anomaly is mean longitude minus longitude of perihelion.
+- Earth uses the Earth–Moon barycenter elements as an approximation. The Sun remains fixed; solar barycentric motion is omitted.
+- Moon: [JPL satellite mean elements](https://ssd.jpl.nasa.gov/sats/elem/), Earth-relative in the J2000 ecliptic frame, with a 27.322-day period. Lunar perturbations and precession are omitted.
+- Pluto: [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), Pluto-system barycenter (9) relative to the Sun (`500@10`), JD 2451545.0, `ELEMENTS`, `ECLIPTIC`, `ICRF`, `KM-S`; DE441 osculating elements retrieved September 25, 2026. The period comes from the same osculating solution.
+
+Orbit previews show the actual ellipses, a calculated transfer, and an orange arrival-position marker. A zero-revolution prograde [Izzo Lambert solution](https://doi.org/10.1007/s10569-014-9587-y) connects Earth at departure with the destination at arrival. Flight duration is selected automatically using the conventional Hohmann-duration estimate; no launch-window optimization is performed. A universal-variable propagator supplies physical positions along the resulting conic. Invalid, unconverged, or Sun-intersecting transfers show an explicit failure with Retry/Close.
+
+Interplanetary navigation locks a fresh solution and plays it over 30 active seconds. All planetary motion accelerates by the same physical-time factor, so the spacecraft meets the destination. ETA shows playback time alongside physical flight duration. Cancel returns orbital time to one day per second from the reached epoch. Navigation has no pause/resume control; backgrounding suspends active time without a catch-up jump. Camera transitions, decorative body spin, and star effects retain their presentation timing. Lunar/Artemis journeys keep their cinematic paths and existing durations.
+
+This is a fixed-element Keplerian educational model, not a calendar-date ephemeris or an N-body simulation. Transfers are heliocentric intercepts, without launch/capture burns, fuel constraints, or gravity assists. Eccentricities and inclinations are not exaggerated; many real orbits look nearly circular.
 
 ## Why This Project Matters
 
@@ -78,7 +96,7 @@ OptiUniverse demonstrates work across the parts of iOS development that are ofte
 
 ## Ratings and Reviews
 
-On iOS, OptiUniverse becomes eligible for Apple's native review prompt after either three foreground sessions or two successfully started navigation routes (including missions). Returning from the background counts as a session; temporary system interruptions, failed route starts, and pause/resume do not add counts.
+On iOS, OptiUniverse becomes eligible for Apple's native review prompt after either three foreground sessions or two successfully started navigation routes (including missions). Returning from the background counts as a session; temporary system interruptions, failed route starts do not add counts.
 
 The app waits until loading succeeds, navigation completes or is cancelled, and legal/object-info presentations are dismissed, then allows two seconds for the active interface to settle. Counters persist across updates. Another request requires a newer marketing version and at least 120 days since the last attempt. Existing installations start with zero tracked activity. StoreKit controls whether the prompt actually appears and does not report review submission; no custom rating screen is shown.
 

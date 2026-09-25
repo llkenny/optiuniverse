@@ -46,13 +46,13 @@ struct ReviewRequestCoordinatorTests {
         defer { fixture.cleanUp() }
         let coordinator = fixture.makeCoordinator()
         let routeID = UUID()
-        for state in [NavigationRouteState.idle, .preparing, .cancelled, .completed, .paused] {
+        for state in [NavigationRouteState.idle, .preparing, .cancelled, .completed] {
             coordinator.navigationChanged(routeID: routeID, state: state)
         }
         coordinator.navigationChanged(routeID: nil, state: .running)
         #expect(coordinator.navigationStartCount == 0)
 
-        for state in [NavigationRouteState.running, .running, .paused, .running, .completed, .cancelled] {
+        for state in [NavigationRouteState.running, .running, .running, .completed, .cancelled] {
             coordinator.navigationChanged(routeID: routeID, state: state)
         }
         #expect(coordinator.navigationStartCount == 1)
@@ -163,7 +163,6 @@ struct ReviewRequestCoordinatorTests {
         coordinator.navigationChanged(routeID: secondRoute, state: .running)
         #expect(coordinator.isEligible)
         #expect(coordinator.pendingRequest == nil)
-        coordinator.navigationChanged(routeID: secondRoute, state: .paused)
         #expect(coordinator.pendingRequest == nil)
         coordinator.navigationChanged(routeID: secondRoute, state: .running)
         #expect(coordinator.navigationStartCount == 2)
@@ -265,7 +264,7 @@ struct ReviewRequestCoordinatorTests {
 }
 
 enum ReviewBlocker: CaseIterable, Sendable {
-    case loading, inactive, preparing, running, paused, legalSheet, objectInfo
+    case loading, inactive, preparing, running, legalSheet, objectInfo
 
     @MainActor var context: ReviewRequestCoordinator.PresentationContext {
         var context = ReviewRequestCoordinator.PresentationContext(isLoaded: true, isSceneActive: true)
@@ -274,7 +273,6 @@ enum ReviewBlocker: CaseIterable, Sendable {
         case .inactive: context.isSceneActive = false
         case .preparing: context.navigationState = .preparing
         case .running: context.navigationState = .running
-        case .paused: context.navigationState = .paused
         case .legalSheet: context.isLegalSheetPresented = true
         case .objectInfo: context.isObjectInfoPresented = true
         }

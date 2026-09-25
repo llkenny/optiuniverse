@@ -34,7 +34,7 @@
             "description": "Mercury completes one orbit around the Sun every 88 days.",
             "properties": {
                 "axis": "0.387 AU",
-                "eccentricity": "0.206",
+                "eccentricity": "0.2056",
                 "inclination": "7.00°"
             }
         }
@@ -115,7 +115,7 @@
             "properties": {
                 "axis": "1.000 AU",
                 "eccentricity": "0.0167",
-                "inclination": "0.00005°"
+                "inclination": "0.00°"
             }
         }
     },
@@ -151,11 +151,11 @@
             }
         ],
         "orbitInfo": {
-            "description": "Moon completes one orbit around Earth every 27.3 days.",
+            "description": "The Moon orbits Earth in about 27.322 days. Inclination is relative to the ecliptic.",
             "properties": {
                 "axis": "384,400 km",
-                "eccentricity": "0.0549",
-                "inclination": "5.15°"
+                "eccentricity": "0.0554",
+                "inclination": "5.16°"
             }
         }
     },
@@ -233,7 +233,7 @@
         "orbitInfo": {
             "description": "Jupiter completes one orbit around the Sun every 11.86 years.",
             "properties": {
-                "axis": "5.20 AU",
+                "axis": "5.203 AU",
                 "eccentricity": "0.0484",
                 "inclination": "1.30°"
             }
@@ -273,7 +273,7 @@
         "orbitInfo": {
             "description": "Saturn completes one orbit around the Sun every 29.45 years.",
             "properties": {
-                "axis": "9.58 AU",
+                "axis": "9.537 AU",
                 "eccentricity": "0.0539",
                 "inclination": "2.49°"
             }
@@ -313,7 +313,7 @@
         "orbitInfo": {
             "description": "Uranus completes one orbit around the Sun every 84 years.",
             "properties": {
-                "axis": "19.19 AU",
+                "axis": "19.189 AU",
                 "eccentricity": "0.0473",
                 "inclination": "0.77°"
             }
@@ -353,7 +353,7 @@
         "orbitInfo": {
             "description": "Neptune completes one orbit around the Sun every 164.8 years.",
             "properties": {
-                "axis": "30.07 AU",
+                "axis": "30.070 AU",
                 "eccentricity": "0.0086",
                 "inclination": "1.77°"
             }
@@ -391,11 +391,11 @@
             }
         ],
         "orbitInfo": {
-            "description": "Pluto completes one orbit around the Sun every 248 years.",
+            "description": "In this fixed J2000 model, Pluto completes one orbit around the Sun in about 246 years.",
             "properties": {
-                "axis": "39.48 AU",
-                "eccentricity": "0.249",
-                "inclination": "17.14°"
+                "axis": "39.264 AU",
+                "eccentricity": "0.2447",
+                "inclination": "17.15°"
             }
         }
     },

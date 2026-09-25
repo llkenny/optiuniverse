@@ -13,18 +13,37 @@ extension RootContainerView {
 
     @ViewBuilder
     func makeOrbitBackButton() -> some View {
-        Button {
-            universeResources.transferOrbit.clearTransferOrbit()
-            objectsViewState = .raw
-        } label: {
-            Image(systemName: "xmark")
-                .foregroundStyle(OptiColor.overlayTextPrimary)
-                .font(Typography.button)
+        VStack(alignment: .trailing, spacing: 12) {
+            let preview = universeResources.transferPreviewSnapshot
+            switch preview.status {
+            case .preparing:
+                ProgressView("Calculating transfer…")
+            case .ready:
+                if let duration = preview.physicalFlightDuration {
+                    Text("Two-body transfer · \(Int((duration / 86_400).rounded())) days · 30 s playback")
+                        .font(Typography.navigationMeta)
+                }
+            case .failed(let failure):
+                Text(failure.rawValue).font(Typography.navigationMeta)
+                Button("Retry") {
+                    if let destination = preview.destinationName {
+                        universeResources.transferOrbit.showTransferOrbit(to: destination)
+                    }
+                }
+            case .inactive:
+                EmptyView()
+            }
+            Button {
+                universeResources.transferOrbit.clearTransferOrbit()
+                objectsViewState = .raw
+            } label: {
+                Image(systemName: "xmark")
+                    .font(Typography.button)
+            }
         }
-        .frame(maxWidth: .infinity,
-               maxHeight: .infinity,
-               alignment: .bottomTrailing)
-        .padding(.trailing)
+        .foregroundStyle(OptiColor.overlayTextPrimary)
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .buttonStyle(NeonButtonStyle())
     }
 }
