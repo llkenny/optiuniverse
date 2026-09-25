@@ -153,7 +153,7 @@ def Xform "Root"
             active = true
             prepend apiSchemas = ["MaterialBindingAPI"]
             customData = {
-                float3 rotationEulerHint = (-1.1693707, 0, 0)
+                float3 rotationEulerHint = (1.5707963, 0, 0)
             }
             references = @Saturn_Rings_3.usdz@
         )
@@ -162,7 +162,7 @@ def Xform "Root"
             rel material:binding = </Root/Body/Rings/DefaultMaterial> (
                 bindMaterialAs = "weakerThanDescendants"
             )
-            quatf xformOp:orient = (0.8338858, -0.551937, 0, 0)
+            quatf xformOp:orient = (0.70710677, 0.7071067, 0, 0)
             float3 xformOp:scale = (0.65, 0.65, 0.65)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 

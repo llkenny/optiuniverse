@@ -231,6 +231,7 @@ import Testing
 @MainActor
 @Test func followCameraOwnerManualControlCancelsSurfaceFocus() {
     let fixture = FollowCameraOwnerFixture(latestSnapshot: .surfaceFollowTestSnapshot)
+    let initialOrientation = fixture.cameraState.cameraOrientation
 
     fixture.owner.followPlanet(named: "Moon",
                                surfaceCoordinate: SurfaceCoordinate(latitudeDegrees: -90,
@@ -246,8 +247,7 @@ import Testing
                  equals: surfaceMoonCenter)
     expectSurfaceEqual(fixture.cameraState.cameraDistance,
                 3)
-    #expect(fixture.cameraState.cameraOrientation == simd_quatf(angle: 0,
-                                                               axis: SIMD3<Float>(0, 1, 0)))
+    #expect(fixture.cameraState.cameraOrientation == initialOrientation)
 }
 
 @MainActor

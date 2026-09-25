@@ -148,11 +148,11 @@ import Testing
 
     let visibleHeight = 2 * fixture.cameraState.cameraDistance * tan(CameraFit.verticalFieldOfView / 2)
     let visibleWidth = visibleHeight * Float(viewportSize.width / viewportSize.height)
-    let expectedTarget = SIMD3<Float>(
+    let expectedTarget = fixture.cameraState.cameraOrientation.act(SIMD3<Float>(
         Float(30) / Float(viewportSize.width) * visibleWidth,
         Float(40) / Float(viewportSize.height) * visibleHeight,
         0
-    )
+    ))
 
     #expect(simd_length(fixture.cameraState.cameraTarget - expectedTarget) < 0.000001)
 }
