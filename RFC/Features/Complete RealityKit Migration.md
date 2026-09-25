@@ -344,7 +344,7 @@ evidence. Simulator measurements are diagnostic only and cannot satisfy this gat
 
 ### Build And Source Audit
 The app build and all available app/package tests must pass using the repository's documented iPhone
-17 Pro, iOS 26.4 simulator commands.
+17 Pro, iOS 26.5 simulator commands.
 
 For final removal, audit production sources. No `MetalModule`, `MetalRenderer`, `MTKView`,
 `MetalKit`, `MTLRenderCommandEncoder`, handwritten Metal surface shader, or compatibility alias may
