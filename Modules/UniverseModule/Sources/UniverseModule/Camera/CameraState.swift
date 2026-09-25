@@ -38,7 +38,8 @@ final class CameraState {
 
     private(set) var cameraDistance: Float = 3
     private(set) var cameraTarget = SIMD3<Float>(0, 0, 0)
-    private(set) var cameraOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
+    // Look down from 15° above the orbital plane so rings are visible in the initial object view.
+    private(set) var cameraOrientation = simd_quatf(angle: -.pi / 12, axis: SIMD3<Float>(1, 0, 0))
     private(set) var revision = 0
     private(set) var lastDirtyFields: DirtyFields = []
 

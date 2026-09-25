@@ -93,7 +93,7 @@ import Testing
     #expect(secondSnapshot.cameraRevision == firstSnapshot.cameraRevision + 1)
     #expect(secondSnapshot.cameraDirtyFields == [.distance])
     expectVector(secondSnapshot.cameraOffset,
-                 equals: SIMD3<Float>(0, 0, 4))
+                 equals: firstSnapshot.cameraOffset * (4.0 / 3.0))
 }
 
 @MainActor
