@@ -114,7 +114,7 @@ during entity application.
 - Build the app after each stage:
 
 ```sh
-xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' build CODE_SIGNING_ALLOWED=NO
+xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build CODE_SIGNING_ALLOWED=NO
 ```
 
 - Verify Moon Base still selects the rendered Moon as parent body.

@@ -113,7 +113,7 @@ Verification:
 - Full app build:
 
 ```sh
-xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' build CODE_SIGNING_ALLOWED=NO
+xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build CODE_SIGNING_ALLOWED=NO
 ```
 
 ## Stage 2: Surface Data And Animated Camera Focus
@@ -163,7 +163,7 @@ Verification:
 - Full app build:
 
 ```sh
-xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' build CODE_SIGNING_ALLOWED=NO
+xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build CODE_SIGNING_ALLOWED=NO
 ```
 
 ## Optional Later Stages

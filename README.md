@@ -106,7 +106,7 @@ Or build from the command line:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
@@ -117,7 +117,7 @@ The repository includes a Swift Testing target. Run it with:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' \
   test CODE_SIGNING_ALLOWED=NO
 ```
 
