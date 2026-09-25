@@ -11,7 +11,7 @@ import simd
 /// Owns route construction, playback state, and public route snapshots for a single navigation session.
 ///
 /// `NavigationRouteCoordinator` is necessary because route playback has a state machine separate from
-/// camera behavior: preparing a route can fail, progress can pause or resume, rendering needs a stable
+/// camera behavior: preparing a route can fail, playback advances in time, rendering needs a stable
 /// active route, and UI state should only publish when the route snapshot actually changes.
 ///
 /// Ownership:
@@ -22,9 +22,6 @@ import simd
 /// - Is owned by `NavigationController`, which decides when route lifecycle operations are invoked.
 @MainActor
 final class NavigationRouteCoordinator {
-    private let refreshSmoothingFactor: Float = 0.18
-    private let refreshRelativeDisplacementThreshold: Float = 0.000_05
-    private let refreshMinimumDisplacementThreshold: Float = 0.000_05
 
     private let routeBuilder: RouteBuilding
     private let playback: RoutePlayback
@@ -33,6 +30,9 @@ final class NavigationRouteCoordinator {
 
     private(set) var route: NavigationRoute?
     private(set) var state: NavigationRouteState = .idle
+    private var transferElapsedTime: Double = 0
+    private var requestedDestination: String?
+    private var failure: TransferFailure?
     private var lastPublishedSnapshot: NavigationRouteSnapshot = .idle
 
     init(routeBuilder: RouteBuilding = RoutePathBuilder(),
@@ -50,7 +50,26 @@ final class NavigationRouteCoordinator {
                destinationName: String,
                planets: [Planet],
                snapshot: UniverseSceneSnapshot) -> Bool {
+        requestedDestination = destinationName
         state = .preparing
+        failure = nil
+        transferElapsedTime = 0
+        var transfer: TransferSolution?
+        if !ArtemisRouteProfile.isArtemisRoute(originName: originName, waypointName: waypointName,
+                                               destinationName: destinationName) {
+            do {
+                guard originName == "Earth", waypointName == nil else { throw TransferFailure.invalidGeometry }
+                transfer = try TransferSolution.make(destinationName: destinationName, planets: planets,
+                                                      departureEpoch: snapshot.simulationTime)
+            } catch {
+                self.route = nil
+                playback.cancel()
+                failure = (error as? TransferFailure) ?? .didNotConverge
+                state = .failed
+                publishSnapshot()
+                return false
+            }
+        }
 
         guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
@@ -74,11 +93,13 @@ final class NavigationRouteCoordinator {
                 estimatedDuration: estimatedDuration(originName: originName,
                                                      destinationName: destinationName),
                 simulationTime: snapshot.simulationTime,
+                transfer: transfer,
                 routeProgress: 0
               )) else {
             self.route = nil
             playback.cancel()
-            state = .cancelled
+            state = .failed
+            failure = .invalidGeometry
             publishSnapshot()
             return false
         }
@@ -88,47 +109,6 @@ final class NavigationRouteCoordinator {
         state = .running
         publishSnapshot()
         return true
-    }
-
-    func refresh(using transferOrbit: HohmannTransferOrbit,
-                 destinationPosition: SIMD3<Float>) {
-        guard let route,
-              route.destinationName == transferOrbit.destinationName,
-              state == .running || state == .paused || state == .completed else {
-            return
-        }
-
-        let destinationArcSampleCount = currentDestinationArcSampleCount(
-            route: route,
-            transferPointCount: transferOrbit.points.count
-        )
-        let refreshedPoints = RoutePathBuilder.makeNavigationPoints(
-            transferOrbit: transferOrbit,
-            destinationPosition: destinationPosition,
-            destinationArcSampleCount: destinationArcSampleCount
-        )
-        let routePoints: [SIMD3<Float>]
-        if refreshedPoints.count == route.points.count {
-            let displacement = maxDisplacement(from: route.points,
-                                               to: refreshedPoints)
-            let threshold = max(route.totalDistance * refreshRelativeDisplacementThreshold,
-                                refreshMinimumDisplacementThreshold)
-            guard displacement >= threshold else { return }
-            routePoints = smoothedPoints(from: route.points,
-                                         to: refreshedPoints)
-        } else {
-            routePoints = refreshedPoints
-        }
-
-        let cumulativeDistances = RoutePathBuilder.makeCumulativeDistances(points: routePoints)
-        guard let totalDistance = cumulativeDistances.last,
-              totalDistance > 0 else {
-            return
-        }
-
-        self.route = route.replacingPath(points: routePoints,
-                                         cumulativeDistances: cumulativeDistances,
-                                         totalDistance: totalDistance)
     }
 
     func refreshRoute(planets: [Planet],
@@ -148,53 +128,28 @@ final class NavigationRouteCoordinator {
         self.route = refreshedRoute
     }
 
-    private func currentDestinationArcSampleCount(route: NavigationRoute,
-                                                  transferPointCount: Int) -> Int? {
-        let destinationArcSampleCount = route.points.count - transferPointCount
-        guard destinationArcSampleCount > 0 else { return nil }
-        return destinationArcSampleCount
-    }
-
-    private func maxDisplacement(from currentPoints: [SIMD3<Float>],
-                                 to refreshedPoints: [SIMD3<Float>]) -> Float {
-        zip(currentPoints, refreshedPoints).reduce(0) { partialResult, pair in
-            max(partialResult, simd_distance(pair.0, pair.1))
-        }
-    }
-
-    private func smoothedPoints(from currentPoints: [SIMD3<Float>],
-                                to refreshedPoints: [SIMD3<Float>]) -> [SIMD3<Float>] {
-        zip(currentPoints, refreshedPoints).map { currentPoint, refreshedPoint in
-            currentPoint + (refreshedPoint - currentPoint) * refreshSmoothingFactor
-        }
-    }
-
-    func pause() {
-        guard state == .running else { return }
-        playback.pause()
-        state = .paused
-        publishSnapshot()
-    }
-
-    func resume() {
-        guard state == .paused else { return }
-        playback.resume()
-        state = .running
-        publishSnapshot()
-    }
-
     func cancel() {
+        failure = nil
+        requestedDestination = nil
         playback.cancel()
         route = nil
         state = .cancelled
         publishSnapshot()
     }
 
-    func update() {
+    func update(simulationTime: Double? = nil, delta: Double = 0) {
         guard state == .running else { return }
 
-        playback.update()
-        if playback.isCompleted {
+        if let transfer = route?.transfer {
+            guard let simulationTime, simulationTime >= transfer.departureEpoch else { return }
+            let progress = min(1, max(0, (simulationTime - transfer.departureEpoch) / transfer.flightDuration))
+            transferElapsedTime = max(transferElapsedTime, progress * TransferSolution.playbackDuration)
+            if simulationTime >= transfer.arrivalEpoch { state = .completed }
+        } else {
+            playback.advance(by: delta)
+            playback.update()
+        }
+        if route?.transfer == nil && playback.isCompleted {
             state = .completed
         }
         publishSnapshot()
@@ -202,15 +157,15 @@ final class NavigationRouteCoordinator {
 
     var renderProgress: Float {
         switch state {
-        case .running, .paused, .completed:
-            return routeProgress(linearProgress: playback.progress)
-        case .idle, .preparing, .cancelled:
+        case .running, .completed:
+            return routeProgress(linearProgress: route?.transfer == nil ? playback.progress : Float(transferElapsedTime / TransferSolution.playbackDuration))
+        case .idle, .preparing, .cancelled, .failed:
             return 0
         }
     }
 
     var elapsedTime: TimeInterval {
-        playback.elapsedTime
+        route?.transfer == nil ? playback.elapsedTime : transferElapsedTime
     }
 
     var isNavigationActive: Bool {
@@ -244,9 +199,9 @@ final class NavigationRouteCoordinator {
 
     var activeRouteForRendering: NavigationRoute? {
         switch state {
-        case .running, .paused, .completed:
+        case .running, .completed:
             route
-        case .idle, .preparing, .cancelled:
+        case .idle, .preparing, .cancelled, .failed:
             nil
         }
     }
@@ -265,15 +220,16 @@ final class NavigationRouteCoordinator {
                                            state: state,
                                            originName: nil,
                                            waypointName: nil,
-                                           destinationName: nil,
+                                           destinationName: requestedDestination,
                                            progress: 0,
                                            elapsedTime: 0,
                                            remainingTime: 0,
-                                           estimatedDuration: 0)
+                                           estimatedDuration: 0,
+                                           failure: failure)
         }
 
         let progress = state == .completed ? 1 : renderProgress
-        let elapsedTime = state == .completed ? route.estimatedDuration : playback.elapsedTime
+        let elapsedTime = state == .completed ? route.estimatedDuration : self.elapsedTime
         let remainingTime = max(route.estimatedDuration - elapsedTime, 0)
 
         return NavigationRouteSnapshot(routeID: route.id,
@@ -284,6 +240,7 @@ final class NavigationRouteCoordinator {
                                        progress: progress,
                                        elapsedTime: elapsedTime,
                                        remainingTime: remainingTime,
-                                       estimatedDuration: route.estimatedDuration)
+                                       estimatedDuration: route.estimatedDuration,
+                                       physicalFlightDuration: route.transfer?.flightDuration)
     }
 }

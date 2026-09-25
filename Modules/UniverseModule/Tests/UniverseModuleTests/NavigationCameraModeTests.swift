@@ -184,7 +184,7 @@ import Testing
     #expect(rampOutProgress < 1)
 }
 
-@Test func navigationCameraModeAttachesArtemisFlybyCameraToRouteMarkerAndLooksAtMoon() throws {
+@Test func navigationCameraModeFramesMoonCloseUpAlongRouteViewingDirection() throws {
     let mode = NavigationCameraMode()
     let route = makeArtemisNavigationCameraTestRoute()
     let currentPose = CameraPose(target: SIMD3<Float>(12, 3, 4),
@@ -211,8 +211,8 @@ import Testing
         let distance = try #require(transaction.cameraDistance)
         let orientation = try #require(transaction.cameraOrientation)
         let cameraPosition = moonPosition + orientation.act(SIMD3<Float>(0, 0, distance))
-        expectVector(cameraPosition,
-                     equals: marker)
+        let expectedDistance = min(simd_distance(marker, moonPosition), 0.05 * 4)
+        #expect(abs(distance - expectedDistance) < 0.0001)
 
         let viewDirection = simd_normalize(moonPosition - cameraPosition)
         let markerToMoonDirection = simd_normalize(moonPosition - marker)
@@ -252,8 +252,9 @@ import Testing
             if progress >= 0.52, progress <= 0.66 {
                 let frame = try #require(frame)
                 let marker = try #require(route.point(at: progress))
-                expectVector(frame.target + orientation.act(SIMD3<Float>(0, 0, frame.distance)),
-                             equals: marker)
+                expectVector(orientation.act(SIMD3<Float>(0, 0, 1)),
+                             equals: simd_normalize(marker - moon))
+                #expect(frame.distance <= 0.05 * 4 + 0.00001)
                 #expect(orientation.act(SIMD3<Float>(0, 1, 0)).y > 0)
             }
             previous = orientation
@@ -909,7 +910,7 @@ private final class NavigationCameraSnapshotSource: UniverseSceneSnapshotProvidi
         self.latestSnapshot = latestSnapshot
     }
 
-    func requestPreparation(simulationTime: Float) {}
+    func requestPreparation(simulationTime: Double) {}
 }
 
 private extension UniverseSceneSnapshot {

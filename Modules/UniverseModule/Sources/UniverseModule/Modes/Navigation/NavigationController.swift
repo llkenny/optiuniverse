@@ -12,7 +12,7 @@ import Foundation
 /// `NavigationController` is the module-facing owner of route navigation. It translates public
 /// navigation commands into route playback and render-state publishing.
 /// The controller is necessary because route navigation is a long-lived mode: it spans multiple render
-/// frames and can be paused or cancelled.
+/// frames and can be cancelled.
 ///
 /// Ownership:
 /// - Owns `NavigationRouteCoordinator`.
@@ -63,6 +63,10 @@ final class NavigationController {
                                    isCameraAutoFramingEnabled: isCameraAutoFramingEnabled)
     }
 
+    var activeTransfer: TransferSolution? {
+        navigationRouteCoordinator.state == .running ? navigationRouteCoordinator.route?.transfer : nil
+    }
+
     var isNavigationActive: Bool {
         navigationRouteCoordinator.isNavigationActive
     }
@@ -92,7 +96,7 @@ final class NavigationController {
             navigationRouteCoordinator.refreshRoute(planets: planets,
                                                     snapshot: snapshot)
         }
-        navigationRouteCoordinator.update()
+        navigationRouteCoordinator.update(simulationTime: snapshot?.simulationTime, delta: Double(delta))
     }
 
     func beginManualCameraControl() {

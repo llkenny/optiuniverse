@@ -1,284 +1,173 @@
-//
-//  TransferOrbitController.swift
-//  UniverseModule
-//
-//  Created by Codex on 28.05.2026.
-//
-
 import CoreGraphics
 import simd
 
 @MainActor
 final class TransferOrbitController {
-    private static let transferFarPlaneRadiusMultiplier: Float = 2
-
     private unowned let snapshotProvider: SnapshotProvider
     private unowned let cameraCoordinator: any TransferPreviewCameraCoordinating
     private let planets: [Planet]
     private let viewportSize: () -> CGSize
-
     var followPlanet: ((String) -> Void)?
     var transferPreviewDidBegin: (() -> Void)?
-
-    private var pendingDestinationName: String?
+    var snapshotDidChange: ((TransferPreviewSnapshot) -> Void)?
+    private(set) var previewSnapshot = TransferPreviewSnapshot.inactive {
+        didSet { if oldValue != previewSnapshot { snapshotDidChange?(previewSnapshot) } }
+    }
     private var activeDestinationName: String?
-    private var activeTransferOrbit: HohmannTransferOrbit?
+    private var activeTransferOrbit: TransferSolution?
     private var cameraTransition: CameraTransition?
+    private var earthPoints: [SIMD3<Float>] = []
+    private var destinationPoints: [SIMD3<Float>] = []
+    private var calculation: Task<Void, Never>?
+    private var generation: UInt64 = 0
+    private var lastRequestedEpoch: Double?
+    private var refreshElapsed: Float = 1
+    private var needsFraming = false
 
     init(snapshotProvider: SnapshotProvider,
          cameraCoordinator: any TransferPreviewCameraCoordinating,
-         planets: [Planet],
-         viewportSize: @escaping () -> CGSize) {
+         planets: [Planet], viewportSize: @escaping () -> CGSize) {
         self.snapshotProvider = snapshotProvider
         self.cameraCoordinator = cameraCoordinator
         self.planets = planets
         self.viewportSize = viewportSize
     }
 
-    var isTransferPreviewActive: Bool {
-        activeTransferOrbit != nil
-    }
+    var isTransferPreviewActive: Bool { activeDestinationName != nil }
 
     var cameraSnapshotDependency: CameraTransferSnapshotDependency? {
-        guard activeDestinationName != nil ||
-              pendingDestinationName != nil ||
-              cameraTransition != nil else {
-            return nil
-        }
-
-        return CameraTransferSnapshotDependency(
-            destinationName: activeDestinationName ?? pendingDestinationName,
-            hasActiveTransition: cameraTransition != nil,
-            maximumCameraDistance: activeTransferOrbit.map(transferMaximumCameraDistance)
-        )
+        guard let activeDestinationName else { return nil }
+        return CameraTransferSnapshotDependency(destinationName: activeDestinationName,
+                                                 hasActiveTransition: cameraTransition != nil,
+                                                 maximumCameraDistance: max(CameraState.defaultMaximumDistance,
+                                                   overviewDistance * 1.2))
     }
 
     var renderState: TransferOrbitRenderState {
-        TransferOrbitRenderState(transferOrbit: activeTransferOrbit)
+        TransferOrbitRenderState(transferOrbit: activeTransferOrbit,
+                                 earthOrbitPoints: earthPoints, destinationOrbitPoints: destinationPoints)
     }
 
     func showTransferOrbit(to destinationName: String) {
-        guard let snapshot = snapshotProvider.latestSnapshot,
-              applyTransferOrbit(destinationName: destinationName,
-                                 snapshot: snapshot) else {
-            pendingDestinationName = destinationName
-            cameraTransition = nil
-            return
-        }
-
-        pendingDestinationName = nil
+        generation += 1
+        activeDestinationName = destinationName
+        activeTransferOrbit = nil
+        lastRequestedEpoch = nil
+        refreshElapsed = 1
+        cameraTransition = nil
+        needsFraming = true
+        earthPoints = planets.first { $0.name == "Earth" }?.orbit?.orbitPoints() ?? []
+        destinationPoints = planets.first { $0.name == destinationName }?.orbit?.orbitPoints() ?? []
+        previewSnapshot = TransferPreviewSnapshot(status: .preparing, destinationName: destinationName)
+        transferPreviewDidBegin?()
+        if let snapshot = snapshotProvider.latestSnapshot { requestCalculation(snapshot: snapshot) }
     }
 
     func clearTransferOrbit() {
-        pendingDestinationName = nil
+        generation += 1
         activeDestinationName = nil
         activeTransferOrbit = nil
         cameraTransition = nil
+        earthPoints = []
+        destinationPoints = []
+        previewSnapshot = .inactive
+        // Let an in-flight computation finish; the generation check discards it.
+        // Keeping the slot occupied prevents concurrent workers after rapid destination changes.
     }
 
     func cancelTransferOrbit() {
-        let destinationName = activeDestinationName ?? pendingDestinationName
-
+        let destination = activeDestinationName
         clearTransferOrbit()
-
-        guard let destinationName else { return }
-        followPlanet?(destinationName)
+        if let destination { followPlanet?(destination) }
     }
 
-    func beginManualCameraControl() {
-        cameraTransition = nil
-    }
+    func beginManualCameraControl() { cameraTransition = nil; needsFraming = false }
 
-    func update(snapshot: UniverseSceneSnapshot?,
-                delta: Float) {
-        guard let snapshot else { return }
-
-        if let destinationName = pendingDestinationName,
-           applyTransferOrbit(destinationName: destinationName,
-                              snapshot: snapshot) {
-            pendingDestinationName = nil
-        } else {
-            updateActiveTransferOrbit(snapshot: snapshot)
+    func update(snapshot: UniverseSceneSnapshot?, delta: Float) {
+        guard let snapshot, isTransferPreviewActive else { return }
+        refreshElapsed += delta
+        if refreshElapsed >= 0.25 { requestCalculation(snapshot: snapshot) }
+        if var transition = cameraTransition,
+           let frame = transition.advance(delta: delta, resolveDestination: { destination in
+               if case let .fixed(target, distance, orientation) = destination {
+                   return CameraTransition.Frame(target: target, distance: distance, orientation: orientation)
+               }
+               return nil
+           }) {
+            cameraTransition = transition.isComplete ? nil : transition
+            cameraCoordinator.commitTransferPreviewTransition(frame: frame)
         }
-
-        updateCameraTransition(snapshot: snapshot,
-                               delta: delta)
     }
 
-    func projectionParameters(snapshot: UniverseSceneSnapshot?,
-                              baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
-        guard let snapshot,
-              let activeTransferOrbit,
-              let transferRadius = transferProjectionRadius(transferOrbit: activeTransferOrbit,
-                                                            snapshot: snapshot) else {
-            return baseProjection
-        }
-
-        return baseProjection.withClippingPlanes(
-            farPlane: max(baseProjection.farPlane,
-                          CameraFit.defaultFarPlane,
-                          cameraCoordinator.cameraDistance
-                          + transferRadius * Self.transferFarPlaneRadiusMultiplier)
-        )
-    }
-
-    private func applyTransferOrbit(destinationName: String,
-                                    snapshot: UniverseSceneSnapshot) -> Bool {
-        guard let transferOrbit = makeTransferOrbit(destinationName: destinationName,
-                                                    snapshot: snapshot) else {
-            clearTransferOrbit()
-            followPlanet?(destinationName)
-            return true
-        }
-
-        activeDestinationName = destinationName
-        activeTransferOrbit = transferOrbit
-        transferPreviewDidBegin?()
-        startTransferOverviewAnimation(transferOrbit: transferOrbit)
-        return true
-    }
-
-    private func updateActiveTransferOrbit(snapshot: UniverseSceneSnapshot) {
-        guard let activeDestinationName else { return }
-
-        guard let transferOrbit = makeTransferOrbit(destinationName: activeDestinationName,
-                                                    snapshot: snapshot) else {
-            clearTransferOrbit()
-            return
-        }
-
-        activeTransferOrbit = transferOrbit
-    }
-
-    private func makeTransferOrbit(destinationName: String,
-                                   snapshot: UniverseSceneSnapshot) -> HohmannTransferOrbit? {
-        guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
-              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth") else {
-            return nil
-        }
-
-        return HohmannTransferOrbit.make(destinationName: destinationName,
-                                         planets: planets,
-                                         earthSunDirection: earthPosition - sunPosition,
-                                         sunPosition: sunPosition)
-    }
-
-    private func startTransferOverviewAnimation(transferOrbit: HohmannTransferOrbit) {
-        let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
-        let orientation: simd_quatf? = transferOverviewOrientation
-        let destination = CameraTransition.Frame(
-            target: framing.center,
-            distance: transferOverviewDistance(radius: framing.radius),
-            orientation: orientation
-        )
-
-        // Outer-system overview distances exceed the normal interactive camera range.
-        // Commit them atomically so a gesture or follow-camera handoff cannot leave the
-        // transfer geometry framed from the destination before the animation completes.
-        if destination.distance > CameraState.defaultMaximumDistance {
-            cameraTransition = nil
-            cameraCoordinator.commitTransferPreviewTransition(frame: destination)
-            return
-        }
-
-        cameraTransition = CameraTransition(
-            start: cameraCoordinator.currentCameraTransitionFrame,
-            destination: .fixed(target: destination.target,
-                                distance: destination.distance,
-                                orientation: destination.orientation),
-            duration: cameraCoordinator.cameraFollowTransitionDuration
-        )
-    }
-
-    private func updateCameraTransition(snapshot: UniverseSceneSnapshot,
-                                        delta: Float) {
-        guard var transition = cameraTransition else { return }
-        guard let frame = transition.advance(delta: delta, resolveDestination: { [weak self] destination in
-            guard let self else { return nil }
-            return self.resolveCameraTransitionDestination(destination,
-                                                           snapshot: snapshot)
-        }) else {
-            return
-        }
-
-        cameraTransition = transition.isComplete ? nil : transition
-        cameraCoordinator.commitTransferPreviewTransition(frame: frame)
-    }
-
-    private func resolveCameraTransitionDestination(_ destination: CameraTransition.Destination,
-                                                    snapshot: UniverseSceneSnapshot)
-    -> CameraTransition.Frame? {
-        switch destination {
-        case .planet(let name):
-            guard let position = snapshot.worldPosition(ofPlanetNamed: name),
-                  let framingRadius = snapshot.framingRadius(ofPlanetNamed: name) else {
-                return nil
+    private func requestCalculation(snapshot: UniverseSceneSnapshot) {
+        guard calculation == nil, let destination = activeDestinationName,
+              lastRequestedEpoch != snapshot.simulationTime else { return }
+        if case .failed = previewSnapshot.status { return } // Retry is explicit after failure.
+        let requestGeneration = generation
+        let epoch = snapshot.simulationTime
+        lastRequestedEpoch = epoch
+        refreshElapsed = 0
+        let planets = planets
+        let sun = snapshot.worldPosition(ofPlanetNamed: "Sun") ?? .zero
+        calculation = Task { [weak self] in
+            let result = await Task.detached(priority: .userInitiated) {
+                Result { try TransferSolution.make(destinationName: destination, planets: planets,
+                                                     departureEpoch: epoch, sunPosition: sun) }
+            }.value
+            guard let self else { return }
+            calculation = nil
+            guard generation == requestGeneration, activeDestinationName == destination else { return }
+            switch result {
+            case .success(let solution):
+                activeTransferOrbit = solution
+                earthPoints = solution.earthOrbitPoints
+                destinationPoints = solution.destinationOrbitPoints
+                previewSnapshot = TransferPreviewSnapshot(status: .ready, destinationName: destination,
+                                                            physicalFlightDuration: solution.flightDuration)
+            case .failure(let error):
+                activeTransferOrbit = nil
+                previewSnapshot = TransferPreviewSnapshot(status: .failed((error as? TransferFailure) ?? .didNotConverge),
+                                                            destinationName: destination)
             }
-            return CameraTransition.Frame(target: position,
-                                          distance: distanceToFitPlanet(radius: framingRadius))
-        case .fixed(let target, let distance, let orientation):
-            return CameraTransition.Frame(target: target,
-                                          distance: distance,
-                                          orientation: orientation)
+            if needsFraming { frameOverview(); needsFraming = false }
         }
     }
 
-    private var transferOverviewOrientation: simd_quatf {
-        OverviewCameraFraming.orientation
+    private var framingRadius: Float {
+        max(activeTransferOrbit?.framingRadius ?? 0,
+            (earthPoints + destinationPoints).reduce(0) { max($0, simd_length($1)) }, 1)
     }
 
-    private func sunCenteredTransferFraming(transferOrbit: HohmannTransferOrbit)
-    -> (center: SIMD3<Float>, radius: Float) {
-        (transferOrbit.sunPosition,
-         max(transferOrbit.earthOrbitRadius,
-             transferOrbit.destinationOrbitRadius))
-    }
-
-    private func transferProjectionRadius(transferOrbit: HohmannTransferOrbit,
-                                          snapshot: UniverseSceneSnapshot) -> Float? {
-        var radius: Float = 0
-
-        func include(center: SIMD3<Float>, radius includedRadius: Float) {
-            radius = max(radius,
-                         simd_distance(cameraCoordinator.cameraTarget, center) + max(includedRadius, 0))
-        }
-
-        for point in transferOrbit.points {
-            include(center: point, radius: 0)
-        }
-
-        include(center: transferOrbit.sunPosition,
-                radius: max(transferOrbit.earthOrbitRadius,
-                            transferOrbit.destinationOrbitRadius))
-
-        for planetName in ["Sun", "Earth", transferOrbit.destinationName] {
-            guard let planetPosition = snapshot.worldPosition(ofPlanetNamed: planetName) else {
-                continue
-            }
-
-            include(center: planetPosition,
-                    radius: snapshot.framingRadius(ofPlanetNamed: planetName) ?? 0)
-        }
-
-        guard radius.isFinite else { return nil }
-        return max(radius, 0.001)
-    }
-
-    private func distanceToFitPlanet(radius: Float) -> Float {
-        CameraFit.distanceToFit(radius: radius,
-                                currentDistance: cameraCoordinator.cameraDistance,
-                                viewportSize: viewportSize())
-    }
-
-    private func transferOverviewDistance(radius: Float) -> Float {
-        CameraFit.distanceToFitWidth(radius: radius,
+    private var overviewDistance: Float {
+        CameraFit.distanceToFitWidth(radius: framingRadius,
                                      currentDistance: cameraCoordinator.cameraDistance,
                                      viewportSize: viewportSize())
     }
 
-    private func transferMaximumCameraDistance(_ transferOrbit: HohmannTransferOrbit) -> Float {
-        let framing = sunCenteredTransferFraming(transferOrbit: transferOrbit)
-        return max(CameraState.defaultMaximumDistance,
-                   transferOverviewDistance(radius: framing.radius) * 1.2)
+    private func frameOverview() {
+        let distance = overviewDistance
+        // Preserve the atomic outer-system handoff: those distances exceed the normal gesture range.
+        if distance > CameraState.defaultMaximumDistance {
+            cameraTransition = nil
+            cameraCoordinator.commitTransferPreviewTransition(frame: CameraTransition.Frame(
+                target: activeTransferOrbit?.sunPosition ?? .zero, distance: distance,
+                orientation: OverviewCameraFraming.orientation
+            ))
+            return
+        }
+        cameraTransition = CameraTransition(
+            start: cameraCoordinator.currentCameraTransitionFrame,
+            destination: .fixed(target: activeTransferOrbit?.sunPosition ?? .zero,
+                                distance: distance, orientation: OverviewCameraFraming.orientation),
+            duration: cameraCoordinator.cameraFollowTransitionDuration
+        )
+    }
+
+    func projectionParameters(snapshot: UniverseSceneSnapshot?,
+                              baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
+        guard isTransferPreviewActive else { return baseProjection }
+        let radius = framingRadius + simd_length(cameraCoordinator.cameraTarget)
+        return baseProjection.withClippingPlanes(farPlane: max(baseProjection.farPlane,
+                                                                cameraCoordinator.cameraDistance + 2 * radius))
     }
 }

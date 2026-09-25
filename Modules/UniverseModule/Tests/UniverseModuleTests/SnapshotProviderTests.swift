@@ -238,13 +238,13 @@ import Testing
 @MainActor
 private final class FakeUniverseSceneSnapshotSource: UniverseSceneSnapshotProviding {
     var latestSnapshot: UniverseSceneSnapshot?
-    var requestedSimulationTimes: [Float] = []
+    var requestedSimulationTimes: [Double] = []
 
     init(latestSnapshot: UniverseSceneSnapshot? = nil) {
         self.latestSnapshot = latestSnapshot
     }
 
-    func requestPreparation(simulationTime: Float) {
+    func requestPreparation(simulationTime: Double) {
         requestedSimulationTimes.append(simulationTime)
     }
 }

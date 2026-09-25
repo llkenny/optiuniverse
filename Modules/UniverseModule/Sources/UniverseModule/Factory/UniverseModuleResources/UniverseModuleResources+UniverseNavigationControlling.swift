@@ -18,14 +18,6 @@ extension UniverseModuleResources: UniverseNavigationControlling {
                                              to: destinationName)
     }
 
-    public func pauseNavigation() {
-        navigationController.pauseNavigation()
-    }
-
-    public func resumeNavigation() {
-        navigationController.resumeNavigation()
-    }
-
     public func cancelNavigation() {
         navigationController.cancelNavigation()
     }
