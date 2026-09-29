@@ -21,7 +21,10 @@ struct UniverseSimulationClock {
     mutating func advance(by deltaTime: TimeInterval, transfer: TransferSolution? = nil) -> Float {
         guard deltaTime.isFinite, deltaTime > 0 else { return 0 }
         presentationTime += deltaTime
-        if let transfer, currentTime < transfer.arrivalEpoch {
+        if let transfer {
+            // The completed route remains visible until its camera handoff finishes.
+            // Hold its intercept epoch while presentation animations continue.
+            guard currentTime < transfer.arrivalEpoch else { return Float(deltaTime) }
             let advanced = currentTime + deltaTime * transfer.flightDuration / TransferSolution.playbackDuration
             let tolerance = max(1e-6, transfer.flightDuration * 1e-12)
             currentTime = transfer.arrivalEpoch - advanced <= tolerance ? transfer.arrivalEpoch : advanced

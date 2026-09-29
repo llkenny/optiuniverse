@@ -187,3 +187,39 @@ import Testing
     #expect(abs(cancelled.simulationTime - halfway.simulationTime - 86_400) < 1e-6)
     #expect(resources.navigationController.activeTransfer == nil)
 }
+
+@MainActor
+@Test(arguments: [false, true])
+func completedTransferHoldsInterceptUntilHandoffOrCancellation(cancel: Bool) throws {
+    let resources = UniverseModuleResources()
+    resources.setViewportSize(CGSize(width: 390, height: 844))
+    resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: testPlanets.map {
+        ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,
+                                                  framingRadius: $0.radius, surfaceRadius: $0.radius))
+    }))
+    resources.sceneCoordinator.update(deltaTime: 0)
+    resources.navigation.startNavigation(to: "Mercury")
+    let transfer = try #require(resources.navigationController.activeTransfer)
+    resources.sceneCoordinator.update(deltaTime: 30)
+    #expect(resources.navigationSnapshot.state == .completed)
+
+    for _ in 0..<11 {
+        resources.sceneCoordinator.update(deltaTime: 0.1)
+        let frame = try #require(resources.sceneCoordinator.latestFrameState)
+        let destination = try #require(frame.snapshot?.worldPosition(ofPlanetNamed: "Mercury"))
+        let endpoint = try #require(frame.routes.navigation.route?.point(at: 1))
+        #expect(frame.simulationTime == transfer.arrivalEpoch)
+        #expect(simd_distance(endpoint, destination) < 1e-4)
+    }
+    #expect(abs(try #require(resources.sceneCoordinator.latestFrameState).presentationTime - 31.1) < 1e-5)
+
+    if cancel {
+        resources.navigation.cancelNavigation()
+    } else {
+        resources.navigation.doneNavigation()
+        #expect(resources.cameraCoordinator.followCameraOwner.followingPlanetName == "Mercury")
+    }
+    #expect(resources.navigationController.activeTransfer == nil)
+    resources.sceneCoordinator.update(deltaTime: 1)
+    #expect(try #require(resources.sceneCoordinator.latestFrameState).simulationTime == transfer.arrivalEpoch + 86_400)
+}

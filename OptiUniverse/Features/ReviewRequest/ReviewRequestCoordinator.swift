@@ -18,6 +18,7 @@ final class ReviewRequestCoordinator {
             isLoaded && isSceneActive && !isLegalSheetPresented && !isObjectInfoPresented
                 && navigationState != .preparing
                 && navigationState != .running
+                && navigationState != .failed
         }
     }
 

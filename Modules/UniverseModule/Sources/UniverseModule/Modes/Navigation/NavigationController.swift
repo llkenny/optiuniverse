@@ -64,7 +64,7 @@ final class NavigationController {
     }
 
     var activeTransfer: TransferSolution? {
-        navigationRouteCoordinator.state == .running ? navigationRouteCoordinator.route?.transfer : nil
+        navigationRouteCoordinator.activeRouteForRendering?.transfer
     }
 
     var isNavigationActive: Bool {
