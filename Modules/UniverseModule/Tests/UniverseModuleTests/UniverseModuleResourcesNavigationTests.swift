@@ -38,7 +38,7 @@ import Testing
     let resources = UniverseModuleResources()
     let initialPose = resources.cameraCoordinator.currentCameraPose
 
-    resources.navigationController.navigationDidComplete?("Mars")
+    resources.navigationController.navigationDidComplete?("Mars", nil)
 
     #expect(resources.cameraCoordinator.followCameraOwner.followingPlanetName == "Mars")
     #expect(!resources.cameraCoordinator.followCameraOwner.hasActiveTransition)

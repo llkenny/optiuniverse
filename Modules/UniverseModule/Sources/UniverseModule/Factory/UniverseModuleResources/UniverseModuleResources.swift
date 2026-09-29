@@ -81,9 +81,15 @@ public final class UniverseModuleResources {
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
             self?.navigationSnapshot = snapshot
         }
-        navigationController.navigationDidComplete = { [weak self] name in
+        navigationController.navigationDidComplete = { [weak self] name, mission in
             guard let self else { return }
-            cameraCoordinator.adoptNavigationDestination(named: name)
+            if mission == .starshipFlight14 {
+                // Surface close-ups finish away from the body's center. Animate back out
+                // instead of adopting an Earth-centered pivot at the close-up distance.
+                cameraCoordinator.followNavigationDestination(named: name, viewportSize: viewportSize)
+            } else {
+                cameraCoordinator.adoptNavigationDestination(named: name)
+            }
         }
         transferOrbitController.followPlanet = { [weak self] name in
             guard let self else { return }

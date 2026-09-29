@@ -1,30 +1,41 @@
 import Foundation
+import UniverseModule
 
 struct Mission: Equatable, Identifiable {
     let id: String
     let title: String
     let description: String
+    let flightPlan: MissionFlightPlan
     let route: MissionRoute
 
     static let artemisII = Mission(
         id: "artemis-ii",
         title: "Artemis II",
         description: "Earth to Moon and return",
+        flightPlan: .artemisII,
         route: MissionRoute(originName: "Earth",
                             waypointName: "Moon",
                             destinationName: "Earth")
     )
 
-    static let available: [Mission] = [.artemisII]
+    static let starshipFlight14 = Mission(
+        id: "starship-flight-14",
+        title: "Starship Flight 14",
+        description: "Illustrative flight · compressed timing",
+        flightPlan: .starshipFlight14,
+        route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "Earth")
+    )
+
+    static let available: [Mission] = [.artemisII, .starshipFlight14]
 }
 
 struct MissionRoute: Equatable, Identifiable {
     let originName: String
-    let waypointName: String
+    let waypointName: String?
     let destinationName: String
 
     var id: String {
-        "\(originName)-\(waypointName)-\(destinationName)"
+        "\(originName)-\(waypointName ?? "orbit")-\(destinationName)"
     }
 }
 
@@ -41,7 +52,14 @@ struct MissionFlowState: Equatable {
 
     func handleCompletedNavigation(originName: String?,
                                    waypointName: String?,
-                                   destinationName: String?) -> MissionFlowAdvance {
+                                   destinationName: String?,
+                                   missionID: MissionFlightPlan? = nil) -> MissionFlowAdvance {
+        // Legacy Artemis callers may still complete by route; Starship requires explicit identity.
+        if let missionID {
+            guard missionID == mission.flightPlan else { return .noChange }
+        } else if mission.flightPlan == .starshipFlight14 {
+            return .noChange
+        }
         guard route.originName == originName,
               route.waypointName == waypointName,
               route.destinationName == destinationName else {

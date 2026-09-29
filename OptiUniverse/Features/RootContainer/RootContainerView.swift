@@ -173,7 +173,6 @@ struct RootContainerView: View {
 
     private func startMission(_ mission: Mission) {
         let plan = MissionLaunchPlan(mission: mission)
-        let route = plan.route
 
         missionFlowState = plan.flowState
         pendingMissionAdvance = nil
@@ -181,9 +180,7 @@ struct RootContainerView: View {
         appEnvironment.selectedPlanet = plan.selectedPlanet
         appEnvironment.currentScreen = plan.screen
         objectsViewState = plan.objectsViewState
-        universeResources.navigation.startNavigation(from: route.originName,
-                                                     via: route.waypointName,
-                                                     to: route.destinationName)
+        universeResources.navigation.startMission(mission.flightPlan)
     }
 
     private func handleNavigationSnapshotChange(_ snapshot: NavigationRouteSnapshot) {
@@ -207,7 +204,8 @@ struct RootContainerView: View {
 
         let advance = flowState.handleCompletedNavigation(originName: snapshot.originName,
                                                           waypointName: snapshot.waypointName,
-                                                          destinationName: snapshot.destinationName)
+                                                          destinationName: snapshot.destinationName,
+                                                          missionID: snapshot.mission)
         guard advance != .noChange else { return }
 
         missionFlowState = flowState

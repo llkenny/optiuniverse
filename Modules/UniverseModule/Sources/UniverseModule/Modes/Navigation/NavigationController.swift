@@ -25,6 +25,7 @@ final class NavigationController {
         let originName: String
         let waypointName: String?
         let destinationName: String
+        var mission: MissionFlightPlan? = nil
     }
 
     let routeBuilder: RouteBuilding
@@ -32,7 +33,7 @@ final class NavigationController {
     unowned let snapshotProvider: SnapshotProvider
     let planets: [Planet]
     var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
-    var navigationDidComplete: ((String) -> Void)?
+    var navigationDidComplete: ((String, MissionFlightPlan?) -> Void)?
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,
@@ -88,7 +89,8 @@ final class NavigationController {
            applyNavigation(from: request.originName,
                            via: request.waypointName,
                            to: request.destinationName,
-                           snapshot: snapshot) {
+                           snapshot: snapshot,
+                           mission: request.mission) {
             pendingNavigationRequest = nil
         }
 

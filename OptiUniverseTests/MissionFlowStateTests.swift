@@ -49,3 +49,27 @@ import Testing
                                        waypointName: "Moon",
                                        destinationName: "Earth"))
 }
+
+@MainActor
+@Test func starshipCatalogAndLaunchPlanUseExplicitMission() {
+    let mission = Mission.starshipFlight14
+    #expect(Mission.available == [.artemisII, .starshipFlight14])
+    #expect(mission.id == "starship-flight-14")
+    #expect(mission.flightPlan == .starshipFlight14)
+    #expect(mission.description == "Illustrative flight · compressed timing")
+    let plan = MissionLaunchPlan(mission: mission)
+    #expect(plan.flowState.mission == mission)
+    #expect(plan.selectedPlanet == nil)
+    #expect(plan.objectsViewState == .navigation)
+}
+
+@MainActor
+@Test func starshipCompletionRequiresMatchingMissionIdentity() {
+    let state = MissionFlowState(mission: .starshipFlight14)
+    #expect(state.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+                                            destinationName: "Earth") == .noChange)
+    #expect(state.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+                                            destinationName: "Earth", missionID: .artemisII) == .noChange)
+    #expect(state.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+                                            destinationName: "Earth", missionID: .starshipFlight14) == .complete)
+}

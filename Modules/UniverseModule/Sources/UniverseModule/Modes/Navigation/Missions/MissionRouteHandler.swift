@@ -25,6 +25,16 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
                         planets: [Planet],
                         snapshot: UniverseSceneSnapshot,
                         routeBuilder: RouteBuilding) -> NavigationRoute? {
+        if let profile = route.starshipProfile,
+           let earth = snapshot.planet(named: "Earth") {
+            let translated = profile.translated(to: earth.worldPosition)
+            let offset = earth.worldPosition - profile.center
+            return NavigationRoute(id: route.id, originName: route.originName, destinationName: route.destinationName,
+                                   points: route.points.map { $0 + offset }, cumulativeDistances: route.cumulativeDistances,
+                                   totalDistance: route.totalDistance, estimatedDuration: route.estimatedDuration,
+                                   overviewPaddingRadius: route.overviewPaddingRadius, overviewCenter: earth.worldPosition,
+                                   mission: route.mission, starshipProfile: translated)
+        }
         guard ArtemisRouteProfile.isArtemisRoute(route),
               state == .running || state == .completed,
               let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),

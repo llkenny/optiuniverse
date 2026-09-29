@@ -38,6 +38,8 @@ final class OrbitCameraMode {
     func addInertia(velocity: CGPoint) {
         yawVelocity = Float(velocity.x) * orbitSpeed * 0.1
         pitchVelocity = Float(velocity.y) * orbitSpeed * 0.1
+        if !yawVelocity.isFinite { yawVelocity = 0 }
+        if !pitchVelocity.isFinite { pitchVelocity = 0 }
     }
 
     func cancelInertia() {
@@ -47,7 +49,7 @@ final class OrbitCameraMode {
 
     func update(delta: Float,
                 cameraOrientation: simd_quatf) -> CameraState.Transaction? {
-        guard hasActiveInertia else {
+        guard hasActiveInertia, delta.isFinite, delta > 0 else {
             return nil
         }
         let transaction = makeOrbitTransaction(horizontal: yawVelocity * delta,

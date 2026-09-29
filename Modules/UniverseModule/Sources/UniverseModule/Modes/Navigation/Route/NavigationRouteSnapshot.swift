@@ -28,6 +28,9 @@ public struct NavigationRouteSnapshot: Sendable, Equatable {
     public let remainingTime: TimeInterval
     public let estimatedDuration: TimeInterval
 
+    public var mission: MissionFlightPlan? = nil
+    public var missionStatus: MissionNavigationStatus? = nil
+
     public var physicalFlightDuration: Double? = nil
     public var failure: TransferFailure? = nil
 

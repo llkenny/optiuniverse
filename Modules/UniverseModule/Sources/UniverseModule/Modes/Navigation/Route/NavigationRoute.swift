@@ -40,6 +40,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
+    let mission: MissionFlightPlan?
+    let starshipProfile: StarshipRouteProfile?
     let transfer: TransferSolution?
     let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
@@ -54,7 +56,11 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          estimatedDuration: TimeInterval,
          overviewPaddingRadius: Float = 0,
          overviewCenter: SIMD3<Float>? = nil,
-         transfer: TransferSolution? = nil) {
+         transfer: TransferSolution? = nil,
+         mission: MissionFlightPlan? = nil,
+         starshipProfile: StarshipRouteProfile? = nil) {
+        self.mission = mission
+        self.starshipProfile = starshipProfile
         self.transfer = transfer
         self.id = id
         self.originName = originName
@@ -69,6 +75,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
+        if let starshipProfile { return starshipProfile.shipPosition(time: Double(progress) * 60) }
         if let transfer { return transfer.position(at: Double(progress)) }
         return point(atDistance: distance(at: progress))
     }
@@ -76,7 +83,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     func distance(at progress: Float) -> Float {
         guard totalDistance.isFinite, totalDistance > 0 else { return 0 }
         let clampedProgress = min(max(progress, 0), 1)
-        if transfer != nil, points.count > 1 {
+        if transfer != nil || starshipProfile != nil, points.count > 1 {
             let sample = clampedProgress * Float(points.count - 1)
             let lower = min(Int(sample), points.count - 2)
             let fraction = sample - Float(lower)
@@ -193,6 +200,15 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         return points[lowerIndex] + (points[upperIndex] - points[lowerIndex]) * segmentProgress
     }
 
+    func withMission(_ mission: MissionFlightPlan?) -> NavigationRoute {
+        NavigationRoute(id: id, originName: originName, waypointName: waypointName,
+                        destinationName: destinationName, points: points,
+                        cumulativeDistances: cumulativeDistances, totalDistance: totalDistance,
+                        estimatedDuration: estimatedDuration, overviewPaddingRadius: overviewPaddingRadius,
+                        overviewCenter: overviewCenter, transfer: transfer, mission: mission,
+                        starshipProfile: starshipProfile)
+    }
+
     func replacingPath(points: [SIMD3<Float>],
                        cumulativeDistances: [Float],
                        totalDistance: Float,
@@ -207,6 +223,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration,
                         overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
-                        overviewCenter: overviewCenter ?? self.overviewCenter)
+                        overviewCenter: overviewCenter ?? self.overviewCenter,
+                        transfer: transfer, mission: mission, starshipProfile: starshipProfile)
     }
 }

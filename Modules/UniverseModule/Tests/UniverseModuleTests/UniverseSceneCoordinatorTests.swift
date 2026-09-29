@@ -168,7 +168,8 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     #expect(resources.sceneCoordinator.navigationRouteRoot.children.count == 2)
     #expect(resources.sceneCoordinator.navigationMarkerRoot.parent
             == resources.sceneCoordinator.navigationRouteRoot)
-    #expect(resources.sceneCoordinator.navigationMarkerRoot.children.count == 1)
+    #expect(resources.sceneCoordinator.navigationMarkerRoot.children.count == 2)
+    #expect(resources.sceneCoordinator.navigationMarkerRoot.findEntity(named: "StarshipFlight14") != nil)
     for planet in resources.planets {
         let entities = try #require(resources.sceneCoordinator.bodyEntities[planet.name])
         let descriptor = manifest.assets.first { $0.displayName == planet.name }

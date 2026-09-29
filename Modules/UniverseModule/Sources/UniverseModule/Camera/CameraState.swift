@@ -57,19 +57,23 @@ final class CameraState {
     func commit(_ transaction: Transaction) -> DirtyFields {
         var dirtyFields: DirtyFields = []
 
-        if let cameraTarget = transaction.cameraTarget {
+        if let cameraTarget = transaction.cameraTarget,
+           cameraTarget.x.isFinite, cameraTarget.y.isFinite, cameraTarget.z.isFinite {
             if self.cameraTarget != cameraTarget {
                 self.cameraTarget = cameraTarget
                 dirtyFields.insert(.target)
             }
         }
-        if let cameraDistance = transaction.cameraDistance {
+        if let requestedDistance = transaction.cameraDistance, requestedDistance.isFinite {
+            let cameraDistance = max(minDistance, requestedDistance)
             if self.cameraDistance != cameraDistance {
                 self.cameraDistance = cameraDistance
                 dirtyFields.insert(.distance)
             }
         }
-        if let cameraOrientation = transaction.cameraOrientation {
+        if let cameraOrientation = transaction.cameraOrientation,
+           simd_length_squared(cameraOrientation.vector).isFinite,
+           simd_length_squared(cameraOrientation.vector) > 0.000_001 {
             let normalizedOrientation = simd_normalize(cameraOrientation)
             if self.cameraOrientation != normalizedOrientation {
                 self.cameraOrientation = normalizedOrientation
