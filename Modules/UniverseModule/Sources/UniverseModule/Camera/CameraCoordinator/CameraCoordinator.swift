@@ -94,6 +94,7 @@ final class CameraCoordinator {
     }
 
     func makeRotation(with value: CGPoint, velocity: CGPoint) {
+        guard value.x.isFinite, value.y.isFinite else { return }
         commitManualCameraTransaction(
             orbitMode.makeOrbitTransaction(horizontal: Float(value.x) * orbitSpeed,
                                            vertical: -Float(value.y) * orbitSpeed,
@@ -103,6 +104,7 @@ final class CameraCoordinator {
     }
 
     func makeScale(with value: Float, velocity: CGFloat) {
+        guard value.isFinite, value > 0 else { return }
         commitManualCameraTransaction(
             zoomMode.makeZoomTransaction(value: value,
                                          currentDistance: cameraState.cameraDistance)
@@ -199,6 +201,12 @@ final class CameraCoordinator {
                                                                  viewportSize: viewportSize),
                           minimumDistance: minimumCameraDistance(snapshot: snapshot,
                                                                  modeState: modeState))
+        }
+
+        if !modeState.transferPreviewActive,
+           let clearance = navigationCameraMode.makeManualCameraClearanceTransaction(
+            state: modeState.navigation, currentPose: cameraState.pose) {
+            cameraState.commit(clearance)
         }
 
         if hasActiveCameraMotion(modeState: modeState) {

@@ -36,7 +36,10 @@ final class NavigationCameraMode {
                                    viewportSize: CGSize,
                                    currentPose: CameraPose,
                                    arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
-        if let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize, currentPose: currentPose) {
+        if state.route?.starshipProfile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize,
+                                                       currentPose: currentPose) else { return nil }
             return makeCameraTransaction(frame: frame)
         }
         guard let route = state.route,
@@ -100,8 +103,25 @@ final class NavigationCameraMode {
     }
 
     func isArrivalPhase(state: NavigationRouteRenderState) -> Bool {
-        guard state.route != nil else { return false }
+        guard let route = state.route, route.starshipProfile == nil else { return false }
         return simd_clamp(state.progress, 0, 1) >= arrivalPhaseStart
+    }
+
+    /// A spacecraft pivot can move through the planet even when its zoom distance is valid.
+    /// Back the camera out along its viewing axis, retaining the user's target and orientation.
+    func makeManualCameraClearanceTransaction(state: NavigationRouteRenderState,
+                                              currentPose: CameraPose) -> CameraState.Transaction? {
+        guard !state.isCameraAutoFramingEnabled,
+              let profile = state.route?.starshipProfile else { return nil }
+        let radius = CameraFit.minimumDistanceOutsideBody(radius: profile.radius)
+        let relativePosition = currentPose.position - profile.center
+        let distanceSquared = simd_length_squared(relativePosition)
+        guard distanceSquared < radius * radius else { return nil }
+
+        let backward = currentPose.orientation.act(SIMD3<Float>(0, 0, 1))
+        let projection = simd_dot(relativePosition, backward)
+        let exitDistance = -projection + sqrt(projection * projection + radius * radius - distanceSquared)
+        return CameraState.Transaction(cameraDistance: currentPose.distance + exitDistance)
     }
 
     private func makeCameraTransaction(frame: CameraTransition.Frame) -> CameraState.Transaction {

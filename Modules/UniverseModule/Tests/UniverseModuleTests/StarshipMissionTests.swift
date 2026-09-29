@@ -5,6 +5,60 @@ import simd
 import Testing
 @testable import UniverseModule
 
+@MainActor
+private final class StarshipCameraSnapshotSource: UniverseSceneSnapshotProviding {
+    var latestSnapshot: UniverseSceneSnapshot?
+    func requestPreparation(simulationTime: Double) {}
+}
+
+@MainActor
+@Test func starshipManualCameraRemainsInControlThroughSplashdown() throws {
+    let route = try #require(StarshipRouteProfile(earth: starshipTestEarth())).makeRoute()
+    let camera = CameraState()
+    let source = StarshipCameraSnapshotSource()
+    let provider = SnapshotProvider(cameraState: camera, snapshotSource: source)
+    let coordinator = CameraCoordinator(cameraState: camera, snapshotProvider: provider)
+    let chosenPose = camera.pose
+    let mode = NavigationCameraMode()
+    for time in [53.0, 54, 55, 59, 60] {
+        let state = NavigationRouteRenderState(route: route, progress: Float(time / 60),
+                                              elapsedTime: time, isCameraAutoFramingEnabled: false)
+        #expect(!mode.isArrivalPhase(state: state))
+        coordinator.updateFrameCamera(snapshot: nil, delta: 1 / 60,
+                                      viewportSize: CGSize(width: 402, height: 874),
+                                      modeState: .init(transferPreviewActive: false, transfer: nil, navigation: state))
+        #expect(camera.pose == chosenPose)
+    }
+}
+
+@MainActor
+@Test func starshipManualTrackingCannotCarryCameraInsideEarth() throws {
+    let profile = try #require(StarshipRouteProfile(earth: starshipTestEarth()))
+    let route = profile.makeRoute()
+    let camera = CameraState()
+    let source = StarshipCameraSnapshotSource()
+    let provider = SnapshotProvider(cameraState: camera, snapshotSource: source)
+    let coordinator = CameraCoordinator(cameraState: camera, snapshotProvider: provider)
+    let viewport = CGSize(width: 402, height: 874)
+    coordinator.handOffNavigationCameraControl(
+        navigation: .init(route: route, progress: 16 / 60, elapsedTime: 16),
+        snapshot: nil, viewportSize: viewport)
+    let radial = normalize(profile.shipPosition(time: 16) - profile.center)
+    camera.commit(.init(cameraTarget: profile.shipPosition(time: 16), cameraDistance: 0.48,
+                        cameraOrientation: simd_quatf(from: SIMD3(0, 0, 1), to: radial)))
+    let chosenOrientation = camera.cameraOrientation
+    for time in stride(from: 16.0, through: 60, by: 0.125) {
+        coordinator.updateFrameCamera(
+            snapshot: nil, delta: 0.125, viewportSize: viewport,
+            modeState: .init(transferPreviewActive: false, transfer: nil,
+                             navigation: .init(route: route, progress: Float(time / 60), elapsedTime: time,
+                                               isCameraAutoFramingEnabled: false)))
+        #expect(distance(camera.pose.position, profile.center) >= profile.radius * 1.049)
+        #expect(distance(camera.cameraOrientation.vector, chosenOrientation.vector) < 0.00001)
+        #expect(distance(camera.cameraTarget, profile.shipPosition(time: time)) < 0.0001)
+    }
+}
+
 private func starshipTestEarth(position: SIMD3<Float> = .zero,
                                rotation: simd_float4x4 = matrix_identity_float4x4) -> CelestialBodySnapshot {
     CelestialBodySnapshot(planetName: "Earth", baseModelMatrix: matrix_identity_float4x4,
@@ -133,6 +187,34 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
     coordinator.cancel()
     #expect(published.mission == nil)
     #expect(coordinator.activeRouteForRendering == nil)
+}
+
+@MainActor
+@Test func starshipSceneSupportsRepeatedManualZoomAndRotation() async throws {
+    let resources = UniverseModuleResources()
+    resources.setViewportSize(CGSize(width: 402, height: 874))
+    try await resources.prepare()
+    resources.sceneCoordinator.update(deltaTime: 0)
+    resources.navigation.startMission(.starshipFlight14)
+    resources.sceneCoordinator.update(deltaTime: 2)
+    for frame in 0..<116 {
+        if frame % 6 == 0 {
+            resources.rotateCamera(translation: CGSize(width: 80, height: -40))
+            resources.scaleCamera(by: frame % 12 == 0 ? 3 : 0.4)
+        }
+        let orientation = resources.cameraCoordinator.currentCameraPose.orientation
+        resources.sceneCoordinator.update(deltaTime: 0.5)
+        let pose = resources.cameraCoordinator.currentCameraPose
+        let profile = try #require(resources.navigationController.routeRenderState.route?.starshipProfile)
+        #expect(distance(pose.position, profile.center) >= profile.radius * 1.049)
+        #expect(distance(pose.orientation.vector, orientation.vector) < 0.00001)
+        let matrix = pose.makeRenderViewMatrix()
+        for column in 0..<4 {
+            for row in 0..<4 { #expect(matrix[column][row].isFinite) }
+        }
+    }
+    #expect(resources.navigationSnapshot.state == .completed)
+    resources.navigation.doneNavigation()
 }
 
 @MainActor

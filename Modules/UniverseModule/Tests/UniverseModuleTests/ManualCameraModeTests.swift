@@ -4,6 +4,39 @@ import simd
 import Testing
 @testable import UniverseModule
 
+@MainActor
+@Test func manualCameraIgnoresInvalidGesturesAndRecoversForNextGesture() {
+    let fixture = ManualCameraCoordinatorFixture()
+    let original = fixture.cameraState.pose
+    for scale in [Float.nan, .infinity, 0, -1] {
+        fixture.cameraCoordinator.makeScale(with: scale, velocity: 0)
+    }
+    fixture.cameraCoordinator.makeRotation(with: CGPoint(x: CGFloat.nan, y: 0), velocity: .zero)
+    fixture.cameraCoordinator.makeTranslation(with: CGPoint(x: CGFloat.infinity, y: 0),
+                                              viewportSize: CGSize(width: 402, height: 874))
+    #expect(fixture.cameraState.pose == original)
+    fixture.cameraCoordinator.makeScale(with: 2, velocity: 0)
+    fixture.cameraCoordinator.makeRotation(with: CGPoint(x: 10, y: 5), velocity: .zero)
+    #expect(fixture.cameraState.cameraDistance == original.distance / 2)
+    #expect(fixture.cameraState.cameraOrientation != original.orientation)
+}
+
+@Test func manualCameraInertiaDiscardsInvalidVelocities() {
+    let zoom = ZoomCameraMode()
+    zoom.addInertia(velocity: .infinity, currentDistance: 3)
+    #expect(!zoom.hasActiveInertia)
+    let orbit = OrbitCameraMode()
+    orbit.addInertia(velocity: CGPoint(x: CGFloat.nan, y: CGFloat.infinity))
+    #expect(!orbit.hasActiveInertia)
+
+    zoom.addInertia(velocity: 2, currentDistance: 3)
+    orbit.addInertia(velocity: CGPoint(x: 10, y: 10))
+    #expect(zoom.update(delta: .nan, currentDistance: 3) == nil)
+    #expect(orbit.update(delta: .nan, cameraOrientation: simd_quatf()) == nil)
+    #expect(zoom.update(delta: 1 / 60, currentDistance: 3)?.cameraDistance?.isFinite == true)
+    #expect(orbit.update(delta: 1 / 60, cameraOrientation: simd_quatf())?.cameraOrientation?.vector.x.isFinite == true)
+}
+
 @Test func orbitCameraModeProducesOrientationTransaction() throws {
     let mode = OrbitCameraMode()
     let initialOrientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))

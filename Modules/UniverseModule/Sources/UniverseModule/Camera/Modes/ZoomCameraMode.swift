@@ -29,6 +29,7 @@ final class ZoomCameraMode {
     func addInertia(velocity: CGFloat,
                     currentDistance: Float) {
         zoomVelocity = -Float(velocity) * currentDistance * 0.15
+        if !zoomVelocity.isFinite { zoomVelocity = 0 }
     }
 
     func cancelInertia() {
@@ -37,7 +38,7 @@ final class ZoomCameraMode {
 
     func update(delta: Float,
                 currentDistance: Float) -> CameraState.Transaction? {
-        guard hasActiveInertia else {
+        guard hasActiveInertia, delta.isFinite, delta > 0 else {
             return nil
         }
         let cameraDistance = currentDistance + zoomVelocity * delta

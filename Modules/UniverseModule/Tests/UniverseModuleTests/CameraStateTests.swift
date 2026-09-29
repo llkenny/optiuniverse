@@ -2,6 +2,26 @@ import simd
 import Testing
 @testable import UniverseModule
 
+@Test func cameraStateRejectsNonFiniteAndDegeneratePoses() {
+    let camera = CameraState()
+    let original = camera.pose
+    for invalid in [Float.nan, .infinity, -.infinity] {
+        camera.commit(.init(cameraTarget: SIMD3(invalid, 0, 0), cameraDistance: invalid,
+                            cameraOrientation: simd_quatf(vector: SIMD4(0, invalid, 0, 1))))
+        #expect(camera.pose == original)
+    }
+    camera.commit(.init(cameraOrientation: simd_quatf(vector: .zero)))
+    #expect(camera.pose == original)
+    #expect(camera.revision == 0)
+
+    camera.commit(.init(cameraDistance: 0))
+    #expect(camera.cameraDistance == camera.minDistance)
+    let matrix = camera.pose.makeRenderViewMatrix()
+    for column in 0..<4 {
+        for row in 0..<4 { #expect(matrix[column][row].isFinite) }
+    }
+}
+
 @Test func cameraStateCommitRecordsDirtyFieldsAndIncrementsRevisionOnce() {
     let cameraState = CameraState()
     let orientation = simd_quatf(angle: 0.25,
