@@ -194,7 +194,7 @@ struct RootContainerView: View {
             queueMissionAdvanceIfNeeded(snapshot: snapshot)
         case .cancelled:
             handleNavigationCancelled()
-        case .idle, .preparing, .running, .paused:
+        case .idle, .preparing, .running, .failed:
             break
         }
     }

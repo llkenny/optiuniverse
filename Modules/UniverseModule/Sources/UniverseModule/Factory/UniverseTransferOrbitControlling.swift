@@ -7,6 +7,11 @@
 
 @MainActor
 public protocol UniverseTransferOrbitControlling: AnyObject {
+    var transferPreviewSnapshot: TransferPreviewSnapshot { get }
     func showTransferOrbit(to destinationName: String)
     func clearTransferOrbit()
+}
+
+public extension UniverseTransferOrbitControlling {
+    var transferPreviewSnapshot: TransferPreviewSnapshot { .inactive }
 }

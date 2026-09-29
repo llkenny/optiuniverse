@@ -24,6 +24,24 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
                 .accessibilityLabel("Exit immersive universe")
             }
 
+            let preview = resources.transferOrbit.transferPreviewSnapshot
+            switch preview.status {
+            case .preparing:
+                ProgressView("Calculating transfer…")
+            case .ready:
+                if let duration = preview.physicalFlightDuration {
+                    Text("Two-body transfer · \(Int((duration / 86_400).rounded())) days · 30 s playback")
+                }
+                Button("Close orbit") { resources.transferOrbit.clearTransferOrbit() }
+            case .failed(let failure):
+                Text(failure.rawValue)
+                Button("Retry transfer") {
+                    if let destination = preview.destinationName { resources.transferOrbit.showTransferOrbit(to: destination) }
+                }
+                Button("Close orbit") { resources.transferOrbit.clearTransferOrbit() }
+            case .inactive:
+                EmptyView()
+            }
             if shouldShowProgress {
                 ProgressView(value: Double(resources.navigation.navigationSnapshot.progress))
                     .tint(OptiColor.overlayTextPrimary)
@@ -78,20 +96,9 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
             case .preparing:
                 ProgressView()
             case .running:
-                Button {
-                    resources.navigation.pauseNavigation()
-                } label: {
-                    Label("Pause", systemImage: "pause")
-                }
-
                 cancelButton
-            case .paused:
-                Button {
-                    resources.navigation.resumeNavigation()
-                } label: {
-                    Label("Resume", systemImage: "play")
-                }
-
+            case .failed:
+                Button("Retry") { resources.navigation.startNavigation(to: selectedDestination.object) }
                 cancelButton
             case .completed:
                 Button {
@@ -116,9 +123,12 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
 
         switch snapshot.state {
         case .running:
+            if let duration = snapshot.physicalFlightDuration {
+                return "\(Int((duration / 86_400).rounded())) day transfer · 30 s playback"
+            }
             return "Navigating: \(Int((snapshot.progress * 100).rounded()))%"
-        case .paused:
-            return "Navigation paused"
+        case .failed:
+            return snapshot.failure?.rawValue ?? "Transfer unavailable"
         case .completed:
             return "Route complete"
         case .preparing:
@@ -130,9 +140,9 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
 
     private var shouldShowProgress: Bool {
         switch resources.navigation.navigationSnapshot.state {
-        case .running, .paused, .completed:
+        case .running, .completed:
             return true
-        case .idle, .preparing, .cancelled:
+        case .idle, .preparing, .cancelled, .failed:
             return false
         }
     }

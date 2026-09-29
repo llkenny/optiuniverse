@@ -81,19 +81,16 @@ extension RootContainerView {
         HStack(spacing: 10) {
             switch snapshot.state {
             case .running:
-                navigationControlButton(title: "Pause") {
-                    universeResources.navigation.pauseNavigation()
-                }
                 navigationControlButton(title: "Cancel") {
                     cancelNavigationAndDismissOverlays()
                 }
-            case .paused:
-                navigationControlButton(title: "Resume") {
-                    universeResources.navigation.resumeNavigation()
+            case .failed:
+                navigationControlButton(title: "Retry") {
+                    if let destination = snapshot.destinationName {
+                        universeResources.navigation.startNavigation(to: destination)
+                    }
                 }
-                navigationControlButton(title: "Cancel") {
-                    cancelNavigationAndDismissOverlays()
-                }
+                navigationControlButton(title: "Close") { cancelNavigationAndDismissOverlays() }
             case .idle, .preparing, .completed, .cancelled:
                 EmptyView()
             }
@@ -152,11 +149,14 @@ extension RootContainerView {
 
         switch snapshot.state {
         case .running:
+            if let duration = snapshot.physicalFlightDuration {
+                return "\(Int((duration / 86_400).rounded())) day transfer · 30 s playback · ETA \(formatTime(snapshot.remainingTime))"
+            }
             return "ETA \(formatTime(snapshot.remainingTime))"
-        case .paused:
-            return "Paused"
         case .completed:
             return "Route complete"
+        case .failed:
+            return snapshot.failure?.rawValue ?? "Transfer unavailable"
         case .idle, .preparing, .cancelled:
             return ""
         }
@@ -170,10 +170,10 @@ extension RootContainerView {
             return "Preparing \(routeText)"
         case .running:
             return "\(routeText) · ETA \(formatTime(snapshot.remainingTime))"
-        case .paused:
-            return "\(routeText) · Paused"
         case .completed:
             return routeText
+        case .failed:
+            return snapshot.failure?.rawValue ?? "Transfer unavailable"
         case .idle, .cancelled:
             return routeText
         }

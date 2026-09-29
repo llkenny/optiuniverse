@@ -51,6 +51,7 @@ final class UniverseSceneCoordinator {
     private(set) var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
+    private var discardNextFrameDelta = false
 
     enum PreparationError: Error, Equatable {
         case missingBody(String)
@@ -164,6 +165,7 @@ final class UniverseSceneCoordinator {
     }
 
     func setPresentationActive(_ isActive: Bool) {
+        if isActive && !isPresentationActive { discardNextFrameDelta = true }
         isPresentationActive = isActive
     }
 
@@ -260,8 +262,12 @@ final class UniverseSceneCoordinator {
             return
         }
 
-        let delta = simulationClock.advance(by: deltaTime)
-        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
+        let activeDelta = discardNextFrameDelta ? 0 : deltaTime
+        discardNextFrameDelta = false
+        let delta = simulationClock.advance(by: activeDelta,
+                                            transfer: navigationController.activeTransfer)
+        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
+                                            presentationTime: Float(simulationClock.presentationTime))
         let snapshot = snapshotProvider.latestSnapshot
 
         transferOrbitController.update(snapshot: snapshot, delta: delta)
@@ -282,7 +288,8 @@ final class UniverseSceneCoordinator {
                                   cameraSnapshot: cameraSnapshot,
                                   modeState: modeState)
         let frameState = UniverseFrameState(
-            simulationTime: simulationClock.currentTime,
+            simulationTime: snapshot?.simulationTime ?? simulationClock.currentTime,
+            presentationTime: Float(simulationClock.presentationTime),
             cameraSnapshot: cameraSnapshot,
             snapshot: snapshot,
             routes: SceneRouteRenderState(transfer: transferOrbitController.renderState,
@@ -480,6 +487,7 @@ final class UniverseSceneCoordinator {
         transferOrbitRoot.addChild(proceduralSceneContent.transferEarthOrbit.entity)
         transferOrbitRoot.addChild(proceduralSceneContent.transferDestinationOrbit.entity)
         transferOrbitRoot.addChild(proceduralSceneContent.transferPath.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferArrivalMarker)
         navigationRouteRoot.addChild(proceduralSceneContent.navigationPath.entity)
         navigationRouteRoot.addChild(navigationMarkerRoot)
         navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)

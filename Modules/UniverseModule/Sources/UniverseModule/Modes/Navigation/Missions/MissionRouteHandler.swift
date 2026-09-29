@@ -26,7 +26,7 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
                         snapshot: UniverseSceneSnapshot,
                         routeBuilder: RouteBuilding) -> NavigationRoute? {
         guard ArtemisRouteProfile.isArtemisRoute(route),
-              state == .running || state == .paused || state == .completed,
+              state == .running || state == .completed,
               let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
               let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
               let originPosition = snapshot.worldPosition(ofPlanetNamed: route.originName),

@@ -1,67 +1,33 @@
+import simd
 @testable import UniverseModule
 
-let testPlanets: [Planet] = [
-    Planet(name: "Sun",
-           meshName: "Sun",
-           parentName: nil,
-           radius: 1,
-           distance: 0,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Mercury",
-           meshName: "Mercury",
-           parentName: nil,
-           radius: 1,
-           distance: 0.38,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Venus",
-           meshName: "Venus",
-           parentName: nil,
-           radius: 1,
-           distance: 0.72,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Earth",
-           meshName: "Earth",
-           parentName: nil,
-           radius: 1,
-           distance: 1,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Moon",
-           meshName: "Moon",
-           parentName: "Earth",
-           radius: 1,
-           distance: 0.0025,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Mars",
-           meshName: "Mars",
-           parentName: nil,
-           radius: 1,
-           distance: 1.52,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Neptune",
-           meshName: "Neptune",
-           parentName: nil,
-           radius: 1,
-           distance: 30.17,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Uranus",
-           meshName: "Uranus",
-           parentName: nil,
-           radius: 1,
-           distance: 19.19,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0),
-    Planet(name: "Pluto",
-           meshName: "Pluto",
-           parentName: nil,
-           radius: 1,
-           distance: 39.44,
-           orbitSpeed: 0,
-           rotationSpeedKmSec: 0)
-]
+let testPlanets: [Planet] = (try? SolarSystemLoader.loadPlanets(from: "planets")) ?? []
+
+// Small synthetic circular fixtures for camera and lunar geometry tests. Production has no
+// legacy distance/angular-speed initializer; these units belong only to those test scenarios.
+extension Planet {
+    init(name: String, meshName: String, parentName: String?, radius: Float,
+         distance: Float, orbitSpeed: Float, rotationSpeedKmSec: Float) {
+        self.init(name: name, meshName: meshName, parentName: parentName, radius: radius,
+                  orbit: distance > 0 ? OrbitalElements(
+                    semiMajorAxisKm: Double(distance) / OrbitalElements.sceneUnitsPerKm,
+                    eccentricity: 0, inclinationDegrees: 0, ascendingNodeDegrees: 0,
+                    argumentOfPeriapsisDegrees: 0, meanAnomalyDegrees: 0,
+                    epochJulianDay: OrbitalElements.j2000,
+                    periodSeconds: orbitSpeed == 0 ? 1e30 : 2 * .pi / Double(orbitSpeed)
+                  ) : nil, rotationSpeedKmSec: rotationSpeedKmSec)
+    }
+
+    var distance: Float { Float((orbit?.semiMajorAxisKm ?? 0) * OrbitalElements.sceneUnitsPerKm) }
+}
+
+@MainActor
+func orbitalTestSnapshot(planets: [Planet] = testPlanets, time: Double = 0) -> UniverseSceneSnapshot {
+    let pipeline = UniverseSceneSnapshotPipeline(planets: planets)
+    pipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: planets.map {
+        ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,
+                                                   framingRadius: $0.radius, surfaceRadius: $0.radius))
+    }))
+    pipeline.requestPreparation(simulationTime: time)
+    return pipeline.latestSnapshot ?? UniverseSceneSnapshot(frameID: 0, simulationTime: time, planets: [])
+}

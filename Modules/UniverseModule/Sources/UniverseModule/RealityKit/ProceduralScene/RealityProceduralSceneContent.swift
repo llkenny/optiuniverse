@@ -13,11 +13,11 @@ final class RealityProceduralSceneContent {
     let starField: RealityStarField
     let transferEarthOrbit: RealityRibbon
     let transferDestinationOrbit: RealityRibbon
+    let transferArrivalMarker: Entity
     let transferPath: RealityRibbon
     let navigationPath: RealityRibbon
     let navigationMarker: Entity
 
-    private static let transferSampleCount = 256
     static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
     static func prepare() async throws -> RealityProceduralSceneContent {
@@ -33,6 +33,8 @@ final class RealityProceduralSceneContent {
         transferPath = try RealityRibbon(maximumSegmentCount: 512)
         navigationPath = try RealityRibbon(maximumSegmentCount: 2_048)
         navigationMarker = Self.makeNavigationMarker()
+        transferArrivalMarker = Self.makeNavigationMarker(color: UIColor(red: 1, green: 0.62, blue: 0.22, alpha: 1))
+        transferArrivalMarker.name = "TransferArrivalPosition"
     }
 
     func update(frameState: UniverseFrameState) {
@@ -62,7 +64,7 @@ final class RealityProceduralSceneContent {
                          cameraPosition: cameraPosition,
                          cameraRight: cameraRight,
                          cameraUp: cameraUp,
-                         simulationTime: frameState.simulationTime)
+                         simulationTime: Double(frameState.presentationTime))
         updateTransfer(state: frameState.routes.transfer,
                        sceneOrigin: camera.sceneOrigin,
                        cameraPosition: cameraPosition,
@@ -87,16 +89,19 @@ final class RealityProceduralSceneContent {
                                 renderViewMatrix: float4x4,
                                 verticalFieldOfView: Float,
                                 viewportHeight: Float) {
-        guard let orbit = state.transferOrbit else {
-            transferEarthOrbit.hide()
-            transferDestinationOrbit.hide()
-            transferPath.hide()
-            return
+        let orbit = state.transferOrbit
+        let earthPoints = orbit?.earthOrbitPoints ?? state.earthOrbitPoints
+        let destinationPoints = orbit?.destinationOrbitPoints ?? state.destinationOrbitPoints
+        transferArrivalMarker.isEnabled = orbit != nil
+        if let arrival = orbit?.points.last {
+            transferArrivalMarker.position = arrival - sceneOrigin
+            let size = max(simd_distance(cameraPosition, arrival - sceneOrigin) * 0.004, 0.0001)
+            transferArrivalMarker.scale = SIMD3(repeating: size)
         }
-
+        if earthPoints.isEmpty { transferEarthOrbit.hide() }
+        if destinationPoints.isEmpty { transferDestinationOrbit.hide() }
         transferEarthOrbit.update(
-            points: Self.circlePoints(center: orbit.sunPosition,
-                                      radius: orbit.earthOrbitRadius),
+            points: earthPoints,
             sceneOrigin: sceneOrigin,
             cameraPosition: cameraPosition,
             cameraUp: cameraUp,
@@ -109,8 +114,7 @@ final class RealityProceduralSceneContent {
             lineWidth: 1.75
         )
         transferDestinationOrbit.update(
-            points: Self.circlePoints(center: orbit.sunPosition,
-                                      radius: orbit.destinationOrbitRadius),
+            points: destinationPoints,
             sceneOrigin: sceneOrigin,
             cameraPosition: cameraPosition,
             cameraUp: cameraUp,
@@ -122,6 +126,7 @@ final class RealityProceduralSceneContent {
             dashDuty: 0.48,
             lineWidth: 1.75
         )
+        guard let orbit else { transferPath.hide(); return }
         transferPath.update(points: orbit.points,
                             sceneOrigin: sceneOrigin,
                             cameraPosition: cameraPosition,
@@ -189,14 +194,6 @@ final class RealityProceduralSceneContent {
         return route.prefixPoints(through: max(progress, easedProgress))
     }
 
-    static func circlePoints(center: SIMD3<Float>, radius: Float) -> [SIMD3<Float>] {
-        guard radius.isFinite, radius > 0 else { return [] }
-        return (0...transferSampleCount).map { index in
-            let angle = Float(index) / Float(transferSampleCount) * 2 * .pi
-            return center + SIMD3<Float>(radius * cos(angle), 0, -radius * sin(angle))
-        }
-    }
-
     private static func makeEnvironmentEntity() async throws -> ModelEntity {
         guard let url = UniverseModuleAssets.milkyWayEnvironmentURL(),
               let inputImage = CIImage(contentsOf: url) else {
@@ -227,11 +224,10 @@ final class RealityProceduralSceneContent {
         return entity
     }
 
-    private static func makeNavigationMarker() -> Entity {
-        let material = UnlitMaterial(color: UIColor(red: 0.25,
-                                                    green: 0.95,
-                                                    blue: 1,
-                                                    alpha: 0.82),
+    private static func makeNavigationMarker(
+        color: UIColor = UIColor(red: 0.25, green: 0.95, blue: 1, alpha: 0.82)
+    ) -> Entity {
+        let material = UnlitMaterial(color: color,
                                      applyPostProcessToneMap: false)
         let entity = Entity()
         entity.name = "NavigationMarkerVisual"
@@ -447,7 +443,7 @@ final class RealityStarField {
                 cameraPosition: SIMD3<Float>,
                 cameraRight: SIMD3<Float>,
                 cameraUp: SIMD3<Float>,
-                simulationTime: Float) {
+                simulationTime: Double) {
         guard !stars.isEmpty else { return }
         var vertices: [RealityProceduralVertex] = []
         var indices: [UInt32] = []
@@ -461,7 +457,7 @@ final class RealityStarField {
             let halfSize = distance * star.pointSize * 0.000_08
             let right = cameraRight * halfSize
             let upward = cameraUp * halfSize
-            let phase = sin(simulationTime * StarTwinkle.angularSpeed
+            let phase = sin(Float(simulationTime) * StarTwinkle.angularSpeed
                             + Float(index % 97) / 97 * 2 * .pi)
             let brightness = star.brightness * (StarTwinkle.base + StarTwinkle.amplitude * phase)
             let color = SIMD4<Float>(star.color * brightness, 1)

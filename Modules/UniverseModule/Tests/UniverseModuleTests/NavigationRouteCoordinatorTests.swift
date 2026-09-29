@@ -4,78 +4,6 @@ import Testing
 @testable import UniverseModule
 
 @MainActor
-@Test func navigationRouteCoordinatorSmoothsLiveRefreshGeometry() throws {
-    let transferOrbit = try #require(HohmannTransferOrbit.make(destinationName: "Mars",
-                                                               planets: testPlanets,
-                                                               earthSunDirection: SIMD3<Float>(1, 0, 0)))
-    let initialDestination = SIMD3<Float>(1.52, 0, 0)
-    let initialRoute = try makeTestNavigationRoute(transferOrbit: transferOrbit,
-                                                   destinationPosition: initialDestination)
-    let coordinator = NavigationRouteCoordinator(
-        routeBuilder: StaticNavigationRouteBuilder(route: initialRoute),
-        playback: StaticNavigationRoutePlayback(),
-        snapshotPublisher: { _ in }
-    )
-    let didStart = coordinator.start(destinationName: "Mars",
-                                     planets: testPlanets,
-                                     snapshot: .navigationRouteCoordinatorTestSnapshot)
-    #expect(didStart)
-
-    let updatedDestination = SIMD3<Float>(0, 0, -1.52)
-    let targetPoints = RoutePathBuilder.makeNavigationPoints(
-        transferOrbit: transferOrbit,
-        destinationPosition: updatedDestination,
-        destinationArcSampleCount: initialRoute.points.count - transferOrbit.points.count
-    )
-    let targetEndPoint = try #require(targetPoints.last)
-    let initialEndPoint = try #require(initialRoute.points.last)
-
-    coordinator.refresh(using: transferOrbit,
-                        destinationPosition: updatedDestination)
-    let smoothedRoute = try #require(coordinator.route)
-    let smoothedEndPoint = try #require(smoothedRoute.points.last)
-
-    #expect(smoothedRoute.points.count == initialRoute.points.count)
-    #expect(simd_distance(smoothedEndPoint, initialEndPoint) > 0.0001)
-    #expect(simd_distance(smoothedEndPoint, targetEndPoint) > 0.0001)
-    #expect(simd_distance(smoothedEndPoint, targetEndPoint) <
-            simd_distance(initialEndPoint, targetEndPoint))
-
-    let oneFrameDistance = simd_distance(smoothedEndPoint, targetEndPoint)
-    for _ in 0..<20 {
-        coordinator.refresh(using: transferOrbit,
-                            destinationPosition: updatedDestination)
-    }
-    let convergedEndPoint = try #require(coordinator.route?.points.last)
-
-    #expect(simd_distance(convergedEndPoint, targetEndPoint) < oneFrameDistance * 0.2)
-}
-
-@MainActor
-@Test func navigationRouteCoordinatorSkipsTinyLiveRefreshGeometry() throws {
-    let transferOrbit = try #require(HohmannTransferOrbit.make(destinationName: "Mars",
-                                                               planets: testPlanets,
-                                                               earthSunDirection: SIMD3<Float>(1, 0, 0)))
-    let initialDestination = SIMD3<Float>(1.52, 0, 0)
-    let initialRoute = try makeTestNavigationRoute(transferOrbit: transferOrbit,
-                                                   destinationPosition: initialDestination)
-    let coordinator = NavigationRouteCoordinator(
-        routeBuilder: StaticNavigationRouteBuilder(route: initialRoute),
-        playback: StaticNavigationRoutePlayback(),
-        snapshotPublisher: { _ in }
-    )
-    let didStart = coordinator.start(destinationName: "Mars",
-                                     planets: testPlanets,
-                                     snapshot: .navigationRouteCoordinatorTestSnapshot)
-    #expect(didStart)
-
-    coordinator.refresh(using: transferOrbit,
-                        destinationPosition: SIMD3<Float>(1.52, 0, -0.000_01))
-
-    #expect(coordinator.route == initialRoute)
-}
-
-@MainActor
 @Test func navigationRouteCoordinatorRefreshesArtemisRouteAroundUpdatedMoonPrediction() throws {
     let planets = artemisTestPlanets(earthOrbitSpeed: 0.25,
                                      moonOrbitSpeed: 0.4)
@@ -147,21 +75,6 @@ import Testing
     #expect(simd_distance(predictedMoonPosition, currentMoonPosition) > 0.05)
 }
 
-private func makeTestNavigationRoute(transferOrbit: HohmannTransferOrbit,
-                                     destinationPosition: SIMD3<Float>) throws -> NavigationRoute {
-    let points = RoutePathBuilder.makeNavigationPoints(transferOrbit: transferOrbit,
-                                                       destinationPosition: destinationPosition)
-    let cumulativeDistances = RoutePathBuilder.makeCumulativeDistances(points: points)
-    let totalDistance = try #require(cumulativeDistances.last)
-
-    return NavigationRoute(originName: "Earth",
-                           destinationName: transferOrbit.destinationName,
-                           points: points,
-                           cumulativeDistances: cumulativeDistances,
-                           totalDistance: totalDistance,
-                           estimatedDuration: 12)
-}
-
 private struct StaticNavigationRouteBuilder: RouteBuilding {
     let route: NavigationRoute
 
@@ -185,9 +98,7 @@ private final class StaticNavigationRoutePlayback: RoutePlayback {
         isCompleted = false
     }
 
-    func pause() {}
 
-    func resume() {}
 
     func cancel() {
         progress = 0
@@ -226,7 +137,7 @@ private func artemisTestPlanets(earthOrbitSpeed: Float = 0,
 }
 
 private func artemisSnapshot(planets: [Planet],
-                             simulationTime: Float) -> UniverseSceneSnapshot {
+                             simulationTime: Double) -> UniverseSceneSnapshot {
     var worldPositionsByName: [String: SIMD3<Float>] = [:]
     let packets = planets.map { planet in
         let parentWorldPosition = planet.parentName.flatMap {

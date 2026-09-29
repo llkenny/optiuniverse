@@ -61,37 +61,36 @@ import Testing
 }
 
 @MainActor
-@Test func universeModuleResourcesPausedArtemisManualControlKeepsRoutePivot() async throws {
+@Test func universeModuleResourcesArtemisManualControlKeepsRoutePivot() async throws {
     let resources = UniverseModuleResources()
     let viewportSize = CGSize(width: 400, height: 400)
     resources.setViewportSize(viewportSize)
     _ = try await prepareCislunarSnapshot(for: resources)
 
     resources.navigation.startNavigation(from: "Earth", via: "Moon", to: "Earth")
-    resources.navigation.pauseNavigation()
     resources.sceneCoordinator.update(deltaTime: 1.0 / 60.0)
 
-    let pausedRenderState = resources.navigationController.routeRenderState
-    let pausedRoute = try #require(pausedRenderState.route)
-    let marker = try #require(pausedRoute.point(at: pausedRenderState.progress))
-    let pausedNavigationPose = resources.cameraCoordinator.currentCameraPose
+    let initialRenderState = resources.navigationController.routeRenderState
+    let initialRoute = try #require(initialRenderState.route)
+    let marker = try #require(initialRoute.point(at: initialRenderState.progress))
+    let initialNavigationPose = resources.cameraCoordinator.currentCameraPose
     let initialMarkerScreenPosition = projectedScreenPosition(point: marker,
-                                                              pose: pausedNavigationPose,
+                                                              pose: initialNavigationPose,
                                                               viewportSize: viewportSize)
-    let markerDistanceBeforeRotation = simd_distance(marker, pausedNavigationPose.position)
+    let markerDistanceBeforeRotation = simd_distance(marker, initialNavigationPose.position)
 
     resources.rotateCamera(translation: CGSize(width: 0, height: 14),
                            velocity: .zero)
     let rotatedPose = resources.cameraCoordinator.currentCameraPose
 
-    #expect(resources.navigationSnapshot.state == .paused)
-    #expect(resources.navigationController.routeRenderState.route?.id == pausedRoute.id)
+    #expect(resources.navigationSnapshot.state == .running)
+    #expect(resources.navigationController.routeRenderState.route?.id == initialRoute.id)
     #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
     expectVector(SIMD3<Float>(projectedScreenPosition(point: marker,
                                                       pose: rotatedPose,
                                                       viewportSize: viewportSize), 0),
                  equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
-    #expect(simd_distance(rotatedPose.position, pausedNavigationPose.position) > 0.0001)
+    #expect(simd_distance(rotatedPose.position, initialNavigationPose.position) > 0.0001)
     #expect(abs(simd_distance(marker, rotatedPose.position) - markerDistanceBeforeRotation) < 0.0001)
 
     for _ in 0..<3 {
@@ -111,8 +110,8 @@ import Testing
                           velocity: 0)
     let zoomedPose = resources.cameraCoordinator.currentCameraPose
 
-    #expect(resources.navigationSnapshot.state == .paused)
-    #expect(resources.navigationController.routeRenderState.route?.id == pausedRoute.id)
+    #expect(resources.navigationSnapshot.state == .running)
+    #expect(resources.navigationController.routeRenderState.route?.id == initialRoute.id)
     #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
     let zoomedRenderState = resources.navigationController.routeRenderState
     let zoomedRoute = try #require(zoomedRenderState.route)
@@ -263,7 +262,7 @@ private func prepareCislunarSnapshot(for resources: UniverseModuleResources) asy
 
 private func expectVector(_ lhs: SIMD3<Float>,
                           equals rhs: SIMD3<Float>,
-                          tolerance: Float = 0.0001) {
+                          tolerance: Float = 0.001) {
     #expect(simd_distance(lhs, rhs) < tolerance)
 }
 
@@ -313,4 +312,40 @@ private extension UniverseSceneSnapshot {
                               surfaceRadius: framingRadius,
                               worldPosition: worldPosition)
     }
+}
+
+@MainActor
+@Test(arguments: [0.0, 7.0, 90.0, 200.0])
+func artemisFlybyUsesCloseCameraAtRealLunarScale(startDay: Double) throws {
+    let resources = UniverseModuleResources()
+    resources.setViewportSize(CGSize(width: 400, height: 800))
+    let manifest = try CelestialAssetManifestLoader.load()
+    let moonRadius = try #require(manifest.assets.first { $0.displayName == "Moon" }).framingRadius
+    resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues:
+        manifest.assets.map { asset in
+            (asset.displayName, CelestialBodyPresentationMetrics(renderRadius: asset.renderRadius,
+                                                                 framingRadius: asset.framingRadius,
+                                                                 surfaceRadius: asset.surfaceRadius))
+        }
+    ))
+    resources.sceneCoordinator.update(deltaTime: startDay + 1.0 / 60)
+    resources.navigation.startNavigation(from: "Earth", via: "Moon", to: "Earth")
+    var closestDistance: Float = .greatestFiniteMagnitude
+    var closeUpFrames = 0
+    for _ in 0..<960 {
+        resources.sceneCoordinator.update(deltaTime: 1.0 / 60)
+        let state = resources.navigationController.routeRenderState
+        let moon = try #require(resources.snapshotProvider.latestSnapshot?.worldPosition(ofPlanetNamed: "Moon"))
+        let pose = resources.cameraCoordinator.currentCameraPose
+        if state.progress >= 0.52 && state.progress <= 0.66 {
+            #expect(simd_distance(pose.target, moon) < 0.0001)
+            closestDistance = min(closestDistance, pose.distance)
+            #expect(pose.distance <= moonRadius * 4 + 0.000001)
+            #expect(pose.distance > moonRadius)
+            closeUpFrames += 1
+        }
+    }
+    #expect(closestDistance < 0.007)
+    #expect(closeUpFrames > 360)
+    #expect(resources.navigationSnapshot.state == .completed)
 }

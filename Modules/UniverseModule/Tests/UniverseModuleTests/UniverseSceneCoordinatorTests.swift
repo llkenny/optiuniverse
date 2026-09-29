@@ -164,7 +164,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     #expect(resources.sceneCoordinator.isProceduralSceneContentPrepared)
     #expect(resources.sceneCoordinator.environmentRoot.children.count == 1)
     #expect(resources.sceneCoordinator.starFieldRoot.children.count == 1)
-    #expect(resources.sceneCoordinator.transferOrbitRoot.children.count == 3)
+    #expect(resources.sceneCoordinator.transferOrbitRoot.children.count == 4)
     #expect(resources.sceneCoordinator.navigationRouteRoot.children.count == 2)
     #expect(resources.sceneCoordinator.navigationMarkerRoot.parent
             == resources.sceneCoordinator.navigationRouteRoot)
@@ -377,6 +377,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
                                                       surfaceRadius: 1)
     ])
 
+    pipeline.setPresentationTime(2)
     pipeline.requestPreparation(simulationTime: 2)
     while pipeline.latestSnapshot == nil {
         await Task.yield()
@@ -385,7 +386,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let packet = try #require(pipeline.latestSnapshot?.planet(named: planet.name))
     let expectedVisualRotation = float4x4.makeRotationY(1)
     let expectedOrbitTransform = planet.orbitTransformMatrix(at: 2)
-    let expectedBaseModelMatrix = planet.modelMatrix(at: 2)
+    let expectedBaseModelMatrix = planet.modelMatrix(at: 2, presentationTime: 2)
     expectSceneMatrix(packet.orbitTransformMatrix,
                       equals: expectedOrbitTransform)
     expectSceneMatrix(packet.visualRotationMatrix,
@@ -398,7 +399,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 @MainActor
 @Test func sceneSnapshotPipelineSpinsVisibleBodiesAroundRealityKitUpAxis() async throws {
     let bodyNames = Set(["Mercury", "Earth", "Jupiter", "Saturn", "Neptune"])
-    let planets = SolarSystemLoader.loadPlanets(from: "planets")
+    let planets = try SolarSystemLoader.loadPlanets(from: "planets")
         .filter { bodyNames.contains($0.name) }
     let pipeline = UniverseSceneSnapshotPipeline(planets: planets)
     pipeline.setPresentationMetrics(
@@ -408,8 +409,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
                                                        surfaceRadius: 1))
         })
     )
-    let simulationTime: Float = 100_000
+    let simulationTime: Double = 100_000
 
+    pipeline.setPresentationTime(10)
     pipeline.requestPreparation(simulationTime: simulationTime)
     while pipeline.latestSnapshot == nil {
         await Task.yield()
@@ -418,7 +420,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let snapshot = try #require(pipeline.latestSnapshot)
     for planet in planets {
         let packet = try #require(snapshot.planet(named: planet.name))
-        let expectedRotation = float4x4.makeRotationY(simulationTime * planet.rotationSpeedKmSec)
+        let expectedRotation = float4x4.makeRotationY(10 * planet.rotationSpeedKmSec)
         expectSceneMatrix(packet.visualRotationMatrix,
                           equals: expectedRotation)
         #expect(abs(packet.visualRotationMatrix[1][1] - 1) <= 0.00001)
@@ -455,7 +457,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
                                                     surfaceRadius: 1)
     ])
 
-    pipeline.requestPreparation(simulationTime: Float.pi)
+    pipeline.requestPreparation(simulationTime: Double.pi)
     while pipeline.latestSnapshot == nil {
         await Task.yield()
     }
@@ -464,7 +466,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let earthPacket = try #require(snapshot.planet(named: earth.name))
     let moonPacket = try #require(snapshot.planet(named: moon.name))
     let expectedMoonOrbit = moon.orbitTransformMatrix(
-        at: Float.pi,
+        at: Double.pi,
         parentWorldPosition: earthPacket.worldPosition
     )
 
@@ -527,8 +529,8 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     let secondFrame = try #require(coordinator.latestFrameState)
 
     #expect(coordinator.updateCount == 2)
-    #expect(firstFrame.simulationTime == 0.25)
-    #expect(secondFrame.simulationTime == 0.75)
+    #expect(firstFrame.simulationTime == 0.25 * 86_400)
+    #expect(secondFrame.simulationTime == 0.75 * 86_400)
     #expect(firstFrame.cameraSnapshot.viewportSize == CGSize(width: 390, height: 844))
     #expect(secondFrame.cameraSnapshot.cameraRevision >= firstFrame.cameraSnapshot.cameraRevision)
 }
@@ -727,7 +729,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
-@Test func sceneCoordinatorKeepsLastCompleteSceneSnapshot() throws {
+@Test func sceneCoordinatorPublishesCompleteSnapshotForEveryFrame() throws {
     let resources = UniverseModuleResources()
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
@@ -737,7 +739,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.update(deltaTime: 0.1)
     let secondFrame = try #require(coordinator.latestFrameState)
 
-    #expect(secondFrame.snapshot?.frameID == firstFrame.snapshot?.frameID)
+    #expect(secondFrame.snapshot?.frameID == (firstFrame.snapshot?.frameID ?? 0) + 1)
     coordinator.dismantle()
     #expect(coordinator.latestFrameState == nil)
 }

@@ -54,7 +54,8 @@ final class SnapshotProvider {
                   snapshotSource: snapshotSource)
     }
 
-    func requestPreparation(simulationTime: Float) {
+    func requestPreparation(simulationTime: Double, presentationTime: Float = 0) {
+        snapshotSource.setPresentationTime(presentationTime)
         snapshotSource.requestPreparation(simulationTime: simulationTime)
     }
 

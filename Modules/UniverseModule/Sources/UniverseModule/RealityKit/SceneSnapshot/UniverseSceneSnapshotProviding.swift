@@ -8,5 +8,10 @@
 @MainActor
 protocol UniverseSceneSnapshotProviding: AnyObject {
     var latestSnapshot: UniverseSceneSnapshot? { get }
-    func requestPreparation(simulationTime: Float)
+    func setPresentationTime(_ time: Float)
+    func requestPreparation(simulationTime: Double)
+}
+
+extension UniverseSceneSnapshotProviding {
+    func setPresentationTime(_ time: Float) {}
 }

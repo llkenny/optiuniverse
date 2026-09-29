@@ -296,7 +296,7 @@ private final class FakeFollowCameraSnapshotSource: UniverseSceneSnapshotProvidi
         self.latestSnapshot = latestSnapshot
     }
 
-    func requestPreparation(simulationTime: Float) {}
+    func requestPreparation(simulationTime: Double) {}
 }
 
 private let surfaceMoonCenter = SIMD3<Float>(2, 0, 0)

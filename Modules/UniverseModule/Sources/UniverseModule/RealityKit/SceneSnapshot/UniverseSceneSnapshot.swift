@@ -8,7 +8,7 @@
 // Immutable per-frame scene state consumed by camera, route, and RealityKit updates.
 struct UniverseSceneSnapshot: Sendable {
     let frameID: UInt64
-    let simulationTime: Float
+    let simulationTime: Double
     let planets: [CelestialBodySnapshot]
 
     nonisolated func planet(named name: String) -> CelestialBodySnapshot? {

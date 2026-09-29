@@ -108,8 +108,7 @@ import Testing
     fixture.controller.startNavigation(to: "Mars")
     let initialPoints = try #require(fixture.controller.routeRenderState.route?.points)
 
-    fixture.controller.update(snapshot: .movedDestinationSnapshot,
-                              delta: 0.1)
+    fixture.updateTransfer(progress: 0.5)
 
     #expect(fixture.controller.routeRenderState.progress == 0.5)
     #expect(fixture.controller.routeRenderState.route?.points == initialPoints)
@@ -160,8 +159,7 @@ import Testing
     let fixture = NavigationControllerFixture(routePlayback: playback)
 
     fixture.controller.startNavigation(to: "Mars")
-    fixture.controller.update(snapshot: fixture.snapshot,
-                              delta: 0.1)
+    fixture.updateTransfer(progress: 1)
     let initialRevision = fixture.cameraState.revision
     let initialPose = fixture.cameraState.pose
 
@@ -178,8 +176,7 @@ import Testing
     let fixture = NavigationControllerFixture(routePlayback: playback)
 
     fixture.controller.startNavigation(to: "Mars")
-    fixture.controller.update(snapshot: fixture.snapshot,
-                              delta: 0.1)
+    fixture.updateTransfer(progress: 1)
 
     #expect(fixture.controller.navigationSnapshot.state == .completed)
     #expect(fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
@@ -194,8 +191,7 @@ import Testing
     fixture.controller.navigationDidComplete = { completedDestinationName = $0 }
 
     fixture.controller.startNavigation(to: "Mars")
-    fixture.controller.update(snapshot: fixture.snapshot,
-                              delta: 0.1)
+    fixture.updateTransfer(progress: 1)
     fixture.controller.doneNavigation()
 
     #expect(completedDestinationName == "Mars")
@@ -216,6 +212,15 @@ import Testing
 
 @MainActor
 private struct NavigationControllerFixture {
+    func updateTransfer(progress: Double) {
+        guard let transfer = controller.routeRenderState.route?.transfer else {
+            Issue.record("Missing transfer")
+            return
+        }
+        let snapshot = orbitalTestSnapshot(time: transfer.departureEpoch + progress * transfer.flightDuration)
+        controller.update(snapshot: snapshot, delta: 0.1)
+    }
+
     let snapshot: UniverseSceneSnapshot
     let source: FakeNavigationSnapshotSource
     let provider: SnapshotProvider
@@ -248,9 +253,7 @@ private final class CompletingRoutePlayback: RoutePlayback {
         isCompleted = false
     }
 
-    func pause() {}
 
-    func resume() {}
 
     func cancel() {
         progress = 0
@@ -281,9 +284,7 @@ private final class AdvancingRoutePlayback: RoutePlayback {
         isCompleted = false
     }
 
-    func pause() {}
 
-    func resume() {}
 
     func cancel() {
         progress = 0
@@ -305,7 +306,7 @@ private final class FakeNavigationSnapshotSource: UniverseSceneSnapshotProviding
         self.latestSnapshot = latestSnapshot
     }
 
-    func requestPreparation(simulationTime: Float) {}
+    func requestPreparation(simulationTime: Double) {}
 }
 
 private extension UniverseSceneSnapshot {

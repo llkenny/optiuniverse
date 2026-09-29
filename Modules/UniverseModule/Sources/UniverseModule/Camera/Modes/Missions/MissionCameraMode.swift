@@ -82,6 +82,12 @@ final class MissionCameraMode {
             baseMinimumDistance: CameraFit.minimumNearPlane
         )
         let markerDistance = simd_length(markerOffset)
+        // Keep the Moon prominent for the whole encounter. The cinematic route's approach
+        // and departure can be many lunar radii away, especially at the real body scale.
+        // Use the route for the viewing direction, and the Moon for close-up framing.
+        let closeUpDistance = waypointRadius > 0
+            ? min(markerDistance, waypointRadius * 4)
+            : markerDistance
         let pitch = markerDistance > lunarFlybyOrientationEpsilon
             ? -asin(simd_clamp(markerOffset.y / markerDistance, -1, 1))
             : -.pi * 0.25
@@ -105,7 +111,7 @@ final class MissionCameraMode {
         return CameraTransition.Frame(
             target: interpolate(from: route.overviewCenter, to: waypoint, progress: closeUpProgress),
             distance: interpolate(from: overviewDistance,
-                                  to: max(markerDistance, minimumDistance),
+                                  to: max(closeUpDistance, minimumDistance),
                                   progress: closeUpProgress),
             orientation: simd_normalize(orientation)
         )

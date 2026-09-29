@@ -189,5 +189,5 @@ private struct ManualCameraCoordinatorFixture {
 private final class ManualCameraSnapshotSource: UniverseSceneSnapshotProviding {
     var latestSnapshot: UniverseSceneSnapshot?
 
-    func requestPreparation(simulationTime: Float) {}
+    func requestPreparation(simulationTime: Double) {}
 }

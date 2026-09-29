@@ -131,16 +131,15 @@ import Testing
     #expect(environmentRadius < farPlane)
 }
 
-@MainActor
-@Test func proceduralOrbitCirclePointsUseRealityKitXZPlane() throws {
-    let points = RealityProceduralSceneContent.circlePoints(center: SIMD3<Float>(10, 20, 30),
-                                                            radius: 4)
-    let firstPoint = try #require(points.first)
-    let quarterPoint = points[points.count / 4]
-
-    #expect(simd_distance(firstPoint, SIMD3<Float>(14, 20, 30)) < 0.0001)
-    #expect(simd_distance(quarterPoint, SIMD3<Float>(10, 20, 26)) < 0.0001)
-    #expect(points.allSatisfy { abs($0.y - 20) < 0.0001 })
+@Test func orbitGuideClosesAtPeriapsisInItsInclinedPlane() throws {
+    let orbit = try #require(testPlanets.first { $0.name == "Mercury" }?.orbit)
+    let points = orbit.orbitPoints()
+    let first = try #require(points.first)
+    let last = try #require(points.last)
+    #expect(simd_distance(first, last) < 0.00001)
+    let periapsis = Float(orbit.semiMajorAxisKm * (1 - orbit.eccentricity) * OrbitalElements.sceneUnitsPerKm)
+    #expect(abs(simd_length(first) - periapsis) < 0.00001)
+    #expect(points.contains { abs($0.y) > 1 })
 }
 
 @MainActor

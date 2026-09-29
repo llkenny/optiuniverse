@@ -27,7 +27,8 @@ struct RouteBuildInput {
     let sunPosition: SIMD3<Float>
     let destinationPosition: SIMD3<Float>?
     let estimatedDuration: TimeInterval
-    let simulationTime: Float
+    var transfer: TransferSolution? = nil
+    let simulationTime: Double
     let routeProgress: Float
 
     init(originName: String = "Earth",
@@ -43,7 +44,8 @@ struct RouteBuildInput {
          sunPosition: SIMD3<Float>,
          destinationPosition: SIMD3<Float>?,
          estimatedDuration: TimeInterval,
-         simulationTime: Float = 0,
+         simulationTime: Double = 0,
+         transfer: TransferSolution? = nil,
          routeProgress: Float = 0) {
         self.originName = originName
         self.waypointName = waypointName
@@ -58,6 +60,7 @@ struct RouteBuildInput {
         self.sunPosition = sunPosition
         self.destinationPosition = destinationPosition
         self.estimatedDuration = estimatedDuration
+        self.transfer = transfer
         self.simulationTime = simulationTime
         self.routeProgress = routeProgress
     }
@@ -66,7 +69,7 @@ struct RouteBuildInput {
 /// Route geometry construction boundary.
 ///
 /// `NavigationRouteCoordinator` depends on this protocol so route-building policy can vary independently
-/// from playback and state publication. The default implementation uses Hohmann transfer geometry, while
+/// from playback and state publication. The default implementation uses two-body transfer geometry, while
 /// tests can inject simpler deterministic builders.
 protocol RouteBuilding {
     func makeRoute(input: RouteBuildInput) -> NavigationRoute?
@@ -75,12 +78,12 @@ protocol RouteBuilding {
 /// Builds sampled route geometry for navigation playback and rendering.
 ///
 /// `RoutePathBuilder` is necessary because the user-facing route is not just the static transfer orbit:
-/// it also includes a short destination-orbit arc so the animated route can visibly meet the current
-/// destination position. It owns no runtime navigation state; it is a pure geometry builder.
+/// interplanetary paths are physical intercepts and lunar missions retain their cinematic geometry.
+/// It owns no runtime navigation state; it is a pure geometry builder.
 ///
 /// Ownership:
 /// - Owns only its sampling policy (`sampleCount`).
-/// - Depends on `HohmannTransferOrbit` for transfer-orbit geometry but does not own transfer preview
+/// - Depends on `TransferSolution` for transfer-orbit geometry but does not own transfer preview
 ///   state or render state.
 /// - Returns immutable `NavigationRoute` values to `NavigationRouteCoordinator`.
 // swiftlint:disable:next type_body_length
@@ -102,30 +105,18 @@ struct RoutePathBuilder: RouteBuilding {
             return nil
         }
 
-        guard let transferOrbit = HohmannTransferOrbit.make(destinationName: input.destinationName,
-                                                            planets: input.planets,
-                                                            earthSunDirection: input.earthSunDirection,
-                                                            sunPosition: input.sunPosition,
-                                                            sampleCount: sampleCount),
-              transferOrbit.points.count >= 2 else {
-            return nil
-        }
-
-        let routePoints = Self.makeNavigationPoints(transferOrbit: transferOrbit,
-                                                    destinationPosition: input.destinationPosition)
-        let cumulativeDistances = Self.makeCumulativeDistances(points: routePoints)
-        guard let totalDistance = cumulativeDistances.last,
-              totalDistance > 0 else {
-            return nil
-        }
-
-        return NavigationRoute(originName: "Earth",
-                               destinationName: input.destinationName,
-                               points: routePoints,
-                               cumulativeDistances: cumulativeDistances,
+        guard let transfer = input.transfer ?? (try? TransferSolution.make(
+            destinationName: input.destinationName, planets: input.planets,
+            departureEpoch: input.simulationTime, sunPosition: input.sunPosition,
+            sampleCount: sampleCount
+        )) else { return nil }
+        let cumulativeDistances = Self.makeCumulativeDistances(points: transfer.points)
+        guard let totalDistance = cumulativeDistances.last, totalDistance > 0 else { return nil }
+        return NavigationRoute(originName: "Earth", destinationName: input.destinationName,
+                               points: transfer.points, cumulativeDistances: cumulativeDistances,
                                totalDistance: totalDistance,
-                               estimatedDuration: input.estimatedDuration,
-                               overviewCenter: transferOrbit.sunPosition)
+                               estimatedDuration: TransferSolution.playbackDuration,
+                               overviewCenter: transfer.sunPosition, transfer: transfer)
     }
 
     private func makeCislunarLoopRoute(input: RouteBuildInput) -> NavigationRoute? {
@@ -167,44 +158,6 @@ struct RoutePathBuilder: RouteBuilding {
                                 waypointPosition: waypointPosition,
                                 destinationPosition: destinationPosition
                                ))
-    }
-
-    static func makeNavigationPoints(transferOrbit: HohmannTransferOrbit,
-                                     destinationPosition: SIMD3<Float>?,
-                                     destinationArcSampleCount: Int? = nil) -> [SIMD3<Float>] {
-        guard let destinationPosition,
-              let transferEndpoint = transferOrbit.points.last else {
-            return transferOrbit.points
-        }
-
-        let sunPosition = transferOrbit.sunPosition
-        let endpointVector = transferEndpoint - sunPosition
-        let destinationVector = destinationPosition - sunPosition
-        let epsilon: Float = 0.000001
-
-        guard horizontalLengthSquared(endpointVector) > epsilon,
-              horizontalLengthSquared(destinationVector) > epsilon else {
-            return transferOrbit.points
-        }
-
-        let radius = transferOrbit.destinationOrbitRadius
-        let startDirection = normalize(endpointVector)
-        let destinationDirection = normalize(destinationVector)
-        let orbitAngle = connectorAngle(from: startDirection,
-                                        to: destinationDirection,
-                                        transferPoints: transferOrbit.points)
-        let arcSampleCount = destinationArcSampleCount
-        .map { max(2, $0) }
-        ?? max(2, Int(ceil(abs(orbitAngle) / (2 * .pi) * 192)))
-        guard arcSampleCount > 1 else { return transferOrbit.points }
-
-        let orbitPoints = (1...arcSampleCount).map { index in
-            let progress = Float(index) / Float(arcSampleCount)
-            let angle = orbitAngle * progress
-            return sunPosition + rotateY(startDirection * radius, angle: angle)
-        }
-
-        return transferOrbit.points + orbitPoints
     }
 
     // swiftlint:disable:next function_body_length
@@ -490,15 +443,15 @@ struct RoutePathBuilder: RouteBuilding {
     }
 
     private static func predictionSimulationTime(targetProgress: Float,
-                                                 input: RouteBuildInput) -> Float {
+                                                 input: RouteBuildInput) -> Double {
         let remainingProgress = max(simd_clamp(targetProgress, 0, 1)
                                     - simd_clamp(input.routeProgress, 0, 1), 0)
-        return input.simulationTime + Float(input.estimatedDuration) * remainingProgress
+        return input.simulationTime + input.estimatedDuration * Double(remainingProgress) * 86_400
     }
 
     private static func predictedWorldPosition(ofPlanetNamed planetName: String,
                                                planets: [Planet],
-                                               simulationTime: Float) -> SIMD3<Float>? {
+                                               simulationTime: Double) -> SIMD3<Float>? {
         var worldPositionsByName: [String: SIMD3<Float>] = [:]
         for planet in planets {
             let parentWorldPosition = planet.parentName.flatMap {
@@ -528,54 +481,4 @@ struct RoutePathBuilder: RouteBuilding {
         return normalize(vector)
     }
 
-    private static func positiveAngle(from source: SIMD3<Float>,
-                                      to destination: SIMD3<Float>) -> Float {
-        let sourceXZ = normalize(SIMD2<Float>(source.x, source.z))
-        let destinationXZ = normalize(SIMD2<Float>(destination.x, destination.z))
-        let crossValue = sourceXZ.y * destinationXZ.x - sourceXZ.x * destinationXZ.y
-        let dotValue = simd_clamp(simd_dot(sourceXZ, destinationXZ), -1, 1)
-        let signedAngle = atan2(crossValue, dotValue)
-        return signedAngle >= 0 ? signedAngle : signedAngle + 2 * .pi
-    }
-
-    private static func connectorAngle(from source: SIMD3<Float>,
-                                       to destination: SIMD3<Float>,
-                                       transferPoints: [SIMD3<Float>]) -> Float {
-        let angle = positiveAngle(from: source, to: destination)
-        guard let arrivalDirection = finalHorizontalDirection(points: transferPoints) else {
-            return angle
-        }
-
-        let positiveTangent = normalize(SIMD3<Float>(source.z, 0, -source.x))
-        return simd_dot(arrivalDirection, positiveTangent) >= 0 ? angle : angle - 2 * .pi
-    }
-
-    private static func finalHorizontalDirection(points: [SIMD3<Float>]) -> SIMD3<Float>? {
-        let epsilon: Float = 0.000001
-
-        guard points.count >= 2 else { return nil }
-        for upperIndex in stride(from: points.count - 1, through: 1, by: -1) {
-            var direction = points[upperIndex] - points[upperIndex - 1]
-            direction.y = 0
-            if horizontalLengthSquared(direction) > epsilon {
-                return normalize(direction)
-            }
-        }
-
-        return nil
-    }
-
-    private static func rotateY(_ point: SIMD3<Float>, angle: Float) -> SIMD3<Float> {
-        let cosine = cos(angle)
-        let sine = sin(angle)
-        return SIMD3<Float>(
-            point.x * cosine + point.z * sine,
-            point.y,
-            -point.x * sine + point.z * cosine
-        )
-    }
-
-    private static func horizontalLengthSquared(_ vector: SIMD3<Float>) -> Float {
-        vector.x * vector.x + vector.z * vector.z
-    }
 }

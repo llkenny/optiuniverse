@@ -32,14 +32,6 @@ extension NavigationController: UniverseNavigationControlling {
         pendingNavigationRequest = nil
     }
 
-    func pauseNavigation() {
-        navigationRouteCoordinator.pause()
-    }
-
-    func resumeNavigation() {
-        navigationRouteCoordinator.resume()
-    }
-
     func cancelNavigation() {
         navigationRouteCoordinator.cancel()
         isCameraAutoFramingEnabled = false

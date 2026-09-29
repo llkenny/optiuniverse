@@ -3,90 +3,167 @@
         "name": "Sun",
         "meshName": "SunLow_Sun_0",
         "diameterKm": 1392000,
-        "distanceFromSunKm": 0,
-        "orbitSpeed": 0,
         "rotationSpeedKmSec": 1.997
     },
     {
         "name": "Mercury",
         "meshName": "MercuryLow_Mercury_0",
         "diameterKm": 4879,
-        "distanceFromSunKm": 57909000,
-        "orbitSpeed": 47.36,
-        "rotationSpeedKmSec": 0.003026
+        "rotationSpeedKmSec": 0.003026,
+        "orbit": {
+            "semiMajorAxisKm": 57909226.54152438,
+            "eccentricity": 0.20563593,
+            "inclinationDegrees": 7.00497902,
+            "ascendingNodeDegrees": 48.33076593,
+            "argumentOfPeriapsisDegrees": 29.12703035,
+            "meanAnomalyDegrees": 174.79252722,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 7600543.81992
+        }
     },
     {
         "name": "Venus",
         "meshName": "VenusLow_venus_0",
         "diameterKm": 12104,
-        "distanceFromSunKm": 108210000,
-        "orbitSpeed": 35.02,
-        "rotationSpeedKmSec": -0.001811
+        "rotationSpeedKmSec": -0.001811,
+        "orbit": {
+            "semiMajorAxisKm": 108209474.53737916,
+            "eccentricity": 0.00677672,
+            "inclinationDegrees": 3.39467605,
+            "ascendingNodeDegrees": 76.67984255,
+            "argumentOfPeriapsisDegrees": 54.92262462999999,
+            "meanAnomalyDegrees": 50.37663232,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 19414149.052176
+        }
     },
     {
         "name": "Earth",
         "meshName": "EarthLow_Earth_0",
         "diameterKm": 12756,
-        "distanceFromSunKm": 149598000,
-        "orbitSpeed": 29.78,
-        "rotationSpeedKmSec": 0.465101
+        "rotationSpeedKmSec": 0.465101,
+        "orbit": {
+            "semiMajorAxisKm": 149598261.1504425,
+            "eccentricity": 0.01671123,
+            "inclinationDegrees": -1.531e-05,
+            "ascendingNodeDegrees": 0,
+            "argumentOfPeriapsisDegrees": 102.93768193,
+            "meanAnomalyDegrees": -2.4731102699999923,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 31558149.10224
+        }
     },
     {
         "name": "Moon",
         "meshName": "MoonLow_Moon_0",
         "diameterKm": 3475,
-        "distanceFromSunKm": 149598000,
-        "distanceFromParentKm": 384400,
         "parentName": "Earth",
-        "orbitSpeed": 1.022,
-        "rotationSpeedKmSec": 0.004627
+        "rotationSpeedKmSec": 0.004627,
+        "orbit": {
+            "semiMajorAxisKm": 384400,
+            "eccentricity": 0.0554,
+            "inclinationDegrees": 5.16,
+            "ascendingNodeDegrees": 125.08,
+            "argumentOfPeriapsisDegrees": 318.15,
+            "meanAnomalyDegrees": 135.27,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 2360620.8
+        }
     },
     {
         "name": "Mars",
         "meshName": "MarsLow_Mars_0",
         "diameterKm": 6792,
-        "distanceFromSunKm": 227956000,
-        "orbitSpeed": 24.07,
-        "rotationSpeedKmSec": 0.240729
+        "rotationSpeedKmSec": 0.240729,
+        "orbit": {
+            "semiMajorAxisKm": 227943822.42757303,
+            "eccentricity": 0.0933941,
+            "inclinationDegrees": 1.84969142,
+            "ascendingNodeDegrees": 49.55953891,
+            "argumentOfPeriapsisDegrees": -73.5031685,
+            "meanAnomalyDegrees": 19.390197540000003,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 59355036.221760005
+        }
     },
     {
         "name": "Jupiter",
         "meshName": "JupiterLow_Jupiter_0",
         "diameterKm": 142984,
-        "distanceFromSunKm": 778479000,
-        "orbitSpeed": 13.06,
-        "rotationSpeedKmSec": 12.572049
+        "rotationSpeedKmSec": 12.572049,
+        "orbit": {
+            "semiMajorAxisKm": 778340816.6927108,
+            "eccentricity": 0.04838624,
+            "inclinationDegrees": 1.30439695,
+            "ascendingNodeDegrees": 100.47390909,
+            "argumentOfPeriapsisDegrees": -85.74542926000001,
+            "meanAnomalyDegrees": 19.66796068,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 374355659.124
+        }
     },
     {
         "name": "Saturn",
         "meshName": "SaturnLow_Saturn_0",
         "diameterKm": 120536,
-        "distanceFromSunKm": 1432041000,
-        "orbitSpeed": 9.68,
-        "rotationSpeedKmSec": 9.870977
+        "rotationSpeedKmSec": 9.870977,
+        "orbit": {
+            "semiMajorAxisKm": 1426666414.179921,
+            "eccentricity": 0.05386179,
+            "inclinationDegrees": 2.48599187,
+            "ascendingNodeDegrees": 113.66242448,
+            "argumentOfPeriapsisDegrees": -21.063546169999995,
+            "meanAnomalyDegrees": -42.64463408,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 929292362.8848
+        }
     },
     {
         "name": "Uranus",
         "meshName": "UranusLow_Uranus_0",
         "diameterKm": 51118,
-        "distanceFromSunKm": 2867043000,
-        "orbitSpeed": 6.80,
-        "rotationSpeedKmSec": -2.587533
+        "rotationSpeedKmSec": -2.587533,
+        "orbit": {
+            "semiMajorAxisKm": 2870658170.655732,
+            "eccentricity": 0.04725744,
+            "inclinationDegrees": 0.77263783,
+            "ascendingNodeDegrees": 74.01692503,
+            "argumentOfPeriapsisDegrees": 96.93735127000001,
+            "meanAnomalyDegrees": 142.28382821000002,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 2651370019.3296
+        }
     },
     {
         "name": "Neptune",
         "meshName": "NeptuneLow_Neptune_0",
         "diameterKm": 49528,
-        "distanceFromSunKm": 4514953000,
-        "orbitSpeed": 5.43,
-        "rotationSpeedKmSec": 2.682888
+        "rotationSpeedKmSec": 2.682888,
+        "orbit": {
+            "semiMajorAxisKm": 4498396417.009467,
+            "eccentricity": 0.00859048,
+            "inclinationDegrees": 1.77004347,
+            "ascendingNodeDegrees": 131.78422574,
+            "argumentOfPeriapsisDegrees": -86.81946347000002,
+            "meanAnomalyDegrees": -100.08479196,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 5200418560.032001
+        }
     },
     {
         "name": "Pluto",
         "meshName": "PlutoLow_Pluto_0",
         "diameterKm": 2377,
-        "distanceFromSunKm": 5900000000,
-        "orbitSpeed": 4.72,
-        "rotationSpeedKmSec": -0.01355
+        "rotationSpeedKmSec": -0.01355,
+        "orbit": {
+            "semiMajorAxisKm": 5873861272.09796,
+            "eccentricity": 0.2446745123195729,
+            "inclinationDegrees": 17.15136439626299,
+            "ascendingNodeDegrees": 110.286929741788,
+            "argumentOfPeriapsisDegrees": 113.76290248852,
+            "meanAnomalyDegrees": 15.0232691500142,
+            "epochJulianDay": 2451545.0,
+            "periodSeconds": 7764429974.316635
+        }
     }
 ]
