@@ -188,7 +188,7 @@ import Testing
     let playback = CompletingRoutePlayback()
     let fixture = NavigationControllerFixture(routePlayback: playback)
     var completedDestinationName: String?
-    fixture.controller.navigationDidComplete = { completedDestinationName = $0 }
+    fixture.controller.navigationDidComplete = { name, _ in completedDestinationName = name }
 
     fixture.controller.startNavigation(to: "Mars")
     fixture.updateTransfer(progress: 1)
@@ -202,7 +202,7 @@ import Testing
 @Test func navigationControllerCancelDoesNotPublishCompletedDestinationHandoff() {
     let fixture = NavigationControllerFixture()
     var completedDestinationName: String?
-    fixture.controller.navigationDidComplete = { completedDestinationName = $0 }
+    fixture.controller.navigationDidComplete = { name, _ in completedDestinationName = name }
 
     fixture.controller.startNavigation(to: "Mars")
     fixture.controller.cancelNavigation()
@@ -368,4 +368,39 @@ private extension UniverseSceneSnapshot {
                                    surfaceRadius: framingRadius,
                                    worldPosition: worldPosition)
     }
+}
+
+@MainActor
+@Test func starshipPendingRequestRetainsMissionAndCanBeCancelled() throws {
+    let fixture = NavigationControllerFixture(snapshot: nil)
+    fixture.controller.startMission(.starshipFlight14)
+    #expect(fixture.controller.navigationSnapshot.state == .preparing)
+    #expect(fixture.controller.navigationSnapshot.mission == .starshipFlight14)
+    fixture.source.latestSnapshot = .navigationControllerTestSnapshot
+    fixture.controller.update(snapshot: .navigationControllerTestSnapshot, delta: 0)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.mission == .starshipFlight14)
+    #expect(fixture.controller.routeRenderState.route?.transfer == nil)
+    let firstID = fixture.controller.navigationSnapshot.routeID
+    fixture.controller.cancelNavigation()
+    fixture.controller.startMission(.starshipFlight14)
+    #expect(fixture.controller.navigationSnapshot.routeID != firstID)
+    #expect(fixture.controller.navigationSnapshot.elapsedTime == 0)
+    fixture.controller.beginManualCameraControl()
+    #expect(!fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+    fixture.controller.cancelNavigation()
+    #expect(fixture.controller.pendingNavigationRequest == nil)
+    #expect(fixture.controller.routeRenderState.starshipFlight == nil)
+}
+
+@MainActor
+@Test func starshipFailedStartCanRetrySameMission() {
+    let fixture = NavigationControllerFixture(snapshot: UniverseSceneSnapshot(frameID: 0, simulationTime: 0, planets: []))
+    fixture.controller.startMission(.starshipFlight14)
+    #expect(fixture.controller.navigationSnapshot.state == .failed)
+    #expect(fixture.controller.navigationSnapshot.mission == .starshipFlight14)
+    fixture.source.latestSnapshot = .navigationControllerTestSnapshot
+    fixture.controller.startMission(.starshipFlight14)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.estimatedDuration == 60)
 }

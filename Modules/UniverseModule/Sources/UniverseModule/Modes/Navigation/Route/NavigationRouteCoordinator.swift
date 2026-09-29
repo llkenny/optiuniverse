@@ -32,6 +32,7 @@ final class NavigationRouteCoordinator {
     private(set) var state: NavigationRouteState = .idle
     private var transferElapsedTime: Double = 0
     private var requestedDestination: String?
+    private var requestedMission: MissionFlightPlan?
     private var failure: TransferFailure?
     private var lastPublishedSnapshot: NavigationRouteSnapshot = .idle
 
@@ -49,11 +50,29 @@ final class NavigationRouteCoordinator {
                waypointName: String? = nil,
                destinationName: String,
                planets: [Planet],
-               snapshot: UniverseSceneSnapshot) -> Bool {
+               snapshot: UniverseSceneSnapshot,
+               mission: MissionFlightPlan? = nil) -> Bool {
+        requestedMission = mission
         requestedDestination = destinationName
         state = .preparing
         failure = nil
         transferElapsedTime = 0
+        if mission == .starshipFlight14 {
+            guard let earth = snapshot.planet(named: "Earth"),
+                  let profile = StarshipRouteProfile(earth: earth) else {
+                route = nil
+                playback.cancel()
+                failure = .invalidGeometry
+                state = .failed
+                publishSnapshot()
+                return false
+            }
+            route = profile.makeRoute()
+            playback.start(duration: StarshipRouteProfile.duration)
+            state = .running
+            publishSnapshot()
+            return true
+        }
         var transfer: TransferSolution?
         if !ArtemisRouteProfile.isArtemisRoute(originName: originName, waypointName: waypointName,
                                                destinationName: destinationName) {
@@ -104,7 +123,7 @@ final class NavigationRouteCoordinator {
             return false
         }
 
-        self.route = route
+        self.route = route.withMission(mission)
         playback.start(duration: route.estimatedDuration)
         state = .running
         publishSnapshot()
@@ -131,6 +150,7 @@ final class NavigationRouteCoordinator {
     func cancel() {
         failure = nil
         requestedDestination = nil
+        requestedMission = nil
         playback.cancel()
         route = nil
         state = .cancelled
@@ -225,6 +245,7 @@ final class NavigationRouteCoordinator {
                                            elapsedTime: 0,
                                            remainingTime: 0,
                                            estimatedDuration: 0,
+                                           mission: requestedMission,
                                            failure: failure)
         }
 
@@ -241,6 +262,8 @@ final class NavigationRouteCoordinator {
                                        elapsedTime: elapsedTime,
                                        remainingTime: remainingTime,
                                        estimatedDuration: route.estimatedDuration,
+                                       mission: route.mission,
+                                       missionStatus: route.starshipProfile?.status(time: elapsedTime),
                                        physicalFlightDuration: route.transfer?.flightDuration)
     }
 }

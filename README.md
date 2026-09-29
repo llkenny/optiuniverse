@@ -15,6 +15,24 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 - Technology-neutral scene snapshots that feed camera, route, surface, and RealityKit entity updates.
 - Supporting RFC/ADR documentation for rendering architecture decisions.
 
+## Missions
+
+The Missions carousel includes Artemis II and **Starship Flight 14**. Starship plays a
+60-second illustrative flight: launch, separation, a Super Heavy splashdown cutaway,
+two complete visual Earth orbits, deployment of 26 Starlinks, and Starship reentry and
+controlled ocean splashdown. The overlay shows the current phase, orbit count,
+deployment count, progress, and playback ETA. Cancel clears the mission; camera gestures
+allow manual viewing while playback continues.
+
+This is a compressed cinematic interpretation, with enlarged vehicles and orbital
+altitude for readability, rather than a telemetry reconstruction. Two visual orbits
+approximate the shortened actual flight; engine failures and post-splashdown destruction
+are omitted. Vehicles and satellites use reusable procedural RealityKit geometry and
+follow the active playback clock, which suspends while the app is inactive.
+
+References: [Flight report](https://apnews.com/article/262d3c58d56bf7a525b49115d6c5dfe8),
+[Starlink deployment and splashdown](https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success).
+
 ## Video and screenshots
 
 <img width="200" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />

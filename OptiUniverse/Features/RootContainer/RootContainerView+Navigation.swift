@@ -86,7 +86,9 @@ extension RootContainerView {
                 }
             case .failed:
                 navigationControlButton(title: "Retry") {
-                    if let destination = snapshot.destinationName {
+                    if let mission = snapshot.mission ?? missionFlowState?.mission.flightPlan {
+                        universeResources.navigation.startMission(mission)
+                    } else if let destination = snapshot.destinationName {
                         universeResources.navigation.startNavigation(to: destination)
                     }
                 }
@@ -163,6 +165,19 @@ extension RootContainerView {
     }
 
     private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+        if snapshot.mission == .starshipFlight14 {
+            if snapshot.state == .failed { return "Mission unavailable" }
+            guard let status = snapshot.missionStatus else { return "Preparing launch" }
+            let phaseText: String
+            if status.phase == .orbit {
+                phaseText = "Orbit \(status.currentOrbit) of \(status.totalOrbits)"
+            } else if status.phase == .deployment {
+                phaseText = "Deploying Starlinks · \(status.deployedSatelliteCount)/26"
+            } else {
+                phaseText = status.phase.rawValue
+            }
+            return snapshot.state == .completed ? phaseText : "\(phaseText) · ETA \(formatTime(snapshot.remainingTime))"
+        }
         let routeText = navigationRouteText(snapshot: snapshot)
 
         switch snapshot.state {

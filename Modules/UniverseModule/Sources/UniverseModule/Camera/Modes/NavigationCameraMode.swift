@@ -29,12 +29,16 @@ final class NavigationCameraMode {
     private let arrivalTargetPhaseDuration: Float = 0.35
     private let arrivalDistancePhaseDuration: Float = 0.8
     private let missionCameraMode = MissionCameraMode()
+    private let starshipCameraMode = StarshipCameraMode()
 
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
                                    viewportSize: CGSize,
                                    currentPose: CameraPose,
                                    arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
+        if let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize, currentPose: currentPose) {
+            return makeCameraTransaction(frame: frame)
+        }
         guard let route = state.route,
               let originFallback = route.points.first,
               let destinationFallback = route.points.last else {
@@ -222,6 +226,9 @@ final class NavigationCameraMode {
     func minimumCameraDistance(state: NavigationRouteRenderState,
                                snapshot: UniverseSceneSnapshot?,
                                baseMinimumDistance: Float) -> Float? {
+        if let profile = state.route?.starshipProfile {
+            return max(CameraFit.minimumNearPlane * 2, profile.radius * 0.12)
+        }
         if let missionMinimumDistance = missionCameraMode.minimumCameraDistance(
             state: state,
             snapshot: snapshot,
@@ -248,6 +255,7 @@ final class NavigationCameraMode {
         }
 
         return baseProjection.withClippingPlanes(
+            nearPlane: route.starshipProfile == nil ? nil : CameraFit.minimumNearPlane,
             farPlane: max(baseProjection.farPlane,
                           CameraFit.defaultFarPlane,
                           cameraDistance + OverviewCameraFraming.navigationRouteRadius(route: route) * 2)
