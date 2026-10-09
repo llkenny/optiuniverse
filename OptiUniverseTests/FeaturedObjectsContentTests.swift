@@ -5,15 +5,12 @@ import UIKit
 
 @MainActor
 struct FeaturedObjectsContentTests {
-    @Test func bundledFeaturedObjectsPreserveVersionOneContentContract() throws {
+    @Test func bundledFeaturedObjectsPreserveCurrentContentContract() throws {
         let featuredObjects: [FeaturedObject] = try loadMainBundleJSON(named: "FeaturedObjects")
         let featuredNames = Set(featuredObjects.map(\.name))
         let ids = featuredObjects.map(\.id)
 
-        #expect(featuredNames.contains("Saturn"))
-        #expect(featuredNames.contains("Neptune"))
-        #expect(featuredNames.contains("Mars"))
-        #expect(featuredNames.contains("Moon Base"))
+        #expect(featuredNames == Set(["Jupiter", "Saturn", "Moon Base"]))
         #expect(Set(ids).count == ids.count)
 
         for featuredObject in featuredObjects {
