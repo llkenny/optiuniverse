@@ -404,3 +404,45 @@ private extension UniverseSceneSnapshot {
     #expect(fixture.controller.navigationSnapshot.state == .running)
     #expect(fixture.controller.navigationSnapshot.estimatedDuration == 60)
 }
+
+@MainActor
+@Test func crew13PendingRequestAndRestartPreserveISSDestination() throws {
+    let fixture = NavigationControllerFixture(snapshot: nil)
+    fixture.controller.startMission(.crew13)
+    #expect(fixture.controller.navigationSnapshot.state == .preparing)
+    #expect(fixture.controller.navigationSnapshot.mission == .crew13)
+    #expect(fixture.controller.navigationSnapshot.destinationName == "ISS")
+    fixture.controller.cancelNavigation()
+    #expect(fixture.controller.pendingNavigationRequest == nil)
+    fixture.controller.startMission(.crew13)
+    fixture.source.latestSnapshot = .navigationControllerTestSnapshot
+    fixture.controller.update(snapshot: .navigationControllerTestSnapshot, delta: 0)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.destinationName == "ISS")
+    #expect(fixture.controller.routeRenderState.route?.transfer == nil)
+    let firstID = try #require(fixture.controller.navigationSnapshot.routeID)
+    fixture.controller.beginManualCameraControl()
+    #expect(!fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+    fixture.controller.startMission(.starshipFlight14)
+    #expect(fixture.controller.routeRenderState.crew13Flight == nil)
+    #expect(fixture.controller.routeRenderState.starshipFlight != nil)
+    fixture.controller.startMission(.crew13)
+    #expect(fixture.controller.navigationSnapshot.routeID != firstID)
+    #expect(fixture.controller.navigationSnapshot.elapsedTime == 0)
+    #expect(fixture.controller.routeRenderState.isCameraAutoFramingEnabled)
+    fixture.controller.cancelNavigation()
+    #expect(fixture.controller.routeRenderState.crew13Flight == nil)
+}
+
+@MainActor
+@Test func crew13FailedStartRetriesAfterEarthBecomesAvailable() {
+    let fixture = NavigationControllerFixture(snapshot: UniverseSceneSnapshot(frameID: 0, simulationTime: 0, planets: []))
+    fixture.controller.startMission(.crew13)
+    #expect(fixture.controller.navigationSnapshot.state == .failed)
+    #expect(fixture.controller.navigationSnapshot.mission == .crew13)
+    #expect(fixture.controller.navigationSnapshot.failure == .invalidGeometry)
+    fixture.source.latestSnapshot = .navigationControllerTestSnapshot
+    fixture.controller.startMission(.crew13)
+    #expect(fixture.controller.navigationSnapshot.state == .running)
+    #expect(fixture.controller.navigationSnapshot.estimatedDuration == 60)
+}

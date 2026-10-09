@@ -13,6 +13,7 @@ struct NavigationRouteRenderState: Equatable {
     let elapsedTime: TimeInterval
     let isCameraAutoFramingEnabled: Bool
     let starshipFlight: StarshipFlightState?
+    let crew13Flight: Crew13FlightState?
 
     static let idle = NavigationRouteRenderState(route: nil,
                                                  progress: 0,
@@ -24,6 +25,7 @@ struct NavigationRouteRenderState: Equatable {
          elapsedTime: TimeInterval,
          isCameraAutoFramingEnabled: Bool = true) {
         starshipFlight = route?.starshipProfile?.sample(time: elapsedTime)
+        crew13Flight = route?.crew13Profile?.sample(time: elapsedTime)
         self.route = route
         self.progress = progress
         self.elapsedTime = elapsedTime

@@ -18,6 +18,7 @@ final class RealityProceduralSceneContent {
     let navigationPath: RealityRibbon
     let navigationMarker: Entity
     let starshipMission = RealityStarshipMission()
+    let crew13Mission = RealityCrew13Mission()
 
     static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
@@ -74,6 +75,7 @@ final class RealityProceduralSceneContent {
                        verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
                        viewportHeight: Float(camera.viewportSize.height))
         starshipMission.update(state: frameState.routes.navigation, sceneOrigin: camera.sceneOrigin)
+        crew13Mission.update(state: frameState.routes.navigation, sceneOrigin: camera.sceneOrigin)
         updateNavigation(state: frameState.routes.navigation,
                          sceneOrigin: camera.sceneOrigin,
                          cameraPosition: cameraPosition,
@@ -169,7 +171,7 @@ final class RealityProceduralSceneContent {
         } else {
             navigationPath.hide()
         }
-        navigationMarker.isEnabled = route.starshipProfile == nil
+        navigationMarker.isEnabled = !route.hasMissionVehicles
         navigationMarker.position = markerPosition - sceneOrigin
         let cameraDistance = max(simd_distance(navigationMarker.position, cameraPosition), 0.001)
         let pulse = 1 + 0.08 * sin(Float(elapsedTime) * 6)
@@ -178,7 +180,7 @@ final class RealityProceduralSceneContent {
 
     static func navigationRenderPoints(route: NavigationRoute,
                                        progress: Float) -> [SIMD3<Float>] {
-        if route.starshipProfile != nil { return route.prefixPoints(through: progress) }
+        if route.hasMissionVehicles { return route.prefixPoints(through: progress) }
         guard ArtemisRouteProfile.isArtemisRoute(route) else {
             return route.points
         }
