@@ -26,7 +26,15 @@ struct Mission: Equatable, Identifiable {
         route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "Earth")
     )
 
-    static let available: [Mission] = [.artemisII, .starshipFlight14]
+    static let crew13 = Mission(
+        id: "crew-13",
+        title: "Crew 13",
+        description: "Earth to ISS · 60 s illustrative flight",
+        flightPlan: .crew13,
+        route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "ISS")
+    )
+
+    static let available: [Mission] = [.artemisII, .starshipFlight14, .crew13]
 }
 
 struct MissionRoute: Equatable, Identifiable {
@@ -54,10 +62,10 @@ struct MissionFlowState: Equatable {
                                    waypointName: String?,
                                    destinationName: String?,
                                    missionID: MissionFlightPlan? = nil) -> MissionFlowAdvance {
-        // Legacy Artemis callers may still complete by route; Starship requires explicit identity.
+        // Legacy Artemis callers may still complete by route; other missions require identity.
         if let missionID {
             guard missionID == mission.flightPlan else { return .noChange }
-        } else if mission.flightPlan == .starshipFlight14 {
+        } else if mission.flightPlan != .artemisII {
             return .noChange
         }
         guard route.originName == originName,

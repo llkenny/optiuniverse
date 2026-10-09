@@ -57,9 +57,12 @@ final class NavigationRouteCoordinator {
         state = .preparing
         failure = nil
         transferElapsedTime = 0
-        if mission == .starshipFlight14 {
-            guard let earth = snapshot.planet(named: "Earth"),
-                  let profile = StarshipRouteProfile(earth: earth) else {
+        if mission == .starshipFlight14 || mission == .crew13 {
+            let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
+                mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
+                    : StarshipRouteProfile(earth: earth)?.makeRoute()
+            }
+            guard let missionRoute else {
                 route = nil
                 playback.cancel()
                 failure = .invalidGeometry
@@ -67,8 +70,8 @@ final class NavigationRouteCoordinator {
                 publishSnapshot()
                 return false
             }
-            route = profile.makeRoute()
-            playback.start(duration: StarshipRouteProfile.duration)
+            route = missionRoute
+            playback.start(duration: missionRoute.estimatedDuration)
             state = .running
             publishSnapshot()
             return true
@@ -263,7 +266,8 @@ final class NavigationRouteCoordinator {
                                        remainingTime: remainingTime,
                                        estimatedDuration: route.estimatedDuration,
                                        mission: route.mission,
-                                       missionStatus: route.starshipProfile?.status(time: elapsedTime),
+                                       missionStatus: route.crew13Profile?.status(time: elapsedTime)
+                                        ?? route.starshipProfile?.status(time: elapsedTime),
                                        physicalFlightDuration: route.transfer?.flightDuration)
     }
 }

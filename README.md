@@ -17,7 +17,7 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 
 ## Missions
 
-The Missions carousel includes Artemis II and **Starship Flight 14**. Starship plays a
+The Missions carousel includes Artemis II, **Starship Flight 14**, and **Crew 13**. Starship plays a
 60-second illustrative flight: launch, separation, a Super Heavy splashdown cutaway,
 two complete visual Earth orbits, deployment of 26 Starlinks, and Starship reentry and
 controlled ocean splashdown. The overlay shows the current phase, orbit count,
@@ -32,6 +32,20 @@ follow the active playback clock, which suspends while the app is inactive.
 
 References: [Flight report](https://apnews.com/article/262d3c58d56bf7a525b49115d6c5dfe8),
 [Starlink deployment and splashdown](https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success).
+
+**Crew 13** plays a 60-second illustrative Earth-to-ISS flight: Falcon 9 launch
+(0–8 s), first-stage separation (8–10 s), second-stage burn (10–16 s), Dragon
+separation (16–18 s), orbital flight (18–36 s), ISS rendezvous (36–48 s), docking
+(48–58 s), and a docked hold (58–60 s). The camera follows Dragon after booster
+separation and frames both Dragon and ISS during approach. The overlay shows the
+current phase, progress, and playback ETA. Camera gestures allow manual viewing;
+backgrounding suspends playback. Completion or cancellation returns to an Earth overview.
+
+Falcon 9, Crew Dragon, and ISS use reusable procedural RealityKit geometry, including
+Dragon's opening nose cone and aligned docking ports. Vehicles and orbital altitude
+are enlarged for readability; timing and trajectory are cinematic rather than telemetry.
+ISS is a mission destination, not an additional celestial object. Booster recovery,
+station stay, and the return flight are omitted.
 
 ## Video and screenshots
 

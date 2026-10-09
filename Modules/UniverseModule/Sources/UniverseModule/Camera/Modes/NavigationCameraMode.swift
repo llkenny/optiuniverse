@@ -30,12 +30,19 @@ final class NavigationCameraMode {
     private let arrivalDistancePhaseDuration: Float = 0.8
     private let missionCameraMode = MissionCameraMode()
     private let starshipCameraMode = StarshipCameraMode()
+    private let crew13CameraMode = Crew13CameraMode()
 
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
                                    viewportSize: CGSize,
                                    currentPose: CameraPose,
                                    arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
+        if state.route?.crew13Profile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = crew13CameraMode.frame(state: state, viewportSize: viewportSize,
+                                                     currentPose: currentPose) else { return nil }
+            return makeCameraTransaction(frame: frame)
+        }
         if state.route?.starshipProfile != nil {
             guard state.isCameraAutoFramingEnabled,
                   let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize,
@@ -103,7 +110,7 @@ final class NavigationCameraMode {
     }
 
     func isArrivalPhase(state: NavigationRouteRenderState) -> Bool {
-        guard let route = state.route, route.starshipProfile == nil else { return false }
+        guard let route = state.route, !route.hasMissionVehicles else { return false }
         return simd_clamp(state.progress, 0, 1) >= arrivalPhaseStart
     }
 
@@ -112,9 +119,10 @@ final class NavigationCameraMode {
     func makeManualCameraClearanceTransaction(state: NavigationRouteRenderState,
                                               currentPose: CameraPose) -> CameraState.Transaction? {
         guard !state.isCameraAutoFramingEnabled,
-              let profile = state.route?.starshipProfile else { return nil }
-        let radius = CameraFit.minimumDistanceOutsideBody(radius: profile.radius)
-        let relativePosition = currentPose.position - profile.center
+              let earthRadius = state.route?.missionEarthRadius,
+              let earthCenter = state.route?.missionEarthCenter else { return nil }
+        let radius = CameraFit.minimumDistanceOutsideBody(radius: earthRadius)
+        let relativePosition = currentPose.position - earthCenter
         let distanceSquared = simd_length_squared(relativePosition)
         guard distanceSquared < radius * radius else { return nil }
 
@@ -246,8 +254,8 @@ final class NavigationCameraMode {
     func minimumCameraDistance(state: NavigationRouteRenderState,
                                snapshot: UniverseSceneSnapshot?,
                                baseMinimumDistance: Float) -> Float? {
-        if let profile = state.route?.starshipProfile {
-            return max(CameraFit.minimumNearPlane * 2, profile.radius * 0.12)
+        if let radius = state.route?.missionEarthRadius {
+            return max(CameraFit.minimumNearPlane * 2, radius * 0.12)
         }
         if let missionMinimumDistance = missionCameraMode.minimumCameraDistance(
             state: state,
@@ -275,7 +283,7 @@ final class NavigationCameraMode {
         }
 
         return baseProjection.withClippingPlanes(
-            nearPlane: route.starshipProfile == nil ? nil : CameraFit.minimumNearPlane,
+            nearPlane: route.hasMissionVehicles ? CameraFit.minimumNearPlane : nil,
             farPlane: max(baseProjection.farPlane,
                           CameraFit.defaultFarPlane,
                           cameraDistance + OverviewCameraFraming.navigationRouteRadius(route: route) * 2)

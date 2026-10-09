@@ -496,6 +496,7 @@ final class UniverseSceneCoordinator {
         navigationRouteRoot.addChild(navigationMarkerRoot)
         navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)
         navigationMarkerRoot.addChild(proceduralSceneContent.starshipMission.root)
+        navigationMarkerRoot.addChild(proceduralSceneContent.crew13Mission.root)
         self.proceduralSceneContent = proceduralSceneContent
     }
 

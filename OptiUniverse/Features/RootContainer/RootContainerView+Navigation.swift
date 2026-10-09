@@ -165,6 +165,12 @@ extension RootContainerView {
     }
 
     private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+        if snapshot.mission == .crew13 {
+            if snapshot.state == .failed { return "Mission unavailable" }
+            guard let status = snapshot.missionStatus else { return "Preparing launch" }
+            return snapshot.state == .completed ? status.phase.rawValue
+                : "\(status.phase.rawValue) · ETA \(formatTime(snapshot.remainingTime))"
+        }
         if snapshot.mission == .starshipFlight14 {
             if snapshot.state == .failed { return "Mission unavailable" }
             guard let status = snapshot.missionStatus else { return "Preparing launch" }

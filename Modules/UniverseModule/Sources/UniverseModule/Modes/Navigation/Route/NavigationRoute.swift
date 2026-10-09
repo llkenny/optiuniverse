@@ -42,6 +42,11 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let estimatedDuration: TimeInterval
     let mission: MissionFlightPlan?
     let starshipProfile: StarshipRouteProfile?
+    let crew13Profile: Crew13RouteProfile?
+
+    var hasMissionVehicles: Bool { starshipProfile != nil || crew13Profile != nil }
+    var missionEarthCenter: SIMD3<Float>? { starshipProfile?.center ?? crew13Profile?.center }
+    var missionEarthRadius: Float? { starshipProfile?.radius ?? crew13Profile?.radius }
     let transfer: TransferSolution?
     let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
@@ -58,9 +63,11 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          overviewCenter: SIMD3<Float>? = nil,
          transfer: TransferSolution? = nil,
          mission: MissionFlightPlan? = nil,
-         starshipProfile: StarshipRouteProfile? = nil) {
+         starshipProfile: StarshipRouteProfile? = nil,
+         crew13Profile: Crew13RouteProfile? = nil) {
         self.mission = mission
         self.starshipProfile = starshipProfile
+        self.crew13Profile = crew13Profile
         self.transfer = transfer
         self.id = id
         self.originName = originName
@@ -75,6 +82,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
+        if let crew13Profile { return crew13Profile.dragonPosition(time: Double(progress) * estimatedDuration) }
         if let starshipProfile { return starshipProfile.shipPosition(time: Double(progress) * 60) }
         if let transfer { return transfer.position(at: Double(progress)) }
         return point(atDistance: distance(at: progress))
@@ -83,7 +91,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     func distance(at progress: Float) -> Float {
         guard totalDistance.isFinite, totalDistance > 0 else { return 0 }
         let clampedProgress = min(max(progress, 0), 1)
-        if transfer != nil || starshipProfile != nil, points.count > 1 {
+        if transfer != nil || hasMissionVehicles, points.count > 1 {
             let sample = clampedProgress * Float(points.count - 1)
             let lower = min(Int(sample), points.count - 2)
             let fraction = sample - Float(lower)
@@ -206,7 +214,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         cumulativeDistances: cumulativeDistances, totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration, overviewPaddingRadius: overviewPaddingRadius,
                         overviewCenter: overviewCenter, transfer: transfer, mission: mission,
-                        starshipProfile: starshipProfile)
+                        starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 
     func replacingPath(points: [SIMD3<Float>],
@@ -224,6 +232,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         estimatedDuration: estimatedDuration,
                         overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
                         overviewCenter: overviewCenter ?? self.overviewCenter,
-                        transfer: transfer, mission: mission, starshipProfile: starshipProfile)
+                        transfer: transfer, mission: mission,
+                        starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 }

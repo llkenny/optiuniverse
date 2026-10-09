@@ -83,7 +83,9 @@ public final class UniverseModuleResources {
         }
         navigationController.navigationDidComplete = { [weak self] name, mission in
             guard let self else { return }
-            if mission == .starshipFlight14 {
+            if mission == .crew13 {
+                cameraCoordinator.followNavigationDestination(named: "Earth", viewportSize: viewportSize)
+            } else if mission == .starshipFlight14 {
                 // Surface close-ups finish away from the body's center. Animate back out
                 // instead of adopting an Earth-centered pivot at the close-up distance.
                 cameraCoordinator.followNavigationDestination(named: name, viewportSize: viewportSize)
