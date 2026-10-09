@@ -23,6 +23,7 @@ def Xform "Root"
         token outputs:mtlx:surface
         token outputs:realitykit:vertex
         token outputs:surface.connect = </Root/Earth_Material/UsdPreviewSurface.outputs:surface>
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 110.5)
 
         def Shader "UsdPreviewSurface"
         {
@@ -34,6 +35,7 @@ def Xform "Root"
             color3f inputs:emissiveColor = (0, 0, 0)
             float inputs:ior = 1.5
             float inputs:metallic = 0
+            float inputs:metallic.connect = </Root/Earth_Material/metallic.outputs:r>
             normal3f inputs:normal = (0, 0, 1)
             normal3f inputs:normal.connect = </Root/Earth_Material/normal.outputs:rgb>
             float inputs:occlusion = 1
@@ -164,7 +166,7 @@ def Xform "Root"
         def Shader "metallic"
         {
             uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_specular_map.tif@
+            asset inputs:file = @8k_earth_specular_map Large.jpeg@
             float2 inputs:st.connect = </Root/Earth_Material/metallic/TexCoordReader.outputs:result>
             float outputs:r
 
