@@ -10,7 +10,7 @@
 
 def Xform "Root"
 {
-    reorder nameChildren = ["Body", "PointLight", "Clouds", "Clouds_Material", "Earth_Material", "SpinAnimation", "Loop_SpinAnimation", "Clouds_External", "Clouds_External_Material"]
+    reorder nameChildren = ["Body", "Clouds", "Clouds_Material", "Clouds_Shader", "Clouds_External_Shader", "Earth_Material", "SpinAnimation", "Loop_SpinAnimation", "Clouds_External", "Clouds_External_Material"]
     def Material "Earth_Material"
     {
         token inputs:frame:stPrimvarName = "st" (
@@ -23,6 +23,7 @@ def Xform "Root"
         token outputs:mtlx:surface
         token outputs:realitykit:vertex
         token outputs:surface.connect = </Root/Earth_Material/UsdPreviewSurface.outputs:surface>
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 110.5)
 
         def Shader "UsdPreviewSurface"
         {
@@ -34,6 +35,7 @@ def Xform "Root"
             color3f inputs:emissiveColor = (0, 0, 0)
             float inputs:ior = 1.5
             float inputs:metallic = 0
+            float inputs:metallic.connect = </Root/Earth_Material/metallic.outputs:r>
             normal3f inputs:normal = (0, 0, 1)
             normal3f inputs:normal.connect = </Root/Earth_Material/normal.outputs:rgb>
             float inputs:occlusion = 1
@@ -59,7 +61,7 @@ def Xform "Root"
         def Shader "normal"
         {
             uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_normal_map.tif@
+            asset inputs:file = @8k_earth_normal_map.png@
             float2 inputs:st.connect = </Root/Earth_Material/normal/TexCoordReader.outputs:result>
             normal3f outputs:rgb
 
@@ -164,7 +166,7 @@ def Xform "Root"
         def Shader "metallic"
         {
             uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_specular_map.tif@
+            asset inputs:file = @8k_earth_specular_map Large.jpeg@
             float2 inputs:st.connect = </Root/Earth_Material/metallic/TexCoordReader.outputs:result>
             float outputs:r
 
@@ -186,156 +188,6 @@ def Xform "Root"
             bindMaterialAs = "weakerThanDescendants"
         )
         double radius = 0.1
-
-        def Material "DefaultMaterial"
-        {
-            token outputs:mtlx:surface
-            token outputs:realitykit:vertex
-            token outputs:surface.connect = </Root/Body/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
-
-            def Shader "DefaultSurfaceShader"
-            {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 1, 1)
-                float inputs:roughness = 0.75
-                token outputs:surface
-            }
-        }
-    }
-
-    def Sphere "Clouds" (
-        active = true
-        prepend apiSchemas = ["MaterialBindingAPI"]
-        customData = {
-            float3 rotationEulerHint = (0, 0, 0)
-        }
-    )
-    {
-        rel material:binding = </Root/Clouds_Material> (
-            bindMaterialAs = "weakerThanDescendants"
-        )
-        double radius = 0.1
-        float2 ui:nodegraph:node:pos = (20, 20)
-        int ui:nodegraph:node:stackingOrder = 1
-        quatf xformOp:orient = (1, 0, 0, 0)
-        float3 xformOp:scale = (1.01, 1.01, 1.01)
-        float3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-        def Material "DefaultMaterial"
-        {
-            token outputs:surface.connect = </Root/Clouds/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
-
-            def Shader "DefaultSurfaceShader"
-            {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 1, 1)
-                float inputs:roughness = 0.75
-                token outputs:surface
-            }
-        }
-
-        def RealityKitComponent "RCP_BehaviorsContainer"
-        {
-            rel behaviors = </Root/Clouds/OnAddedToScene>
-            uniform token info:id = "RCP.BehaviorsContainer"
-        }
-
-        def Preliminary_Behavior "OnAddedToScene"
-        {
-            rel actions = </Root/Clouds/OnAddedToScene/Action>
-            uniform bool exclusive
-            rel triggers = </Root/Clouds/OnAddedToScene/Trigger>
-
-            def Preliminary_Trigger "Trigger"
-            {
-                rel affectedObjects = </Root/Clouds>
-                token info:id = "SceneTransition"
-            }
-
-            def Preliminary_Action "Action"
-            {
-                rel affectedObjects = </Root>
-                rel animationLibraryKey = </Root/Loop_SpinAnimation>
-                rel animationLibraryKeyOverrideKey = </Root/Clouds/OnAddedToScene/Trigger>
-                token info:id = "PlayTimeline"
-                int loops = 0
-                int performCount = 1
-                token type = "serial"
-            }
-        }
-    }
-
-    def Material "Clouds_Material"
-    {
-        token inputs:frame:stPrimvarName = "st" (
-            customData = {
-                dictionary realitykit = {
-                    bool hide = 1
-                }
-            }
-        )
-        token outputs:mtlx:surface
-        token outputs:realitykit:vertex
-        token outputs:surface.connect = </Root/Clouds_Material/UsdPreviewSurface.outputs:surface>
-
-        def Shader "UsdPreviewSurface"
-        {
-            uniform token info:id = "UsdPreviewSurface"
-            color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
-            color3f inputs:diffuseColor.connect = </Root/Clouds_Material/diffuseColor.outputs:rgb>
-            color3f inputs:emissiveColor = (0, 0, 0)
-            color3f inputs:emissiveColor.connect = </Root/Clouds_Material/emissiveColor.outputs:rgb>
-            float inputs:metallic = 0
-            float inputs:opacity = 0.6
-            float inputs:roughness = 0.9
-            token outputs:surface
-        }
-
-        def Shader "opacity"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_clouds.jpg@
-            float2 inputs:st.connect = </Root/Clouds_Material/opacity/TexCoordReader.outputs:result>
-            float outputs:r
-
-            def Shader "TexCoordReader"
-            {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Clouds_Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
-            }
-        }
-
-        def Shader "diffuseColor"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_clouds.jpg@
-            float2 inputs:st.connect = </Root/Clouds_Material/diffuseColor/TexCoordReader.outputs:result>
-            color3f outputs:rgb
-
-            def Shader "TexCoordReader"
-            {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Clouds_Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
-            }
-        }
-
-        def Shader "emissiveColor"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @8k_earth_clouds.jpg@
-            float2 inputs:st.connect = </Root/Clouds_Material/emissiveColor/TexCoordReader.outputs:result>
-            color3f outputs:rgb
-
-            def Shader "TexCoordReader"
-            {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Clouds_Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
-            }
-        }
     }
 
     def RealityKitTimeline "SpinAnimation"
@@ -377,47 +229,6 @@ def Xform "Root"
         }
     }
 
-    def Material "Clouds_External_Material"
-    {
-        token inputs:frame:stPrimvarName = "st" (
-            customData = {
-                dictionary realitykit = {
-                    bool hide = 1
-                }
-            }
-        )
-        token outputs:mtlx:surface
-        token outputs:realitykit:vertex
-        token outputs:surface.connect = </Root/Clouds_External_Material/UsdPreviewSurface.outputs:surface>
-
-        def Shader "UsdPreviewSurface"
-        {
-            uniform token info:id = "UsdPreviewSurface"
-            color3f inputs:diffuseColor = (0.93052524, 0.9305222, 0.95545775) (
-                colorSpace = "srgb_texture"
-            )
-            float inputs:opacity = 1
-            float inputs:opacity.connect = </Root/Clouds_External_Material/opacity.outputs:r>
-            float inputs:roughness = 0.95
-            token outputs:surface
-        }
-
-        def Shader "opacity"
-        {
-            uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @Nuvem_baseColor.png@
-            float2 inputs:st.connect = </Root/Clouds_External_Material/opacity/TexCoordReader.outputs:result>
-            float outputs:r
-
-            def Shader "TexCoordReader"
-            {
-                uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Root/Clouds_External_Material.inputs:frame:stPrimvarName>
-                float2 outputs:result
-            }
-        }
-    }
-
     def Sphere "Clouds_External" (
         active = true
         prepend apiSchemas = ["MaterialBindingAPI"]
@@ -426,7 +237,7 @@ def Xform "Root"
         }
     )
     {
-        rel material:binding = </Root/Clouds_External_Material> (
+        rel material:binding = </Root/Clouds_External_Shader> (
             bindMaterialAs = "weakerThanDescendants"
         )
         double radius = 0.1
@@ -436,19 +247,6 @@ def Xform "Root"
         float3 xformOp:scale = (1.015, 1.015, 1.015)
         float3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-        def Material "DefaultMaterial"
-        {
-            token outputs:surface.connect = </Root/Clouds_External/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
-
-            def Shader "DefaultSurfaceShader"
-            {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 1, 1)
-                float inputs:roughness = 0.75
-                token outputs:surface
-            }
-        }
 
         def RealityKitComponent "RCP_BehaviorsContainer"
         {
@@ -478,6 +276,137 @@ def Xform "Root"
                 int performCount = 1
                 token type = "serial"
             }
+        }
+    }
+
+    def Sphere "Clouds" (
+        active = true
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        customData = {
+            float3 rotationEulerHint = (0, 0, 0)
+        }
+    )
+    {
+        rel material:binding = </Root/Clouds_Shader> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double radius = 0.1
+        float2 ui:nodegraph:node:pos = (20, 20)
+        int ui:nodegraph:node:stackingOrder = 1
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1.01, 1.01, 1.01)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def RealityKitComponent "RCP_BehaviorsContainer"
+        {
+            rel behaviors = </Root/Clouds/OnAddedToScene>
+            uniform token info:id = "RCP.BehaviorsContainer"
+        }
+
+        def Preliminary_Behavior "OnAddedToScene"
+        {
+            rel actions = </Root/Clouds/OnAddedToScene/Action>
+            uniform bool exclusive
+            rel triggers = </Root/Clouds/OnAddedToScene/Trigger>
+
+            def Preliminary_Trigger "Trigger"
+            {
+                rel affectedObjects = </Root/Clouds>
+                token info:id = "SceneTransition"
+            }
+
+            def Preliminary_Action "Action"
+            {
+                rel affectedObjects = </Root>
+                rel animationLibraryKey = </Root/Loop_SpinAnimation>
+                rel animationLibraryKeyOverrideKey = </Root/Clouds/OnAddedToScene/Trigger>
+                token info:id = "PlayTimeline"
+                int loops = 0
+                int performCount = 1
+                token type = "serial"
+            }
+        }
+    }
+
+    def Material "Clouds_Shader"
+    {
+        token outputs:mtlx:surface.connect = </Root/Clouds_Shader/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (365.25, 130.5)
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor.connect = </Root/Clouds_Shader/Image.outputs:out>
+            color3f inputs:emissiveColor.connect = </Root/Clouds_Shader/Image.outputs:out>
+            float inputs:ior
+            float inputs:metallic = 0
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity = 0.6
+            float inputs:opacityThreshold
+            float inputs:roughness = 1
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (136.98828, 159.16016)
+            int ui:nodegraph:node:stackingOrder = 22
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_color3"
+            asset inputs:file = @8k_earth_clouds.jpg@
+            string inputs:filtertype
+            string inputs:vaddressmode
+            color3f outputs:out
+            float2 ui:nodegraph:node:pos = (-158.1875, 178.22656)
+            int ui:nodegraph:node:stackingOrder = 23
+        }
+    }
+
+    def Material "Clouds_External_Shader"
+    {
+        token outputs:mtlx:surface.connect = </Root/Clouds_External_Shader/PreviewSurface.outputs:out>
+        token outputs:realitykit:vertex
+        float2 ui:nodegraph:node:pos = (245.75, 199.25)
+        int ui:nodegraph:node:stackingOrder = 1
+        float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (365.25, 130.5)
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor = (0.92941177, 0.92941177, 0.95686275) (
+                colorSpace = "lin_srgb"
+            )
+            color3f inputs:emissiveColor.connect = None
+            float inputs:ior
+            float inputs:metallic = 0
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity = 0.6
+            float inputs:opacity.connect = </Root/Clouds_External_Shader/Image.outputs:out>
+            float inputs:opacityThreshold
+            float inputs:roughness = 1
+            token outputs:out
+            float2 ui:nodegraph:node:pos = (136.98828, 159.16016)
+            int ui:nodegraph:node:stackingOrder = 24
+            string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
+        }
+
+        def Shader "Image"
+        {
+            uniform token info:id = "ND_image_float"
+            asset inputs:file = @Nuvem_baseColor.png@
+            string inputs:filtertype
+            string inputs:vaddressmode
+            float outputs:out
+            float2 ui:nodegraph:node:pos = (-158.1875, 178.22656)
+            int ui:nodegraph:node:stackingOrder = 23
         }
     }
 }

@@ -79,6 +79,28 @@ vfx_scripts/           Experimental volume-noise export utilities
 4. `UniverseSceneCoordinator` mutates one RealityKit entity hierarchy from complete camera, simulation, route, and presentation state.
 5. `RealityView` owns the visible frame and installs the custom filmic PostFX effect.
 
+## Atmosphere rendering diagnostics
+
+On iOS/visionOS 27 and later, Earth and Venus opt out of RealityKit occlusion
+culling for their complete body hierarchies to investigate flickering of nested
+transparent atmosphere layers. Earlier OS versions retain the system behavior.
+Materials, textures, animations, and camera projection are unchanged.
+
+For an A/B comparison in a **Debug** build, add the environment variable
+`OPTI_ATMOSPHERE_OCCLUSION_CULLING=system` in Xcode's **Edit Scheme → Run →
+Arguments → Environment Variables**. Remove it (or set it to `disabled`) to test
+the workaround. Release builds always use the workaround. The console category
+`AtmosphereRendering` logs the selected mode once for Earth and Venus.
+
+On physical iPhone 16 and iPhone 17 Air devices, compare five fresh launches per
+mode. Immediately select Earth and then Venus and run 20 rotation/zoom cycles
+for each. Repeat after three minutes and after Earth → Moon → Earth and
+Venus → Mars → Venus. Record whether the surface, atmosphere, or complete body
+disappears, along with frame rate, memory, and IOSurface/Metal allocation errors.
+Only regard the culling hypothesis as confirmed if the baseline reproduces and
+the workaround consistently avoids the issue. Test layer sorting and lower
+resolution diagnostic textures separately if culling alone does not resolve it.
+
 ## Content Model
 
 The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, and Neptune. Featured-object content is driven by JSON and backed by image assets for Jupiter, Saturn, and Moon Base.
