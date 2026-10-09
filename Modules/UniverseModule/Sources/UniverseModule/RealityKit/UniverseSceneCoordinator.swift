@@ -36,6 +36,7 @@ final class UniverseSceneCoordinator {
     private let navigationController: NavigationController
     private let transferOrbitController: TransferOrbitController
     private let assetRepository: RealityAssetRepository
+    private let occlusionCullingPolicy: CelestialOcclusionCullingPolicy
     private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     private var simulationClock = UniverseSimulationClock()
     private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
@@ -63,13 +64,15 @@ final class UniverseSceneCoordinator {
          objectInfoOverlayFramingState: ObjectInfoOverlayFramingState,
          navigationController: NavigationController,
          transferOrbitController: TransferOrbitController,
-         assetRepository: RealityAssetRepository) {
+         assetRepository: RealityAssetRepository,
+         occlusionCullingPolicy: CelestialOcclusionCullingPolicy = .current) {
         self.snapshotProvider = snapshotProvider
         self.cameraCoordinator = cameraCoordinator
         self.objectInfoOverlayFramingState = objectInfoOverlayFramingState
         self.navigationController = navigationController
         self.transferOrbitController = transferOrbitController
         self.assetRepository = assetRepository
+        self.occlusionCullingPolicy = occlusionCullingPolicy
         buildHierarchy(planets: planets)
     }
 
@@ -345,6 +348,7 @@ final class UniverseSceneCoordinator {
         for planet in planets {
             let bodyRoot = Entity()
             bodyRoot.name = planet.name
+            occlusionCullingPolicy.apply(to: bodyRoot, bodyName: planet.name)
             let orbitTransform = Entity()
             orbitTransform.name = "\(planet.name).BodyOrbitTransform"
             let rotationTransform = Entity()
