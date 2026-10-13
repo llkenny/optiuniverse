@@ -17,6 +17,11 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 
 ## Missions
 
+**Artemis II** follows a schematic Earth–Moon–Earth route with a lunar flyby,
+a smooth approach to Earth's limb, and a short atmospheric descent to the surface.
+The return arc depicts direct entry without a complete Earth orbit; it is not a
+telemetry reconstruction or a geographically anchored splashdown track.
+
 The Missions carousel includes Artemis II, **Starship Flight 14**, and **Crew 13**. Starship plays a
 60-second illustrative flight: launch, separation, a Super Heavy splashdown cutaway,
 two complete visual Earth orbits, deployment of 26 Starlinks, and Starship reentry and

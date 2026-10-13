@@ -69,8 +69,8 @@ import Testing
     #expect(route.estimatedDuration == 16)
     expectVector(firstPoint,
                  equals: originPosition + direction * originSurfaceRadius * 1.12)
-    expectVector(lastPoint,
-                 equals: originPosition + direction * originSurfaceRadius * 1.12)
+    #expect(abs(simd_distance(lastPoint, originPosition) - originSurfaceRadius) < 0.000_001)
+    #expect(simd_distance(lastPoint, firstPoint) > originSurfaceRadius)
     try expectArtemisLunarFlybyShape(route: route,
                                      geometry: flybyGeometry,
                                      center: waypointPosition,

@@ -332,11 +332,22 @@ func artemisFlybyUsesCloseCameraAtRealLunarScale(startDay: Double) throws {
     resources.navigation.startNavigation(from: "Earth", via: "Moon", to: "Earth")
     var closestDistance: Float = .greatestFiniteMagnitude
     var closeUpFrames = 0
+    var returnFrames = 0
     for _ in 0..<960 {
         resources.sceneCoordinator.update(deltaTime: 1.0 / 60)
         let state = resources.navigationController.routeRenderState
         let moon = try #require(resources.snapshotProvider.latestSnapshot?.worldPosition(ofPlanetNamed: "Moon"))
         let pose = resources.cameraCoordinator.currentCameraPose
+        if state.progress >= 0.7, let route = state.route {
+            let earth = try #require(resources.snapshotProvider.latestSnapshot?.planet(named: "Earth"))
+            let marker = try #require(route.point(at: state.progress))
+            let tolerance = max(earth.surfaceRadius * 0.0002,
+                                simd_length(earth.worldPosition) * Float.ulpOfOne * 2)
+            #expect(simd_distance(marker, earth.worldPosition) >= earth.surfaceRadius - tolerance)
+            let endpoint = try #require(route.points.last)
+            #expect(abs(simd_distance(endpoint, earth.worldPosition) - earth.surfaceRadius) <= tolerance)
+            returnFrames += 1
+        }
         if state.progress >= 0.52 && state.progress <= 0.66 {
             #expect(simd_distance(pose.target, moon) < 0.0001)
             closestDistance = min(closestDistance, pose.distance)
@@ -347,5 +358,6 @@ func artemisFlybyUsesCloseCameraAtRealLunarScale(startDay: Double) throws {
     }
     #expect(closestDistance < 0.007)
     #expect(closeUpFrames > 360)
+    #expect(returnFrames > 50)
     #expect(resources.navigationSnapshot.state == .completed)
 }

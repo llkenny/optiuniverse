@@ -183,10 +183,6 @@ struct RoutePathBuilder: RouteBuilding {
             radius: originSurfaceRadius,
             maximumDistance: fullMajorDistance
         )
-        let destinationClearance = ArtemisRouteProfile.anchorClearance(
-            radius: destinationSurfaceRadius,
-            maximumDistance: fullMajorDistance
-        )
         let earthLoopRadius = max(originSurfaceRadius * ArtemisRouteProfile.earthLoopRadiusScale,
                                   fullMajorDistance * ArtemisRouteProfile.earthLoopDistanceScale,
                                   0.03)
@@ -210,8 +206,6 @@ struct RoutePathBuilder: RouteBuilding {
             ),
             fallback: majorDirection
         )
-        let returnDirection = normalizeOrFallback(returnPosition - waypointPosition,
-                                                  fallback: -majorDirection)
         let earthwardDirection = -majorDirection
         let lunarFlybyEntry = waypointPosition
             + earthwardDirection * lunarFlybyRadius * 1.45
@@ -229,7 +223,6 @@ struct RoutePathBuilder: RouteBuilding {
             earthwardDirection - sideDirection * 0.24,
             fallback: earthwardDirection
         )
-        let returnAnchor = returnPosition - returnDirection * destinationClearance
         let minimumCount = max(sampleCount, 48)
         let earthLoopCount = max(10, Int(Float(minimumCount) * ArtemisRouteProfile.earthLoopSampleRatio))
         let outboundCount = max(16, Int(Float(minimumCount) * ArtemisRouteProfile.outboundSampleRatio))
@@ -275,16 +268,14 @@ struct RoutePathBuilder: RouteBuilding {
             count: lunarLoopCount
         )
         let lunarLoopEnd = lunarLoopPoints.last ?? lunarFlybyExit
-        let returnPoints = cubicBezierPoints(
+        let returnPoints = ArtemisReturnPath(center: returnPosition,
+                                             surfaceRadius: destinationSurfaceRadius,
+                                             majorDirection: majorDirection,
+                                             sideDirection: sideDirection,
+                                             controlScale: outboundControlScale).makePoints(
             start: lunarLoopEnd,
-            controlA: lunarLoopEnd
-                + lunarFlybyExitTangent * lunarFlybyExitHandleScale,
-            controlB: returnAnchor
-                + majorDirection * outboundControlScale * 0.38
-                - sideDirection * outboundControlScale * ArtemisRouteProfile.returnBranchLateralScale
-                + sceneUp * outboundControlScale * 0.015,
-            end: returnAnchor,
-            count: returnCount
+            controlA: lunarLoopEnd + lunarFlybyExitTangent * lunarFlybyExitHandleScale,
+            sampleCount: returnCount
         )
 
         var points: [SIMD3<Float>] = []
