@@ -4,7 +4,8 @@ import Testing
 @testable import UniverseModule
 
 @MainActor
-@Test func navigationRouteCoordinatorRefreshesArtemisRouteAroundUpdatedMoonPrediction() throws {
+@Test(arguments: [Float(0.25), 0.9, 0.99, 1])
+func navigationRouteCoordinatorRefreshesArtemisRouteAroundUpdatedMoonPrediction(progress: Float) throws {
     let planets = artemisTestPlanets(earthOrbitSpeed: 0.25,
                                      moonOrbitSpeed: 0.4)
     let playback = StaticNavigationRoutePlayback()
@@ -21,12 +22,15 @@ import Testing
                                                                simulationTime: 10))
     #expect(didStart)
 
-    playback.setProgress(0.25)
+    let routeID = coordinator.route?.id
+    playback.setProgress(progress)
     let refreshedSnapshot = artemisSnapshot(planets: planets,
                                             simulationTime: 20)
     coordinator.refreshRoute(planets: planets,
                              snapshot: refreshedSnapshot)
     let route = try #require(coordinator.route)
+    #expect(route.id == routeID)
+    #expect(route.estimatedDuration == 16)
     let earthPosition = try #require(refreshedSnapshot.worldPosition(ofPlanetNamed: "Earth"))
     let currentMoonPosition = try #require(refreshedSnapshot.worldPosition(ofPlanetNamed: "Moon"))
     let input = RouteBuildInput(
@@ -58,7 +62,10 @@ import Testing
         simd_distance($0, predictedMoonPosition)
     }.min() ?? .greatestFiniteMagnitude
 
-    #expect(currentMoonMinimumDistance < predictedMoonMinimumDistance)
+    if progress < ArtemisRouteProfile.lunarEncounterProgress {
+        #expect(currentMoonMinimumDistance < predictedMoonMinimumDistance)
+        #expect(simd_distance(predictedMoonPosition, currentMoonPosition) > 0.05)
+    }
     try expectArtemisLunarFlybyShape(route: route,
                                      geometry: flybyGeometry,
                                      center: currentMoonPosition,
@@ -66,13 +73,14 @@ import Testing
                                      sampleCount: 96)
     let routeEnd = try #require(route.points.last)
     let predictedDestination = try #require(RoutePathBuilder.predictedArtemisDestinationPosition(input: input))
-    #expect(simd_distance(predictedDestination, earthPosition) > 0.1)
-    #expect(simd_distance(routeEnd, earthPosition) <
-            (refreshedSnapshot.surfaceRadius(ofPlanetNamed: "Earth") ?? 0)
-            * 1.12 * 1.01)
-    #expect(simd_distance(routeEnd, earthPosition) <
-            simd_distance(routeEnd, predictedDestination))
-    #expect(simd_distance(predictedMoonPosition, currentMoonPosition) > 0.05)
+    #expect(abs(simd_distance(routeEnd, earthPosition)
+                - (refreshedSnapshot.surfaceRadius(ofPlanetNamed: "Earth") ?? 0)) < 0.000_001)
+    if progress < 1 {
+        #expect(simd_distance(routeEnd, earthPosition) < simd_distance(routeEnd, predictedDestination))
+    }
+    let marker = try #require(route.point(at: progress))
+    let earthRadius = try #require(refreshedSnapshot.surfaceRadius(ofPlanetNamed: "Earth"))
+    #expect(simd_distance(marker, earthPosition) >= earthRadius - 0.000_001)
 }
 
 private struct StaticNavigationRouteBuilder: RouteBuilding {

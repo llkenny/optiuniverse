@@ -26,6 +26,9 @@ enum ArtemisRouteProfile {
     static let lunarFlybyRadiusScale: Float = 2.8
     static let lunarFlybyTiltScale: Float = 0.16
     static let returnBranchLateralScale: Float = 0.08
+    static let entryRadiusScale: Float = 1.02
+    static let entryDescentAngle: Float = .pi / 6
+    static let maximumDescentSampleAngle: Float = .pi / 180
     static let earthLoopSampleRatio: Float = 0.14
     static let outboundSampleRatio: Float = 0.4
     static let lunarFlybySampleRatio: Float = 0.18
