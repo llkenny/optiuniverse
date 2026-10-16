@@ -18,6 +18,8 @@ struct UniverseSimulationClock {
     private(set) var currentTime: Double
     private(set) var presentationTime: Double = 0
     private(set) var mode: SimulationMode = .live
+    private(set) var missionElapsedTime: TimeInterval = 0
+    private var missionReplayID: UUID?
     private var transferDeparture: Double?
     private let now: () -> Date
 
@@ -28,14 +30,36 @@ struct UniverseSimulationClock {
 
     mutating func synchronizeLive() {
         mode = .live
+        missionReplayID = nil
+        missionElapsedTime = 0
         transferDeparture = nil
         currentTime = SimulationTime.tdbSeconds(for: now())
     }
 
-    mutating func advance(by deltaTime: TimeInterval, transfer: TransferSolution? = nil) -> Float {
+    mutating func prepareMission(_ replay: MissionReplay) {
+        transferDeparture = nil
+        missionReplayID = replay.id
+        missionElapsedTime = 0
+        currentTime = replay.timeline.departureEpoch
+        mode = .missionReplay
+    }
+
+    mutating func advance(by deltaTime: TimeInterval, transfer: TransferSolution? = nil,
+                          mission: MissionReplay? = nil) -> Float {
         let deltaTime = deltaTime.isFinite && deltaTime > 0 ? deltaTime : 0
         presentationTime += deltaTime
-        if let transfer {
+        if let mission {
+            if missionReplayID != mission.id { prepareMission(mission) }
+            if !mission.isPreparing {
+                missionElapsedTime = min(mission.timeline.duration, missionElapsedTime + deltaTime)
+                if mission.timeline.duration - missionElapsedTime < 1e-9 {
+                    missionElapsedTime = mission.timeline.duration
+                }
+            }
+            currentTime = mission.timeline.epoch(at: missionElapsedTime)
+        } else if let transfer {
+            missionReplayID = nil
+            missionElapsedTime = 0
             mode = .transferPreview
             if transferDeparture != transfer.departureEpoch {
                 transferDeparture = transfer.departureEpoch

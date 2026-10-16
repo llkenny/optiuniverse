@@ -5,6 +5,8 @@
 //  Created by max on 25.05.2026.
 //
 
+import Foundation
+
 extension NavigationController: UniverseNavigationControlling {
     func startNavigation(from originName: String, via waypointName: String?, to destinationName: String) {
         startRequest(NavigationRequest(originName: originName, waypointName: waypointName,
@@ -19,11 +21,20 @@ extension NavigationController: UniverseNavigationControlling {
 
     private func startRequest(_ request: NavigationRequest) {
         navigationRouteCoordinator.cancel()
-        synchronizeLiveScene?()
+        pendingNavigationRequest = nil
+        requestedMissionReplay = request.mission.map { MissionReplay(id: UUID(), mission: $0) }
+        if let replay = requestedMissionReplay {
+            prepareMissionScene?(replay)
+        } else {
+            synchronizeLiveScene?()
+        }
         guard snapshotProvider.preparationError == nil else {
             pendingNavigationRequest = nil
             isCameraAutoFramingEnabled = false
-            navigationRouteCoordinator.failForEphemeris()
+            navigationRouteCoordinator.failForEphemeris(mission: request.mission,
+                                                        destinationName: request.destinationName)
+            requestedMissionReplay = nil
+            synchronizeLiveScene?()
             return
         }
         let originName = request.originName
@@ -31,7 +42,8 @@ extension NavigationController: UniverseNavigationControlling {
         let destinationName = request.destinationName
         // A pending start must replace any previous playback immediately.
         if snapshotProvider.latestSnapshot == nil { navigationRouteCoordinator.cancel() }
-        guard let snapshot = snapshotProvider.latestSnapshot,
+        guard snapshotProvider.hasPresentationMetrics,
+              let snapshot = snapshotProvider.latestSnapshot,
               applyNavigation(from: originName,
                               via: waypointName,
                               to: destinationName,
@@ -58,6 +70,7 @@ extension NavigationController: UniverseNavigationControlling {
 
     func cancelNavigation() {
         navigationRouteCoordinator.cancel()
+        requestedMissionReplay = nil
         synchronizeLiveScene?()
         isCameraAutoFramingEnabled = false
         pendingNavigationRequest = nil
@@ -72,6 +85,7 @@ extension NavigationController: UniverseNavigationControlling {
         let completedDestinationName = navigationSnapshot.destinationName
         let completedMission = navigationSnapshot.mission
         navigationRouteCoordinator.cancel()
+        requestedMissionReplay = nil
         synchronizeLiveScene?()
         isCameraAutoFramingEnabled = false
         pendingNavigationRequest = nil
@@ -102,6 +116,10 @@ extension NavigationController: UniverseNavigationControlling {
                                                mission: mission),
               navigationRouteCoordinator.route != nil else {
             isCameraAutoFramingEnabled = false
+            if requestedMissionReplay != nil {
+                requestedMissionReplay = nil
+                synchronizeLiveScene?()
+            }
             return true
         }
 

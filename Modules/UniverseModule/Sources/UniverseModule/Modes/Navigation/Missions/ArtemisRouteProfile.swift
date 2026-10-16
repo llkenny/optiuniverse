@@ -127,6 +127,22 @@ enum ArtemisRouteProfile {
                             / max(1 - timeCloseUpEnd, .leastNonzeroMagnitude))
     }
 
+    /// Inverse of the cinematic progress mapping, used to date the lunar encounter.
+    static func playbackTime(forRouteProgress progress: Float,
+                             estimatedDuration: TimeInterval) -> TimeInterval {
+        var lower: Double = 0
+        var upper: Double = 1
+        for _ in 0..<40 {
+            let middle = (lower + upper) / 2
+            if routeProgress(linearProgress: Float(middle), estimatedDuration: estimatedDuration) < progress {
+                lower = middle
+            } else {
+                upper = middle
+            }
+        }
+        return (lower + upper) / 2 * estimatedDuration
+    }
+
     static func anchorClearance(radius: Float,
                                 maximumDistance: Float) -> Float {
         guard radius.isFinite,

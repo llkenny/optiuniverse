@@ -123,7 +123,7 @@ private func crew13TestEarth(position: SIMD3<Float> = .zero, radius: Float = 1,
     let snapshot = UniverseSceneSnapshot(frameID: 0, simulationTime: 0, planets: [crew13TestEarth()])
     #expect(coordinator.start(destinationName: "ISS", planets: [], snapshot: snapshot, mission: .crew13))
     let routeID = try #require(coordinator.route?.id)
-    coordinator.update(simulationTime: 1_000_000, delta: 36)
+    coordinator.update(simulationTime: 1_000_000, delta: 36, missionElapsedTime: 36)
     #expect(published.elapsedTime == 36)
     #expect(published.remainingTime == 24)
     #expect(published.missionStatus?.phase == .rendezvous)
@@ -138,7 +138,7 @@ private func crew13TestEarth(position: SIMD3<Float> = .zero, radius: Float = 1,
     #expect(coordinator.route?.crew13Profile?.center == moved.worldPosition)
     #expect(coordinator.route?.crew13Profile?.normal
             == Crew13RouteProfile(earth: crew13TestEarth())?.normal)
-    coordinator.update(delta: 24)
+    coordinator.update(missionElapsedTime: 60)
     #expect(published.state == .completed)
     #expect(published.destinationName == "ISS")
     #expect(published.missionStatus?.phase == .docked)

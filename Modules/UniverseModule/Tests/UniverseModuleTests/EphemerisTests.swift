@@ -144,7 +144,7 @@ private struct EphemerisReferences: Decodable {
 }
 
 @MainActor
-@Test func manualMissionCameraTracksSubKilometerLiveMotion() throws {
+@Test func manualMissionCameraTracksSubKilometerReplayMotion() throws {
     var date = Date(timeIntervalSince1970: 1_800_000_000)
     let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get(), now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
@@ -154,13 +154,13 @@ private struct EphemerisReferences: Decodable {
     }))
     resources.sceneCoordinator.update(deltaTime: 0)
     resources.navigation.startMission(.crew13)
-    resources.sceneCoordinator.update(deltaTime: 60)
+    resources.sceneCoordinator.update(deltaTime: 30)
     resources.beginManualCameraControl()
-    let beforeMarker = try #require(resources.navigationController.routeRenderState.route?.precisePoint(at: 1))
+    let beforeMarker = try #require(resources.navigationController.routeRenderState.crew13Flight?.dragon.precisePosition)
     let beforeTarget = resources.cameraState.preciseCameraTarget
     date.addTimeInterval(0.016)
-    resources.sceneCoordinator.update(deltaTime: 0.016)
-    let afterMarker = try #require(resources.navigationController.routeRenderState.route?.precisePoint(at: 1))
+    resources.sceneCoordinator.update(deltaTime: 0.000_001)
+    let afterMarker = try #require(resources.navigationController.routeRenderState.crew13Flight?.dragon.precisePosition)
     #expect(simd_distance(beforeMarker, afterMarker) > 0)
     #expect(simd_distance(beforeMarker, afterMarker) < 1e-6)
     #expect(simd_distance(beforeTarget - beforeMarker, resources.cameraState.preciseCameraTarget - afterMarker) < 1e-10)

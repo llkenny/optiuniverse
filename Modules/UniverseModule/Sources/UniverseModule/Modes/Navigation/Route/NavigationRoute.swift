@@ -38,6 +38,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let destinationName: String
     public let points: [SIMD3<Float>]
     let precisePoints: [SIMD3<Double>]
+    let sampleProgresses: [Float]?
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
@@ -66,6 +67,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          overviewCenter: SIMD3<Float>? = nil,
          transfer: TransferSolution? = nil,
          precisePoints: [SIMD3<Double>]? = nil,
+         sampleProgresses: [Float]? = nil,
          preciseOverviewCenter: SIMD3<Double>? = nil,
          mission: MissionFlightPlan? = nil,
          starshipProfile: StarshipRouteProfile? = nil,
@@ -80,6 +82,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         self.destinationName = destinationName
         self.points = points
         self.precisePoints = precisePoints ?? points.map { SIMD3<Double>($0) }
+        self.sampleProgresses = sampleProgresses
         self.cumulativeDistances = cumulativeDistances
         self.totalDistance = totalDistance
         self.estimatedDuration = estimatedDuration
@@ -132,6 +135,15 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     func distance(at progress: Float) -> Float {
         guard totalDistance.isFinite, totalDistance > 0 else { return 0 }
         let clampedProgress = min(max(progress, 0), 1)
+        if let sampleProgresses, sampleProgresses.count == cumulativeDistances.count {
+            guard let upper = sampleProgresses.firstIndex(where: { $0 >= clampedProgress }), upper > 0 else {
+                return clampedProgress <= 0 ? 0 : totalDistance
+            }
+            let fraction = (clampedProgress - sampleProgresses[upper - 1])
+                / max(sampleProgresses[upper] - sampleProgresses[upper - 1], .leastNonzeroMagnitude)
+            return cumulativeDistances[upper - 1]
+                + (cumulativeDistances[upper] - cumulativeDistances[upper - 1]) * fraction
+        }
         if transfer != nil || hasMissionVehicles, points.count > 1 {
             let sample = clampedProgress * Float(points.count - 1)
             let lower = min(Int(sample), points.count - 2)
@@ -254,7 +266,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         destinationName: destinationName, points: points,
                         cumulativeDistances: cumulativeDistances, totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration, overviewPaddingRadius: overviewPaddingRadius,
-                        overviewCenter: overviewCenter, transfer: transfer, precisePoints: precisePoints, preciseOverviewCenter: preciseOverviewCenter, mission: mission,
+                        overviewCenter: overviewCenter, transfer: transfer, precisePoints: precisePoints,
+                        sampleProgresses: sampleProgresses, preciseOverviewCenter: preciseOverviewCenter, mission: mission,
                         starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 
@@ -262,6 +275,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                        cumulativeDistances: [Float],
                        totalDistance: Float,
                        precisePoints: [SIMD3<Double>]? = nil,
+                       sampleProgresses: [Float]? = nil,
                        preciseOverviewCenter: SIMD3<Double>? = nil,
                        overviewPaddingRadius: Float? = nil,
                        overviewCenter: SIMD3<Float>? = nil) -> NavigationRoute {
@@ -276,6 +290,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
                         overviewCenter: overviewCenter ?? self.overviewCenter,
                         transfer: transfer, precisePoints: precisePoints,
+                        sampleProgresses: sampleProgresses ?? self.sampleProgresses,
                         preciseOverviewCenter: preciseOverviewCenter ?? self.preciseOverviewCenter, mission: mission,
                         starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }

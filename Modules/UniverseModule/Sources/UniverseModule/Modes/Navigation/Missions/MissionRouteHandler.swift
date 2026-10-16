@@ -63,7 +63,7 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
             points: refreshedRoute.points,
             cumulativeDistances: refreshedRoute.cumulativeDistances,
             totalDistance: refreshedRoute.totalDistance,
-            precisePoints: refreshedRoute.precisePoints, preciseOverviewCenter: refreshedRoute.preciseOverviewCenter,
+            precisePoints: refreshedRoute.precisePoints, sampleProgresses: refreshedRoute.sampleProgresses, preciseOverviewCenter: refreshedRoute.preciseOverviewCenter,
             overviewPaddingRadius: refreshedRoute.overviewPaddingRadius,
             overviewCenter: refreshedRoute.overviewCenter
         )

@@ -96,6 +96,7 @@ public final class UniverseModuleResources {
             self?.navigationSnapshot = snapshot
         }
         navigationController.synchronizeLiveScene = { [weak self] in self?.sceneCoordinator.synchronizeLiveScene() }
+        navigationController.prepareMissionScene = { [weak self] replay in self?.sceneCoordinator.prepareMissionScene(replay) }
         navigationController.navigationDidComplete = { [weak self] name, mission in
             guard let self else { return }
             if mission == .crew13 {

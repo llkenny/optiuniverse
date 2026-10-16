@@ -31,6 +31,7 @@ final class NavigationRouteCoordinator {
     private(set) var route: NavigationRoute?
     private(set) var state: NavigationRouteState = .idle
     private var transferElapsedTime: Double = 0
+    private var missionElapsedTime: TimeInterval = 0
     private var requestedDestination: String?
     private var requestedMission: MissionFlightPlan?
     private var failure: TransferFailure?
@@ -57,6 +58,16 @@ final class NavigationRouteCoordinator {
         state = .preparing
         failure = nil
         transferElapsedTime = 0
+        missionElapsedTime = 0
+        playback.cancel()
+        if let mission, let provider = snapshot.stateProvider {
+            do {
+                try MissionTimeline.forMission(mission).validateEphemeris(provider)
+            } catch {
+                failForEphemeris()
+                return false
+            }
+        }
         if mission == .starshipFlight14 || mission == .crew13 {
             let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
                 mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
@@ -71,7 +82,6 @@ final class NavigationRouteCoordinator {
                 return false
             }
             route = missionRoute
-            playback.start(duration: missionRoute.estimatedDuration)
             state = .running
             publishSnapshot()
             return true
@@ -128,7 +138,7 @@ final class NavigationRouteCoordinator {
         }
 
         self.route = route.withMission(mission)
-        playback.start(duration: route.estimatedDuration)
+        if mission == nil { playback.start(duration: route.estimatedDuration) }
         state = .running
         publishSnapshot()
         return true
@@ -161,7 +171,9 @@ final class NavigationRouteCoordinator {
         publishSnapshot()
     }
 
-    func failForEphemeris() {
+    func failForEphemeris(mission: MissionFlightPlan? = nil, destinationName: String? = nil) {
+        if let mission { requestedMission = mission }
+        if let destinationName { requestedDestination = destinationName }
         playback.cancel()
         route = nil
         failure = .ephemerisUnavailable
@@ -169,10 +181,15 @@ final class NavigationRouteCoordinator {
         publishSnapshot()
     }
 
-    func update(simulationTime: Double? = nil, delta: Double = 0) {
+    func update(simulationTime: Double? = nil, delta: Double = 0,
+                missionElapsedTime: TimeInterval? = nil) {
         guard state == .running else { return }
 
-        if let transfer = route?.transfer {
+        if route?.mission != nil {
+            guard let missionElapsedTime, missionElapsedTime.isFinite, let route else { return }
+            self.missionElapsedTime = min(route.estimatedDuration, max(self.missionElapsedTime, missionElapsedTime))
+            if self.missionElapsedTime >= route.estimatedDuration { state = .completed }
+        } else if let transfer = route?.transfer {
             guard let simulationTime, simulationTime >= transfer.departureEpoch else { return }
             let progress = min(1, max(0, (simulationTime - transfer.departureEpoch) / transfer.flightDuration))
             transferElapsedTime = max(transferElapsedTime, progress * TransferSolution.playbackDuration)
@@ -181,7 +198,7 @@ final class NavigationRouteCoordinator {
             playback.advance(by: delta)
             playback.update()
         }
-        if route?.transfer == nil && playback.isCompleted {
+        if route?.mission == nil && route?.transfer == nil && playback.isCompleted {
             state = .completed
         }
         publishSnapshot()
@@ -190,14 +207,20 @@ final class NavigationRouteCoordinator {
     var renderProgress: Float {
         switch state {
         case .running, .completed:
-            return routeProgress(linearProgress: route?.transfer == nil ? playback.progress : Float(transferElapsedTime / TransferSolution.playbackDuration))
+            if let route, route.mission != nil {
+                return routeProgress(linearProgress: Float(missionElapsedTime / route.estimatedDuration))
+            }
+            let linear = route?.transfer == nil ? playback.progress
+                : Float(transferElapsedTime / TransferSolution.playbackDuration)
+            return routeProgress(linearProgress: linear)
         case .idle, .preparing, .cancelled, .failed:
             return 0
         }
     }
 
     var elapsedTime: TimeInterval {
-        route?.transfer == nil ? playback.elapsedTime : transferElapsedTime
+        if route?.mission != nil { return missionElapsedTime }
+        return route?.transfer == nil ? playback.elapsedTime : transferElapsedTime
     }
 
     var isNavigationActive: Bool {

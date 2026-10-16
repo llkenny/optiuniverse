@@ -39,6 +39,7 @@ enum SimulationTime {
 public enum SimulationMode: String, Equatable, Sendable {
     case live
     case transferPreview
+    case missionReplay
 }
 
 public struct SimulationSnapshot: Equatable, Sendable {
