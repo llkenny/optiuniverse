@@ -30,7 +30,7 @@ struct EphemerisArchive: CelestialStateProviding {
     static let bundled: Result<EphemerisArchive, CelestialStateError> = {
         do { return .success(try load()) } catch { return .failure(.invalidData) }
     }()
-    private static let calendarStart = SimulationTime.tdbSeconds(for: Date(timeIntervalSince1970: 946_684_800))
+    private static let calendarStart = SimulationTime.tdbSeconds(for: Date(timeIntervalSince1970: 220_924_800))
     private static let calendarEnd = SimulationTime.tdbSeconds(for: Date(timeIntervalSince1970: 4_133_980_800))
 
     let startSeconds: Double

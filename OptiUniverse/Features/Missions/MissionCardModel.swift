@@ -7,7 +7,8 @@ struct MissionCardModel: Identifiable, Equatable {
     var id: Mission.ID { mission.id }
 
     var imageResource: ImageResource {
-        mission.flightPlan == .artemisII ? .dstMoon : .dstEarth
+        if mission.flightPlan == .voyager1 { return .dstSaturn }
+        return mission.flightPlan == .artemisII ? .dstMoon : .dstEarth
     }
 
     var accentColors: [Color] {
@@ -15,6 +16,7 @@ struct MissionCardModel: Identifiable, Equatable {
         case .artemisII: [.indigo, .purple]
         case .starshipFlight14: [.orange, .red]
         case .crew13: [.blue, .cyan]
+        case .voyager1: [.teal, .indigo]
         }
     }
 

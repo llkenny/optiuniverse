@@ -28,10 +28,11 @@ def main():
         spice.furnsh(str(path))
     assert spice.tkvrsn("toolkit") == "CSPICE_N0067"
     random_source = random.Random(20261013)
-    dates = ["2000-01-01T00:00:00", "2016-12-31T23:59:59", "2017-01-01T00:00:00",
+    dates = ["1977-01-01T00:00:00", "1977-09-05T12:56:01", "1979-03-05T12:05:00",
+             "1980-11-12T23:46:00", "2012-08-25T00:00:00", "2000-01-01T00:00:00", "2016-12-31T23:59:59", "2017-01-01T00:00:00",
              "2026-10-13T09:45:12", "2050-06-17T12:34:56", "2100-12-31T23:59:59"]
     epochs = [float(spice.str2et(date)) for date in dates]
-    epochs += [random_source.uniform(100, manifest["endSeconds"]-86400) for _ in range(16)]
+    epochs += [random_source.uniform(manifest["startSeconds"] + 100, manifest["endSeconds"]-86400) for _ in range(16)]
     fixtures = {"sources": {"vectors": API, "orientation": "pck00011.tpc", "toolkit": spice.tkvrsn("toolkit")},
                 "times": [{"utc": date+"Z", "seconds": epoch} for date, epoch in zip(dates, epochs)], "states": []}
     for name, body in {"Sun": 10, **BODIES}.items():

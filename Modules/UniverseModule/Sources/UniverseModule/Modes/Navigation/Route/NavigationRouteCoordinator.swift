@@ -62,6 +62,7 @@ final class NavigationRouteCoordinator {
                 return false
             }
         }
+        if mission == .voyager1 { return startVoyagerMission(snapshot: snapshot) }
         if mission == .starshipFlight14 || mission == .crew13 {
             return startEarthMission(mission: mission, snapshot: snapshot)
         }
@@ -210,6 +211,21 @@ extension NavigationRouteCoordinator {
         playback.cancel()
     }
 
+    private func startVoyagerMission(snapshot: UniverseSceneSnapshot) -> Bool {
+        do {
+            route = try VoyagerRouteProfile(snapshot: snapshot).makeRoute()
+            state = .running
+            publishSnapshot()
+            return true
+        } catch {
+            route = nil
+            failure = error is CelestialStateError ? .ephemerisUnavailable : .invalidGeometry
+            state = .failed
+            publishSnapshot()
+            return false
+        }
+    }
+
     private func startEarthMission(mission: MissionFlightPlan?, snapshot: UniverseSceneSnapshot) -> Bool {
         let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
             mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
@@ -332,7 +348,8 @@ extension NavigationRouteCoordinator {
                                        remainingTime: remainingTime,
                                        estimatedDuration: route.estimatedDuration,
                                        mission: route.mission,
-                                       missionStatus: route.crew13Profile?.status(time: elapsedTime)
+                                       missionStatus: route.voyagerProfile?.status(time: elapsedTime)
+                                        ?? route.crew13Profile?.status(time: elapsedTime)
                                         ?? route.starshipProfile?.status(time: elapsedTime),
                                        physicalFlightDuration: route.transfer?.flightDuration)
     }

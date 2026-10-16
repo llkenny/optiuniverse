@@ -19,6 +19,7 @@ final class RealityProceduralSceneContent {
     let navigationMarker: Entity
     let starshipMission = RealityStarshipMission()
     let crew13Mission = RealityCrew13Mission()
+    let voyagerMission = RealityVoyagerMission()
 
     static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
@@ -84,6 +85,7 @@ final class RealityProceduralSceneContent {
         updateTransfer(state: frameState.routes.transfer, context: context)
         starshipMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         crew13Mission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
+        voyagerMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         updateNavigation(state: frameState.routes.navigation, context: context,
                          elapsedTime: frameState.routes.navigation.elapsedTime)
     }

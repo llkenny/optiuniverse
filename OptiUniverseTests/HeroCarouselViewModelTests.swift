@@ -29,8 +29,8 @@ struct HeroCarouselViewModelTests {
         #expect(viewModel.currentIndex == 0)
         #expect(viewModel.activeCardID == Mission.crew13.id)
         viewModel.currentIndex = 99
-        #expect(viewModel.currentIndex == 2)
-        #expect(viewModel.activeCardID == Mission.artemisII.id)
+        #expect(viewModel.currentIndex == 3)
+        #expect(viewModel.activeCardID == Mission.voyager1.id)
         #expect(viewModel.index(for: "unknown-mission") == nil)
         #expect(viewModel.index(for: nil) == nil)
     }

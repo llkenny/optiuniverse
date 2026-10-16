@@ -15,7 +15,7 @@ public enum CelestialStateError: Error, LocalizedError, Equatable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidData: "The offline ephemeris data could not be loaded."
-        case .outsideCoverage: "Ephemeris dates must be between 2000 and 2100."
+        case .outsideCoverage: "Ephemeris dates must be between 1977 and 2100."
         case .unknownBody: "This object has no ephemeris data."
         }
     }
@@ -45,6 +45,15 @@ protocol CelestialStateProviding: Sendable {
 
 extension CelestialStateProviding {
     var coverage: ClosedRange<Double>? { nil }
+
+    var coverageYears: ClosedRange<Int>? {
+        guard let coverage else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        let first = SimulationTime.date(forTDBSeconds: coverage.lowerBound)
+        let last = SimulationTime.date(forTDBSeconds: coverage.upperBound - 1)
+        return calendar.component(.year, from: first)...calendar.component(.year, from: last)
+    }
 }
 
 struct UnavailableCelestialStateProvider: CelestialStateProviding {

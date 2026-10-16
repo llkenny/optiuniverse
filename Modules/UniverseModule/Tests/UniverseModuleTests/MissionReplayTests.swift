@@ -28,7 +28,7 @@ private func expectMissionDate(_ epoch: Double, _ date: String, sourceLocation: 
             sourceLocation: sourceLocation)
 }
 
-@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13])
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1])
 func publicLaunchDateMatchesReplayDeparture(mission: MissionFlightPlan) {
     let timeline = MissionTimeline.forMission(mission)
     #expect(mission.launchDate == SimulationTime.date(forTDBSeconds: timeline.departureEpoch))
@@ -61,7 +61,7 @@ func publicLaunchDateMatchesReplayDeparture(mission: MissionFlightPlan) {
     }
 }
 
-@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13])
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1])
 func missionClockIsIndependentOfFramePartitionAndHoldsCompletion(mission: MissionFlightPlan) {
     let replay = MissionReplay(id: UUID(), mission: mission)
     let now = missionDate("2026-10-16T10:00:00Z")

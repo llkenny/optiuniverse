@@ -92,6 +92,7 @@ extension CameraCoordinator {
         navigationCameraMode.maximumCameraDistance(state: modeState.navigation,
                                                    currentDistance: cameraState.cameraDistance,
                                                    viewportSize: viewportSize)
+        ?? followCameraOwner.overviewMaximumDistance
     }
 
     func minimumCameraDistance(snapshot: UniverseSceneSnapshot?,

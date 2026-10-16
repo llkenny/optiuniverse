@@ -45,8 +45,9 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     let mission: MissionFlightPlan?
     let starshipProfile: StarshipRouteProfile?
     let crew13Profile: Crew13RouteProfile?
+    let voyagerProfile: VoyagerRouteProfile?
 
-    var hasMissionVehicles: Bool { starshipProfile != nil || crew13Profile != nil }
+    var hasMissionVehicles: Bool { starshipProfile != nil || crew13Profile != nil || voyagerProfile != nil }
     var missionEarthCenter: SIMD3<Float>? { starshipProfile?.center ?? crew13Profile?.center }
     var missionEarthPreciseCenter: SIMD3<Double>? { starshipProfile?.preciseCenter ?? crew13Profile?.preciseCenter }
     var missionEarthRadius: Float? { starshipProfile?.radius ?? crew13Profile?.radius }
@@ -71,10 +72,12 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          preciseOverviewCenter: SIMD3<Double>? = nil,
          mission: MissionFlightPlan? = nil,
          starshipProfile: StarshipRouteProfile? = nil,
-         crew13Profile: Crew13RouteProfile? = nil) {
+         crew13Profile: Crew13RouteProfile? = nil,
+         voyagerProfile: VoyagerRouteProfile? = nil) {
         self.mission = mission
         self.starshipProfile = starshipProfile
         self.crew13Profile = crew13Profile
+        self.voyagerProfile = voyagerProfile
         self.transfer = transfer
         self.id = id
         self.originName = originName
@@ -92,6 +95,9 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
+        if let voyagerProfile {
+            return SIMD3<Float>(voyagerProfile.precisePosition(time: Double(progress) * estimatedDuration))
+        }
         if let crew13Profile { return crew13Profile.dragonPosition(time: Double(progress) * estimatedDuration) }
         if let starshipProfile { return starshipProfile.shipPosition(time: Double(progress) * 60) }
         if let transfer { return transfer.position(at: Double(progress)) }
@@ -99,6 +105,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     }
 
     func precisePoint(at progress: Float) -> SIMD3<Double>? {
+        if let voyagerProfile { return voyagerProfile.precisePosition(time: Double(progress) * estimatedDuration) }
         if let crew13Profile { return crew13Profile.precisePosition(time: Double(progress) * estimatedDuration) }
         if let starshipProfile { return starshipProfile.precisePosition(time: Double(progress) * estimatedDuration) }
         if let transfer { return transfer.precisePosition(at: Double(progress)) }
@@ -271,7 +278,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         overviewCenter: overviewCenter, transfer: transfer, precisePoints: precisePoints,
                         sampleProgresses: sampleProgresses, preciseOverviewCenter: preciseOverviewCenter,
                             mission: mission,
-                        starshipProfile: starshipProfile, crew13Profile: crew13Profile)
+                        starshipProfile: starshipProfile, crew13Profile: crew13Profile, voyagerProfile: voyagerProfile)
     }
 
     func replacingPath(points: [SIMD3<Float>],
@@ -295,6 +302,6 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         transfer: transfer, precisePoints: precisePoints,
                         sampleProgresses: sampleProgresses ?? self.sampleProgresses,
                         preciseOverviewCenter: preciseOverviewCenter ?? self.preciseOverviewCenter, mission: mission,
-                        starshipProfile: starshipProfile, crew13Profile: crew13Profile)
+                        starshipProfile: starshipProfile, crew13Profile: crew13Profile, voyagerProfile: voyagerProfile)
     }
 }
