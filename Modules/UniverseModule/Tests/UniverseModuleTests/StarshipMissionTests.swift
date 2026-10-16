@@ -172,7 +172,7 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
     let coordinator = NavigationRouteCoordinator { published = $0 }
     #expect(coordinator.start(destinationName: "Earth", planets: [], snapshot: snapshot, mission: .starshipFlight14))
     let originalID = try #require(coordinator.route?.id)
-    coordinator.update(simulationTime: 1_000_000, delta: 20)
+    coordinator.update(simulationTime: 1_000_000, delta: 20, missionElapsedTime: 20)
     #expect(published.elapsedTime == 20)
     #expect(published.missionStatus?.phase == .deployment)
     coordinator.update(simulationTime: 9_000_000, delta: 0)
@@ -181,7 +181,7 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
                                                                          planets: [starshipTestEarth(position: SIMD3(10, 0, 0))]))
     #expect(coordinator.route?.id == originalID)
     #expect(coordinator.route?.mission == .starshipFlight14)
-    coordinator.update(delta: 40)
+    coordinator.update(missionElapsedTime: 60)
     #expect(published.state == .completed)
     #expect(published.missionStatus?.phase == .splashdown)
     coordinator.cancel()

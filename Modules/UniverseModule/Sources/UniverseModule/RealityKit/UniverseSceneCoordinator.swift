@@ -93,6 +93,14 @@ final class UniverseSceneCoordinator {
         publishSimulationTime(force: true)
     }
 
+    /// Capture liftoff orientation before constructing any Earth-relative mission geometry.
+    func prepareMissionScene(_ replay: MissionReplay) {
+        simulationClock.prepareMission(replay)
+        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
+                                            presentationTime: Float(simulationClock.presentationTime))
+        publishSimulationTime(force: true)
+    }
+
     private func publishSimulationTime(force: Bool = false) {
         let date = SimulationTime.date(forTDBSeconds: simulationClock.currentTime)
         let snapshot = SimulationSnapshot(dateUTC: date,
@@ -299,21 +307,34 @@ final class UniverseSceneCoordinator {
         let isResuming = discardNextFrameDelta
         let activeDelta = isResuming ? 0 : deltaTime
         discardNextFrameDelta = false
+        let replay = navigationController.activeMissionReplay
+        let previousMissionTime = simulationClock.missionElapsedTime
         let delta = simulationClock.advance(by: activeDelta,
-                                            transfer: navigationController.activeTransfer)
+                                            transfer: navigationController.activeTransfer,
+                                            mission: replay)
         snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
                                             presentationTime: Float(simulationClock.presentationTime))
-        publishSimulationTime(force: isResuming)
+        let reachedMissionEnd = replay.map {
+            previousMissionTime < $0.timeline.duration && simulationClock.missionElapsedTime >= $0.timeline.duration
+        } ?? false
+        publishSimulationTime(force: isResuming || reachedMissionEnd)
         guard snapshotProvider.preparationError == nil else {
-            if navigationController.isNavigationActive {
-                navigationController.navigationRouteCoordinator.failForEphemeris()
+            if navigationController.isNavigationActive || navigationController.pendingNavigationRequest != nil {
+                let pending = navigationController.pendingNavigationRequest
+                navigationController.navigationRouteCoordinator.failForEphemeris(mission: pending?.mission,
+                                                                                destinationName: pending?.destinationName)
+                navigationController.pendingNavigationRequest = nil
+                navigationController.requestedMissionReplay = nil
+                synchronizeLiveScene()
             }
             return
         }
+        transferOrbitController.update(snapshot: snapshotProvider.latestSnapshot, delta: delta)
+        navigationController.update(snapshot: snapshotProvider.latestSnapshot, delta: delta,
+                                    missionElapsedTime: simulationClock.mode == .missionReplay
+                                        ? simulationClock.missionElapsedTime : nil)
+        // A pending start can fail preflight and restore Live synchronously during navigation update.
         let snapshot = snapshotProvider.latestSnapshot
-
-        transferOrbitController.update(snapshot: snapshot, delta: delta)
-        navigationController.update(snapshot: snapshot, delta: delta)
         let modeState = makeCameraFrameModeState()
         cameraCoordinator.updateFrameCamera(snapshot: snapshot,
                                             delta: delta,

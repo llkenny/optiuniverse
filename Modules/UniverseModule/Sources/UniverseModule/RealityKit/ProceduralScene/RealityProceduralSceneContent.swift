@@ -158,7 +158,7 @@ final class RealityProceduralSceneContent {
                                   viewportHeight: Float,
                                   elapsedTime: TimeInterval) {
         guard let route = state.route,
-              let markerPosition = route.precisePoint(at: state.progress) else {
+              let markerPosition = state.preciseMarkerPosition else {
             navigationPath.hide()
             navigationMarker.isEnabled = false
             return

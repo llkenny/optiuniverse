@@ -35,6 +35,15 @@ final class NavigationController {
     var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
     var navigationDidComplete: ((String, MissionFlightPlan?) -> Void)?
     var synchronizeLiveScene: (() -> Void)?
+    var prepareMissionScene: ((MissionReplay) -> Void)?
+    var requestedMissionReplay: MissionReplay?
+
+    var activeMissionReplay: MissionReplay? {
+        guard var replay = requestedMissionReplay,
+              pendingNavigationRequest != nil || navigationRouteCoordinator.isNavigationActive else { return nil }
+        replay.isPreparing = pendingNavigationRequest != nil
+        return replay
+    }
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,
@@ -84,8 +93,9 @@ final class NavigationController {
     }
 
     func update(snapshot: UniverseSceneSnapshot?,
-                delta: Float) {
-        if let snapshot,
+                delta: Float,
+                missionElapsedTime: TimeInterval? = nil) {
+        if let snapshot, snapshotProvider.hasPresentationMetrics,
            let request = pendingNavigationRequest,
            applyNavigation(from: request.originName,
                            via: request.waypointName,
@@ -95,11 +105,12 @@ final class NavigationController {
             pendingNavigationRequest = nil
         }
 
+        navigationRouteCoordinator.update(simulationTime: snapshot?.simulationTime, delta: Double(delta),
+                                          missionElapsedTime: missionElapsedTime)
         if let snapshot {
             navigationRouteCoordinator.refreshRoute(planets: planets,
                                                     snapshot: snapshot)
         }
-        navigationRouteCoordinator.update(simulationTime: snapshot?.simulationTime, delta: Double(delta))
     }
 
     func beginManualCameraControl() {

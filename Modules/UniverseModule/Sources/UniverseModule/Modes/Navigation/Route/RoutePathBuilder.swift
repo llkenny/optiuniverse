@@ -139,14 +139,13 @@ struct RoutePathBuilder: RouteBuilding {
         guard let origin = precisePosition(input.originName, fallback: originPosition),
               let waypoint = precisePosition(input.waypointName ?? "Moon", fallback: waypointPosition),
               let destination = precisePosition(input.destinationName, fallback: destinationPosition) else { return nil }
-        let localPoints = Self.makeCislunarLoopPoints(originPosition: .zero,
-                                                     waypointPosition: SIMD3<Float>(waypoint - origin),
-                                                     destinationPosition: SIMD3<Float>(destination - origin),
-                                                     originSurfaceRadius: input.originSurfaceRadius,
-                                                     waypointSurfaceRadius: input.waypointSurfaceRadius,
-                                                     destinationSurfaceRadius: input.destinationSurfaceRadius,
-                                                     sampleCount: sampleCount)
-        let precisePoints = localPoints.map { origin + SIMD3<Double>($0) }
+        let samples = Self.makeCislunarLoopSamples(
+            originPosition: .zero, waypointPosition: SIMD3<Float>(waypoint - origin),
+            destinationPosition: SIMD3<Float>(destination - origin),
+            originSurfaceRadius: input.originSurfaceRadius, waypointSurfaceRadius: input.waypointSurfaceRadius,
+            destinationSurfaceRadius: input.destinationSurfaceRadius, sampleCount: sampleCount,
+            estimatedDuration: input.estimatedDuration)
+        let precisePoints = samples.points.map { origin + SIMD3<Double>($0) }
         let routePoints = precisePoints.map { SIMD3<Float>($0) }
         let cumulativeDistances = Self.makeCumulativeDistances(precisePoints: precisePoints)
         guard let totalDistance = cumulativeDistances.last,
@@ -170,11 +169,10 @@ struct RoutePathBuilder: RouteBuilding {
                                 originPosition: originPosition,
                                 waypointPosition: waypointPosition,
                                 destinationPosition: destinationPosition
-                               ), precisePoints: precisePoints,
+                               ), precisePoints: precisePoints, sampleProgresses: samples.progresses,
                                preciseOverviewCenter: (origin + waypoint + destination) / 3)
     }
 
-    // swiftlint:disable:next function_body_length
     static func makeCislunarLoopPoints(originPosition: SIMD3<Float>,
                                        waypointPosition: SIMD3<Float>,
                                        destinationPosition: SIMD3<Float>? = nil,
@@ -182,6 +180,22 @@ struct RoutePathBuilder: RouteBuilding {
                                        waypointSurfaceRadius: Float = 0,
                                        destinationSurfaceRadius: Float = 0,
                                        sampleCount: Int = 192) -> [SIMD3<Float>] {
+        makeCislunarLoopSamples(originPosition: originPosition, waypointPosition: waypointPosition,
+                               destinationPosition: destinationPosition, originSurfaceRadius: originSurfaceRadius,
+                               waypointSurfaceRadius: waypointSurfaceRadius,
+                               destinationSurfaceRadius: destinationSurfaceRadius,
+                               sampleCount: sampleCount).points
+    }
+
+    // swiftlint:disable:next function_body_length
+    static func makeCislunarLoopSamples(originPosition: SIMD3<Float>,
+                                      waypointPosition: SIMD3<Float>,
+                                      destinationPosition: SIMD3<Float>? = nil,
+                                      originSurfaceRadius: Float = 0,
+                                      waypointSurfaceRadius: Float = 0,
+                                      destinationSurfaceRadius: Float = 0,
+                                      sampleCount: Int = 192,
+                                      estimatedDuration: TimeInterval = 16) -> ArtemisPathSamples {
         let fullMajorVector = waypointPosition - originPosition
         let fullMajorDistance = simd_length(fullMajorVector)
         let majorDirection = fullMajorDistance > 0.000_001
@@ -292,15 +306,24 @@ struct RoutePathBuilder: RouteBuilding {
             sampleCount: returnCount
         )
 
-        var points: [SIMD3<Float>] = []
-        points.reserveCapacity(launchPoints.count + earthLoopPoints.count + outboundPoints.count
-                               + lunarLoopPoints.count + returnPoints.count)
-        appendSegment(launchPoints, to: &points)
-        appendSegment(earthLoopPoints, to: &points)
-        appendSegment(outboundPoints, to: &points)
-        appendSegment(lunarLoopPoints, to: &points)
-        appendSegment(returnPoints, to: &points)
-        return points
+        let departureEnd = ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: estimatedDuration)
+        var samples = ArtemisPathSamples()
+        samples.append(launchPoints, from: 0, to: departureEnd * 0.25)
+        samples.append(earthLoopPoints, from: departureEnd * 0.25, to: departureEnd)
+        samples.append(outboundPoints, from: departureEnd, to: ArtemisRouteProfile.lunarFlybyCloseUpStartProgress)
+        // Date the actual closest sampled point, not an arc-length fraction of the whole route.
+        let closest = lunarLoopPoints.indices.min {
+            simd_distance_squared(lunarLoopPoints[$0], waypointPosition)
+                < simd_distance_squared(lunarLoopPoints[$1], waypointPosition)
+        } ?? lunarLoopPoints.count / 2
+        samples.append(Array(lunarLoopPoints[...closest]),
+                       from: ArtemisRouteProfile.lunarFlybyCloseUpStartProgress,
+                       to: ArtemisRouteProfile.lunarEncounterProgress)
+        samples.append(Array(lunarLoopPoints[closest...]),
+                       from: ArtemisRouteProfile.lunarEncounterProgress,
+                       to: ArtemisRouteProfile.lunarFlybyCloseUpEndProgress)
+        samples.append(returnPoints, from: ArtemisRouteProfile.lunarFlybyCloseUpEndProgress, to: 1)
+        return samples
     }
 
     static func predictedArtemisWaypointPosition(input: RouteBuildInput) -> SIMD3<Float>? {
@@ -440,16 +463,6 @@ struct RoutePathBuilder: RouteBuilding {
         let resolvedCount = max(count, 2)
         return (0..<resolvedCount).map { index in
             point(Float(index) / Float(resolvedCount - 1))
-        }
-    }
-
-    private static func appendSegment(_ segment: [SIMD3<Float>],
-                                      to points: inout [SIMD3<Float>]) {
-        guard !segment.isEmpty else { return }
-        if points.isEmpty {
-            points.append(contentsOf: segment)
-        } else {
-            points.append(contentsOf: segment.dropFirst())
         }
     }
 

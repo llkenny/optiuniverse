@@ -128,7 +128,7 @@ Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/M
 
 ## Orbital simulation and transfers
 
-The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date; camera transitions, atmospheric animation, and star effects advance only during active presentation. A compact UTC date and Live/Transfer preview indicator appears in iOS and visionOS.
+The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date; camera transitions, atmospheric animation, and star effects advance only during active presentation. A compact UTC date and Live/Transfer preview/Mission replay indicator appears in iOS and visionOS.
 
 All eleven bodies have offline geometric center positions and velocities from [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), relative to the Sun in the J2000 ecliptic frame, without light-time or aberration corrections. Earth uses its actual center (399), and Pluto uses its actual center (999), rather than their system barycenters. The Moon's state is heliocentric, including Earth's motion. The supported calendar range is January 1, 2000 through December 31, 2100 UTC. An extra data guard day supports UTC/TDB conversion at the upper boundary.
 
@@ -144,7 +144,19 @@ Starting interplanetary navigation captures a fresh current-date solution and pl
 
 Orbit guides sample ephemerides over one period when that period fits the archive, shifting the sampling window near coverage boundaries. Neptune and Pluto expose the available 2000–2100 arc instead of a complete orbit, marked **Orbit arc · 2000–2100**. This diagram limit does not block a transfer whose departure and arrival dates are covered. Out-of-range physical transfers remain unavailable with Retry/Close.
 
-Artemis, Starship Flight 14, and Crew-13 keep their cinematic paths and durations. They share the dated body states, captured launch orientation, and precise body-relative geometry, but are not historical spacecraft ephemerides. Future mission integration can query `UniverseModuleResources.celestialState(for:at:)` for position in km, velocity in km/s, and a body-fixed-to-ecliptic orientation matrix; `simulationSnapshot` exposes the displayed UTC date, mode, and data error.
+Artemis II, Starship Flight 14, and Crew 13 use **Mission replay**: bodies and their orientation follow the historical mission date while spacecraft retain their illustrative scenarios. Playback takes 16 active seconds for Artemis II and 60 for Starship and Crew 13. A shared clock maps cinematic time to historical event anchors with linear interpolation between anchors; the UTC indicator displays that same epoch. ETA remains playback time. Backgrounding pauses the replay, completion holds the final epoch, and Cancel or Done restores the current Live scene before camera handoff.
+
+| Mission | Historical UTC anchors | Cinematic event |
+| --- | --- | --- |
+| Artemis II | April 1, 2026 22:35; April 6 23:00; April 11 00:07 | Launch; closest lunar approach at route progress 0.58; splashdown |
+| Starship Flight 14 | September 28, 2026 ~12:48; ~13:22; ~13:52; ~15:28; ~15:56 | Launch; deployment starts at 19 s and finishes at 28.4 s; entry at 46 s; splashdown at 60 s |
+| Crew 13 | October 1, 2026 15:10; 23:05 | Launch; docking at 58 s, with the docking epoch held through the final two seconds |
+
+Dates have the published minute precision; all Flight 14 anchors are approximate and use the completed, shortened flight rather than the superseded ten-hour plan. Sources: [Artemis II launch](https://www.youtube.com/watch?v=_eeZQw9PBc0), [NASA lunar flyby updates](https://www.nasa.gov/blogs/missions/2026/04/06/artemis-ii-flight-day-6-lunar-flyby-updates/), [NASA splashdown summary](https://ntrs.nasa.gov/api/citations/20260004348/downloads/Final%20-%20JANNAF%202026%20Presentation.pdf), [Flight 14 post-flight report](https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success), and [NASA Crew 13 docking report](https://www.nasa.gov/blogs/spacestation/2026/10/01/dragon-docks-bringing-spacex-crew-13-to-station/).
+
+Artemis uses stable segment progress, keeping the lunar encounter attached to the dated Moon and the direct entry attached to the dated Earth. Starship and Crew 13 capture launch orientation at their historical liftoff, preserve that flight plane, and follow Earth's translation. These are not spacecraft or ISS ephemerides: intermediate phases, visual orbit counts, enlarged geometry, and splashdown locations remain illustrative. Missing ephemeris data makes the mission unavailable with Retry/Close.
+
+`UniverseModuleResources.celestialState(for:at:)` provides position in km, velocity in km/s, and a body-fixed-to-ecliptic orientation matrix; `simulationSnapshot` exposes the displayed UTC date, Live/Transfer preview/Mission replay mode, and data error.
 
 ### Regenerating and verifying the archive
 

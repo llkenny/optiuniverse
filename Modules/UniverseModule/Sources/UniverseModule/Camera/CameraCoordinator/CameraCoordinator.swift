@@ -144,7 +144,7 @@ final class CameraCoordinator {
                                         snapshot: UniverseSceneSnapshot?,
                                         viewportSize: CGSize) {
         guard let route = navigation.route,
-              let marker = route.precisePoint(at: navigation.progress) else {
+              let marker = navigation.preciseMarkerPosition else {
             manualNavigationPivot = nil
             return
         }
@@ -399,7 +399,7 @@ final class CameraCoordinator {
 
     private func updateManualNavigationPivot(navigation: NavigationRouteRenderState) {
         guard let route = navigation.route,
-              let marker = route.precisePoint(at: navigation.progress) else {
+              let marker = navigation.preciseMarkerPosition else {
             manualNavigationPivot = nil
             return
         }

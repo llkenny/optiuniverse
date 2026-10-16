@@ -11,9 +11,17 @@ struct SimulationTimeIndicatorView: View {
         return formatter
     }()
 
+    private var modeLabel: String {
+        switch snapshot.mode {
+        case .live: "Live · 1×"
+        case .transferPreview: "Transfer preview"
+        case .missionReplay: "Mission replay"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(snapshot.mode == .live ? "Live · 1×" : "Transfer preview")
+            Text(modeLabel)
             Text(Self.formatter.string(from: snapshot.dateUTC))
                 .monospacedDigit()
             if let error = snapshot.error {
