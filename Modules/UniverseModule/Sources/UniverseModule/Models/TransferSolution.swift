@@ -18,6 +18,7 @@ struct TransferSolution: Equatable, Sendable {
     let hasPartialDestinationOrbit: Bool
     let earthOrbitPoints: [SIMD3<Float>]
     let destinationOrbitPoints: [SIMD3<Float>]
+    var orbitCoverageYears: ClosedRange<Int>?
 
     var framingRadius: Float {
         (points + earthOrbitPoints + destinationOrbitPoints)
@@ -83,7 +84,8 @@ struct TransferSolution: Equatable, Sendable {
                                     target.periodSeconds > $0.upperBound - $0.lowerBound
                                 } ?? false,
                                 earthOrbitPoints: earthPoints.map { SIMD3<Float>($0) },
-                                destinationOrbitPoints: targetPoints.map { SIMD3<Float>($0) })
+                                destinationOrbitPoints: targetPoints.map { SIMD3<Float>($0) },
+                                orbitCoverageYears: provider.coverageYears)
     }
 
     private struct OrbitGuideContext {

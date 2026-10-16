@@ -23,8 +23,8 @@ extension RootContainerView {
                     Text("Two-body transfer · \(Int((duration / 86_400).rounded())) days · 30 s playback")
                         .font(Typography.navigationMeta)
                 }
-                if preview.hasPartialOrbit {
-                    Text("Orbit arc · 2000–2100").font(Typography.navigationMeta)
+                if let label = preview.partialOrbitLabel {
+                    Text(label).font(Typography.navigationMeta)
                 }
             case .failed(let failure):
                 Text(failure.rawValue).font(Typography.navigationMeta)

@@ -33,7 +33,7 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
                 if let duration = preview.physicalFlightDuration {
                     Text("Two-body transfer · \(Int((duration / 86_400).rounded())) days · 30 s playback")
                 }
-                if preview.hasPartialOrbit { Text("Orbit arc · 2000–2100") }
+                if let label = preview.partialOrbitLabel { Text(label) }
                 Button("Close orbit") { resources.transferOrbit.clearTransferOrbit() }
             case .failed(let failure):
                 Text(failure.rawValue)
@@ -46,11 +46,16 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
             case .inactive:
                 EmptyView()
             }
+            if let epilogue = resources.navigation.navigationSnapshot.missionStatus?.epilogueText {
+                Text(epilogue).transition(.opacity)
+            }
             if shouldShowProgress {
                 ProgressView(value: Double(resources.navigation.navigationSnapshot.progress))
                     .tint(OptiColor.overlayTextPrimary)
             }
         }
+        .animation(.easeInOut(duration: 1.2),
+                   value: resources.navigation.navigationSnapshot.missionStatus?.epilogueText)
         .padding(16)
         .frame(width: 620)
         .background(.regularMaterial)
@@ -75,7 +80,17 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
 
     @ViewBuilder
     private var routeControls: some View {
-        if let selectedDestination {
+        if resources.navigation.navigationSnapshot.mission == .voyager1 {
+            switch resources.navigation.navigationSnapshot.state {
+            case .completed:
+                Button("Done") { resources.navigation.doneNavigation() }
+            case .failed:
+                Button("Retry") { resources.navigation.startMission(.voyager1) }
+                cancelButton
+            case .running, .preparing: cancelButton
+            case .idle, .cancelled: EmptyView()
+            }
+        } else if let selectedDestination {
             switch resources.navigation.navigationSnapshot.state {
             case .idle, .cancelled:
                 Button {
@@ -125,6 +140,9 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
     private var subtitle: String {
         let snapshot = resources.navigation.navigationSnapshot
 
+        if snapshot.mission == .voyager1 {
+            return snapshot.missionStatus?.phase.rawValue ?? (snapshot.failure?.rawValue ?? "Preparing launch")
+        }
         switch snapshot.state {
         case .running:
             if let duration = snapshot.physicalFlightDuration {

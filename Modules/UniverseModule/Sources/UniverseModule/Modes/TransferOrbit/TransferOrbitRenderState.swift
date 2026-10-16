@@ -1,4 +1,5 @@
 import simd
+import Foundation
 
 public enum TransferPreviewStatus: Sendable, Equatable {
     case inactive
@@ -12,6 +13,11 @@ public struct TransferPreviewSnapshot: Sendable, Equatable {
     public var destinationName: String?
     public var physicalFlightDuration: Double?
     public var hasPartialOrbit = false
+    public var orbitCoverageYears: ClosedRange<Int>?
+    public var partialOrbitLabel: String? {
+        guard hasPartialOrbit, let years = orbitCoverageYears else { return nil }
+        return "Orbit arc · \(years.lowerBound)–\(years.upperBound)"
+    }
     public static let inactive = TransferPreviewSnapshot()
 }
 

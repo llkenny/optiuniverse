@@ -16,7 +16,8 @@ extension NavigationController: UniverseNavigationControlling {
     func startMission(_ mission: MissionFlightPlan) {
         startRequest(NavigationRequest(originName: "Earth",
                                        waypointName: mission == .artemisII ? "Moon" : nil,
-                                       destinationName: mission == .crew13 ? "ISS" : "Earth", mission: mission))
+                                       destinationName: mission == .voyager1 ? "Interstellar space"
+                                        : (mission == .crew13 ? "ISS" : "Earth"), mission: mission))
     }
 
     private func startRequest(_ request: NavigationRequest) {

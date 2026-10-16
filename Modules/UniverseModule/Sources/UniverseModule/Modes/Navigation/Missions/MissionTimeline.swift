@@ -40,6 +40,7 @@ struct MissionTimeline: Sendable, Equatable {
         case .artemisII: artemisII
         case .starshipFlight14: starshipFlight14
         case .crew13: crew13
+        case .voyager1: voyager1
         }
     }
 
@@ -80,6 +81,25 @@ struct MissionTimeline: Sendable, Equatable {
         Anchor(playbackTime: 58, epoch: epochUTC("2026-10-01T23:05:00Z")),
         Anchor(playbackTime: 60, epoch: epochUTC("2026-10-01T23:05:00Z"))
     ])
+
+    // NASA: science.nasa.gov/mission/voyager/voyager-1/
+    // Flyby close-ups span four historical days; launch and epilogue hold their date.
+    // The heliopause crossing is known to day precision, represented at midnight UTC.
+    private static let voyager1: Self = {
+        let launch = epochUTC("1977-09-05T12:56:01Z")
+        let jupiter = epochUTC("1979-03-05T12:05:00Z")
+        let saturn = epochUTC("1980-11-12T23:46:00Z")
+        let crossing = epochUTC("2012-08-25T00:00:00Z")
+        let twoDays = 2.0 * 86_400
+        return Self(duration: 90, anchors: [
+            Anchor(playbackTime: 0, epoch: launch), Anchor(playbackTime: 15, epoch: launch),
+            Anchor(playbackTime: 24, epoch: jupiter - twoDays),
+            Anchor(playbackTime: 30, epoch: jupiter), Anchor(playbackTime: 36, epoch: jupiter + twoDays),
+            Anchor(playbackTime: 46, epoch: saturn - twoDays),
+            Anchor(playbackTime: 52, epoch: saturn), Anchor(playbackTime: 58, epoch: saturn + twoDays),
+            Anchor(playbackTime: 82, epoch: crossing), Anchor(playbackTime: 90, epoch: crossing)
+        ])
+    }()
 
     private static func epochUTC(_ value: String) -> Double {
         // Fixed, bundled ISO-8601 UTC literals; independent of device calendar and timezone.

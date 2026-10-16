@@ -59,8 +59,18 @@ extension RootContainerView {
             ProgressView(value: Double(snapshot.progress))
                 .tint(OptiColor.overlayTextPrimary)
 
+            if let epilogue = snapshot.missionStatus?.epilogueText {
+                Text(epilogue)
+                    .font(Typography.navigationSubtitle)
+                    .foregroundStyle(OptiColor.overlayTextPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("voyagerEpilogue")
+                    .transition(.opacity)
+            }
+
             navigationActionControls(snapshot: snapshot)
         }
+        .animation(.easeInOut(duration: 1.2), value: snapshot.missionStatus?.epilogueText)
         .padding(14)
         .background(OptiColor.overlaySurface.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
@@ -166,10 +176,11 @@ extension RootContainerView {
     }
 
     private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
-        if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14 {
+        if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14 || snapshot.mission == .voyager1 {
             if snapshot.state == .failed { return "Mission unavailable" }
             guard let status = snapshot.missionStatus else { return "Preparing launch" }
-            let phaseText = snapshot.mission == .crew13 ? status.phase.rawValue : starshipPhaseText(status: status)
+            let phaseText = snapshot.mission == .starshipFlight14
+                ? starshipPhaseText(status: status) : status.phase.rawValue
             return snapshot.state == .completed ? phaseText : "\(phaseText) · ETA \(formatTime(snapshot.remainingTime))"
         }
         let routeText = navigationRouteText(snapshot: snapshot)

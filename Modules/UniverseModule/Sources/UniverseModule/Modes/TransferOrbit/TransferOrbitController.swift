@@ -153,7 +153,8 @@ final class TransferOrbitController {
                 preciseDestinationPoints = solution.preciseDestinationOrbitPoints
                 previewSnapshot = TransferPreviewSnapshot(status: .ready, destinationName: destination,
                                                             physicalFlightDuration: solution.flightDuration,
-                                                            hasPartialOrbit: solution.hasPartialDestinationOrbit)
+                                                            hasPartialOrbit: solution.hasPartialDestinationOrbit,
+                                                            orbitCoverageYears: solution.orbitCoverageYears)
             case .failure(let error):
                 activeTransferOrbit = nil
                 previewSnapshot = TransferPreviewSnapshot(

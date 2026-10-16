@@ -30,7 +30,7 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
         let progress = context.progress
         let planets = context.planets
         let snapshot = context.snapshot
-        if route.hasMissionVehicles {
+        if route.missionEarthPreciseCenter != nil {
             return refreshedEarthMission(route: route, snapshot: snapshot)
         }
         guard ArtemisRouteProfile.isArtemisRoute(route),

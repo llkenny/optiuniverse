@@ -26,7 +26,7 @@ BODIES = {"Mercury": 199, "Venus": 299, "Earth": 399, "Moon": 301,
           "Mars": 499, "Jupiter": 599, "Saturn": 699, "Uranus": 799,
           "Neptune": 899, "Pluto": 999}
 J2000 = 2451545.0
-START = -43200.0  # 2000-01-01 00:00 TDB
+START = (dt.datetime(1977, 1, 1) - dt.datetime(2000, 1, 1, 12)).total_seconds()
 # One guard day includes the UTC/TDB offset at the very end of calendar year 2100.
 END = (dt.datetime(2101, 1, 2) - dt.datetime(2000, 1, 1, 12)).total_seconds()
 
@@ -152,6 +152,8 @@ def orientation_data():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--body", choices=BODIES, help="Regenerate one body")
+    parser.add_argument("--extend-history", action="store_true",
+                        help="Reuse checksum-validated records and generate only missing earlier dates")
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -159,8 +161,15 @@ def main():
     manifest_path = OUTPUT / "manifest.json"
     if args.verify_only:
         manifest = json.loads(manifest_path.read_text())
+        assert set(manifest["bodies"]) == set(BODIES)
+        assert manifest["startSeconds"] == START and manifest["endSeconds"] == END
+        assert hashlib.sha256((OUTPUT / "orientation.json").read_bytes()).hexdigest() == manifest["orientationSHA256"]
         for entry in manifest["bodies"].values():
-            assert hashlib.sha256((OUTPUT / entry["filename"]).read_bytes()).hexdigest() == entry["sha256"]
+            data = (OUTPUT / entry["filename"]).read_bytes()
+            assert hashlib.sha256(data).hexdigest() == entry["sha256"]
+            assert len(data) == entry["count"] * 56
+            assert struct.unpack_from("<d", data)[0] == START
+            assert struct.unpack_from("<d", data, len(data)-56)[0] == END
         print("All ephemeris checksums verified")
         return
     orientation = json.dumps(orientation_data(), indent=2) + "\n"
@@ -177,16 +186,32 @@ def main():
         print(f"Generating {name}", flush=True)
         all_rows, sources = [], set()
         pos_error = vel_error = 0.0
+        # Extending history preserves the already validated future archive byte-for-byte.
+        # Each completed body is resumable even before the common manifest range changes.
+        existing_rows = []
+        generation_end = END
+        previous = manifest["bodies"].get(name)
+        if args.extend_history and previous and manifest["endSeconds"] == END:
+            data = (OUTPUT / previous["filename"]).read_bytes()
+            if hashlib.sha256(data).hexdigest() == previous["sha256"]:
+                candidates = list(struct.iter_unpack("<7d", data))
+                if candidates and candidates[0][0] >= START and candidates[-1][0] == END:
+                    existing_rows = candidates
+                    generation_end = candidates[0][0]
+                    sources.update(previous["sources"])
+                    pos_error = previous["maximumCheckedPositionErrorKm"]
+                    vel_error = previous["maximumCheckedVelocityErrorKmPerSecond"]
         step = 21600 if name == "Moon" else 86400
         # Ten-year-sized blocks keep requests below Horizons output limits.
         block_size = 3650 * 86400
-        for start in range(int(START), int(END), block_size):
-            end = min(start + block_size, END)
+        for start in range(int(START), int(generation_end), block_size):
+            end = min(start + block_size, generation_end)
             rows, source, pos, vel = validated_grid(body, start, end, step)
             all_rows.extend(rows if not all_rows else rows[1:])
             sources.add(source)
             pos_error, vel_error = max(pos_error, pos), max(vel_error, vel)
             print(f"  through JD {J2000 + end/86400:.1f}: {len(all_rows)} records", flush=True)
+        all_rows.extend(existing_rows[1:] if all_rows else existing_rows)
         packed = b"".join(struct.pack("<7d", *row) for row in all_rows)
         filename = name.lower() + ".bin"
         (OUTPUT / filename).write_bytes(packed)
@@ -195,6 +220,11 @@ def main():
             "maximumCheckedPositionErrorKm": pos_error, "maximumCheckedVelocityErrorKmPerSecond": vel_error}
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
         print(f"  {name}: {len(packed)} bytes, position error {pos_error:.6f} km", flush=True)
+    # Publish a common coverage only when every body actually covers it.
+    starts = [struct.unpack_from("<d", (OUTPUT / entry["filename"]).read_bytes())[0]
+              for entry in manifest["bodies"].values()]
+    manifest["startSeconds"] = max(starts)
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
 
 
 if __name__ == "__main__":

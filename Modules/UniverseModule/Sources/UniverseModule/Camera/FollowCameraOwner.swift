@@ -6,6 +6,7 @@
 //
 
 import CoreGraphics
+import simd
 
 /// Owns lifecycle state for the current planet-follow camera mode.
 ///
@@ -30,6 +31,7 @@ final class FollowCameraOwner {
     private(set) var followingPlanetName: String? = "Sun"
     private var pendingFollowPlanetName: String?
     private var cameraTransition: CameraTransition?
+    private(set) var overviewMaximumDistance: Float?
 
     init(cameraState: CameraState,
          snapshotProvider: SnapshotProvider,
@@ -47,6 +49,7 @@ final class FollowCameraOwner {
     func followPlanet(named name: String,
                       surfaceCoordinate: SurfaceCoordinate? = nil,
                       viewportSize: CGSize) {
+        overviewMaximumDistance = nil
         let canUseCurrentBodyFrame = followingPlanetName == name &&
             pendingFollowPlanetName == nil &&
             cameraTransition == nil
@@ -83,10 +86,26 @@ final class FollowCameraOwner {
     }
 
     func adoptPlanet(named name: String) {
+        overviewMaximumDistance = nil
         followingPlanetName = name
         pendingFollowPlanetName = nil
         cameraTransition = nil
         surfaceCameraOwner.cancel()
+    }
+
+    func showSolarSystemOverview(viewportSize: CGSize) {
+        adoptPlanet(named: "Sun")
+        guard let snapshot = snapshotProvider.latestSnapshot else { return }
+        let radius = snapshot.planets.reduce(Float(1)) { radius, body in
+            max(radius, Float(length(body.preciseWorldPosition)) + body.framingRadius)
+        }
+        let distance = CameraFit.distanceToFitWidth(radius: radius, currentDistance: cameraState.cameraDistance,
+                                                     viewportSize: viewportSize)
+        overviewMaximumDistance = max(CameraState.defaultMaximumDistance, distance * 1.2)
+        cameraTransition = CameraTransition(
+            start: cameraState.currentCameraTransitionFrame,
+            destination: .fixed(target: .zero, distance: distance),
+            duration: cameraState.cameraFollowTransitionDuration)
     }
 
     func beginManualCameraControl() {
@@ -143,10 +162,12 @@ final class FollowCameraOwner {
 
     func projectionParameters(snapshot: UniverseSceneSnapshot?,
                               baseProjection: CameraProjectionParameters) -> CameraProjectionParameters {
-        followMode.projectionParameters(followingPlanetName: followingPlanetName,
+        let projection = followMode.projectionParameters(followingPlanetName: followingPlanetName,
                                         snapshot: snapshot,
                                         cameraDistance: cameraState.cameraDistance,
                                         baseProjection: baseProjection)
+        guard let overviewMaximumDistance else { return projection }
+        return projection.withClippingPlanes(farPlane: max(projection.farPlane, overviewMaximumDistance * 2))
     }
 
     func snapshotDependency(snapshot: UniverseSceneSnapshot?) -> CameraFollowSnapshotDependency? {

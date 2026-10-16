@@ -24,10 +24,13 @@ extension UniverseModuleResources: UniverseNavigationControlling {
     }
 
     public func cancelNavigation() {
+        let wasVoyager = navigationSnapshot.mission == .voyager1
         let wasEarthMission = (navigationSnapshot.mission == .starshipFlight14 || navigationSnapshot.mission == .crew13)
             && navigationController.isNavigationActive
         navigationController.cancelNavigation()
-        if wasEarthMission {
+        if wasVoyager {
+            cameraCoordinator.followCameraOwner.showSolarSystemOverview(viewportSize: viewportSize)
+        } else if wasEarthMission {
             // Restore an Earth overview instead of returning the close-up distance to
             // the previously followed body (which may have been the Sun).
             cameraCoordinator.followNavigationDestination(named: "Earth", viewportSize: viewportSize)

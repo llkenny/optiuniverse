@@ -24,7 +24,7 @@ telemetry reconstruction or a geographically anchored splashdown track.
 
 The home screen features one large **Missions** carousel in place of Featured Objects.
 Cards show the launch date (UTC, formatted for the device locale), name, goals, and a short
-description. Missions appear newest first: **Crew 13**, **Starship Flight 14**, then **Artemis II**.
+description. Missions appear newest first: **Crew 13**, **Starship Flight 14**, **Artemis II**, and **Voyager 1**.
 Swipe or use the page indicator to choose a card; tap it to start the mission.
 
 Starship plays a
@@ -56,6 +56,31 @@ Dragon's opening nose cone and aligned docking ports. Vehicles and orbital altit
 are enlarged for readability; timing and trajectory are cinematic rather than telemetry.
 ISS is a mission destination, not an additional celestial object. Booster recovery,
 station stay, and the return flight are omitted.
+
+**Voyager 1** plays a 90-second illustrative mission: Titan IIIE/Centaur launch
+(0–8 s), compressed separation and probe release (8–15 s), departure from Earth
+(15–24 s), Jupiter flyby (24–36 s, closest approach at 30 s), cruise to Saturn
+(36–46 s), Saturn flyby (46–58 s, closest approach at 52 s), and departure above
+the ecliptic toward the heliopause (58–82 s). The final eight seconds hold the
+August 25, 2012 epoch and show: “Voyager 1 has left the heliosphere and continues
+its journey through interstellar space.” The caption remains through completion, followed by the shared 1.1-second automatic
+return to Live used by the other missions. Leaving the heliosphere is not the same as leaving the entire Solar System.
+
+The probe, its high-gain antenna, science booms, RTGs, Golden Record, and the
+simplified Titan IIIE/Centaur are reusable procedural RealityKit geometry. Planets
+use historical ephemerides; spacecraft curves, orientation, launch stages, sizes,
+and the illustrative endpoint near 122 AU are cinematic rather than telemetry.
+Flybys pass above the planets/rings. Cruise and flyby curves match position,
+velocity and acceleration; approach/departure headings follow adjacent legs, with
+the turn spread across each 12-second encounter. The camera blends launch views, system-scale
+cruise, and planetary close-ups; gestures allow manual viewing. Backgrounding pauses
+the shared replay clock. Automatic completion, Done, or Cancel restores the current Live scene and a
+Sun-centered solar-system overview. No additional celestial destination or runtime
+network request is introduced. Satellite flybys, Pale Blue Dot, timeline scrubbing,
+and current spacecraft tracking are outside this scenario.
+
+References: [NASA mission dates and launch vehicle](https://science.nasa.gov/mission/voyager/voyager-1/),
+[NASA historical overview and heliopause crossing](https://www.nasa.gov/history/45-years-ago-voyager-1-begins-its-epic-journey-to-the-outer-planets-and-beyond/).
 
 ## Video and screenshots
 
@@ -135,9 +160,9 @@ Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/M
 
 The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date; camera transitions, atmospheric animation, and star effects advance only during active presentation. A compact UTC date and Live/Transfer preview/Mission replay indicator appears in iOS and visionOS.
 
-All eleven bodies have offline geometric center positions and velocities from [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), relative to the Sun in the J2000 ecliptic frame, without light-time or aberration corrections. Earth uses its actual center (399), and Pluto uses its actual center (999), rather than their system barycenters. The Moon's state is heliocentric, including Earth's motion. The supported calendar range is January 1, 2000 through December 31, 2100 UTC. An extra data guard day supports UTC/TDB conversion at the upper boundary.
+All eleven bodies have offline geometric center positions and velocities from [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), relative to the Sun in the J2000 ecliptic frame, without light-time or aberration corrections. Earth uses its actual center (399), and Pluto uses its actual center (999), rather than their system barycenters. The Moon's state is heliocentric, including Earth's motion. The supported calendar range is January 1, 1977 through December 31, 2100 UTC. An extra data guard day supports UTC/TDB conversion at the upper boundary.
 
-The approximately 36 MB archive is bundled with the app; there are no runtime network requests. Little-endian double-precision position/velocity records are interpolated with cubic Hermite polynomials. Generation checks every interval at its three quarter points, halves failing sampling steps, and requires errors below 1 km and 1 m/s relative to JPL. Independent checkpoints currently measure a maximum position residual below 0.48 km; the acceptance limit is 10 km relative to the source ephemeris, rather than an absolute prediction of future observations. The manifest records source solutions, request settings, coverage, and SHA-256 checksums. Invalid archives and uncovered dates produce explicit errors instead of falling back to the previous analytic model.
+The approximately 46 MB archive is bundled with the app; there are no runtime network requests. Little-endian double-precision position/velocity records are interpolated with cubic Hermite polynomials. Generation checks every interval at its three quarter points, halves failing sampling steps, and requires errors below 1 km and 1 m/s relative to JPL. Independent checkpoints currently measure a maximum position residual below 0.48 km; the acceptance limit is 10 km relative to the source ephemeris, rather than an absolute prediction of future observations. The manifest records source solutions, request settings, coverage, and SHA-256 checksums. Invalid archives and uncovered dates produce explicit errors instead of falling back to the previous analytic model.
 
 Ephemeris time is physical seconds since J2000 TDB. UTC is converted through TAI and TT using the [NAIF leap-second table and DELTET model](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls). Future UTC dates use the last announced leap-second offset; rebuild the archive/time table when new leap seconds are announced. Absolute positions, camera targets, spacecraft poses, and scene origins retain double precision. Rendering subtracts the camera origin before converting to float scene units, mapping `(x, y, z)` to `(x, z, -y)` at 0.000001 scene units per km.
 
@@ -147,17 +172,18 @@ A zero-revolution prograde [Izzo Lambert solution](https://doi.org/10.1007/s1056
 
 Starting interplanetary navigation captures a fresh current-date solution and plays its physical duration over 30 active seconds. Bodies and their orientation use the same accelerated epoch, meeting the spacecraft at arrival. The intercept epoch is held until the existing completion handoff. Cancel or Done restores a current-date snapshot before handing the camera back to body follow. Backgrounding pauses preview playback without advancing presentation time. ETA shows playback time alongside physical flight duration.
 
-Orbit guides sample ephemerides over one period when that period fits the archive, shifting the sampling window near coverage boundaries. Neptune and Pluto expose the available 2000–2100 arc instead of a complete orbit, marked **Orbit arc · 2000–2100**. This diagram limit does not block a transfer whose departure and arrival dates are covered. Out-of-range physical transfers remain unavailable with Retry/Close.
+Orbit guides sample ephemerides over one period when that period fits the archive, shifting the sampling window near coverage boundaries. Neptune and Pluto expose the available 1977–2100 arc instead of a complete orbit, marked **Orbit arc · 1977–2100**. This diagram limit does not block a transfer whose departure and arrival dates are covered. Out-of-range physical transfers remain unavailable with Retry/Close.
 
-Artemis II, Starship Flight 14, and Crew 13 use **Mission replay**: bodies and their orientation follow the historical mission date while spacecraft retain their illustrative scenarios. Playback takes 16 active seconds for Artemis II and 60 for Starship and Crew 13. A shared clock maps cinematic time to historical event anchors with linear interpolation between anchors; the UTC indicator displays that same epoch. ETA remains playback time. Backgrounding pauses the replay, completion holds the final epoch, and Cancel or Done restores the current Live scene before camera handoff.
+Artemis II, Starship Flight 14, Crew 13, and Voyager 1 use **Mission replay**: bodies and their orientation follow the historical mission date while spacecraft retain their illustrative scenarios. Playback takes 16 active seconds for Artemis II, 60 for Starship and Crew 13, and 90 for Voyager 1. A shared clock maps cinematic time to historical event anchors with linear interpolation between anchors; the UTC indicator displays that same epoch. ETA remains playback time. Backgrounding pauses the replay, completion holds the final epoch, and Cancel or Done restores the current Live scene before camera handoff.
 
 | Mission | Historical UTC anchors | Cinematic event |
 | --- | --- | --- |
 | Artemis II | April 1, 2026 22:35; April 6 23:00; April 11 00:07 | Launch; closest lunar approach at route progress 0.58; splashdown |
 | Starship Flight 14 | September 28, 2026 ~12:48; ~13:22; ~13:52; ~15:28; ~15:56 | Launch; deployment starts at 19 s and finishes at 28.4 s; entry at 46 s; splashdown at 60 s |
 | Crew 13 | October 1, 2026 15:10; 23:05 | Launch; docking at 58 s, with the docking epoch held through the final two seconds |
+| Voyager 1 | September 5, 1977 12:56:01; March 5, 1979 12:05; November 12, 1980 23:46; August 25, 2012 (day precision) | Launch epoch held through 15 s; Jupiter at 30 s; Saturn at 52 s; heliopause crossing held from 82–90 s. Flyby windows anchor two days before/after each encounter. |
 
-Dates have the published minute precision; all Flight 14 anchors are approximate and use the completed, shortened flight rather than the superseded ten-hour plan. Sources: [Artemis II launch](https://www.youtube.com/watch?v=_eeZQw9PBc0), [NASA lunar flyby updates](https://www.nasa.gov/blogs/missions/2026/04/06/artemis-ii-flight-day-6-lunar-flyby-updates/), [NASA splashdown summary](https://ntrs.nasa.gov/api/citations/20260004348/downloads/Final%20-%20JANNAF%202026%20Presentation.pdf), [Flight 14 post-flight report](https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success), and [NASA Crew 13 docking report](https://www.nasa.gov/blogs/spacestation/2026/10/01/dragon-docks-bringing-spacex-crew-13-to-station/).
+Voyager launch has second precision, its planetary encounters have minute precision, and its heliopause crossing has day precision. Other dates have the published minute precision; all Flight 14 anchors are approximate and use the completed, shortened flight rather than the superseded ten-hour plan. Sources: [Artemis II launch](https://www.youtube.com/watch?v=_eeZQw9PBc0), [NASA lunar flyby updates](https://www.nasa.gov/blogs/missions/2026/04/06/artemis-ii-flight-day-6-lunar-flyby-updates/), [NASA splashdown summary](https://ntrs.nasa.gov/api/citations/20260004348/downloads/Final%20-%20JANNAF%202026%20Presentation.pdf), [Flight 14 post-flight report](https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success), and [NASA Crew 13 docking report](https://www.nasa.gov/blogs/spacestation/2026/10/01/dragon-docks-bringing-spacex-crew-13-to-station/).
 
 Artemis uses stable segment progress, keeping the lunar encounter attached to the dated Moon and the direct entry attached to the dated Earth. Starship and Crew 13 capture launch orientation at their historical liftoff, preserve that flight plane, and follow Earth's translation. These are not spacecraft or ISS ephemerides: intermediate phases, visual orbit counts, enlarged geometry, and splashdown locations remain illustrative. Missing ephemeris data makes the mission unavailable with Retry/Close.
 
@@ -172,7 +198,7 @@ python3 scripts/generate_ephemeris.py
 python3 scripts/generate_ephemeris.py --verify-only
 ```
 
-Downloads are serial, retried, and resumable through `.cache/ephemeris/`; this cache and raw responses are ignored by Git. The generator initially samples planets daily and the Moon every six hours, then refines complete request blocks in batches to avoid thousands of individual API requests. `--body Mars` regenerates one body. Commit the complete archive and manifest together after verification; ordinary app builds do not regenerate data.
+Downloads are serial, retried, and resumable through `.cache/ephemeris/`; this cache and raw responses are ignored by Git. The generator initially samples planets daily and the Moon every six hours, then refines complete request blocks in batches to avoid thousands of individual API requests. `--body Mars` regenerates one body. Use `--extend-history` to reuse checksum-validated records when extending the archive into the past; the common coverage changes after every body has been extended. Run the complete generator when changing coverage, then run `--verify-only` before using the archive. Commit the complete archive and manifest together after verification; ordinary app builds do not regenerate data.
 
 Independent validation and reference-fixture regeneration also require `spiceypy==8.3.0` (CSPICE N0067):
 
@@ -182,7 +208,7 @@ python3 -m venv .cache/reference-validation
 .cache/reference-validation/bin/python scripts/validate_ephemeris.py
 ```
 
-Validation uses separate Horizons time-list requests plus SPICE orientation/time matrices, including leap-second boundaries, random epochs, and the end of 2100. It updates the committed test fixture in `UniverseModuleTests/Fixtures`; Swift unit tests consume that fixture offline. SPICE is not an application dependency.
+Validation uses separate Horizons time-list requests plus SPICE orientation/time matrices, including Voyager event dates, epochs from 1977 onward, leap-second boundaries, random epochs, and the end of 2100. It updates the committed test fixture in `UniverseModuleTests/Fixtures`; Swift unit tests consume that fixture offline. SPICE is not an application dependency.
 
 ## Why This Project Matters
 

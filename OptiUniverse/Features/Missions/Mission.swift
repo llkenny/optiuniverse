@@ -41,7 +41,16 @@ struct Mission: Equatable, Identifiable {
         route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "ISS")
     )
 
-    static let available = sortedByLaunchDate([.artemisII, .starshipFlight14, .crew13])
+    static let voyager1 = Mission(
+        id: "voyager-1", title: "Voyager 1",
+        goals: "Explore Jupiter, Saturn and interstellar space",
+        description: "Follow Titan IIIE/Centaur launch, giant-planet flybys and the journey beyond the heliosphere "
+            + "in a 90-second illustrative flight.",
+        flightPlan: .voyager1,
+        route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "Interstellar space")
+    )
+
+    static let available = sortedByLaunchDate([.artemisII, .starshipFlight14, .crew13, .voyager1])
 
     static func sortedByLaunchDate(_ missions: [Mission]) -> [Mission] {
         missions.sorted {

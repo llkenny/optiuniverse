@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import OptiUniverse
 
@@ -55,7 +56,7 @@ import Testing
 @MainActor
 @Test func starshipCatalogAndLaunchPlanUseExplicitMission() {
     let mission = Mission.starshipFlight14
-    #expect(Mission.available == [.crew13, .starshipFlight14, .artemisII])
+    #expect(Mission.available == [.crew13, .starshipFlight14, .artemisII, .voyager1])
     #expect(mission.id == "starship-flight-14")
     #expect(mission.flightPlan == .starshipFlight14)
     #expect(mission.goals == "Test Starship and deploy Starlinks")
@@ -115,4 +116,22 @@ import Testing
     let laterID = Mission(id: "z", title: "Last", goals: "Test", description: "Test mission.",
                           flightPlan: .crew13, route: Mission.crew13.route)
     #expect(Mission.sortedByLaunchDate([laterID, .artemisII, earlierID]) == [earlierID, laterID, .artemisII])
+}
+
+@MainActor
+@Test func voyagerCatalogAndCompletionUseMissionIdentityWithoutACelestialDestination() {
+    let mission = Mission.voyager1
+    #expect(Mission.available.last == mission)
+    #expect(mission.id == "voyager-1")
+    #expect(mission.flightPlan == .voyager1)
+    #expect(MissionCardModel(mission: mission).imageResource == .dstSaturn)
+    let card = MissionCardModel(mission: mission)
+    #expect(card.formattedLaunchDate(locale: Locale(identifier: "en_US")) == "Sep 5, 1977")
+    let plan = MissionLaunchPlan(mission: mission)
+    #expect(plan.selectedDestinationID == nil)
+    #expect(plan.route.destinationName == "Interstellar space")
+    #expect(plan.flowState.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+                                                     destinationName: "Interstellar space") == .noChange)
+    #expect(plan.flowState.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+                            destinationName: "Interstellar space", missionID: .voyager1) == .complete)
 }

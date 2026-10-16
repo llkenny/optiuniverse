@@ -33,13 +33,14 @@ final class NavigationCameraMode {
     private let missionCameraMode = MissionCameraMode()
     private let starshipCameraMode = StarshipCameraMode()
     private let crew13CameraMode = Crew13CameraMode()
+    private let voyagerCameraMode = VoyagerCameraMode()
 
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
                                    viewportSize: CGSize,
                                    currentPose: CameraPose,
                                    arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
-        if state.route?.crew13Profile != nil || state.route?.starshipProfile != nil {
+        if state.route?.hasMissionVehicles == true {
             return makeVehicleTransaction(state: state, viewportSize: viewportSize, currentPose: currentPose)
         }
         guard let route = state.route,
@@ -104,9 +105,10 @@ final class NavigationCameraMode {
     /// Back the camera out along its viewing axis, retaining the user's target and orientation.
     func makeManualCameraClearanceTransaction(state: NavigationRouteRenderState,
                                               currentPose: CameraPose) -> CameraState.Transaction? {
+        let voyager = state.elapsedTime < 64 ? state.voyagerFlight : nil
         guard !state.isCameraAutoFramingEnabled,
-              let earthRadius = state.route?.missionEarthRadius,
-              let earthCenter = state.route?.missionEarthPreciseCenter else { return nil }
+              let earthRadius = voyager?.focusRadius ?? state.route?.missionEarthRadius,
+              let earthCenter = voyager?.focusCenter ?? state.route?.missionEarthPreciseCenter else { return nil }
         let radius = CameraFit.minimumDistanceOutsideBody(radius: earthRadius)
         let relativePosition = SIMD3<Float>(currentPose.precisePosition - earthCenter)
         let distanceSquared = simd_length_squared(relativePosition)
@@ -127,6 +129,12 @@ final class NavigationCameraMode {
 
     private func makeVehicleTransaction(state: NavigationRouteRenderState,
                                         viewportSize: CGSize, currentPose: CameraPose) -> CameraState.Transaction? {
+        if state.route?.voyagerProfile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = voyagerCameraMode.frame(state: state, viewportSize: viewportSize,
+                                                       currentPose: currentPose) else { return nil }
+            return makeCameraTransaction(frame: frame)
+        }
         if state.route?.crew13Profile != nil {
             guard state.isCameraAutoFramingEnabled,
                   let frame = crew13CameraMode.frame(state: state, viewportSize: viewportSize,
@@ -291,6 +299,9 @@ extension NavigationCameraMode {
     func minimumCameraDistance(state: NavigationRouteRenderState,
                                snapshot: UniverseSceneSnapshot?,
                                baseMinimumDistance: Float) -> Float? {
+        if let flight = state.voyagerFlight {
+            return max(CameraFit.minimumNearPlane * 2, flight.vehicleScale * 2)
+        }
         if let radius = state.route?.missionEarthRadius {
             return max(CameraFit.minimumNearPlane * 2, radius * 0.12)
         }
