@@ -30,6 +30,7 @@ struct RouteBuildInput {
     var transfer: TransferSolution? = nil
     let simulationTime: Double
     let routeProgress: Float
+    let stateProvider: (any CelestialStateProviding)?
 
     init(originName: String = "Earth",
          waypointName: String? = nil,
@@ -46,6 +47,7 @@ struct RouteBuildInput {
          estimatedDuration: TimeInterval,
          simulationTime: Double = 0,
          transfer: TransferSolution? = nil,
+         stateProvider: (any CelestialStateProviding)? = nil,
          routeProgress: Float = 0) {
         self.originName = originName
         self.waypointName = waypointName
@@ -63,6 +65,7 @@ struct RouteBuildInput {
         self.transfer = transfer
         self.simulationTime = simulationTime
         self.routeProgress = routeProgress
+        self.stateProvider = stateProvider
     }
 }
 
@@ -108,15 +111,15 @@ struct RoutePathBuilder: RouteBuilding {
         guard let transfer = input.transfer ?? (try? TransferSolution.make(
             destinationName: input.destinationName, planets: input.planets,
             departureEpoch: input.simulationTime, sunPosition: input.sunPosition,
-            sampleCount: sampleCount
+            sampleCount: sampleCount, stateProvider: input.stateProvider
         )) else { return nil }
-        let cumulativeDistances = Self.makeCumulativeDistances(points: transfer.points)
+        let cumulativeDistances = Self.makeCumulativeDistances(precisePoints: transfer.precisePoints)
         guard let totalDistance = cumulativeDistances.last, totalDistance > 0 else { return nil }
         return NavigationRoute(originName: "Earth", destinationName: input.destinationName,
                                points: transfer.points, cumulativeDistances: cumulativeDistances,
                                totalDistance: totalDistance,
                                estimatedDuration: TransferSolution.playbackDuration,
-                               overviewCenter: transfer.sunPosition, transfer: transfer)
+                               overviewCenter: transfer.sunPosition, transfer: transfer, precisePoints: transfer.precisePoints)
     }
 
     private func makeCislunarLoopRoute(input: RouteBuildInput) -> NavigationRoute? {
@@ -128,14 +131,24 @@ struct RoutePathBuilder: RouteBuilding {
             return nil
         }
 
-        let routePoints = Self.makeCislunarLoopPoints(originPosition: originPosition,
-                                                      waypointPosition: waypointPosition,
-                                                      destinationPosition: destinationPosition,
-                                                      originSurfaceRadius: input.originSurfaceRadius,
-                                                      waypointSurfaceRadius: input.waypointSurfaceRadius,
-                                                      destinationSurfaceRadius: input.destinationSurfaceRadius,
-                                                      sampleCount: sampleCount)
-        let cumulativeDistances = Self.makeCumulativeDistances(points: routePoints)
+        func precisePosition(_ name: String, fallback: SIMD3<Float>) -> SIMD3<Double>? {
+            guard let provider = input.stateProvider else { return SIMD3<Double>(fallback) }
+            guard let body = CelestialBodyID(rawValue: name) else { return nil }
+            return (try? provider.state(for: body, at: input.simulationTime))?.scenePosition
+        }
+        guard let origin = precisePosition(input.originName, fallback: originPosition),
+              let waypoint = precisePosition(input.waypointName ?? "Moon", fallback: waypointPosition),
+              let destination = precisePosition(input.destinationName, fallback: destinationPosition) else { return nil }
+        let localPoints = Self.makeCislunarLoopPoints(originPosition: .zero,
+                                                     waypointPosition: SIMD3<Float>(waypoint - origin),
+                                                     destinationPosition: SIMD3<Float>(destination - origin),
+                                                     originSurfaceRadius: input.originSurfaceRadius,
+                                                     waypointSurfaceRadius: input.waypointSurfaceRadius,
+                                                     destinationSurfaceRadius: input.destinationSurfaceRadius,
+                                                     sampleCount: sampleCount)
+        let precisePoints = localPoints.map { origin + SIMD3<Double>($0) }
+        let routePoints = precisePoints.map { SIMD3<Float>($0) }
+        let cumulativeDistances = Self.makeCumulativeDistances(precisePoints: precisePoints)
         guard let totalDistance = cumulativeDistances.last,
               totalDistance > 0 else {
             return nil
@@ -157,7 +170,8 @@ struct RoutePathBuilder: RouteBuilding {
                                 originPosition: originPosition,
                                 waypointPosition: waypointPosition,
                                 destinationPosition: destinationPosition
-                               ))
+                               ), precisePoints: precisePoints,
+                               preciseOverviewCenter: (origin + waypoint + destination) / 3)
     }
 
     // swiftlint:disable:next function_body_length
@@ -297,6 +311,7 @@ struct RoutePathBuilder: RouteBuilding {
         return predictedWorldPosition(
             ofPlanetNamed: waypointName,
             planets: input.planets,
+            stateProvider: input.stateProvider,
             simulationTime: predictionSimulationTime(
                 targetProgress: ArtemisRouteProfile.lunarEncounterProgress,
                 input: input
@@ -308,11 +323,16 @@ struct RoutePathBuilder: RouteBuilding {
         predictedWorldPosition(
             ofPlanetNamed: input.destinationName,
             planets: input.planets,
+            stateProvider: input.stateProvider,
             simulationTime: predictionSimulationTime(targetProgress: 1, input: input)
         )
     }
 
     static func makeCumulativeDistances(points: [SIMD3<Float>]) -> [Float] {
+        makeCumulativeDistances(precisePoints: points.map { SIMD3<Double>($0) })
+    }
+
+    static func makeCumulativeDistances(precisePoints points: [SIMD3<Double>]) -> [Float] {
         guard let first = points.first else { return [] }
 
         var distances: [Float] = [0]
@@ -321,7 +341,7 @@ struct RoutePathBuilder: RouteBuilding {
         var runningDistance: Float = 0
 
         for point in points.dropFirst() {
-            runningDistance += simd_distance(previousPoint, point)
+            runningDistance += Float(simd_distance(previousPoint, point))
             distances.append(runningDistance)
             previousPoint = point
         }
@@ -437,12 +457,16 @@ struct RoutePathBuilder: RouteBuilding {
                                                  input: RouteBuildInput) -> Double {
         let remainingProgress = max(simd_clamp(targetProgress, 0, 1)
                                     - simd_clamp(input.routeProgress, 0, 1), 0)
-        return input.simulationTime + input.estimatedDuration * Double(remainingProgress) * 86_400
+        return input.simulationTime + input.estimatedDuration * Double(remainingProgress)
     }
 
     private static func predictedWorldPosition(ofPlanetNamed planetName: String,
                                                planets: [Planet],
+                                               stateProvider: (any CelestialStateProviding)?,
                                                simulationTime: Double) -> SIMD3<Float>? {
+        if let stateProvider, let body = CelestialBodyID(rawValue: planetName) {
+            return (try? stateProvider.state(for: body, at: simulationTime)).map { SIMD3<Float>($0.scenePosition) }
+        }
         var worldPositionsByName: [String: SIMD3<Float>] = [:]
         for planet in planets {
             let parentWorldPosition = planet.parentName.flatMap {

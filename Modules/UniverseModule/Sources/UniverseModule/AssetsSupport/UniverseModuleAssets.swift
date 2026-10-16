@@ -8,6 +8,9 @@
 import Foundation
 
 enum UniverseModuleAssets {
+    static func ephemerisDirectory() -> URL? {
+        Bundle.module.url(forResource: "Ephemeris", withExtension: nil)
+    }
     static func milkyWayEnvironmentURL() -> URL? {
         Bundle.module.url(forResource: "milky_way_environment",
                           withExtension: "jpg") ??

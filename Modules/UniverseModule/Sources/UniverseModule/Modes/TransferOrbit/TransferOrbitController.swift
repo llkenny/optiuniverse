@@ -18,6 +18,8 @@ final class TransferOrbitController {
     private var cameraTransition: CameraTransition?
     private var earthPoints: [SIMD3<Float>] = []
     private var destinationPoints: [SIMD3<Float>] = []
+    private var preciseEarthPoints: [SIMD3<Double>] = []
+    private var preciseDestinationPoints: [SIMD3<Double>] = []
     private var calculation: Task<Void, Never>?
     private var generation: UInt64 = 0
     private var lastRequestedEpoch: Double?
@@ -45,7 +47,9 @@ final class TransferOrbitController {
 
     var renderState: TransferOrbitRenderState {
         TransferOrbitRenderState(transferOrbit: activeTransferOrbit,
-                                 earthOrbitPoints: earthPoints, destinationOrbitPoints: destinationPoints)
+                                 earthOrbitPoints: earthPoints, destinationOrbitPoints: destinationPoints,
+                                 preciseEarthOrbitPoints: preciseEarthPoints,
+                                 preciseDestinationOrbitPoints: preciseDestinationPoints)
     }
 
     func showTransferOrbit(to destinationName: String) {
@@ -56,11 +60,31 @@ final class TransferOrbitController {
         refreshElapsed = 1
         cameraTransition = nil
         needsFraming = true
-        earthPoints = planets.first { $0.name == "Earth" }?.orbit?.orbitPoints() ?? []
-        destinationPoints = planets.first { $0.name == destinationName }?.orbit?.orbitPoints() ?? []
+        prepareGuides(destinationName: destinationName)
+        guard snapshotProvider.preparationError == nil else {
+            previewSnapshot = TransferPreviewSnapshot(status: .failed(.ephemerisUnavailable),
+                                                       destinationName: destinationName)
+            return
+        }
         previewSnapshot = TransferPreviewSnapshot(status: .preparing, destinationName: destinationName)
         transferPreviewDidBegin?()
         if let snapshot = snapshotProvider.latestSnapshot { requestCalculation(snapshot: snapshot) }
+    }
+
+    private func prepareGuides(destinationName: String) {
+        func points(_ name: String) -> [SIMD3<Double>] {
+            guard let orbit = planets.first(where: { $0.name == name })?.orbit else { return [] }
+            if let snapshot = snapshotProvider.latestSnapshot, let provider = snapshot.stateProvider,
+               let body = CelestialBodyID(rawValue: name) {
+                return (try? EphemerisOrbitPath.points(for: body, period: orbit.periodSeconds,
+                                                       at: snapshot.simulationTime, provider: provider)) ?? []
+            }
+            return orbit.orbitPoints().map { SIMD3<Double>($0) }
+        }
+        preciseEarthPoints = points("Earth")
+        preciseDestinationPoints = points(destinationName)
+        earthPoints = preciseEarthPoints.map { SIMD3<Float>($0) }
+        destinationPoints = preciseDestinationPoints.map { SIMD3<Float>($0) }
     }
 
     func clearTransferOrbit() {
@@ -70,6 +94,8 @@ final class TransferOrbitController {
         cameraTransition = nil
         earthPoints = []
         destinationPoints = []
+        preciseEarthPoints = []
+        preciseDestinationPoints = []
         previewSnapshot = .inactive
         // Let an in-flight computation finish; the generation check discards it.
         // Keeping the slot occupied prevents concurrent workers after rapid destination changes.
@@ -109,10 +135,11 @@ final class TransferOrbitController {
         refreshElapsed = 0
         let planets = planets
         let sun = snapshot.worldPosition(ofPlanetNamed: "Sun") ?? .zero
+        let provider = snapshot.stateProvider
         calculation = Task { [weak self] in
             let result = await Task.detached(priority: .userInitiated) {
                 Result { try TransferSolution.make(destinationName: destination, planets: planets,
-                                                     departureEpoch: epoch, sunPosition: sun) }
+                                                     departureEpoch: epoch, sunPosition: sun, stateProvider: provider) }
             }.value
             guard let self else { return }
             calculation = nil
@@ -122,8 +149,11 @@ final class TransferOrbitController {
                 activeTransferOrbit = solution
                 earthPoints = solution.earthOrbitPoints
                 destinationPoints = solution.destinationOrbitPoints
+                preciseEarthPoints = solution.preciseEarthOrbitPoints
+                preciseDestinationPoints = solution.preciseDestinationOrbitPoints
                 previewSnapshot = TransferPreviewSnapshot(status: .ready, destinationName: destination,
-                                                            physicalFlightDuration: solution.flightDuration)
+                                                            physicalFlightDuration: solution.flightDuration,
+                                                            hasPartialOrbit: solution.hasPartialDestinationOrbit)
             case .failure(let error):
                 activeTransferOrbit = nil
                 previewSnapshot = TransferPreviewSnapshot(status: .failed((error as? TransferFailure) ?? .didNotConverge),

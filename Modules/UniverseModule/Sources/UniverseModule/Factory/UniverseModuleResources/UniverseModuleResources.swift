@@ -23,6 +23,8 @@ public final class UniverseModuleResources {
     private let celestialAssetManifestLoader: () throws -> CelestialAssetManifest
     public internal(set) var transferPreviewSnapshot: TransferPreviewSnapshot = .inactive
     public internal(set) var navigationSnapshot: NavigationRouteSnapshot = .idle
+    public internal(set) var simulationSnapshot: SimulationSnapshot
+    private let now: () -> Date
     @ObservationIgnored private(set) var transferOrbitController: TransferOrbitController!
     @ObservationIgnored private(set) var navigationController: NavigationController!
     @ObservationIgnored private(set) lazy var sceneCoordinator = UniverseSceneCoordinator(
@@ -32,7 +34,9 @@ public final class UniverseModuleResources {
         objectInfoOverlayFramingState: objectInfoOverlayFramingState,
         navigationController: navigationController,
         transferOrbitController: transferOrbitController,
-        assetRepository: assetRepository
+        assetRepository: assetRepository,
+        now: now,
+        simulationDidChange: { [weak self] snapshot in self?.simulationSnapshot = snapshot }
     )
     @ObservationIgnored private(set) var viewportSize: CGSize = .zero
     @ObservationIgnored private var preparationTask: Task<Void, any Error>?
@@ -49,12 +53,18 @@ public final class UniverseModuleResources {
 
     init(
         assetRepository: RealityAssetRepository = RealityAssetRepository(),
+        stateProvider: (any CelestialStateProviding)? = nil,
+        now: @escaping () -> Date = Date.init,
         celestialAssetManifestLoader: @escaping () throws -> CelestialAssetManifest = {
             try CelestialAssetManifestLoader.load()
         }
     ) {
+        self.now = now
+        simulationSnapshot = SimulationSnapshot(dateUTC: now())
         planets = (try? SolarSystemLoader.loadPlanets(from: "planets")) ?? []
-        sceneSnapshotPipeline = UniverseSceneSnapshotPipeline(planets: planets)
+        let provider = stateProvider ?? (try? EphemerisArchive.bundled.get()) as (any CelestialStateProviding)?
+            ?? UnavailableCelestialStateProvider()
+        sceneSnapshotPipeline = UniverseSceneSnapshotPipeline(planets: planets, stateProvider: provider)
         cameraState = CameraState()
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
                                             snapshotSource: sceneSnapshotPipeline)
@@ -81,6 +91,7 @@ public final class UniverseModuleResources {
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
             self?.navigationSnapshot = snapshot
         }
+        navigationController.synchronizeLiveScene = { [weak self] in self?.sceneCoordinator.synchronizeLiveScene() }
         navigationController.navigationDidComplete = { [weak self] name, mission in
             guard let self else { return }
             if mission == .crew13 {
@@ -107,6 +118,7 @@ public final class UniverseModuleResources {
 
     public func prepare() async throws {
         guard !planets.isEmpty else { throw UniverseModulePreparationError.invalidOrbitalData }
+        _ = try sceneSnapshotPipeline.stateProvider.state(for: .earth, at: SimulationTime.tdbSeconds(for: now()))
         guard !isPrepared else { return }
 
         if let preparationTask {
@@ -142,6 +154,13 @@ public final class UniverseModuleResources {
             preparationTask = nil
             throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
         }
+    }
+
+    /// Shared physical state for future dated mission trajectories, independent of playback mode.
+    public func celestialState(for body: CelestialBodyID, at date: Date) throws -> CelestialBodyState {
+        guard date >= Date(timeIntervalSince1970: 946_684_800),
+              date < Date(timeIntervalSince1970: 4_133_980_800) else { throw CelestialStateError.outsideCoverage }
+        return try sceneSnapshotPipeline.stateProvider.state(for: body, at: SimulationTime.tdbSeconds(for: date))
     }
 
     func setViewportSize(_ size: CGSize) {

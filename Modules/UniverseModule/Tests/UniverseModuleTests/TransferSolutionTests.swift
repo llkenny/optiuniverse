@@ -54,7 +54,7 @@ import Testing
     #expect(coordinator.start(destinationName: "Mars", planets: testPlanets, snapshot: orbitalTestSnapshot()))
     let route = try #require(coordinator.route)
     let transfer = try #require(route.transfer)
-    var clock = UniverseSimulationClock()
+    var clock = UniverseSimulationClock(now: { SimulationTime.date(forTDBSeconds: 0) })
     for _ in 0..<60 {
         _ = clock.advance(by: 0.5, transfer: transfer)
         coordinator.update(simulationTime: clock.currentTime, delta: 0.5)
@@ -67,7 +67,8 @@ import Testing
     #expect(simd_distance(try #require(coordinator.currentRoutePoint), target) < 1e-4)
     #expect(clock.presentationTime == 30)
     _ = clock.advance(by: 1)
-    #expect(abs(clock.currentTime - transfer.arrivalEpoch - 86_400) < 1e-7)
+    #expect(abs(clock.currentTime) < 1e-7)
+    #expect(clock.mode == .live)
 }
 
 @MainActor
@@ -150,24 +151,31 @@ import Testing
 }
 
 @MainActor
-@Test func backgroundResumeDiscardsSuspendedFrameDelta() throws {
-    let resources = UniverseModuleResources()
+@Test func backgroundResumeSynchronizesLiveTimeWithoutAdvancingPresentation() throws {
+    var date = Date(timeIntervalSince1970: 1_800_000_000)
+    let resources = UniverseModuleResources(now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
     let coordinator = resources.sceneCoordinator
     coordinator.update(deltaTime: 1)
     let initial = try #require(coordinator.latestFrameState)
     coordinator.setPresentationActive(false)
-    coordinator.update(deltaTime: 100)
-    coordinator.setPresentationActive(true)
+    date.addTimeInterval(100)
     coordinator.update(deltaTime: 100)
     #expect(coordinator.latestFrameState?.simulationTime == initial.simulationTime)
+    coordinator.setPresentationActive(true)
+    coordinator.update(deltaTime: 100)
+    #expect(coordinator.latestFrameState?.simulationTime == SimulationTime.tdbSeconds(for: date))
+    #expect(coordinator.latestFrameState?.presentationTime == initial.presentationTime)
+    date.addTimeInterval(1)
     coordinator.update(deltaTime: 1)
-    #expect(coordinator.latestFrameState?.simulationTime == initial.simulationTime + 86_400)
+    #expect(coordinator.latestFrameState?.simulationTime == SimulationTime.tdbSeconds(for: date))
+    #expect(coordinator.latestFrameState?.presentationTime == initial.presentationTime + 1)
 }
 
 @MainActor
-@Test func cancellingJourneyRestoresNormalOrbitalRateWithoutRewinding() throws {
-    let resources = UniverseModuleResources()
+@Test func cancellingJourneyReturnsFromFuturePreviewToCurrentDate() throws {
+    var date = Date(timeIntervalSince1970: 1_800_000_000)
+    let resources = UniverseModuleResources(now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: testPlanets.map {
         ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,
@@ -178,20 +186,24 @@ import Testing
     let transfer = try #require(resources.navigationController.activeTransfer)
     resources.sceneCoordinator.update(deltaTime: 15)
     let halfway = try #require(resources.sceneCoordinator.latestFrameState)
-    #expect(abs(halfway.simulationTime - transfer.flightDuration / 2) < 1e-6)
+    #expect(abs(halfway.simulationTime - transfer.departureEpoch - transfer.flightDuration / 2) < 1e-6)
     #expect(abs(resources.navigationSnapshot.progress - 0.5) < 1e-6)
     #expect(halfway.presentationTime == 15)
+    date.addTimeInterval(5)
     resources.navigation.cancelNavigation()
     resources.sceneCoordinator.update(deltaTime: 1)
     let cancelled = try #require(resources.sceneCoordinator.latestFrameState)
-    #expect(abs(cancelled.simulationTime - halfway.simulationTime - 86_400) < 1e-6)
+    #expect(cancelled.simulationTime == SimulationTime.tdbSeconds(for: date))
+    #expect(cancelled.simulationTime < halfway.simulationTime)
+    #expect(resources.simulationSnapshot.mode == .live)
     #expect(resources.navigationController.activeTransfer == nil)
 }
 
 @MainActor
 @Test(arguments: [false, true])
 func completedTransferHoldsInterceptUntilHandoffOrCancellation(cancel: Bool) throws {
-    let resources = UniverseModuleResources()
+    let date = Date(timeIntervalSince1970: 1_800_000_000)
+    let resources = UniverseModuleResources(now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: testPlanets.map {
         ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,
@@ -221,5 +233,5 @@ func completedTransferHoldsInterceptUntilHandoffOrCancellation(cancel: Bool) thr
     }
     #expect(resources.navigationController.activeTransfer == nil)
     resources.sceneCoordinator.update(deltaTime: 1)
-    #expect(try #require(resources.sceneCoordinator.latestFrameState).simulationTime == transfer.arrivalEpoch + 86_400)
+    #expect(try #require(resources.sceneCoordinator.latestFrameState).simulationTime == SimulationTime.tdbSeconds(for: date))
 }

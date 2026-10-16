@@ -513,7 +513,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     resources.sceneCoordinator.apply(frameState: frame)
 
     expectSceneMatrix(sun.orbitTransform.transform.matrix,
-                      equals: orbitTransform)
+                      equals: matrix_identity_float4x4)
     expectSceneMatrix(sun.rotationTransform.transform.matrix,
                       equals: visualRotation)
     #expect(sun.visualRoot.transform == visualTransform)
@@ -521,18 +521,21 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorAdvancesOneSharedFrameAtATime() throws {
-    let resources = UniverseModuleResources()
+    var date = Date(timeIntervalSince1970: 1_800_000_000)
+    let resources = UniverseModuleResources(now: { date })
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 390, height: 844))
 
+    date.addTimeInterval(0.25)
     coordinator.update(deltaTime: 0.25)
     let firstFrame = try #require(coordinator.latestFrameState)
+    date.addTimeInterval(0.5)
     coordinator.update(deltaTime: 0.5)
     let secondFrame = try #require(coordinator.latestFrameState)
 
     #expect(coordinator.updateCount == 2)
-    #expect(firstFrame.simulationTime == 0.25 * 86_400)
-    #expect(secondFrame.simulationTime == 0.75 * 86_400)
+    #expect(abs(secondFrame.simulationTime - firstFrame.simulationTime - 0.5) < 1e-6)
+    #expect(secondFrame.simulationTime == SimulationTime.tdbSeconds(for: date))
     #expect(firstFrame.cameraSnapshot.viewportSize == CGSize(width: 390, height: 844))
     #expect(secondFrame.cameraSnapshot.cameraRevision >= firstFrame.cameraSnapshot.cameraRevision)
 }
@@ -570,9 +573,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.apply(frameState: frame)
 
     let earth = try #require(coordinator.bodyEntities["Earth"])
-    #expect(earth.bodyRoot.position == -initialFrame.cameraSnapshot.sceneOrigin)
+    #expect(earth.bodyRoot.position == bodyPosition - initialFrame.cameraSnapshot.sceneOrigin)
     expectSceneMatrix(earth.orbitTransform.transform.matrix,
-                      equals: orbitTransformMatrix)
+                      equals: matrix_identity_float4x4)
     let cameraComponent = try #require(
         coordinator.virtualCamera.components[ProjectiveTransformCameraComponent.self]
     )

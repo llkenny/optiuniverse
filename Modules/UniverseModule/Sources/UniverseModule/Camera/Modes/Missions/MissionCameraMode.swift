@@ -113,7 +113,10 @@ final class MissionCameraMode {
             distance: interpolate(from: overviewDistance,
                                   to: max(closeUpDistance, minimumDistance),
                                   progress: closeUpProgress),
-            orientation: simd_normalize(orientation)
+            orientation: simd_normalize(orientation),
+            preciseTarget: route.preciseOverviewCenter +
+                ((snapshot?.planet(named: waypointName)?.preciseWorldPosition ?? SIMD3<Double>(waypoint))
+                 - route.preciseOverviewCenter) * Double(closeUpProgress)
         )
     }
 

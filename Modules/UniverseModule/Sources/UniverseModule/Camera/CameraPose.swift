@@ -8,9 +8,18 @@
 import simd
 
 struct CameraPose: Equatable {
-    let target: SIMD3<Float>
+    let preciseTarget: SIMD3<Double>
+    var target: SIMD3<Float> { SIMD3<Float>(preciseTarget) }
     let distance: Float
     let orientation: simd_quatf
+
+    init(target: SIMD3<Float>, distance: Float, orientation: simd_quatf, preciseTarget: SIMD3<Double>? = nil) {
+        self.preciseTarget = preciseTarget ?? SIMD3<Double>(target)
+        self.distance = distance
+        self.orientation = orientation
+    }
+
+    var precisePosition: SIMD3<Double> { preciseTarget + SIMD3<Double>(offset) }
 
     var offset: SIMD3<Float> {
         orientation.act(SIMD3<Float>(0, 0, distance))
@@ -27,7 +36,7 @@ struct CameraPose: Equatable {
     var transitionFrame: CameraTransition.Frame {
         .init(target: target,
               distance: distance,
-              orientation: orientation)
+              orientation: orientation, preciseTarget: preciseTarget)
     }
 
     func makeRenderViewMatrix() -> float4x4 {

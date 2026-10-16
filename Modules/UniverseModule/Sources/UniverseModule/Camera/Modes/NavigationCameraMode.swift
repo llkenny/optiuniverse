@@ -22,6 +22,8 @@ final class NavigationCameraMode {
         let overviewDistance: Float
         let overviewCenter: SIMD3<Float>
         let currentPose: CameraPose
+        let preciseOrigin: SIMD3<Double>
+        let preciseOverviewCenter: SIMD3<Double>
     }
 
     private let departurePhaseEnd: Float = 0.1
@@ -89,7 +91,7 @@ final class NavigationCameraMode {
 
             return makeCameraTransaction(
                 frame: makeOverviewFrame(center: route.overviewCenter,
-                                         distance: departureContext.overviewDistance)
+                                         distance: departureContext.overviewDistance, preciseCenter: route.preciseOverviewCenter)
             )
         }
 
@@ -97,7 +99,10 @@ final class NavigationCameraMode {
                                             overviewCenter: route.overviewCenter,
                                             overviewDistance: departureContext.overviewDistance,
                                             destination: destination,
-                                            destinationDistance: destinationDistance)
+                                            destinationDistance: destinationDistance,
+                                            preciseDestination: snapshot?.planet(named: route.destinationName)?.preciseWorldPosition
+                                                ?? route.precisePoints.last ?? SIMD3<Double>(destination),
+                                            preciseOverviewCenter: route.preciseOverviewCenter)
         if let arrivalRecovery {
             return makeCameraTransaction(
                 frame: makeArrivalRecoveryFrame(progress: progress,
@@ -120,9 +125,9 @@ final class NavigationCameraMode {
                                               currentPose: CameraPose) -> CameraState.Transaction? {
         guard !state.isCameraAutoFramingEnabled,
               let earthRadius = state.route?.missionEarthRadius,
-              let earthCenter = state.route?.missionEarthCenter else { return nil }
+              let earthCenter = state.route?.missionEarthPreciseCenter else { return nil }
         let radius = CameraFit.minimumDistanceOutsideBody(radius: earthRadius)
-        let relativePosition = currentPose.position - earthCenter
+        let relativePosition = SIMD3<Float>(currentPose.precisePosition - earthCenter)
         let distanceSquared = simd_length_squared(relativePosition)
         guard distanceSquared < radius * radius else { return nil }
 
@@ -135,7 +140,7 @@ final class NavigationCameraMode {
     private func makeCameraTransaction(frame: CameraTransition.Frame) -> CameraState.Transaction {
         CameraState.Transaction(cameraTarget: frame.target,
                                 cameraDistance: frame.distance,
-                                cameraOrientation: frame.orientation)
+                                cameraOrientation: frame.orientation, preciseCameraTarget: frame.preciseTarget)
     }
 
     private func makeDepartureContext(route: NavigationRoute,
@@ -156,7 +161,10 @@ final class NavigationCameraMode {
                 viewportSize: viewportSize
             ),
             overviewCenter: route.overviewCenter,
-            currentPose: currentPose
+            currentPose: currentPose,
+            preciseOrigin: snapshot?.planet(named: route.originName)?.preciseWorldPosition
+                ?? route.precisePoints.first ?? SIMD3<Double>(originFallback),
+            preciseOverviewCenter: route.preciseOverviewCenter
         )
     }
 
@@ -171,7 +179,18 @@ final class NavigationCameraMode {
             overviewDistance: context.overviewDistance,
             overviewCenter: context.overviewCenter
         ) {
-            return missionFrame
+            let phase = ArtemisRouteProfile.easedOpeningProgress(routeProgress: progress,
+                                                                  estimatedDuration: route.estimatedDuration)
+            let marker = route.precisePoint(at: progress) ?? context.preciseOrigin
+            let target: SIMD3<Double>
+            if phase <= 0.45 {
+                let fraction = Double(CameraTransition.easeInOutCubic(phase / 0.45))
+                target = context.preciseOrigin + (marker - context.preciseOrigin) * fraction
+            } else {
+                let fraction = Double(CameraTransition.easeInOutCubic((phase - 0.45) / 0.55))
+                target = marker + (context.preciseOverviewCenter - marker) * fraction
+            }
+            return CameraTransition.preservingPrecision(missionFrame, target: target)
         }
 
         return makeStandardDepartureFrame(progress: progress,
@@ -192,22 +211,26 @@ final class NavigationCameraMode {
                 simd_slerp(context.currentPose.orientation,
                            OverviewCameraFraming.orientation,
                            phaseProgress)
-            )
+            ), preciseTarget: context.preciseOrigin +
+                (context.preciseOverviewCenter - context.preciseOrigin) * Double(phaseProgress)
         )
     }
 
     private func makeOverviewFrame(center: SIMD3<Float>,
-                                   distance: Float) -> CameraTransition.Frame {
+                                   distance: Float,
+                                   preciseCenter: SIMD3<Double>) -> CameraTransition.Frame {
         CameraTransition.Frame(target: center,
                                distance: distance,
-                               orientation: OverviewCameraFraming.orientation)
+                               orientation: OverviewCameraFraming.orientation, preciseTarget: preciseCenter)
     }
 
     private func makeArrivalFrame(progress: Float,
                                   overviewCenter: SIMD3<Float>,
                                   overviewDistance: Float,
                                   destination: SIMD3<Float>,
-                                  destinationDistance: Float) -> CameraTransition.Frame {
+                                  destinationDistance: Float,
+                                  preciseDestination: SIMD3<Double>,
+                                  preciseOverviewCenter: SIMD3<Double>) -> CameraTransition.Frame {
         let phaseProgress = (progress - arrivalPhaseStart) / (1 - arrivalPhaseStart)
         let targetProgress = CameraTransition.easeInOutCubic(
             phaseProgress / arrivalTargetPhaseDuration
@@ -222,7 +245,8 @@ final class NavigationCameraMode {
             distance: interpolate(from: overviewDistance,
                                   to: destinationDistance,
                                   progress: distanceProgress),
-            orientation: OverviewCameraFraming.orientation
+            orientation: OverviewCameraFraming.orientation,
+            preciseTarget: preciseOverviewCenter + (preciseDestination - preciseOverviewCenter) * Double(targetProgress)
         )
     }
 

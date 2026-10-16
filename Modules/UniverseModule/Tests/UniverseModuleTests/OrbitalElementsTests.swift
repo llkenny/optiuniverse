@@ -58,7 +58,7 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
 }
 
 @MainActor
-@Test func moonPositionIsRelativeToMovingEarthAndStaleEpochsAreRejected() throws {
+@Test func moonPositionIsRelativeToMovingEarthAndEpochRewindsAreSupported() throws {
     let snapshot = orbitalTestSnapshot(time: 15 * 86_400)
     let earth = try #require(snapshot.worldPosition(ofPlanetNamed: "Earth"))
     let moon = try #require(snapshot.worldPosition(ofPlanetNamed: "Moon"))
@@ -67,7 +67,7 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
     let pipeline = UniverseSceneSnapshotPipeline(planets: testPlanets)
     pipeline.requestPreparation(simulationTime: 20)
     pipeline.requestPreparation(simulationTime: 10)
-    #expect(pipeline.latestSnapshot?.simulationTime == 20)
+    #expect(pipeline.latestSnapshot?.simulationTime == 10)
 }
 
 @Test func j2000StatesAgreeWithIndependentHorizonsReferencesWithinModelAccuracy() throws {

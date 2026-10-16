@@ -179,7 +179,7 @@ final class SurfaceCameraOwner {
         )
         let frame = SurfaceCameraMode.Frame(target: destinationFrame.target,
                                             distance: destinationFrame.distance,
-                                            orientation: orientation)
+                                            orientation: orientation, preciseTarget: destinationFrame.preciseTarget)
 
         if transition.isComplete {
             cameraTransition = nil
@@ -223,7 +223,7 @@ final class SurfaceCameraOwner {
             (transition.targetDistance - transition.startDistance) * progress
         let frame = SurfaceCameraMode.Frame(target: destinationFrame.target,
                                             distance: distance,
-                                            orientation: destinationFrame.orientation)
+                                            orientation: destinationFrame.orientation, preciseTarget: destinationFrame.preciseTarget)
 
         zoomTransition = transition.isComplete ? nil : transition
         if transition.isComplete {

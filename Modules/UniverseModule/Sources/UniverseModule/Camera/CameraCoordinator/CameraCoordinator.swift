@@ -85,12 +85,11 @@ final class CameraCoordinator {
 
         let camera = TrajectoryCameraMode.CameraInput(distance: cameraState.cameraDistance,
                                                       orientation: cameraState.cameraOrientation,
-                                                      target: cameraState.cameraTarget)
-        commitManualCameraTransaction(
-            trajectoryMode.makePanTransaction(translation: value,
-                                              viewportSize: viewportSize,
-                                              camera: camera)
-        )
+                                                      target: cameraState.cameraTarget,
+                                                      preciseTarget: cameraState.preciseCameraTarget)
+        commitManualCameraTransaction(trajectoryMode.makePanTransaction(translation: value,
+                                                                       viewportSize: viewportSize,
+                                                                       camera: camera))
     }
 
     func makeRotation(with value: CGPoint, velocity: CGPoint) {
@@ -145,7 +144,7 @@ final class CameraCoordinator {
                                         snapshot: UniverseSceneSnapshot?,
                                         viewportSize: CGSize) {
         guard let route = navigation.route,
-              let marker = route.point(at: navigation.progress) else {
+              let marker = route.precisePoint(at: navigation.progress) else {
             manualNavigationPivot = nil
             return
         }
@@ -367,7 +366,7 @@ final class CameraCoordinator {
         guard let manualNavigationPivot else {
             return nil
         }
-        guard transaction.cameraTarget == nil else {
+        guard transaction.cameraTarget == nil, transaction.preciseCameraTarget == nil else {
             self.manualNavigationPivot = nil
             return nil
         }
@@ -381,7 +380,7 @@ final class CameraCoordinator {
         }
 
         let newOrientation = transaction.cameraOrientation ?? currentPose.orientation
-        var markerToCamera = currentPose.position - manualNavigationPivot.marker
+        var markerToCamera = SIMD3<Float>(currentPose.precisePosition - manualNavigationPivot.marker)
 
         if transaction.cameraOrientation != nil {
             let orientationDelta = simd_normalize(newOrientation * currentPose.orientation.inverse)
@@ -391,16 +390,16 @@ final class CameraCoordinator {
             markerToCamera *= newDistance / currentPose.distance
         }
 
-        let newCameraPosition = manualNavigationPivot.marker + markerToCamera
-        let newCameraTarget = newCameraPosition - newOrientation.act(SIMD3<Float>(0, 0, newDistance))
-        return CameraState.Transaction(cameraTarget: newCameraTarget,
+        let newCameraPosition = manualNavigationPivot.marker + SIMD3<Double>(markerToCamera)
+        let newCameraTarget = newCameraPosition - SIMD3<Double>(newOrientation.act(SIMD3<Float>(0, 0, newDistance)))
+        return CameraState.Transaction(cameraTarget: SIMD3<Float>(newCameraTarget),
                                        cameraDistance: transaction.cameraDistance,
-                                       cameraOrientation: transaction.cameraOrientation)
+                                       cameraOrientation: transaction.cameraOrientation, preciseCameraTarget: newCameraTarget)
     }
 
     private func updateManualNavigationPivot(navigation: NavigationRouteRenderState) {
         guard let route = navigation.route,
-              let marker = route.point(at: navigation.progress) else {
+              let marker = route.precisePoint(at: navigation.progress) else {
             manualNavigationPivot = nil
             return
         }
@@ -410,7 +409,7 @@ final class CameraCoordinator {
     }
 
     private func updateManualNavigationPivot(route: NavigationRoute,
-                                             marker: SIMD3<Float>) {
+                                             marker: SIMD3<Double>) {
         guard let currentPivot = manualNavigationPivot else {
             return
         }
@@ -420,9 +419,10 @@ final class CameraCoordinator {
         }
 
         let markerDelta = marker - currentPivot.marker
-        if simd_length_squared(markerDelta) > Self.manualNavigationPivotEpsilon *
-            Self.manualNavigationPivotEpsilon {
-            cameraState.commit(CameraState.Transaction(cameraTarget: cameraState.cameraTarget + markerDelta))
+        // At 1× a body moves less than the old 1 km float threshold per frame.
+        // Preserve every representable translation in the double-precision pivot.
+        if simd_length_squared(markerDelta) > 0 {
+            cameraState.commit(CameraState.Transaction(preciseCameraTarget: cameraState.preciseCameraTarget + markerDelta))
         }
         manualNavigationPivot = ManualNavigationPivot(routeID: route.id,
                                                       marker: marker)
@@ -438,5 +438,5 @@ private struct NavigationArrivalRecovery {
 
 private struct ManualNavigationPivot {
     let routeID: UUID
-    let marker: SIMD3<Float>
+    let marker: SIMD3<Double>
 }

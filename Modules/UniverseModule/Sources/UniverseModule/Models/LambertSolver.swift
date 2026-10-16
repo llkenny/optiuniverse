@@ -2,6 +2,7 @@ import Foundation
 import simd
 
 public enum TransferFailure: String, Error, Sendable {
+    case ephemerisUnavailable = "Ephemeris data is unavailable for this route's dates."
     case invalidGeometry = "A transfer is unavailable for this geometry."
     case didNotConverge = "The transfer calculation did not converge."
     case intersectsSun = "This transfer would intersect the Sun."

@@ -82,7 +82,7 @@ final class NavigationRouteCoordinator {
             do {
                 guard originName == "Earth", waypointName == nil else { throw TransferFailure.invalidGeometry }
                 transfer = try TransferSolution.make(destinationName: destinationName, planets: planets,
-                                                      departureEpoch: snapshot.simulationTime)
+                                                      departureEpoch: snapshot.simulationTime, stateProvider: snapshot.stateProvider)
             } catch {
                 self.route = nil
                 playback.cancel()
@@ -116,6 +116,7 @@ final class NavigationRouteCoordinator {
                                                      destinationName: destinationName),
                 simulationTime: snapshot.simulationTime,
                 transfer: transfer,
+                stateProvider: snapshot.stateProvider,
                 routeProgress: 0
               )) else {
             self.route = nil
@@ -157,6 +158,14 @@ final class NavigationRouteCoordinator {
         playback.cancel()
         route = nil
         state = .cancelled
+        publishSnapshot()
+    }
+
+    func failForEphemeris() {
+        playback.cancel()
+        route = nil
+        failure = .ephemerisUnavailable
+        state = .failed
         publishSnapshot()
     }
 

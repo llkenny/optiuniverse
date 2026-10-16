@@ -29,7 +29,7 @@ enum SurfaceCoordinateMath {
         let vector = SIMD3<Float>(
             equatorRadius * cos(longitude),
             sin(latitude),
-            equatorRadius * sin(longitude)
+            -equatorRadius * sin(longitude)
         )
 
         guard simd_length_squared(vector) > epsilon * epsilon else {
@@ -46,21 +46,37 @@ enum SurfaceCoordinateMath {
         let unitVector = simd_normalize(vector)
         let clampedY = min(max(unitVector.y, -1), 1)
         let latitude = asin(clampedY) * 180 / .pi
-        let longitude = atan2(unitVector.z, unitVector.x) * 180 / .pi
+        let longitude = atan2(-unitVector.z, unitVector.x) * 180 / .pi
         return SurfaceCoordinate(latitudeDegrees: latitude,
                                  longitudeDegrees: normalizedLongitude(longitude))
     }
 
     static func worldSurfacePoint(on planet: CelestialBodySnapshot,
                                   at coordinate: SurfaceCoordinate) -> SIMD3<Float> {
+        SIMD3<Float>(preciseWorldSurfacePoint(on: planet, at: coordinate))
+    }
+
+    static func preciseWorldSurfacePoint(on planet: CelestialBodySnapshot,
+                                         at coordinate: SurfaceCoordinate) -> SIMD3<Double> {
+        planet.preciseWorldPosition + SIMD3<Double>(surfaceOffset(on: planet, at: coordinate))
+    }
+
+    static func surfaceOffset(on planet: CelestialBodySnapshot,
+                              at coordinate: SurfaceCoordinate) -> SIMD3<Float> {
         let localPoint = localUnitVector(for: coordinate) * planet.surfaceRadius
-        let worldPoint = planet.baseModelMatrix * SIMD4<Float>(localPoint, 1)
-        return SIMD3<Float>(worldPoint.x, worldPoint.y, worldPoint.z)
+        let point = planet.visualRotationMatrix * SIMD4<Float>(localPoint, 0)
+        return SIMD3(point.x, point.y, point.z)
     }
 
     static func coordinate(on planet: CelestialBodySnapshot,
                            forWorldPoint worldPoint: SIMD3<Float>) -> SurfaceCoordinate? {
-        let localPoint = simd_inverse(planet.baseModelMatrix) * SIMD4<Float>(worldPoint, 1)
+        coordinate(on: planet, forPreciseWorldPoint: SIMD3<Double>(worldPoint))
+    }
+
+    static func coordinate(on planet: CelestialBodySnapshot,
+                           forPreciseWorldPoint worldPoint: SIMD3<Double>) -> SurfaceCoordinate? {
+        let offset = SIMD3<Float>(worldPoint - planet.preciseWorldPosition)
+        let localPoint = simd_inverse(planet.visualRotationMatrix) * SIMD4<Float>(offset, 0)
         return coordinate(fromLocalUnitVector: SIMD3<Float>(localPoint.x,
                                                             localPoint.y,
                                                             localPoint.z))
@@ -110,6 +126,25 @@ enum SurfaceCoordinateMath {
             rayDirection: cameraTarget - cameraWorldPosition,
             planet: planet
         )
+    }
+
+    /// Solve in a body-relative frame before adding the heliocentric translation.
+    static func preciseCenterRayIntersection(cameraWorldPosition: SIMD3<Double>,
+                                              cameraTarget: SIMD3<Double>,
+                                              planet: CelestialBodySnapshot) -> SIMD3<Double>? {
+        let directionInput = cameraTarget - cameraWorldPosition
+        guard simd_length_squared(directionInput) > 1e-24, planet.surfaceRadius > 0 else { return nil }
+        let direction = simd_normalize(directionInput)
+        let offset = cameraWorldPosition - planet.preciseWorldPosition
+        let projection = simd_dot(offset, direction)
+        let radius = Double(planet.surfaceRadius)
+        let discriminant = projection * projection - simd_length_squared(offset) + radius * radius
+        guard discriminant >= 0 else { return nil }
+        let near = -projection - sqrt(discriminant)
+        let far = -projection + sqrt(discriminant)
+        let distance = near >= 0 ? near : far
+        guard distance >= 0 else { return nil }
+        return planet.preciseWorldPosition + (offset + direction * distance)
     }
 
     private static func normalizedLongitude(_ longitude: Float) -> Float {

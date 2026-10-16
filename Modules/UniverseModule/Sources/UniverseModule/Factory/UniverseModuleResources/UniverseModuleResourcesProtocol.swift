@@ -6,11 +6,14 @@
 //
 
 import CoreGraphics
+import Foundation
 
 @MainActor
 public protocol UniverseModuleResourcesProtocol: AnyObject {
     var navigation: any UniverseNavigationControlling { get }
     var transferOrbit: any UniverseTransferOrbitControlling { get }
+    var simulationSnapshot: SimulationSnapshot { get }
+    func celestialState(for body: CelestialBodyID, at date: Date) throws -> CelestialBodyState
 
     func rotateCamera(translation: CGSize, velocity: CGSize)
     func scaleCamera(by scale: Float, velocity: CGFloat)

@@ -13,18 +13,19 @@ final class StarshipCameraMode {
               let flight = state.starshipFlight else { return nil }
         if routeID != route.id {
             routeID = route.id
-            openingFrame = CameraTransition.Frame(target: currentPose.target - profile.center,
+            openingFrame = CameraTransition.Frame(target: SIMD3<Float>(currentPose.preciseTarget - profile.preciseCenter),
                                                    distance: currentPose.distance,
-                                                   orientation: currentPose.orientation)
+                                                   orientation: currentPose.orientation,
+                                                   preciseTarget: currentPose.preciseTarget - profile.preciseCenter)
         }
         let time = Float(state.elapsedTime)
         let boosterWeight = StarshipRouteProfile.smooth((time - 8) / 2)
             * (1 - StarshipRouteProfile.smooth((time - 16.5) / 2))
-        let focus = simd_mix(flight.ship.position, flight.booster.position, SIMD3(repeating: boosterWeight))
-        let radial = normalize(focus - profile.center)
+        let focus = simd_mix(flight.ship.precisePosition, flight.booster.precisePosition, SIMD3(repeating: Double(boosterWeight)))
+        let radial = normalize(SIMD3<Float>(focus - profile.preciseCenter))
         let overviewWeight = StarshipRouteProfile.smooth((time - 28) / 4)
             * (1 - StarshipRouteProfile.smooth((time - 40) / 4))
-        let target = simd_mix(focus, profile.center, SIMD3(repeating: overviewWeight))
+        let target = simd_mix(focus, profile.preciseCenter, SIMD3(repeating: Double(overviewWeight)))
         // A positive radial offset always places the camera above the surface.
         let backward = normalize(radial * 0.65 + profile.normal * 0.75)
         let right = normalize(cross(radial, backward))
@@ -37,11 +38,12 @@ final class StarshipCameraMode {
         let subjectTransition = 4 * boosterWeight * (1 - boosterWeight)
         let closeDistance = profile.radius * (0.48 + 1.7 * subjectTransition)
         let distance = closeDistance * (1 - overviewWeight) + overviewDistance * overviewWeight
-        let frame = CameraTransition.Frame(target: target, distance: distance, orientation: orientation)
+        let frame = CameraTransition.Frame(target: SIMD3<Float>(target), distance: distance, orientation: orientation, preciseTarget: target)
         guard time < 2, let openingFrame else { return frame }
         return CameraTransition.interpolate(
-            from: CameraTransition.Frame(target: openingFrame.target + profile.center,
-                                         distance: openingFrame.distance, orientation: openingFrame.orientation),
+            from: CameraTransition.Frame(target: SIMD3<Float>(openingFrame.preciseTarget + profile.preciseCenter),
+                                         distance: openingFrame.distance, orientation: openingFrame.orientation,
+                                         preciseTarget: openingFrame.preciseTarget + profile.preciseCenter),
             to: frame, progress: StarshipRouteProfile.smooth(time / 2))
     }
 }

@@ -34,6 +34,7 @@ final class NavigationController {
     let planets: [Planet]
     var navigationSnapshotDidChange: ((NavigationRouteSnapshot) -> Void)?
     var navigationDidComplete: ((String, MissionFlightPlan?) -> Void)?
+    var synchronizeLiveScene: (() -> Void)?
     lazy var navigationRouteCoordinator = NavigationRouteCoordinator(
         routeBuilder: routeBuilder,
         playback: routePlayback,

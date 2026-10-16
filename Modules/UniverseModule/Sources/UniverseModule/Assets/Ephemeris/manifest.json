@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "frame": "heliocentric-ecliptic-J2000",
+  "timeScale": "TDB",
+  "startSeconds": -43200.0,
+  "endSeconds": 3187339200.0,
+  "recordFormat": "little-endian-7-float64",
+  "parameters": {
+    "format": "json",
+    "COMMAND": "'TARGET'",
+    "OBJ_DATA": "'NO'",
+    "MAKE_EPHEM": "'YES'",
+    "EPHEM_TYPE": "'VECTORS'",
+    "CENTER": "'500@10'",
+    "REF_PLANE": "'ECLIPTIC'",
+    "REF_SYSTEM": "'ICRF'",
+    "OUT_UNITS": "'KM-S'",
+    "VEC_CORR": "'NONE'",
+    "VEC_TABLE": "'2'",
+    "TIME_TYPE": "'TDB'",
+    "CSV_FORMAT": "'YES'",
+    "CAL_TYPE": "'GREGORIAN'"
+  },
+  "bodies": {
+    "Mercury": {
+      "id": 199,
+      "filename": "mercury.bin",
+      "count": 147565,
+      "sources": [
+        "DE441"
+      ],
+      "sha256": "6ff03cfaeca29d7de9fe0b2435b0a02a3a0a0268a484880161a7f488fe44d356",
+      "maximumCheckedPositionErrorKm": 0.07838380088353902,
+      "maximumCheckedVelocityErrorKmPerSecond": 1.0886684157126705e-05
+    },
+    "Venus": {
+      "id": 299,
+      "filename": "venus.bin",
+      "count": 36892,
+      "sources": [
+        "DE441"
+      ],
+      "sha256": "69f55b2d22511fdf458dc4dfff21226d1d67d0654a3fcd2ca280f26592d58d53",
+      "maximumCheckedPositionErrorKm": 0.18191252196305704,
+      "maximumCheckedVelocityErrorKmPerSecond": 6.316413641237483e-06
+    },
+    "Earth": {
+      "id": 399,
+      "filename": "earth.bin",
+      "count": 36892,
+      "sources": [
+        "DE441"
+      ],
+      "sha256": "f81d4f5d9ac16526bdb4c021de1e47fdbca66789ffa9b6bfe50928ddaffe3e7f",
+      "maximumCheckedPositionErrorKm": 0.10050832612108289,
+      "maximumCheckedVelocityErrorKmPerSecond": 3.4903771248599537e-06
+    },
+    "Moon": {
+      "id": 301,
+      "filename": "moon.bin",
+      "count": 147565,
+      "sources": [
+        "DE441"
+      ],
+      "sha256": "8cc64e3a08bfa152d1fdfe6ee7caad7430e39516911e6ad838aba7262a8deae5",
+      "maximumCheckedPositionErrorKm": 0.019848110887498056,
+      "maximumCheckedVelocityErrorKmPerSecond": 2.7567254849626207e-06
+    },
+    "Mars": {
+      "id": 499,
+      "filename": "mars.bin",
+      "count": 36892,
+      "sources": [
+        "mar099"
+      ],
+      "sha256": "e91939158bf86dfe2aee3116579668e1a1567addc9a36fe9b77cb1b2e7757d97",
+      "maximumCheckedPositionErrorKm": 0.009301285379919295,
+      "maximumCheckedVelocityErrorKmPerSecond": 3.294055617882643e-07
+    },
+    "Jupiter": {
+      "id": 599,
+      "filename": "jupiter.bin",
+      "count": 73783,
+      "sources": [
+        "jup365_merged"
+      ],
+      "sha256": "b459f5fad783db0dc366b263c2e4a8fb3daf089f4099be0d7475637f7985aeae",
+      "maximumCheckedPositionErrorKm": 0.5280397874051925,
+      "maximumCheckedVelocityErrorKmPerSecond": 3.680855406740266e-05
+    },
+    "Saturn": {
+      "id": 699,
+      "filename": "saturn.bin",
+      "count": 36892,
+      "sources": [
+        "sat441l"
+      ],
+      "sha256": "2102f253a0faa22f2db5abd92d7aaf2af24e89ec5a61cf2fcae8135130a45921",
+      "maximumCheckedPositionErrorKm": 0.23555783801808017,
+      "maximumCheckedVelocityErrorKmPerSecond": 8.321880704959846e-06
+    },
+    "Uranus": {
+      "id": 799,
+      "filename": "uranus.bin",
+      "count": 36892,
+      "sources": [
+        "ura184_merged"
+      ],
+      "sha256": "0d0109fcb3b6da7d5f4ea06f1c8aafad8f72fa77383e15d675217128837dd91f",
+      "maximumCheckedPositionErrorKm": 0.38759775833524923,
+      "maximumCheckedVelocityErrorKmPerSecond": 1.4459694519498046e-05
+    },
+    "Neptune": {
+      "id": 899,
+      "filename": "neptune.bin",
+      "count": 36892,
+      "sources": [
+        "nep098_merged"
+      ],
+      "sha256": "794d01097bd99e6ddd3e440473984d63aa93a360aac6e5dce9d2fdccc3b989ac",
+      "maximumCheckedPositionErrorKm": 0.3228913501649612,
+      "maximumCheckedVelocityErrorKmPerSecond": 1.1882425501833923e-05
+    },
+    "Pluto": {
+      "id": 999,
+      "filename": "pluto.bin",
+      "count": 73783,
+      "sources": [
+        "plu060_merged"
+      ],
+      "sha256": "475ff514fbe32f9964fde0dc20dcb8d42ef474b383d5d6684df387c45daf976e",
+      "maximumCheckedPositionErrorKm": 0.3239751176652143,
+      "maximumCheckedVelocityErrorKmPerSecond": 2.250435768563858e-05
+    }
+  },
+  "orientationSHA256": "626374fc74438e23cd3de7ebc0aa1bee7fc02c546ba06553e55d890caa305c86"
+}

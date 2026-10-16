@@ -10,7 +10,7 @@ import Testing
     expectVector(SurfaceCoordinateMath.localUnitVector(
         for: SurfaceCoordinate(latitudeDegrees: 0,
                                longitudeDegrees: 90)
-    ), equals: SIMD3<Float>(0, 0, 1))
+    ), equals: SIMD3<Float>(0, 0, -1))
     expectVector(SurfaceCoordinateMath.localUnitVector(
         for: SurfaceCoordinate(latitudeDegrees: 90,
                                longitudeDegrees: 42)
@@ -105,19 +105,20 @@ import Testing
                 1)
 }
 
-@Test func worldSurfacePointUsesBaseModelMatrixAndSurfaceRadius() throws {
+@Test func worldSurfacePointUsesBodyOrientationAndSurfaceRadius() throws {
     let baseModelMatrix = float4x4.makeTranslation(SIMD3<Float>(10, 20, 30))
     * float4x4.makeRotationY(.pi / 2)
     let planet = testSurfacePlanet(baseModelMatrix: baseModelMatrix,
                                    surfaceRadius: 2)
 
-    let worldPoint = SurfaceCoordinateMath.worldSurfacePoint(
+    let precisePoint = SurfaceCoordinateMath.preciseWorldSurfacePoint(
         on: planet,
         at: SurfaceCoordinate(latitudeDegrees: 0,
                               longitudeDegrees: 0)
     )
+    let worldPoint = SIMD3<Float>(precisePoint)
     let coordinate = try #require(SurfaceCoordinateMath.coordinate(on: planet,
-                                                                   forWorldPoint: worldPoint))
+                                                                   forPreciseWorldPoint: precisePoint))
 
     expectVector(worldPoint,
                  equals: SIMD3<Float>(10, 20, 28))

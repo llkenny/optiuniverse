@@ -19,12 +19,15 @@ final class CameraState {
 
     struct Transaction {
         var cameraTarget: SIMD3<Float>?
+        var preciseCameraTarget: SIMD3<Double>?
         var cameraDistance: Float?
         var cameraOrientation: simd_quatf?
 
         init(cameraTarget: SIMD3<Float>? = nil,
              cameraDistance: Float? = nil,
-             cameraOrientation: simd_quatf? = nil) {
+             cameraOrientation: simd_quatf? = nil,
+             preciseCameraTarget: SIMD3<Double>? = nil) {
+            self.preciseCameraTarget = preciseCameraTarget
             self.cameraTarget = cameraTarget
             self.cameraDistance = cameraDistance
             self.cameraOrientation = cameraOrientation
@@ -37,7 +40,8 @@ final class CameraState {
     static let defaultMaximumDistance: Float = 10_000
 
     private(set) var cameraDistance: Float = 3
-    private(set) var cameraTarget = SIMD3<Float>(0, 0, 0)
+    private(set) var preciseCameraTarget = SIMD3<Double>(0, 0, 0)
+    var cameraTarget: SIMD3<Float> { SIMD3<Float>(preciseCameraTarget) }
     // Look down from 15° above the orbital plane so rings are visible in the initial object view.
     private(set) var cameraOrientation = simd_quatf(angle: -.pi / 12, axis: SIMD3<Float>(1, 0, 0))
     private(set) var revision = 0
@@ -46,7 +50,7 @@ final class CameraState {
     var pose: CameraPose {
         CameraPose(target: cameraTarget,
                    distance: cameraDistance,
-                   orientation: cameraOrientation)
+                   orientation: cameraOrientation, preciseTarget: preciseCameraTarget)
     }
 
     var currentCameraTransitionFrame: CameraTransition.Frame {
@@ -57,10 +61,10 @@ final class CameraState {
     func commit(_ transaction: Transaction) -> DirtyFields {
         var dirtyFields: DirtyFields = []
 
-        if let cameraTarget = transaction.cameraTarget,
+        if let cameraTarget = transaction.preciseCameraTarget ?? transaction.cameraTarget.map({ SIMD3<Double>($0) }),
            cameraTarget.x.isFinite, cameraTarget.y.isFinite, cameraTarget.z.isFinite {
-            if self.cameraTarget != cameraTarget {
-                self.cameraTarget = cameraTarget
+            if self.preciseCameraTarget != cameraTarget {
+                self.preciseCameraTarget = cameraTarget
                 dirtyFields.insert(.target)
             }
         }

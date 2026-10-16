@@ -23,6 +23,8 @@ final class SnapshotProvider {
     var latestSnapshot: UniverseSceneSnapshot? {
         snapshotSource.latestSnapshot
     }
+    var preparationError: CelestialStateError? { snapshotSource.preparationError }
+    var hasPresentationMetrics: Bool { snapshotSource.hasPresentationMetrics }
 
     private struct CameraSnapshotDependencyKey: Equatable {
         let cameraRevision: Int
@@ -41,6 +43,8 @@ final class SnapshotProvider {
         let cameraDirtyFields: CameraState.DirtyFields
         let sceneFrameID: UInt64?
         let dependencies: CameraSnapshotDependencies
+        var preciseSceneOrigin: SIMD3<Double>?
+        var resolvedSceneOrigin: SIMD3<Double> { preciseSceneOrigin ?? SIMD3<Double>(sceneOrigin) }
     }
 
     init(cameraState: CameraState,
@@ -90,7 +94,8 @@ final class SnapshotProvider {
                                             cameraRevision: cameraState.revision,
                                             cameraDirtyFields: cameraState.lastDirtyFields,
                                             sceneFrameID: dependencies.sceneFrameID,
-                                            dependencies: dependencies)
+                                            dependencies: dependencies,
+                                            preciseSceneOrigin: cameraPose.preciseTarget)
         cachedDependencyKey = dependencyKey
         cachedCameraSnapshot = cameraSnapshot
         return cameraSnapshot
