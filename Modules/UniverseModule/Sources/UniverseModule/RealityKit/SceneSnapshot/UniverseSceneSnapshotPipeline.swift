@@ -5,7 +5,7 @@ import simd
 @MainActor
 final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private let planets: [Planet]
-    let stateProvider: any CelestialStateProviding
+    private(set) var stateProvider: any CelestialStateProviding
     private let usesEphemerisOrientation: Bool
     private(set) var preparationError: CelestialStateError?
     private var nextFrameID: UInt64 = 0
@@ -21,6 +21,12 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     }
 
     func setPresentationTime(_ time: Float) { presentationTime = time }
+
+    func setStateProvider(_ provider: any CelestialStateProviding) {
+        stateProvider = provider
+        latestSnapshot = nil
+        preparationError = nil
+    }
 
     func setPresentationMetrics(_ metrics: [String: CelestialBodyPresentationMetrics]) {
         presentationMetricsByBodyName = metrics

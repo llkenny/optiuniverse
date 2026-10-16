@@ -146,7 +146,7 @@ private struct EphemerisReferences: Decodable {
 @MainActor
 @Test func manualMissionCameraTracksSubKilometerLiveMotion() throws {
     var date = Date(timeIntervalSince1970: 1_800_000_000)
-    let resources = UniverseModuleResources(now: { date })
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get(), now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: testPlanets.map {
         ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,
@@ -167,9 +167,9 @@ private struct EphemerisReferences: Decodable {
 }
 
 @MainActor
-@Test func acceleratedDateIndicatorUpdatesOncePerActiveSecondAndModeChangesImmediately() {
+@Test func acceleratedDateIndicatorUpdatesOncePerActiveSecondAndModeChangesImmediately() throws {
     let date = Date(timeIntervalSince1970: 1_800_000_000)
-    let resources = UniverseModuleResources(now: { date })
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get(), now: { date })
     resources.setViewportSize(CGSize(width: 390, height: 844))
     resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: testPlanets.map {
         ($0.name, CelestialBodyPresentationMetrics(renderRadius: $0.radius,

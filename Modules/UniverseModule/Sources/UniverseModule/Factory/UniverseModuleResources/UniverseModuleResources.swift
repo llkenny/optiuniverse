@@ -41,6 +41,7 @@ public final class UniverseModuleResources {
     @ObservationIgnored private(set) var viewportSize: CGSize = .zero
     @ObservationIgnored private var preparationTask: Task<Void, any Error>?
     @ObservationIgnored private var isPrepared = false
+    @ObservationIgnored private var stateProviderLoader: (@Sendable () throws -> any CelestialStateProviding)?
 
     var isTrajectoryModeActive: Bool {
         transferOrbitController.isTransferPreviewActive ||
@@ -54,6 +55,9 @@ public final class UniverseModuleResources {
     init(
         assetRepository: RealityAssetRepository = RealityAssetRepository(),
         stateProvider: (any CelestialStateProviding)? = nil,
+        stateProviderLoader: @escaping @Sendable () throws -> any CelestialStateProviding = {
+            try EphemerisArchive.bundled.get()
+        },
         now: @escaping () -> Date = Date.init,
         celestialAssetManifestLoader: @escaping () throws -> CelestialAssetManifest = {
             try CelestialAssetManifestLoader.load()
@@ -62,8 +66,8 @@ public final class UniverseModuleResources {
         self.now = now
         simulationSnapshot = SimulationSnapshot(dateUTC: now())
         planets = (try? SolarSystemLoader.loadPlanets(from: "planets")) ?? []
-        let provider = stateProvider ?? (try? EphemerisArchive.bundled.get()) as (any CelestialStateProviding)?
-            ?? UnavailableCelestialStateProvider()
+        self.stateProviderLoader = stateProvider == nil ? stateProviderLoader : nil
+        let provider = stateProvider ?? UnavailableCelestialStateProvider()
         sceneSnapshotPipeline = UniverseSceneSnapshotPipeline(planets: planets, stateProvider: provider)
         cameraState = CameraState()
         snapshotProvider = SnapshotProvider(cameraState: cameraState,
@@ -118,7 +122,6 @@ public final class UniverseModuleResources {
 
     public func prepare() async throws {
         guard !planets.isEmpty else { throw UniverseModulePreparationError.invalidOrbitalData }
-        _ = try sceneSnapshotPipeline.stateProvider.state(for: .earth, at: SimulationTime.tdbSeconds(for: now()))
         guard !isPrepared else { return }
 
         if let preparationTask {
@@ -126,6 +129,8 @@ public final class UniverseModuleResources {
                 try await preparationTask.value
             } catch is CancellationError {
                 throw CancellationError()
+            } catch let error as CelestialStateError {
+                throw error
             } catch {
                 throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
             }
@@ -133,6 +138,18 @@ public final class UniverseModuleResources {
         }
 
         let task = Task { @MainActor [self] in
+            if let loader = stateProviderLoader {
+                // Reading, hashing and decoding the archive must not block the loading UI.
+                let provider = try await Task.detached(priority: .userInitiated) {
+                    try loader()
+                }.value
+                try Task.checkCancellation()
+                _ = try provider.state(for: .earth, at: SimulationTime.tdbSeconds(for: now()))
+                sceneSnapshotPipeline.setStateProvider(provider)
+                stateProviderLoader = nil
+            } else {
+                _ = try sceneSnapshotPipeline.stateProvider.state(for: .earth, at: SimulationTime.tdbSeconds(for: now()))
+            }
             let manifest = try celestialAssetManifestLoader()
             try await sceneCoordinator.prepareCelestialBodies(from: manifest)
             sceneSnapshotPipeline.setPresentationMetrics(
@@ -150,6 +167,9 @@ public final class UniverseModuleResources {
         } catch is CancellationError {
             preparationTask = nil
             throw CancellationError()
+        } catch let error as CelestialStateError {
+            preparationTask = nil
+            throw error
         } catch {
             preparationTask = nil
             throw UniverseModulePreparationError.requiredCelestialAssetsUnavailable
