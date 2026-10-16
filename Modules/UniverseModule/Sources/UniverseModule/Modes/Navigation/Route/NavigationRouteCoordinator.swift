@@ -53,13 +53,7 @@ final class NavigationRouteCoordinator {
                planets: [Planet],
                snapshot: UniverseSceneSnapshot,
                mission: MissionFlightPlan? = nil) -> Bool {
-        requestedMission = mission
-        requestedDestination = destinationName
-        state = .preparing
-        failure = nil
-        transferElapsedTime = 0
-        missionElapsedTime = 0
-        playback.cancel()
+        prepareStart(destinationName: destinationName, mission: mission)
         if let mission, let provider = snapshot.stateProvider {
             do {
                 try MissionTimeline.forMission(mission).validateEphemeris(provider)
@@ -69,22 +63,7 @@ final class NavigationRouteCoordinator {
             }
         }
         if mission == .starshipFlight14 || mission == .crew13 {
-            let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
-                mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
-                    : StarshipRouteProfile(earth: earth)?.makeRoute()
-            }
-            guard let missionRoute else {
-                route = nil
-                playback.cancel()
-                failure = .invalidGeometry
-                state = .failed
-                publishSnapshot()
-                return false
-            }
-            route = missionRoute
-            state = .running
-            publishSnapshot()
-            return true
+            return startEarthMission(mission: mission, snapshot: snapshot)
         }
         var transfer: TransferSolution?
         if !ArtemisRouteProfile.isArtemisRoute(originName: originName, waypointName: waypointName,
@@ -92,7 +71,8 @@ final class NavigationRouteCoordinator {
             do {
                 guard originName == "Earth", waypointName == nil else { throw TransferFailure.invalidGeometry }
                 transfer = try TransferSolution.make(destinationName: destinationName, planets: planets,
-                                                      departureEpoch: snapshot.simulationTime, stateProvider: snapshot.stateProvider)
+                                                      departureEpoch: snapshot.simulationTime,
+                                                          stateProvider: snapshot.stateProvider)
             } catch {
                 self.route = nil
                 playback.cancel()
@@ -103,32 +83,10 @@ final class NavigationRouteCoordinator {
             }
         }
 
-        guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
-              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
-              let originPosition = snapshot.worldPosition(ofPlanetNamed: originName),
-              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: destinationName),
-              let route = routeBuilder.makeRoute(input: RouteBuildInput(
-                originName: originName,
-                waypointName: waypointName,
-                destinationName: destinationName,
-                planets: planets,
-                originPosition: originPosition,
-                waypointPosition: waypointName.flatMap { snapshot.worldPosition(ofPlanetNamed: $0) },
-                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: originName) ?? 0,
-                waypointSurfaceRadius: waypointName.flatMap {
-                    snapshot.surfaceRadius(ofPlanetNamed: $0)
-                } ?? 0,
-                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: destinationName) ?? 0,
-                earthSunDirection: earthPosition - sunPosition,
-                sunPosition: sunPosition,
-                destinationPosition: destinationPosition,
-                estimatedDuration: estimatedDuration(originName: originName,
-                                                     destinationName: destinationName),
-                simulationTime: snapshot.simulationTime,
-                transfer: transfer,
-                stateProvider: snapshot.stateProvider,
-                routeProgress: 0
-              )) else {
+        let request = StartRequest(originName: originName, waypointName: waypointName,
+                                   destinationName: destinationName, planets: planets, snapshot: snapshot)
+        guard let input = makeRouteInput(request: request, transfer: transfer),
+              let route = routeBuilder.makeRoute(input: input) else {
             self.route = nil
             playback.cancel()
             state = .failed
@@ -149,10 +107,10 @@ final class NavigationRouteCoordinator {
         guard let route,
               let refreshedRoute = missionRouteHandler.refreshedRoute(
                 for: route,
-                state: state,
-                progress: renderProgress,
-                planets: planets,
-                snapshot: snapshot,
+                context: MissionRouteRefreshContext(state: state,
+                                                    progress: renderProgress,
+                                                    planets: planets,
+                                                    snapshot: snapshot),
                 routeBuilder: routeBuilder
               ) else {
             return
@@ -229,6 +187,82 @@ final class NavigationRouteCoordinator {
 
     var currentRoutePoint: SIMD3<Float>? {
         activeRouteForRendering?.point(at: renderProgress)
+    }
+
+}
+
+extension NavigationRouteCoordinator {
+    private struct StartRequest {
+        let originName: String
+        let waypointName: String?
+        let destinationName: String
+        let planets: [Planet]
+        let snapshot: UniverseSceneSnapshot
+    }
+
+    private func prepareStart(destinationName: String, mission: MissionFlightPlan?) {
+        requestedMission = mission
+        requestedDestination = destinationName
+        state = .preparing
+        failure = nil
+        transferElapsedTime = 0
+        missionElapsedTime = 0
+        playback.cancel()
+    }
+
+    private func startEarthMission(mission: MissionFlightPlan?, snapshot: UniverseSceneSnapshot) -> Bool {
+        let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
+            mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
+                : StarshipRouteProfile(earth: earth)?.makeRoute()
+        }
+        guard let missionRoute else {
+            route = nil
+            playback.cancel()
+            failure = .invalidGeometry
+            state = .failed
+            publishSnapshot()
+            return false
+        }
+        route = missionRoute
+        state = .running
+        publishSnapshot()
+        return true
+    }
+
+    private func makeRouteInput(request: StartRequest, transfer: TransferSolution?) -> RouteBuildInput? {
+        let originName = request.originName
+        let waypointName = request.waypointName
+        let destinationName = request.destinationName
+        let planets = request.planets
+        let snapshot = request.snapshot
+        guard let sunPosition = snapshot.worldPosition(ofPlanetNamed: "Sun"),
+              let earthPosition = snapshot.worldPosition(ofPlanetNamed: "Earth"),
+              let originPosition = snapshot.worldPosition(ofPlanetNamed: originName),
+              let destinationPosition = snapshot.worldPosition(ofPlanetNamed: destinationName) else {
+            return nil
+        }
+        return RouteBuildInput(
+                originName: originName,
+                waypointName: waypointName,
+                destinationName: destinationName,
+                planets: planets,
+                originPosition: originPosition,
+                waypointPosition: waypointName.flatMap { snapshot.worldPosition(ofPlanetNamed: $0) },
+                originSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: originName) ?? 0,
+                waypointSurfaceRadius: waypointName.flatMap {
+                    snapshot.surfaceRadius(ofPlanetNamed: $0)
+                } ?? 0,
+                destinationSurfaceRadius: snapshot.surfaceRadius(ofPlanetNamed: destinationName) ?? 0,
+                earthSunDirection: earthPosition - sunPosition,
+                sunPosition: sunPosition,
+                destinationPosition: destinationPosition,
+                estimatedDuration: estimatedDuration(originName: originName,
+                                                     destinationName: destinationName),
+                simulationTime: snapshot.simulationTime,
+                transfer: transfer,
+                stateProvider: snapshot.stateProvider,
+                routeProgress: 0
+        )
     }
 
     private func estimatedDuration(originName: String,

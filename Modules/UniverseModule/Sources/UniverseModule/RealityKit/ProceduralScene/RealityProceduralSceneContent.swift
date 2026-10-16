@@ -39,6 +39,15 @@ final class RealityProceduralSceneContent {
         transferArrivalMarker.name = "TransferArrivalPosition"
     }
 
+    private struct RenderContext {
+        let sceneOrigin: SIMD3<Double>
+        let cameraPosition: SIMD3<Float>
+        let cameraUp: SIMD3<Float>
+        let renderViewMatrix: float4x4
+        let verticalFieldOfView: Float
+        let viewportHeight: Float
+    }
+
     func update(frameState: UniverseFrameState) {
         let camera = frameState.cameraSnapshot
         let cameraMatrix = simd_inverse(camera.renderViewMatrix)
@@ -67,46 +76,51 @@ final class RealityProceduralSceneContent {
                          cameraRight: cameraRight,
                          cameraUp: cameraUp,
                          simulationTime: Double(frameState.presentationTime))
-        updateTransfer(state: frameState.routes.transfer,
-                       sceneOrigin: camera.resolvedSceneOrigin,
-                       cameraPosition: cameraPosition,
-                       cameraUp: cameraUp,
-                       renderViewMatrix: camera.renderViewMatrix,
-                       verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
-                       viewportHeight: Float(camera.viewportSize.height))
+        let context = RenderContext(sceneOrigin: camera.resolvedSceneOrigin,
+                                    cameraPosition: cameraPosition, cameraUp: cameraUp,
+                                    renderViewMatrix: camera.renderViewMatrix,
+                                    verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
+                                    viewportHeight: Float(camera.viewportSize.height))
+        updateTransfer(state: frameState.routes.transfer, context: context)
         starshipMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         crew13Mission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
-        updateNavigation(state: frameState.routes.navigation,
-                         sceneOrigin: camera.resolvedSceneOrigin,
-                         cameraPosition: cameraPosition,
-                         cameraUp: cameraUp,
-                         renderViewMatrix: camera.renderViewMatrix,
-                         verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
-                         viewportHeight: Float(camera.viewportSize.height),
+        updateNavigation(state: frameState.routes.navigation, context: context,
                          elapsedTime: frameState.routes.navigation.elapsedTime)
     }
 
-    private func updateTransfer(state: TransferOrbitRenderState,
-                                sceneOrigin: SIMD3<Double>,
-                                cameraPosition: SIMD3<Float>,
-                                cameraUp: SIMD3<Float>,
-                                renderViewMatrix: float4x4,
-                                verticalFieldOfView: Float,
-                                viewportHeight: Float) {
+    private func updateTransfer(state: TransferOrbitRenderState, context: RenderContext) {
         let orbit = state.transferOrbit
         let earthGuide = state.preciseEarthOrbitPoints.isEmpty
             ? state.earthOrbitPoints.map { SIMD3<Double>($0) } : state.preciseEarthOrbitPoints
         let destinationGuide = state.preciseDestinationOrbitPoints.isEmpty
             ? state.destinationOrbitPoints.map { SIMD3<Double>($0) } : state.preciseDestinationOrbitPoints
         let earthPoints = (orbit?.preciseEarthOrbitPoints ?? earthGuide)
-            .map { EphemerisCoordinates.renderPosition($0, relativeTo: sceneOrigin) }
+            .map { EphemerisCoordinates.renderPosition($0, relativeTo: context.sceneOrigin) }
         let destinationPoints = (orbit?.preciseDestinationOrbitPoints ?? destinationGuide)
-            .map { EphemerisCoordinates.renderPosition($0, relativeTo: sceneOrigin) }
+            .map { EphemerisCoordinates.renderPosition($0, relativeTo: context.sceneOrigin) }
+        updateTransferGuides(orbit: orbit, earthPoints: earthPoints,
+                             destinationPoints: destinationPoints, context: context)
+        guard let orbit else { transferPath.hide(); return }
+        transferPath.update(points: orbit.precisePoints.map {
+                                EphemerisCoordinates.renderPosition($0, relativeTo: context.sceneOrigin)
+                            },
+                            sceneOrigin: .zero,
+                            cameraPosition: context.cameraPosition,
+                            cameraUp: context.cameraUp,
+                            renderViewMatrix: context.renderViewMatrix,
+                            verticalFieldOfView: context.verticalFieldOfView,
+                            viewportHeight: context.viewportHeight,
+                            color: SIMD4<Float>(0.2, 0.82, 1, 1),
+                            lineWidth: 2.5)
+    }
+
+    private func updateTransferGuides(orbit: TransferSolution?, earthPoints: [SIMD3<Float>],
+                                      destinationPoints: [SIMD3<Float>], context: RenderContext) {
         transferArrivalMarker.isEnabled = orbit != nil
         if let preciseArrival = orbit?.precisePoints.last {
-            let arrival = EphemerisCoordinates.renderPosition(preciseArrival, relativeTo: sceneOrigin)
+            let arrival = EphemerisCoordinates.renderPosition(preciseArrival, relativeTo: context.sceneOrigin)
             transferArrivalMarker.position = arrival
-            let size = max(simd_distance(cameraPosition, arrival) * 0.004, 0.0001)
+            let size = max(simd_distance(context.cameraPosition, arrival) * 0.004, 0.0001)
             transferArrivalMarker.scale = SIMD3(repeating: size)
         }
         if earthPoints.isEmpty { transferEarthOrbit.hide() }
@@ -114,11 +128,11 @@ final class RealityProceduralSceneContent {
         transferEarthOrbit.update(
             points: earthPoints,
             sceneOrigin: .zero,
-            cameraPosition: cameraPosition,
-            cameraUp: cameraUp,
-            renderViewMatrix: renderViewMatrix,
-            verticalFieldOfView: verticalFieldOfView,
-            viewportHeight: viewportHeight,
+            cameraPosition: context.cameraPosition,
+            cameraUp: context.cameraUp,
+            renderViewMatrix: context.renderViewMatrix,
+            verticalFieldOfView: context.verticalFieldOfView,
+            viewportHeight: context.viewportHeight,
             color: SIMD4<Float>(0.26, 0.55, 1, 0.72),
             dashFrequency: 72,
             dashDuty: 0.48,
@@ -127,35 +141,19 @@ final class RealityProceduralSceneContent {
         transferDestinationOrbit.update(
             points: destinationPoints,
             sceneOrigin: .zero,
-            cameraPosition: cameraPosition,
-            cameraUp: cameraUp,
-            renderViewMatrix: renderViewMatrix,
-            verticalFieldOfView: verticalFieldOfView,
-            viewportHeight: viewportHeight,
+            cameraPosition: context.cameraPosition,
+            cameraUp: context.cameraUp,
+            renderViewMatrix: context.renderViewMatrix,
+            verticalFieldOfView: context.verticalFieldOfView,
+            viewportHeight: context.viewportHeight,
             color: SIMD4<Float>(1, 0.62, 0.22, 0.72),
             dashFrequency: 92,
             dashDuty: 0.48,
             lineWidth: 1.75
         )
-        guard let orbit else { transferPath.hide(); return }
-        transferPath.update(points: orbit.precisePoints.map { EphemerisCoordinates.renderPosition($0, relativeTo: sceneOrigin) },
-                            sceneOrigin: .zero,
-                            cameraPosition: cameraPosition,
-                            cameraUp: cameraUp,
-                            renderViewMatrix: renderViewMatrix,
-                            verticalFieldOfView: verticalFieldOfView,
-                            viewportHeight: viewportHeight,
-                            color: SIMD4<Float>(0.2, 0.82, 1, 1),
-                            lineWidth: 2.5)
     }
 
-    private func updateNavigation(state: NavigationRouteRenderState,
-                                  sceneOrigin: SIMD3<Double>,
-                                  cameraPosition: SIMD3<Float>,
-                                  cameraUp: SIMD3<Float>,
-                                  renderViewMatrix: float4x4,
-                                  verticalFieldOfView: Float,
-                                  viewportHeight: Float,
+    private func updateNavigation(state: NavigationRouteRenderState, context: RenderContext,
                                   elapsedTime: TimeInterval) {
         guard let route = state.route,
               let markerPosition = state.preciseMarkerPosition else {
@@ -165,23 +163,23 @@ final class RealityProceduralSceneContent {
         }
 
         let visiblePoints = route.preciseRenderPoints(through: state.progress).map {
-            EphemerisCoordinates.renderPosition($0, relativeTo: sceneOrigin)
+            EphemerisCoordinates.renderPosition($0, relativeTo: context.sceneOrigin)
         }
         if visiblePoints.count >= 2 {
             navigationPath.update(points: visiblePoints,
                                   sceneOrigin: .zero,
-                                  cameraPosition: cameraPosition,
-                                  cameraUp: cameraUp,
-                                  renderViewMatrix: renderViewMatrix,
-                                  verticalFieldOfView: verticalFieldOfView,
-                                  viewportHeight: viewportHeight,
+                                  cameraPosition: context.cameraPosition,
+                                  cameraUp: context.cameraUp,
+                                  renderViewMatrix: context.renderViewMatrix,
+                                  verticalFieldOfView: context.verticalFieldOfView,
+                                  viewportHeight: context.viewportHeight,
                                   color: Self.navigationRouteColor)
         } else {
             navigationPath.hide()
         }
         navigationMarker.isEnabled = !route.hasMissionVehicles
-        navigationMarker.position = EphemerisCoordinates.renderPosition(markerPosition, relativeTo: sceneOrigin)
-        let cameraDistance = max(simd_distance(navigationMarker.position, cameraPosition), 0.001)
+        navigationMarker.position = EphemerisCoordinates.renderPosition(markerPosition, relativeTo: context.sceneOrigin)
+        let cameraDistance = max(simd_distance(navigationMarker.position, context.cameraPosition), 0.001)
         let pulse = 1 + 0.08 * sin(Float(elapsedTime) * 6)
         navigationMarker.scale = SIMD3<Float>(repeating: cameraDistance * 0.008 * pulse)
     }

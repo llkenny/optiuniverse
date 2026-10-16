@@ -92,11 +92,17 @@ public final class UniverseModuleResources {
             snapshotProvider: snapshotProvider,
             planets: planets
         )
+        configureNavigationCallbacks()
+    }
+
+    private func configureNavigationCallbacks() {
         navigationController.navigationSnapshotDidChange = { [weak self] snapshot in
             self?.navigationSnapshot = snapshot
         }
         navigationController.synchronizeLiveScene = { [weak self] in self?.sceneCoordinator.synchronizeLiveScene() }
-        navigationController.prepareMissionScene = { [weak self] replay in self?.sceneCoordinator.prepareMissionScene(replay) }
+        navigationController.prepareMissionScene = { [weak self] replay in
+            self?.sceneCoordinator.prepareMissionScene(replay)
+        }
         navigationController.navigationDidComplete = { [weak self] name, mission in
             guard let self else { return }
             if mission == .crew13 {
@@ -149,7 +155,8 @@ public final class UniverseModuleResources {
                 sceneSnapshotPipeline.setStateProvider(provider)
                 stateProviderLoader = nil
             } else {
-                _ = try sceneSnapshotPipeline.stateProvider.state(for: .earth, at: SimulationTime.tdbSeconds(for: now()))
+                _ = try sceneSnapshotPipeline.stateProvider.state(for: .earth,
+                                                                  at: SimulationTime.tdbSeconds(for: now()))
             }
             let manifest = try celestialAssetManifestLoader()
             try await sceneCoordinator.prepareCelestialBodies(from: manifest)
@@ -195,6 +202,9 @@ public final class UniverseModuleResources {
         sceneCoordinator.setViewportSize(size)
     }
 
+}
+
+extension UniverseModuleResources {
     func followTarget(for destinationID: UUID,
                       destinations: [DestinationObject]) -> ObjectFollowTarget? {
         guard let destination = destinations.first(where: { $0.id == destinationID }) else {

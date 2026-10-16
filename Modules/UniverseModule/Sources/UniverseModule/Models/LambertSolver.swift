@@ -13,11 +13,12 @@ public enum TransferFailure: String, Error, Sendable {
 /// Inputs and outputs are ecliptic km, seconds and km/s. No rendering scale enters the solver.
 enum LambertSolver {
     static func solve(from start: SIMD3<Double>, to end: SIMD3<Double>,
-                      duration: Double, mu: Double) throws -> (departure: SIMD3<Double>, arrival: SIMD3<Double>) {
+                      duration: Double, gravitationalParameter: Double) throws
+    -> (departure: SIMD3<Double>, arrival: SIMD3<Double>) {
         let radius1 = simd_length(start)
         let radius2 = simd_length(end)
         let chord = simd_length(end - start)
-        guard duration.isFinite, duration > 0, mu.isFinite, mu > 0,
+        guard duration.isFinite, duration > 0, gravitationalParameter.isFinite, gravitationalParameter > 0,
               radius1.isFinite, radius2.isFinite, radius1 > 0, radius2 > 0, chord > 0 else {
             throw TransferFailure.invalidGeometry
         }
@@ -33,7 +34,7 @@ enum LambertSolver {
             normal = -normal
             lambda = -lambda
         }
-        let target = sqrt(2 * mu / pow(semiperimeter, 3)) * duration
+        let target = sqrt(2 * gravitationalParameter / pow(semiperimeter, 3)) * duration
         var lower = -1 + 1e-12
         var upper = 1.0
         for _ in 0..<64 where timeOfFlight(xValue: upper, lambda: lambda) > target { upper *= 2 }
@@ -50,7 +51,7 @@ enum LambertSolver {
             throw TransferFailure.didNotConverge
         }
         let yValue = sqrt(1 - lambda * lambda * (1 - xValue * xValue))
-        let gamma = sqrt(mu * semiperimeter / 2)
+        let gamma = sqrt(gravitationalParameter * semiperimeter / 2)
         let rho = (radius1 - radius2) / chord
         let sigma = sqrt(max(0, 1 - rho * rho))
         let sum = lambda * yValue + xValue

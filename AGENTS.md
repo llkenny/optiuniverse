@@ -11,6 +11,7 @@ This repository hosts **OptiUniverse**, an iOS 3D universe navigator focused on 
 - Avoid committing user-specific files, generated build output, secrets, or local machine metadata.
 
 ## Testing
+- After final edits and before completing every task, run `swiftlint lint --strict` from the repository root. Resolve all reported violations before completion. If the check cannot run, explicitly report the blocker and do not claim lint validation passed.
 - Ensure the project builds before committing:
   `xcodebuild -project OptiUniverse.xcodeproj -scheme OptiUniverse -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' build CODE_SIGNING_ALLOWED=NO`
 - Run unit tests when available:

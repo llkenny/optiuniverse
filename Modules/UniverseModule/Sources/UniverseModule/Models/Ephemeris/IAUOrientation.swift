@@ -26,14 +26,16 @@ struct IAUOrientation: Decodable, Sendable {
                 coefficients.reversed().reduce(0) { $0 * argument + $1 }
             }
             let phases = phasePolynomials.map { polynomial($0, centuries) * .pi / 180 }
-            let ra = (polynomial(poleRA, centuries) + zip(raTerms, phases).reduce(0) { $0 + $1.0 * sin($1.1) }) * .pi / 180
-            let dec = (polynomial(poleDec, centuries) + zip(decTerms, phases).reduce(0) { $0 + $1.0 * cos($1.1) }) * .pi / 180
+            let rightAscension = (polynomial(poleRA, centuries)
+                + zip(raTerms, phases).reduce(0) { $0 + $1.0 * sin($1.1) }) * .pi / 180
+            let dec = (polynomial(poleDec, centuries)
+                + zip(decTerms, phases).reduce(0) { $0 + $1.0 * cos($1.1) }) * .pi / 180
             let meridian = (polynomial(meridian, days) + zip(meridianTerms, phases).reduce(0) { $0 + $1.0 * sin($1.1) })
                 .truncatingRemainder(dividingBy: 360) * .pi / 180
             // Equatorial basis: node is the ascending equator intersection, east lies in its plane.
-            let node = SIMD3(-sin(ra), cos(ra), 0)
-            let east = SIMD3(-sin(dec) * cos(ra), -sin(dec) * sin(ra), cos(dec))
-            let pole = SIMD3(cos(dec) * cos(ra), cos(dec) * sin(ra), sin(dec))
+            let node = SIMD3(-sin(rightAscension), cos(rightAscension), 0)
+            let east = SIMD3(-sin(dec) * cos(rightAscension), -sin(dec) * sin(rightAscension), cos(dec))
+            let pole = SIMD3(cos(dec) * cos(rightAscension), cos(dec) * sin(rightAscension), sin(dec))
             let equatorial = simd_double3x3(node * cos(meridian) + east * sin(meridian),
                                            -node * sin(meridian) + east * cos(meridian), pole)
             let obliquity = 84381.448 / 3600 * Double.pi / 180

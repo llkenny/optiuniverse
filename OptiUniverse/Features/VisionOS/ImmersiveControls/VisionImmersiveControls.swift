@@ -38,7 +38,9 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
             case .failed(let failure):
                 Text(failure.rawValue)
                 Button("Retry transfer") {
-                    if let destination = preview.destinationName { resources.transferOrbit.showTransferOrbit(to: destination) }
+                    if let destination = preview.destinationName {
+                        resources.transferOrbit.showTransferOrbit(to: destination)
+                    }
                 }
                 Button("Close orbit") { resources.transferOrbit.clearTransferOrbit() }
             case .inactive:

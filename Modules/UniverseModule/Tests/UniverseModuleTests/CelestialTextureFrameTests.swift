@@ -15,9 +15,10 @@ import Testing
         let part = try #require(mesh.parts.first)
         let coordinates = try #require(part.textureCoordinates?.elements)
         let positions = part.positions.elements
-        func direction(at uv: SIMD2<Float>) throws -> SIMD3<Float> {
+        func direction(at textureCoordinate: SIMD2<Float>) throws -> SIMD3<Float> {
             let nearest = try #require(coordinates.indices.min {
-                simd_length_squared(coordinates[$0] - uv) < simd_length_squared(coordinates[$1] - uv)
+                simd_length_squared(coordinates[$0] - textureCoordinate)
+                    < simd_length_squared(coordinates[$1] - textureCoordinate)
             })
             let point = body.transformMatrix(relativeTo: root) * SIMD4<Float>(positions[nearest], 1)
             let correction = asset.orientationCorrection

@@ -86,10 +86,8 @@ import Testing
     #expect(resources.navigationSnapshot.state == .running)
     #expect(resources.navigationController.routeRenderState.route?.id == initialRoute.id)
     #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
-    expectVector(SIMD3<Float>(projectedScreenPosition(point: marker,
-                                                      pose: rotatedPose,
-                                                      viewportSize: viewportSize), 0),
-                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    expectResourceMarkerScreenPosition(point: marker, pose: rotatedPose, viewportSize: viewportSize,
+                                       equals: initialMarkerScreenPosition)
     #expect(simd_distance(rotatedPose.position, initialNavigationPose.position) > 0.0001)
     #expect(abs(simd_distance(marker, rotatedPose.position) - markerDistanceBeforeRotation) < 0.0001)
 
@@ -100,10 +98,8 @@ import Testing
     let refreshedRoute = try #require(refreshedRenderState.route)
     let refreshedMarker = try #require(refreshedRoute.point(at: refreshedRenderState.progress))
     let refreshedPose = resources.cameraCoordinator.currentCameraPose
-    expectVector(SIMD3<Float>(projectedScreenPosition(point: refreshedMarker,
-                                                      pose: refreshedPose,
-                                                      viewportSize: viewportSize), 0),
-                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    expectResourceMarkerScreenPosition(point: refreshedMarker, pose: refreshedPose, viewportSize: viewportSize,
+                                       equals: initialMarkerScreenPosition)
 
     let markerDistanceBeforeZoom = simd_distance(refreshedMarker, refreshedPose.position)
     resources.scaleCamera(by: 1.2,
@@ -116,10 +112,8 @@ import Testing
     let zoomedRenderState = resources.navigationController.routeRenderState
     let zoomedRoute = try #require(zoomedRenderState.route)
     let zoomedMarker = try #require(zoomedRoute.point(at: zoomedRenderState.progress))
-    expectVector(SIMD3<Float>(projectedScreenPosition(point: zoomedMarker,
-                                                      pose: zoomedPose,
-                                                      viewportSize: viewportSize), 0),
-                 equals: SIMD3<Float>(initialMarkerScreenPosition, 0))
+    expectResourceMarkerScreenPosition(point: zoomedMarker, pose: zoomedPose, viewportSize: viewportSize,
+                                       equals: initialMarkerScreenPosition)
     #expect(simd_distance(zoomedMarker, zoomedPose.position) < markerDistanceBeforeZoom)
 }
 
@@ -360,4 +354,10 @@ func artemisFlybyUsesCloseCameraAtRealLunarScale(startDay: Double) throws {
     #expect(closeUpFrames > 360)
     #expect(returnFrames > 50)
     #expect(resources.navigationSnapshot.state == .completed)
+}
+
+private func expectResourceMarkerScreenPosition(point: SIMD3<Float>, pose: CameraPose,
+                                                viewportSize: CGSize, equals expected: SIMD2<Float>) {
+    expectVector(SIMD3<Float>(projectedScreenPosition(point: point, pose: pose, viewportSize: viewportSize), 0),
+                 equals: SIMD3<Float>(expected, 0))
 }

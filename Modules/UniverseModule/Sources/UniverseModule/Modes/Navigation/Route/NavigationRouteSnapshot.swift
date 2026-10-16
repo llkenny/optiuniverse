@@ -28,11 +28,11 @@ public struct NavigationRouteSnapshot: Sendable, Equatable {
     public let remainingTime: TimeInterval
     public let estimatedDuration: TimeInterval
 
-    public var mission: MissionFlightPlan? = nil
-    public var missionStatus: MissionNavigationStatus? = nil
+    public var mission: MissionFlightPlan?
+    public var missionStatus: MissionNavigationStatus?
 
-    public var physicalFlightDuration: Double? = nil
-    public var failure: TransferFailure? = nil
+    public var physicalFlightDuration: Double?
+    public var failure: TransferFailure?
 
     public static let idle = NavigationRouteSnapshot(routeID: nil,
                                                      state: .idle,

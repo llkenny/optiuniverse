@@ -213,7 +213,9 @@ struct StarshipRouteProfile: Sendable, Equatable {
         return NavigationRoute(id: id, originName: "Earth", destinationName: "Earth", points: points,
                                cumulativeDistances: distances, totalDistance: distances.last ?? 0,
                                estimatedDuration: Self.duration, overviewPaddingRadius: radius * 1.6,
-                               overviewCenter: center, precisePoints: precisePoints, preciseOverviewCenter: preciseCenter, mission: .starshipFlight14, starshipProfile: self)
+                               overviewCenter: center, precisePoints: precisePoints,
+                                   preciseOverviewCenter: preciseCenter, mission: .starshipFlight14,
+                                       starshipProfile: self)
     }
 
     static func smooth(_ value: Float) -> Float {

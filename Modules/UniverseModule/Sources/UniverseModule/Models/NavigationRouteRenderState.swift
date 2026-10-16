@@ -17,7 +17,8 @@ struct NavigationRouteRenderState: Equatable {
 
     /// Camera tracking and visible vehicles must share the exact elapsed-time sample, not a Float progress round-trip.
     var preciseMarkerPosition: SIMD3<Double>? {
-        crew13Flight?.dragon.precisePosition ?? starshipFlight?.ship.precisePosition ?? route?.precisePoint(at: progress)
+        crew13Flight?.dragon.precisePosition ?? starshipFlight?.ship.precisePosition
+            ?? route?.precisePoint(at: progress)
     }
 
     static let idle = NavigationRouteRenderState(route: nil,

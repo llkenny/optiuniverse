@@ -55,10 +55,10 @@ struct TransferSolution: Equatable, Sendable {
             end = try provider.state(for: targetID, at: departureEpoch + duration).positionKm
         } catch { throw TransferFailure.ephemerisUnavailable }
         let velocities = try LambertSolver.solve(from: start, to: end, duration: duration,
-                                                  mu: TwoBodyTrajectory.solarMu)
+                                                  gravitationalParameter: TwoBodyTrajectory.solarMu)
         let trajectory = TwoBodyTrajectory(initialPosition: start,
                                             initialVelocity: velocities.departure,
-                                            mu: TwoBodyTrajectory.solarMu)
+                                            gravitationalParameter: TwoBodyTrajectory.solarMu)
         guard trajectory.minimumRadius(endingAt: end) > 695_700 else { throw TransferFailure.intersectsSun }
         let propagatedEnd = try trajectory.state(after: duration).position
         guard simd_distance(propagatedEnd, end) < max(0.1, simd_length(end) * 1e-9) else {
@@ -68,19 +68,11 @@ struct TransferSolution: Equatable, Sendable {
             let state = try trajectory.state(after: duration * Double(index) / Double(sampleCount - 1))
             return SIMD3<Double>(sunPosition) + EphemerisCoordinates.scenePosition(state.position)
         }
-        let earthPoints: [SIMD3<Double>]
-        let targetPoints: [SIMD3<Double>]
-        if stateProvider != nil {
-            do {
-                earthPoints = try EphemerisOrbitPath.points(for: .earth, period: earth.periodSeconds, at: departureEpoch,
-                                                           provider: provider, origin: SIMD3<Double>(sunPosition))
-                targetPoints = try EphemerisOrbitPath.points(for: targetID, period: target.periodSeconds, at: departureEpoch,
-                                                            provider: provider, origin: SIMD3<Double>(sunPosition))
-            } catch { throw TransferFailure.ephemerisUnavailable }
-        } else {
-            earthPoints = earth.orbitPoints().map { SIMD3<Double>($0 + sunPosition) }
-            targetPoints = target.orbitPoints().map { SIMD3<Double>($0 + sunPosition) }
-        }
+        let (earthPoints, targetPoints) = try makeOrbitGuides(
+            earth: earth, target: target,
+            context: OrbitGuideContext(targetID: targetID, departureEpoch: departureEpoch,
+                                       sunPosition: sunPosition, stateProvider: stateProvider)
+        )
         return TransferSolution(destinationName: destinationName, departureEpoch: departureEpoch,
                                 flightDuration: duration, departureVelocity: velocities.departure,
                                 arrivalVelocity: velocities.arrival, trajectory: trajectory,
@@ -93,4 +85,36 @@ struct TransferSolution: Equatable, Sendable {
                                 earthOrbitPoints: earthPoints.map { SIMD3<Float>($0) },
                                 destinationOrbitPoints: targetPoints.map { SIMD3<Float>($0) })
     }
+
+    private struct OrbitGuideContext {
+        let targetID: CelestialBodyID
+        let departureEpoch: Double
+        let sunPosition: SIMD3<Float>
+        let stateProvider: (any CelestialStateProviding)?
+    }
+
+    private static func makeOrbitGuides(earth: OrbitalElements, target: OrbitalElements,
+                                        context: OrbitGuideContext)
+    throws -> ([SIMD3<Double>], [SIMD3<Double>]) {
+        let targetID = context.targetID
+        let departureEpoch = context.departureEpoch
+        let sunPosition = context.sunPosition
+        let earthPoints: [SIMD3<Double>]
+        let targetPoints: [SIMD3<Double>]
+        if let stateProvider = context.stateProvider {
+            do {
+                earthPoints = try EphemerisOrbitPath.points(for: .earth, period: earth.periodSeconds,
+                                                            at: departureEpoch,
+                                                           provider: stateProvider, origin: SIMD3<Double>(sunPosition))
+                targetPoints = try EphemerisOrbitPath.points(for: targetID, period: target.periodSeconds,
+                                                             at: departureEpoch,
+                                                            provider: stateProvider, origin: SIMD3<Double>(sunPosition))
+            } catch { throw TransferFailure.ephemerisUnavailable }
+        } else {
+            earthPoints = earth.orbitPoints().map { SIMD3<Double>($0 + sunPosition) }
+            targetPoints = target.orbitPoints().map { SIMD3<Double>($0 + sunPosition) }
+        }
+        return (earthPoints, targetPoints)
+    }
+
 }

@@ -14,7 +14,7 @@ let package = Package(
         .library(
             name: "CommonTools",
             targets: ["CommonTools"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.59.1")
@@ -34,7 +34,7 @@ let package = Package(
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )

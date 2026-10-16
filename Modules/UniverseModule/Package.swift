@@ -14,7 +14,7 @@ let package = Package(
         .library(
             name: "UniverseModule",
             targets: ["UniverseModule"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../CommonTools"),
@@ -58,7 +58,7 @@ let package = Package(
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )

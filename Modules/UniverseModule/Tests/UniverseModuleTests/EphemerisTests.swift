@@ -156,7 +156,9 @@ private struct EphemerisReferences: Decodable {
     resources.navigation.startMission(.crew13)
     resources.sceneCoordinator.update(deltaTime: 30)
     resources.beginManualCameraControl()
-    let beforeMarker = try #require(resources.navigationController.routeRenderState.crew13Flight?.dragon.precisePosition)
+    let beforeMarker = try #require(
+        resources.navigationController.routeRenderState.crew13Flight?.dragon.precisePosition
+    )
     let beforeTarget = resources.cameraState.preciseCameraTarget
     date.addTimeInterval(0.016)
     resources.sceneCoordinator.update(deltaTime: 0.000_001)

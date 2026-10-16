@@ -14,7 +14,7 @@ let package = Package(
         .library(
             name: "BaseModule",
             targets: ["BaseModule"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../CommonTools"),
@@ -38,7 +38,7 @@ let package = Package(
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )

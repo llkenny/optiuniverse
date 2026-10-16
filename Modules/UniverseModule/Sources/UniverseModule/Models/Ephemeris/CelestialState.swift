@@ -55,8 +55,8 @@ struct UnavailableCelestialStateProvider: CelestialStateProviding {
 
 enum EphemerisCoordinates {
     static let eclipticToScene = simd_double3x3(SIMD3(1, 0, 0), SIMD3(0, 0, -1), SIMD3(0, 1, 0))
-    static func scenePosition(_ km: SIMD3<Double>) -> SIMD3<Double> {
-        eclipticToScene * km * OrbitalElements.sceneUnitsPerKm
+    static func scenePosition(_ kilometers: SIMD3<Double>) -> SIMD3<Double> {
+        eclipticToScene * kilometers * OrbitalElements.sceneUnitsPerKm
     }
     static func renderPosition(_ absolute: SIMD3<Double>, relativeTo origin: SIMD3<Double>) -> SIMD3<Float> {
         SIMD3<Float>(absolute - origin)

@@ -17,8 +17,8 @@ enum SimulationTime {
     static func tdbSeconds(for date: Date) -> Double {
         let utc = date.timeIntervalSince1970
         let atomicOffset = leaps.last { utc >= $0.0 }?.1 ?? 10
-        let tt = date.timeIntervalSince(utcJ2000) + atomicOffset + 32.184
-        return tt + tdbMinusTT(tt)
+        let terrestrialTime = date.timeIntervalSince(utcJ2000) + atomicOffset + 32.184
+        return terrestrialTime + tdbMinusTT(terrestrialTime)
     }
 
     static func date(forTDBSeconds seconds: Double) -> Date {
@@ -30,8 +30,8 @@ enum SimulationTime {
     }
 
     /// NAIF LSK DELTET model; its sub-millisecond residual is below our vector budget.
-    private static func tdbMinusTT(_ tt: Double) -> Double {
-        let mean = 6.239996 + 1.99096871e-7 * tt
+    private static func tdbMinusTT(_ terrestrialTime: Double) -> Double {
+        let mean = 6.239996 + 1.99096871e-7 * terrestrialTime
         return 0.001657 * sin(mean + 0.01671 * sin(mean))
     }
 }

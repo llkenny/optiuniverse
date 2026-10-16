@@ -60,9 +60,9 @@ final class RealityStarshipMission {
                 apply(flight.satellites[index], to: satellite, size: size * 0.24, sceneOrigin: sceneOrigin)
             }
         }
-        updateSplash(shipSplash, pose: flight.ship, center: profile.preciseCenter, radius: profile.radius,
+        updateSplash(shipSplash, pose: flight.ship, profile: profile,
                      time: state.elapsedTime - 59.7, sceneOrigin: sceneOrigin)
-        updateSplash(boosterSplash, pose: flight.booster, center: profile.preciseCenter, radius: profile.radius,
+        updateSplash(boosterSplash, pose: flight.booster, profile: profile,
                      time: state.elapsedTime - 15.7, sceneOrigin: sceneOrigin)
     }
 
@@ -77,8 +77,10 @@ final class RealityStarshipMission {
         plume.scale = SIMD3<Float>(1, strength * (1 + 0.09 * sin(Float(time) * 37)), 1)
     }
 
-    private func updateSplash(_ splash: Entity, pose: MissionVehiclePose, center: SIMD3<Double>, radius: Float,
+    private func updateSplash(_ splash: Entity, pose: MissionVehiclePose, profile: StarshipRouteProfile,
                               time: Double, sceneOrigin: SIMD3<Double>) {
+        let center = profile.preciseCenter
+        let radius = profile.radius
         splash.isEnabled = time >= 0 && time < 1.3
         guard splash.isEnabled else { return }
         let radial = normalize(SIMD3<Float>(pose.precisePosition - center))
@@ -130,6 +132,10 @@ final class RealityStarshipMission {
                           position: SIMD3(cos(angle) * 0.055, height, sin(angle) * 0.055))
             }
         }
+        buildVehicleEffects()
+    }
+
+    private func buildVehicleEffects() {
         Self.buildPlume(in: shipPlume)
         Self.buildPlume(in: boosterPlume)
         shipPlume.position.y = -0.41

@@ -54,7 +54,8 @@ import Testing
     let dependency = try #require(fixture.controller.cameraSnapshotDependency)
     #expect(try #require(dependency.maximumCameraDistance) > transfer.framingRadius)
     let projection = fixture.controller.projectionParameters(snapshot: fixture.source.latestSnapshot,
-                                                              baseProjection: CameraProjectionParameters(nearPlane: 0.001, farPlane: 10_000))
+                                          baseProjection: CameraProjectionParameters(nearPlane: 0.001,
+                                                                                     farPlane: 10_000))
     #expect(projection.farPlane > transfer.framingRadius * 2)
 }
 
