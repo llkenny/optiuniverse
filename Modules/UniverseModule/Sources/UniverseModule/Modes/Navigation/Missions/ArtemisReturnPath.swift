@@ -21,7 +21,7 @@ struct ArtemisReturnPath {
         // Entry needs an orthonormal plane so its radial distance remains the requested radius.
         let projectedSide = sideDirection - majorDirection * simd_dot(sideDirection, majorDirection)
         let side = simd_length_squared(projectedSide) > 0.000_001
-            ? normalize(projectedSide) : SIMD3<Float>(1, 0, 0)
+            ? normalize(projectedSide) : perpendicularDirection(to: majorDirection)
         let radius = surfaceRadius.isFinite && surfaceRadius > 0 ? surfaceRadius : 0
         let entry = -side * radius * ArtemisRouteProfile.entryRadiusScale
         let descentAngle = ArtemisRouteProfile.entryDescentAngle
@@ -58,6 +58,21 @@ struct ArtemisReturnPath {
             }
         }
         return points.map { center + $0 }
+    }
+
+    private func perpendicularDirection(to direction: SIMD3<Float>) -> SIMD3<Float> {
+        // The least-aligned coordinate axis keeps the cross product well away from zero.
+        // Resolve ties in X, Y, Z order for deterministic geometry at the poles.
+        let alignment = abs(direction)
+        let axis: SIMD3<Float>
+        if alignment.x <= alignment.y && alignment.x <= alignment.z {
+            axis = SIMD3<Float>(1, 0, 0)
+        } else if alignment.y <= alignment.z {
+            axis = SIMD3<Float>(0, 1, 0)
+        } else {
+            axis = SIMD3<Float>(0, 0, 1)
+        }
+        return normalize(cross(direction, axis))
     }
 
     private func appendApproach(_ curve: CubicApproach,
