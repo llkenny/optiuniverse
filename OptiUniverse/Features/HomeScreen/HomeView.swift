@@ -10,24 +10,19 @@ import BaseModule
 
 struct HomeView: View {
 
-    @Environment(AppEnvironment.self) private var appEnvironment
     let onMissionSelected: (Mission) -> Void
 
     @State private var currentCarouselIndex: Int = 0
     @State private var totalCount: Int = 0
-    @State private var currentChipsIndex: Int?
     @State private var selectedTag: String?
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                TitleSectionView(missions: Mission.available,
-                                 onMissionSelected: onMissionSelected)
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
                 HeroCarouselView(
                     currentIndex: $currentCarouselIndex,
-                    totalCount: $totalCount
+                    totalCount: $totalCount,
+                    onMissionSelected: onMissionSelected
                 )
                 .padding(.bottom, 12)
                 PageIndicatorView(totalCount: totalCount,

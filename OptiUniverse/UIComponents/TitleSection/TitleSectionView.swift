@@ -8,40 +8,20 @@
 import SwiftUI
 
 struct TitleSectionView: View {
-    let missions: [Mission]
-    let onMissionSelected: (Mission) -> Void
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(missions) { mission in
-                        Button {
-                            onMissionSelected(mission)
-                        } label: {
-                            MissionCardView(mission: mission)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Start mission")
-                    }
-                }
-            }
-
-            HStack {
-                Text("Where do you wanna go?")
-                    .font(Typography.screenTitle)
-                    .foregroundStyle(OptiColor.textPrimary)
-                    .lineLimit(2)
-                Spacer(minLength: 60)
-            }
+        HStack {
+            Text("Where do you wanna go?")
+                .font(Typography.screenTitle)
+                .foregroundStyle(OptiColor.textPrimary)
+                .lineLimit(2)
+            Spacer(minLength: 60)
         }
     }
 }
 
 #Preview {
     VStack {
-        TitleSectionView(missions: Mission.available,
-                         onMissionSelected: { _ in })
+        TitleSectionView()
         Spacer()
     }
     .padding(.horizontal)
