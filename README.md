@@ -6,7 +6,7 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 
 - Real-time 3D solar-system rendering with RealityKit and `RealityView`.
 - Offline JPL ephemerides and IAU body orientation synchronized to the current UTC date, with separate accelerated transfer playback.
-- SwiftUI interface with a featured-object carousel, destination cards, category filtering, and shared app state through Observation.
+- SwiftUI interface with a mission carousel sorted by launch date (newest first), destination cards, category filtering, and shared app state through Observation.
 - Per-body USDZ model loading through RealityKit.
 - JSON-driven object metadata for destination lists, featured objects, and planet simulation parameters.
 - Orbital camera controls with pan, pinch, rotation, planet-follow transitions, and dynamic near-plane fitting.
