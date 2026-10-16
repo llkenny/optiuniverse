@@ -237,6 +237,8 @@ The app waits until loading succeeds, navigation completes or is cancelled, and 
 - Marketing URL: https://llkenny.github.io/optiuniverse/
 - Support URL: https://llkenny.github.io/optiuniverse/support/
 
+The [App Store 1.9 release package](AppStore/1.9/en-US/README.md) contains English metadata, product-page header and search-results artwork, and screenshots with upload instructions.
+
 ## Build
 
 Open the project in Xcode:

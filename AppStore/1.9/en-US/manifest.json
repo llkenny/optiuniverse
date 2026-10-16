@@ -1,0 +1,226 @@
+{
+  "app": "OptiUniverse",
+  "version": "1.9",
+  "build": "26",
+  "locale": "en-US",
+  "prepared_date": "2026-10-16",
+  "capture_source": {
+    "device": "iPhone 17",
+    "runtime": "iOS 27.0",
+    "installed_app_version": "1.9",
+    "installed_app_build": "26",
+    "new_app_build_performed": false,
+    "exact_checkout_binary_match_verified": false
+  },
+  "exports": [
+    {
+      "path": "creative/header-3840x1646.png",
+      "width": 3840,
+      "height": 1646,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "86283ec831f701c0403adc7f56464f460946def0a0b540c79c8750f2d59efbd7"
+    },
+    {
+      "path": "creative/search-results-3840x2560.png",
+      "width": 3840,
+      "height": 2560,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "ac9c976230b4079eb2291ef6a74ebdfd2ae665a05d73a4e45e73ceafd9c229a8"
+    },
+    {
+      "path": "screenshots/1320x2868/01-saturn.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "47f91ac55f047ec8833575258ca12ba4501fa1893319a92b09dcac9221b21d92"
+    },
+    {
+      "path": "screenshots/1320x2868/02-jupiter.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "d4e26ce4df60339a045662955d85bd55c3d641d3f2eaf2e1f377d456a0dedeb1"
+    },
+    {
+      "path": "screenshots/1320x2868/03-orbits.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "fc827926adccf46f2c46f84c820a07524fe5d600e0b09e64cfc4e52c0c1cf6fc"
+    },
+    {
+      "path": "screenshots/1320x2868/04-earth.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "0b2805070d073d28e2565db218334f93618abc79e540f4be47752ab80f5d50b2"
+    },
+    {
+      "path": "screenshots/1320x2868/05-home.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "60ac9c75d28ced7756bec48e18160789344e77e31ea337c30429eb7f869a6a63"
+    },
+    {
+      "path": "screenshots/1320x2868/06-crew13.png",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "da28a00b8380c5e40f51ab8b7fd81cbe72fb227f92f1a653d6a40765c3b36547"
+    },
+    {
+      "path": "screenshots/1206x2622/01-saturn.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "5a13ad7749834f69c250c0bad0f2b8c4dfc6c392ed1e7c760b3e9fbaa886e4fe"
+    },
+    {
+      "path": "screenshots/1206x2622/02-jupiter.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "ad44041ac1202bc3e432127e78ddf2d2076aa2bc061c6af9e751b755359f420b"
+    },
+    {
+      "path": "screenshots/1206x2622/03-orbits.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "2ff5a8d4dd10b5bfe5a15f12483b52c024fb1719254438ccb1096bd18694f763"
+    },
+    {
+      "path": "screenshots/1206x2622/04-earth.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "199fc3b109f0c1f0255e006bef959016f186303e3343a40314108ab24a03bf45"
+    },
+    {
+      "path": "screenshots/1206x2622/05-home.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "4fa097ff8ab50123adbb228bc0f116e787c10c9a29ac389cad8e908baeee4e8c"
+    },
+    {
+      "path": "screenshots/1206x2622/06-crew13.png",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false,
+      "sha256": "3f417cb10b86d1b241bced0a73956756c2eedbdf4405bd8d89b06e5bf6b2fde2"
+    }
+  ],
+  "metadata": [
+    {
+      "path": "metadata/description.txt",
+      "characters": 1525,
+      "limit": 4000,
+      "sha256": "3326c0724c1c404dcaed25f02310a62690aee199c5a05a7892b2cd1eebaf1cdd"
+    },
+    {
+      "path": "metadata/keywords.txt",
+      "characters": 97,
+      "limit": 100,
+      "sha256": "db405630d0fce384a403a5d3991225dafc7e9b15d2e4dba2af1b262cffb98b89"
+    },
+    {
+      "path": "metadata/marketing_url.txt",
+      "characters": 39,
+      "limit": null,
+      "sha256": "3aedf5e333dc34f7bf2a1f8cfc6ba44d5e2892e2daf97195e65685888311a6b0"
+    },
+    {
+      "path": "metadata/privacy_url.txt",
+      "characters": 47,
+      "limit": null,
+      "sha256": "3db973d0b4af0ad6ad3f9118aef22f0d2f092a47cf2d6a5fad838e96563063e8"
+    },
+    {
+      "path": "metadata/promotional_text.txt",
+      "characters": 151,
+      "limit": 170,
+      "sha256": "9bf6877504262c00aedd226ee9533d4ab2d047cf1025660058feae73bd5972d3"
+    },
+    {
+      "path": "metadata/release_notes.txt",
+      "characters": 635,
+      "limit": 4000,
+      "sha256": "04c1ba9d5e78fadad8fb1b1a3dd80f26daa063cd94cb60238434136d6eafcf17"
+    },
+    {
+      "path": "metadata/support_url.txt",
+      "characters": 47,
+      "limit": null,
+      "sha256": "7bb227957290a938b9a8b27686e829bb4813e3204c3f9d484f332f3d3a37a0c3"
+    }
+  ],
+  "captures": [
+    {
+      "path": "sources/captures/01-saturn.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "df1f73d7bf1d76b64ee18c0d0aaee240e886c0d0b88534202bd5b1ba4ec14a5f"
+    },
+    {
+      "path": "sources/captures/02-jupiter.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "5d7c3a0a49f23b32b74714c6298d7553cfff9fc93b45d551ca0f1faa6efa20bb"
+    },
+    {
+      "path": "sources/captures/03-orbits.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "9d5c2f6ce59a335d099f53340cefbcfb3b96955fec5187a79ab20a36e1469b5e"
+    },
+    {
+      "path": "sources/captures/04-earth.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "0f9f3c69d83d18c0b91da1e0e1542a9aee28150190224c7e205bfef5156812cb"
+    },
+    {
+      "path": "sources/captures/05-home.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "182115130a0c2080c3396e0964b628aff272b88ccbd8576a79bc4fd9b6987302"
+    },
+    {
+      "path": "sources/captures/06-crew13.png",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "411c0949f6091ba6d558f27b3897bd69fb677478fff18142dcc04c047570221a"
+    }
+  ],
+  "original_attachment_count": 6
+}

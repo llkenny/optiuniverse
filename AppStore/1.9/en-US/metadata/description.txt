@@ -1,0 +1,19 @@
+Explore the Solar System in 3D on your iPhone. Get close to Saturn's rings, discover Jupiter's cloud bands, inspect Earth, and choose a space mission to replay.
+
+OptiUniverse brings planets, moons, and spacecraft journeys together in an interactive universe built for curiosity. Browse celestial destinations, move freely around each world, and learn through detailed visuals and concise science facts.
+
+EXPLORE PLANETS AND ORBITS
+- Discover planets, moons, and distant worlds with detailed 3D materials, atmospheres, and rings.
+- Pan, pinch, and rotate to find your own perspective, or follow a celestial object.
+- Inspect object facts and visualize orbital paths and supported transfer routes.
+- Explore a solar-system simulation synchronized to the current date using offline planetary ephemerides.
+
+REPLAY SPACE MISSIONS
+- Follow Voyager 1 from launch through its Jupiter and Saturn flybys to its journey beyond the heliosphere.
+- Watch Crew 13 travel from Earth to docking with the International Space Station.
+- Explore Artemis II's Earth-Moon-Earth journey and Starship Flight 14's launch, deployment, and return.
+- Choose missions from the home-screen carousel, ordered by launch date.
+
+Mission replays are compressed, illustrative visualizations. Spacecraft sizes, trajectories, and timing are adapted for clarity; they are not live spacecraft tracking or telemetry reconstructions.
+
+From a quick look at a favorite planet to a journey through spaceflight history, OptiUniverse makes space something you can explore.
