@@ -19,15 +19,6 @@ struct HomeView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                TitleSectionView()
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
-                Text("Missions")
-                    .font(.headline)
-                    .foregroundStyle(OptiColor.textPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
                 HeroCarouselView(
                     currentIndex: $currentCarouselIndex,
                     totalCount: $totalCount,
