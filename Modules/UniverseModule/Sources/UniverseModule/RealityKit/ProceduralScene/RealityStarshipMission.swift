@@ -36,7 +36,7 @@ final class RealityStarshipMission {
         root.isEnabled = false
     }
 
-    func update(state: NavigationRouteRenderState, sceneOrigin: SIMD3<Float>) {
+    func update(state: NavigationRouteRenderState, sceneOrigin: SIMD3<Double>) {
         guard let profile = state.route?.starshipProfile, let flight = state.starshipFlight else {
             root.isEnabled = false
             return
@@ -60,14 +60,14 @@ final class RealityStarshipMission {
                 apply(flight.satellites[index], to: satellite, size: size * 0.24, sceneOrigin: sceneOrigin)
             }
         }
-        updateSplash(shipSplash, pose: flight.ship, center: profile.center, radius: profile.radius,
+        updateSplash(shipSplash, pose: flight.ship, center: profile.preciseCenter, radius: profile.radius,
                      time: state.elapsedTime - 59.7, sceneOrigin: sceneOrigin)
-        updateSplash(boosterSplash, pose: flight.booster, center: profile.center, radius: profile.radius,
+        updateSplash(boosterSplash, pose: flight.booster, center: profile.preciseCenter, radius: profile.radius,
                      time: state.elapsedTime - 15.7, sceneOrigin: sceneOrigin)
     }
 
-    private func apply(_ pose: MissionVehiclePose, to entity: Entity, size: Float, sceneOrigin: SIMD3<Float>) {
-        entity.position = pose.position - sceneOrigin
+    private func apply(_ pose: MissionVehiclePose, to entity: Entity, size: Float, sceneOrigin: SIMD3<Double>) {
+        entity.position = EphemerisCoordinates.renderPosition(pose.precisePosition, relativeTo: sceneOrigin)
         entity.orientation = pose.orientation
         entity.scale = SIMD3(repeating: size)
     }
@@ -77,12 +77,12 @@ final class RealityStarshipMission {
         plume.scale = SIMD3<Float>(1, strength * (1 + 0.09 * sin(Float(time) * 37)), 1)
     }
 
-    private func updateSplash(_ splash: Entity, pose: MissionVehiclePose, center: SIMD3<Float>, radius: Float,
-                              time: Double, sceneOrigin: SIMD3<Float>) {
+    private func updateSplash(_ splash: Entity, pose: MissionVehiclePose, center: SIMD3<Double>, radius: Float,
+                              time: Double, sceneOrigin: SIMD3<Double>) {
         splash.isEnabled = time >= 0 && time < 1.3
         guard splash.isEnabled else { return }
-        let radial = normalize(pose.position - center)
-        splash.position = center + radial * radius * 1.004 - sceneOrigin
+        let radial = normalize(SIMD3<Float>(pose.precisePosition - center))
+        splash.position = SIMD3<Float>(center - sceneOrigin) + radial * radius * 1.004
         splash.orientation = simd_quatf(from: SIMD3<Float>(0, 1, 0), to: radial)
         splash.scale = SIMD3(repeating: radius * (0.035 + Float(time) * 0.045))
     }

@@ -62,7 +62,7 @@ import Testing
 
 @MainActor
 @Test func universeModuleResourcesArtemisManualControlKeepsRoutePivot() async throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let viewportSize = CGSize(width: 400, height: 400)
     resources.setViewportSize(viewportSize)
     _ = try await prepareCislunarSnapshot(for: resources)
@@ -126,7 +126,7 @@ import Testing
 #if os(visionOS)
 @MainActor
 @Test func transferPreviewTemporarilyOverridesAndThenPersistsImmersiveFocus() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 1280, height: 720))
     coordinator.update(deltaTime: 0.1)
@@ -317,7 +317,7 @@ private extension UniverseSceneSnapshot {
 @MainActor
 @Test(arguments: [0.0, 7.0, 90.0, 200.0])
 func artemisFlybyUsesCloseCameraAtRealLunarScale(startDay: Double) throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     resources.setViewportSize(CGSize(width: 400, height: 800))
     let manifest = try CelestialAssetManifestLoader.load()
     let moonRadius = try #require(manifest.assets.first { $0.displayName == "Moon" }).framingRadius

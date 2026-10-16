@@ -65,6 +65,9 @@ struct RootContainerView: View {
                             HomeView(onMissionSelected: startMission)
                                 .transition(.opacity)
                         case .objects:
+                            SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                             switch objectsViewState {
                             case .raw:
                                 if let selectedDestinationID = appEnvironment.selectedDestinationID {

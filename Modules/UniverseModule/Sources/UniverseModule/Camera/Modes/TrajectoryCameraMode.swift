@@ -15,6 +15,7 @@ final class TrajectoryCameraMode {
         let distance: Float
         let orientation: simd_quatf
         let target: SIMD3<Float>
+        var preciseTarget: SIMD3<Double>?
     }
 
     private let trajectoryPanSpeed: Float = 1.0
@@ -40,7 +41,9 @@ final class TrajectoryCameraMode {
 
         var cameraTarget = camera.target
         cameraTarget += (rightVector * horizontal) + (upVector * vertical)
-        return CameraState.Transaction(cameraTarget: cameraTarget)
+        let preciseTarget = (camera.preciseTarget ?? SIMD3<Double>(camera.target)) +
+            SIMD3<Double>((rightVector * horizontal) + (upVector * vertical))
+        return CameraState.Transaction(cameraTarget: cameraTarget, preciseCameraTarget: preciseTarget)
     }
 
     func makePanTransaction(translation: CGPoint,

@@ -27,12 +27,12 @@ final class SurfaceCoordinateDebugLogger {
             return
         }
 
-        guard let hit = SurfaceCoordinateMath.centerRayIntersection(
-            cameraWorldPosition: cameraSnapshot.cameraWorldPosition,
-            cameraTarget: cameraSnapshot.sceneOrigin,
+        guard let hit = SurfaceCoordinateMath.preciseCenterRayIntersection(
+            cameraWorldPosition: cameraSnapshot.resolvedSceneOrigin + SIMD3<Double>(cameraSnapshot.cameraOffset),
+            cameraTarget: cameraSnapshot.resolvedSceneOrigin,
             planet: planet
         ), let coordinate = SurfaceCoordinateMath.coordinate(on: planet,
-                                                             forWorldPoint: hit.worldPoint) else {
+                                                             forPreciseWorldPoint: hit) else {
             return
         }
 

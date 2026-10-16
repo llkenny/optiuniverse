@@ -13,14 +13,15 @@ final class Crew13CameraMode {
               let flight = state.crew13Flight else { return nil }
         if routeID != route.id {
             routeID = route.id
-            openingFrame = CameraTransition.Frame(target: currentPose.target - profile.center,
+            openingFrame = CameraTransition.Frame(target: SIMD3<Float>(currentPose.preciseTarget - profile.preciseCenter),
                                                    distance: currentPose.distance,
-                                                   orientation: currentPose.orientation)
+                                                   orientation: currentPose.orientation,
+                                                   preciseTarget: currentPose.preciseTarget - profile.preciseCenter)
         }
         let approach = Crew13RouteProfile.smooth(Float((state.elapsedTime - 34) / 6))
-        let midpoint = (flight.dragon.position + flight.station.position) * 0.5
-        let target = simd_mix(flight.dragon.position, midpoint, SIMD3(repeating: approach))
-        let radial = normalize(target - profile.center)
+        let midpoint = (flight.dragon.precisePosition + flight.station.precisePosition) * 0.5
+        let target = simd_mix(flight.dragon.precisePosition, midpoint, SIMD3(repeating: Double(approach)))
+        let radial = normalize(SIMD3<Float>(target - profile.preciseCenter))
         // Look down from outside Earth and out of the orbital plane. Both the docking
         // axis and ISS's radial solar-array span remain visible from this direction.
         let tangent = normalize(cross(profile.normal, radial))
@@ -28,7 +29,7 @@ final class Crew13CameraMode {
         let right = normalize(cross(radial, backward))
         let cameraUp = normalize(cross(backward, right))
         let orientation = simd_quatf(simd_float3x3(columns: (right, cameraUp, backward)))
-        let pairRadius = distance(flight.dragon.position, flight.station.position) * 0.5
+        let pairRadius = Float(distance(flight.dragon.precisePosition, flight.station.precisePosition)) * 0.5
             + profile.stationScale * 3.2
         let subjectRadius = profile.radius * 0.22 * (1 - approach) + pairRadius * approach
         let cameraDistance = CameraFit.distanceToFit(radius: subjectRadius,
@@ -36,12 +37,13 @@ final class Crew13CameraMode {
                                                      viewportSize: viewportSize) * 1.65
         // The navigation panel occupies the lower portion of the scene. Compose the
         // subjects in its upper half and leave enough vertical space for the ISS arrays.
-        let composedTarget = target - cameraUp * cameraDistance * tan(CameraFit.verticalFieldOfView / 2) * 0.52
-        let frame = CameraTransition.Frame(target: composedTarget, distance: cameraDistance, orientation: orientation)
+        let composedTarget = target - SIMD3<Double>(cameraUp * cameraDistance * tan(CameraFit.verticalFieldOfView / 2) * 0.52)
+        let frame = CameraTransition.Frame(target: SIMD3<Float>(composedTarget), distance: cameraDistance, orientation: orientation, preciseTarget: composedTarget)
         guard state.elapsedTime < 2, let openingFrame else { return frame }
         return CameraTransition.interpolate(
-            from: CameraTransition.Frame(target: openingFrame.target + profile.center,
-                                         distance: openingFrame.distance, orientation: openingFrame.orientation),
+            from: CameraTransition.Frame(target: SIMD3<Float>(openingFrame.preciseTarget + profile.preciseCenter),
+                                         distance: openingFrame.distance, orientation: openingFrame.orientation,
+                                         preciseTarget: openingFrame.preciseTarget + profile.preciseCenter),
             to: frame, progress: Crew13RouteProfile.smooth(Float(state.elapsedTime / 2)))
     }
 }

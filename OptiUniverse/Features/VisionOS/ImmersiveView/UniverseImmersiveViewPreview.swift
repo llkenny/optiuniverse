@@ -14,6 +14,11 @@ private final class UniverseImmersivePreviewResources: UniverseModuleResourcesPr
     let navigation: any UniverseNavigationControlling = UniverseImmersivePreviewNavigation()
     let transferOrbit: any UniverseTransferOrbitControlling = UniverseImmersivePreviewTransferOrbit()
 
+    let simulationSnapshot = SimulationSnapshot(dateUTC: Date())
+    func celestialState(for body: CelestialBodyID, at date: Date) throws -> CelestialBodyState {
+        throw CelestialStateError.unknownBody
+    }
+
     func rotateCamera(translation: CGSize, velocity: CGSize) {}
     func scaleCamera(by scale: Float, velocity: CGFloat) {}
     func adjustImmersiveFocusRotation(translation: CGSize) -> Bool { false }

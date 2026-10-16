@@ -12,6 +12,7 @@ final class SurfaceCameraMode {
         let target: SIMD3<Float>
         let distance: Float
         let orientation: simd_quatf
+        var preciseTarget: SIMD3<Double>?
     }
 
     private let epsilon: Float = 0.000001
@@ -24,9 +25,7 @@ final class SurfaceCameraMode {
             return nil
         }
 
-        let surfacePoint = SurfaceCoordinateMath.worldSurfacePoint(on: planet,
-                                                                   at: coordinate)
-        let normalInput = surfacePoint - planet.worldPosition
+        let normalInput = SurfaceCoordinateMath.surfaceOffset(on: planet, at: coordinate)
         guard simd_length_squared(normalInput) > epsilon * epsilon else {
             return nil
         }
@@ -37,13 +36,13 @@ final class SurfaceCameraMode {
 
         return Frame(target: planet.worldPosition,
                      distance: currentPose.distance,
-                     orientation: orientation)
+                     orientation: orientation, preciseTarget: planet.preciseWorldPosition)
     }
 
     func makeSurfaceTransaction(frame: Frame) -> CameraState.Transaction {
         CameraState.Transaction(cameraTarget: frame.target,
                                 cameraDistance: frame.distance,
-                                cameraOrientation: frame.orientation)
+                                cameraOrientation: frame.orientation, preciseCameraTarget: frame.preciseTarget)
     }
 
     private func makeCameraOrientation(forward: SIMD3<Float>,

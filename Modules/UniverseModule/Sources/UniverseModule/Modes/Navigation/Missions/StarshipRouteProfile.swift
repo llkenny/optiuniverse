@@ -2,8 +2,18 @@ import Foundation
 import simd
 
 struct MissionVehiclePose: Sendable, Equatable {
-    let position: SIMD3<Float>
+    let precisePosition: SIMD3<Double>
+    var position: SIMD3<Float> { SIMD3<Float>(precisePosition) }
     let orientation: simd_quatf
+
+    init(position: SIMD3<Float>, orientation: simd_quatf, precisePosition: SIMD3<Double>? = nil) {
+        self.precisePosition = precisePosition ?? SIMD3<Double>(position)
+        self.orientation = orientation
+    }
+
+    func translated(by offset: SIMD3<Double>) -> Self {
+        Self(position: .zero, orientation: orientation, precisePosition: precisePosition + offset)
+    }
 }
 
 struct StarshipFlightState: Sendable, Equatable {
@@ -23,7 +33,8 @@ struct StarshipRouteProfile: Sendable, Equatable {
     static let duration: TimeInterval = 60
     static let satelliteCount = 26
     static let orbitCount = 2
-    let center: SIMD3<Float>
+    let preciseCenter: SIMD3<Double>
+    var center: SIMD3<Float> { SIMD3<Float>(preciseCenter) }
     let radius: Float
     let launchDirection: SIMD3<Float>
     let east: SIMD3<Float>
@@ -33,13 +44,13 @@ struct StarshipRouteProfile: Sendable, Equatable {
         guard earth.surfaceRadius.isFinite, earth.surfaceRadius > 0,
               earth.worldPosition.x.isFinite, earth.worldPosition.y.isFinite,
               earth.worldPosition.z.isFinite else { return nil }
-        center = earth.worldPosition
+        preciseCenter = earth.preciseWorldPosition
         radius = earth.surfaceRadius
         // Starbase, expressed in the same rotating surface frame as the Earth asset.
         let coordinate = SurfaceCoordinate(latitudeDegrees: 25.997, longitudeDegrees: -97.156)
         let longitude = coordinate.longitudeDegrees * .pi / 180
         let surface = SurfaceCoordinateMath.localUnitVector(for: coordinate)
-        let tangent = SIMD3<Float>(-sin(longitude), 0, cos(longitude))
+        let tangent = SIMD3<Float>(-sin(longitude), 0, -cos(longitude))
         let rotation = earth.visualRotationMatrix
         let launch = rotation * SIMD4<Float>(surface, 0)
         let heading = rotation * SIMD4<Float>(tangent, 0)
@@ -50,7 +61,7 @@ struct StarshipRouteProfile: Sendable, Equatable {
 
     private init(center: SIMD3<Float>, radius: Float, launchDirection: SIMD3<Float>,
                  east: SIMD3<Float>, normal: SIMD3<Float>) {
-        self.center = center
+        self.preciseCenter = SIMD3<Double>(center)
         self.radius = radius
         self.launchDirection = launchDirection
         self.east = east
@@ -59,6 +70,27 @@ struct StarshipRouteProfile: Sendable, Equatable {
 
     func translated(to center: SIMD3<Float>) -> Self {
         Self(center: center, radius: radius, launchDirection: launchDirection, east: east, normal: normal)
+    }
+
+    func translatedPrecisely(to center: SIMD3<Double>) -> Self {
+        withPreciseCenter(center)
+    }
+
+    private func withPreciseCenter(_ center: SIMD3<Double>) -> Self {
+        Self(preciseCenter: center, radius: radius, launchDirection: launchDirection, east: east, normal: normal)
+    }
+
+    private init(preciseCenter: SIMD3<Double>, radius: Float, launchDirection: SIMD3<Float>,
+                 east: SIMD3<Float>, normal: SIMD3<Float>) {
+        self.preciseCenter = preciseCenter
+        self.radius = radius
+        self.launchDirection = launchDirection
+        self.east = east
+        self.normal = normal
+    }
+
+    func precisePosition(time: Double) -> SIMD3<Double> {
+        preciseCenter + SIMD3<Double>(translated(to: .zero).shipPosition(time: time))
     }
 
     func direction(angle: Float) -> SIMD3<Float> {
@@ -90,6 +122,9 @@ struct StarshipRouteProfile: Sendable, Equatable {
     }
 
     func sample(time: Double) -> StarshipFlightState {
+        if preciseCenter != .zero {
+            return translated(to: .zero).sample(time: time).translated(by: preciseCenter)
+        }
         let time = min(60, max(0, time.isFinite ? time : 0))
         let shipPosition = shipPosition(time: time)
         let radial = normalize(shipPosition - center)
@@ -172,12 +207,13 @@ struct StarshipRouteProfile: Sendable, Equatable {
     }
 
     func makeRoute(id: UUID = UUID()) -> NavigationRoute {
-        let points = (0...480).map { shipPosition(time: Double($0) / 8) }
-        let distances = RoutePathBuilder.makeCumulativeDistances(points: points)
+        let precisePoints = (0...480).map { precisePosition(time: Double($0) / 8) }
+        let points = precisePoints.map { SIMD3<Float>($0) }
+        let distances = RoutePathBuilder.makeCumulativeDistances(precisePoints: precisePoints)
         return NavigationRoute(id: id, originName: "Earth", destinationName: "Earth", points: points,
                                cumulativeDistances: distances, totalDistance: distances.last ?? 0,
                                estimatedDuration: Self.duration, overviewPaddingRadius: radius * 1.6,
-                               overviewCenter: center, mission: .starshipFlight14, starshipProfile: self)
+                               overviewCenter: center, precisePoints: precisePoints, preciseOverviewCenter: preciseCenter, mission: .starshipFlight14, starshipProfile: self)
     }
 
     static func smooth(_ value: Float) -> Float {

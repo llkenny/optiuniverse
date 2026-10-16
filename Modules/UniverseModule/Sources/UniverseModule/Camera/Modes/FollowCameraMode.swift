@@ -26,7 +26,8 @@ final class FollowCameraMode {
             return nil
         }
 
-        return CameraState.Transaction(cameraTarget: position)
+        return CameraState.Transaction(cameraTarget: position,
+                                       preciseCameraTarget: snapshot.planet(named: name)?.preciseWorldPosition)
     }
 
     /// Resolves a transition destination for a planet follow animation.
@@ -43,7 +44,8 @@ final class FollowCameraMode {
             target: position,
             distance: CameraFit.distanceToFit(radius: framingRadius,
                                               currentDistance: currentDistance,
-                                              viewportSize: viewportSize)
+                                              viewportSize: viewportSize),
+            preciseTarget: snapshot.planet(named: name)?.preciseWorldPosition
         )
     }
 
@@ -54,7 +56,7 @@ final class FollowCameraMode {
 
         return CameraState.Transaction(cameraTarget: frame.target,
                                        cameraDistance: frame.distance,
-                                       cameraOrientation: orientation)
+                                       cameraOrientation: orientation, preciseCameraTarget: frame.preciseTarget)
     }
 
     /// Keeps zoom outside the followed planet's visual radius.

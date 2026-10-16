@@ -53,6 +53,7 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
                 destinationPosition: destinationPosition,
                 estimatedDuration: route.estimatedDuration,
                 simulationTime: snapshot.simulationTime,
+                stateProvider: snapshot.stateProvider,
                 routeProgress: progress
               )) else {
             return nil
@@ -62,6 +63,7 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
             points: refreshedRoute.points,
             cumulativeDistances: refreshedRoute.cumulativeDistances,
             totalDistance: refreshedRoute.totalDistance,
+            precisePoints: refreshedRoute.precisePoints, preciseOverviewCenter: refreshedRoute.preciseOverviewCenter,
             overviewPaddingRadius: refreshedRoute.overviewPaddingRadius,
             overviewCenter: refreshedRoute.overviewCenter
         )
@@ -69,18 +71,19 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
 
     private func refreshedEarthMission(route: NavigationRoute,
                                        snapshot: UniverseSceneSnapshot) -> NavigationRoute? {
-        guard let center = route.missionEarthCenter, let earth = snapshot.planet(named: "Earth"),
+        guard let center = route.missionEarthPreciseCenter, let earth = snapshot.planet(named: "Earth"),
               earth.worldPosition.x.isFinite, earth.worldPosition.y.isFinite,
               earth.worldPosition.z.isFinite else { return nil }
-        let offset = earth.worldPosition - center
+        let offset = earth.preciseWorldPosition - center
         return NavigationRoute(id: route.id, originName: route.originName, waypointName: route.waypointName,
-                               destinationName: route.destinationName, points: route.points.map { $0 + offset },
+                               destinationName: route.destinationName, points: route.precisePoints.map { SIMD3<Float>($0 + offset) },
                                cumulativeDistances: route.cumulativeDistances, totalDistance: route.totalDistance,
                                estimatedDuration: route.estimatedDuration,
                                overviewPaddingRadius: route.overviewPaddingRadius, overviewCenter: earth.worldPosition,
-                               mission: route.mission,
-                               starshipProfile: route.starshipProfile?.translated(to: earth.worldPosition),
-                               crew13Profile: route.crew13Profile?.translated(to: earth.worldPosition))
+                               precisePoints: route.precisePoints.map { $0 + offset },
+                               preciseOverviewCenter: earth.preciseWorldPosition, mission: route.mission,
+                               starshipProfile: route.starshipProfile?.translatedPrecisely(to: earth.preciseWorldPosition),
+                               crew13Profile: route.crew13Profile?.translatedPrecisely(to: earth.preciseWorldPosition))
     }
 
     func routeProgress(linearProgress: Float,

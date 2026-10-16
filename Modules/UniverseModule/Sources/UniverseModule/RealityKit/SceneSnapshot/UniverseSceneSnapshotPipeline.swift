@@ -5,30 +5,44 @@ import simd
 @MainActor
 final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private let planets: [Planet]
+    private(set) var stateProvider: any CelestialStateProviding
+    private let usesEphemerisOrientation: Bool
+    private(set) var preparationError: CelestialStateError?
     private var nextFrameID: UInt64 = 0
     private var presentationTime: Float = 0
     private var presentationMetricsByBodyName: [String: CelestialBodyPresentationMetrics] = [:]
+    var hasPresentationMetrics: Bool { !presentationMetricsByBodyName.isEmpty }
     private(set) var latestSnapshot: UniverseSceneSnapshot?
 
-    init(planets: [Planet]) { self.planets = planets }
+    init(planets: [Planet], stateProvider: (any CelestialStateProviding)? = nil) {
+        self.planets = planets
+        self.stateProvider = stateProvider ?? KeplerCelestialStateProvider(planets: planets)
+        usesEphemerisOrientation = stateProvider != nil
+    }
 
     func setPresentationTime(_ time: Float) { presentationTime = time }
+
+    func setStateProvider(_ provider: any CelestialStateProviding) {
+        stateProvider = provider
+        latestSnapshot = nil
+        preparationError = nil
+    }
 
     func setPresentationMetrics(_ metrics: [String: CelestialBodyPresentationMetrics]) {
         presentationMetricsByBodyName = metrics
     }
 
     func requestPreparation(simulationTime: Double) {
-        guard simulationTime.isFinite,
-              simulationTime >= (latestSnapshot?.simulationTime ?? -Double.infinity) else { return }
+        guard simulationTime.isFinite else { preparationError = .outsideCoverage; return }
         var packets: [CelestialBodySnapshot] = []
-        var worldPositionsByName: [String: SIMD3<Float>] = [:]
         for planet in planets {
-            let parentPosition = planet.parentName.flatMap { worldPositionsByName[$0] }
-            let orbitTransform = planet.orbitTransformMatrix(at: simulationTime, parentWorldPosition: parentPosition)
-            let rotation = planet.visualRotationMatrix(at: presentationTime)
-            let position = SIMD3<Float>(orbitTransform.columns.3.x, orbitTransform.columns.3.y, orbitTransform.columns.3.z)
-            worldPositionsByName[planet.name] = position
+            guard let body = CelestialBodyID(rawValue: planet.name) else { preparationError = .unknownBody; return }
+            let state: CelestialBodyState
+            do { state = try stateProvider.state(for: body, at: simulationTime) }
+            catch { preparationError = (error as? CelestialStateError) ?? .invalidData; return }
+            let position = SIMD3<Float>(state.scenePosition)
+            let orbitTransform = float4x4.makeTranslation(position)
+            let rotation = usesEphemerisOrientation ? state.sceneOrientation : planet.visualRotationMatrix(at: presentationTime)
             guard let metrics = presentationMetricsByBodyName[planet.name] else { continue }
             packets.append(CelestialBodySnapshot(planetName: planet.name,
                                                   baseModelMatrix: orbitTransform * rotation,
@@ -37,9 +51,12 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
                                                   normalizedScale: planet.radius,
                                                   framingRadius: metrics.framingRadius,
                                                   surfaceRadius: metrics.surfaceRadius,
-                                                  worldPosition: position))
+                                                  worldPosition: position,
+                                                  preciseWorldPosition: state.scenePosition))
         }
-        latestSnapshot = UniverseSceneSnapshot(frameID: nextFrameID, simulationTime: simulationTime, planets: packets)
+        preparationError = nil
+        latestSnapshot = UniverseSceneSnapshot(frameID: nextFrameID, simulationTime: simulationTime, planets: packets,
+                                               stateProvider: stateProvider)
         nextFrameID += 1
     }
 }

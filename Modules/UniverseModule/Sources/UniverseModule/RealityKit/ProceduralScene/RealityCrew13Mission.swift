@@ -28,7 +28,7 @@ final class RealityCrew13Mission {
         root.isEnabled = false
     }
 
-    func update(state: NavigationRouteRenderState, sceneOrigin: SIMD3<Float>) {
+    func update(state: NavigationRouteRenderState, sceneOrigin: SIMD3<Double>) {
         guard let profile = state.route?.crew13Profile, let flight = state.crew13Flight else {
             root.isEnabled = false
             return
@@ -46,8 +46,8 @@ final class RealityCrew13Mission {
     }
 
     private func apply(_ pose: MissionVehiclePose, to entity: Entity,
-                       scale: Float, sceneOrigin: SIMD3<Float>) {
-        entity.position = pose.position - sceneOrigin
+                       scale: Float, sceneOrigin: SIMD3<Double>) {
+        entity.position = EphemerisCoordinates.renderPosition(pose.precisePosition, relativeTo: sceneOrigin)
         entity.orientation = pose.orientation
         entity.scale = SIMD3(repeating: scale)
     }

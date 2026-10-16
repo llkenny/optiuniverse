@@ -21,7 +21,8 @@ struct Crew13RouteProfile: Sendable, Equatable {
     // These local offsets are also used to build the geometry and align the docking ports.
     static let dragonDockingOffset = SIMD3<Float>(0, 0.5, 0)
     static let stationDockingOffset = SIMD3<Float>(0, 0.65, 0)
-    let center: SIMD3<Float>
+    let preciseCenter: SIMD3<Double>
+    var center: SIMD3<Float> { SIMD3<Float>(preciseCenter) }
     let radius: Float
     let launchDirection: SIMD3<Float>
     let heading: SIMD3<Float>
@@ -39,8 +40,8 @@ struct Crew13RouteProfile: Sendable, Equatable {
         let coordinate = SurfaceCoordinate(latitudeDegrees: 28.562, longitudeDegrees: -80.577)
         let surface = SurfaceCoordinateMath.localUnitVector(for: coordinate)
         let longitude = coordinate.longitudeDegrees * .pi / 180
-        let east = SIMD3<Float>(-sin(longitude), 0, cos(longitude))
-        let north = cross(east, surface)
+        let east = SIMD3<Float>(-sin(longitude), 0, -cos(longitude))
+        let north = cross(surface, east)
         let rotation = earth.visualRotationMatrix
         let launch = rotation * SIMD4<Float>(surface, 0)
         let direction = rotation * SIMD4<Float>(normalize(east * 0.75 + north * 0.66), 0)
@@ -48,7 +49,7 @@ struct Crew13RouteProfile: Sendable, Equatable {
         let tangent = SIMD3<Float>(direction.x, direction.y, direction.z)
         guard Self.isFinite(radial), Self.isFinite(tangent), length(radial) > 0.001,
               length(cross(radial, tangent)) > 0.001 else { return nil }
-        center = earth.worldPosition
+        preciseCenter = earth.preciseWorldPosition
         radius = earth.surfaceRadius
         launchDirection = normalize(radial)
         normal = normalize(cross(radial, tangent))
@@ -61,11 +62,32 @@ struct Crew13RouteProfile: Sendable, Equatable {
 
     private init(center: SIMD3<Float>, radius: Float, launchDirection: SIMD3<Float>,
                  heading: SIMD3<Float>, normal: SIMD3<Float>) {
-        self.center = center
+        self.preciseCenter = SIMD3<Double>(center)
         self.radius = radius
         self.launchDirection = launchDirection
         self.heading = heading
         self.normal = normal
+    }
+
+    func translatedPrecisely(to center: SIMD3<Double>) -> Self {
+        withPreciseCenter(center)
+    }
+
+    private func withPreciseCenter(_ center: SIMD3<Double>) -> Self {
+        Self(preciseCenter: center, radius: radius, launchDirection: launchDirection, heading: heading, normal: normal)
+    }
+
+    private init(preciseCenter: SIMD3<Double>, radius: Float, launchDirection: SIMD3<Float>,
+                 heading: SIMD3<Float>, normal: SIMD3<Float>) {
+        self.preciseCenter = preciseCenter
+        self.radius = radius
+        self.launchDirection = launchDirection
+        self.heading = heading
+        self.normal = normal
+    }
+
+    func precisePosition(time: Double) -> SIMD3<Double> {
+        preciseCenter + SIMD3<Double>(translated(to: .zero).dragonPosition(time: time))
     }
 
     func dragonPosition(time: Double) -> SIMD3<Float> {
@@ -90,6 +112,9 @@ struct Crew13RouteProfile: Sendable, Equatable {
     }
 
     func sample(time: Double) -> Crew13FlightState {
+        if preciseCenter != .zero {
+            return translated(to: .zero).sample(time: time).translated(by: preciseCenter)
+        }
         let time = Self.clampedTime(time)
         let dragonPosition = dragonPosition(time: time)
         let radial = normalize(dragonPosition - center)
@@ -139,12 +164,13 @@ struct Crew13RouteProfile: Sendable, Equatable {
     }
 
     func makeRoute(id: UUID = UUID()) -> NavigationRoute {
-        let points = (0...480).map { dragonPosition(time: Double($0) / 8) }
-        let distances = RoutePathBuilder.makeCumulativeDistances(points: points)
+        let precisePoints = (0...480).map { precisePosition(time: Double($0) / 8) }
+        let points = precisePoints.map { SIMD3<Float>($0) }
+        let distances = RoutePathBuilder.makeCumulativeDistances(precisePoints: precisePoints)
         return NavigationRoute(id: id, originName: "Earth", destinationName: "ISS", points: points,
                                cumulativeDistances: distances, totalDistance: distances.last ?? 0,
                                estimatedDuration: Self.duration, overviewPaddingRadius: radius * 1.9,
-                               overviewCenter: center, mission: .crew13, crew13Profile: self)
+                               overviewCenter: center, precisePoints: precisePoints, preciseOverviewCenter: preciseCenter, mission: .crew13, crew13Profile: self)
     }
 
     private func direction(angle: Float) -> SIMD3<Float> {

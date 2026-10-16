@@ -38,7 +38,10 @@ final class UniverseSceneCoordinator {
     private let assetRepository: RealityAssetRepository
     private let occlusionCullingPolicy: CelestialOcclusionCullingPolicy
     private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
-    private var simulationClock = UniverseSimulationClock()
+    private var simulationClock: UniverseSimulationClock
+    private let simulationDidChange: (SimulationSnapshot) -> Void
+    private var lastPublishedSimulationSnapshot: SimulationSnapshot?
+    private var lastSimulationPublicationTime = -Double.infinity
     private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
     private var proceduralSceneContent: RealityProceduralSceneContent?
     private var installationRoot: Entity?
@@ -65,7 +68,11 @@ final class UniverseSceneCoordinator {
          navigationController: NavigationController,
          transferOrbitController: TransferOrbitController,
          assetRepository: RealityAssetRepository,
-         occlusionCullingPolicy: CelestialOcclusionCullingPolicy = .current) {
+         occlusionCullingPolicy: CelestialOcclusionCullingPolicy = .current,
+         now: @escaping () -> Date = Date.init,
+         simulationDidChange: @escaping (SimulationSnapshot) -> Void = { _ in }) {
+        simulationClock = UniverseSimulationClock(now: now)
+        self.simulationDidChange = simulationDidChange
         self.snapshotProvider = snapshotProvider
         self.cameraCoordinator = cameraCoordinator
         self.objectInfoOverlayFramingState = objectInfoOverlayFramingState
@@ -74,6 +81,30 @@ final class UniverseSceneCoordinator {
         self.assetRepository = assetRepository
         self.occlusionCullingPolicy = occlusionCullingPolicy
         buildHierarchy(planets: planets)
+    }
+
+    /// Restore an atomic current-date body snapshot before route/camera handoff callbacks run.
+    func synchronizeLiveScene() {
+        simulationClock.synchronizeLive()
+        if snapshotProvider.hasPresentationMetrics {
+            snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
+                                                presentationTime: Float(simulationClock.presentationTime))
+        }
+        publishSimulationTime(force: true)
+    }
+
+    private func publishSimulationTime(force: Bool = false) {
+        let date = SimulationTime.date(forTDBSeconds: simulationClock.currentTime)
+        let snapshot = SimulationSnapshot(dateUTC: date,
+                                          mode: simulationClock.mode, error: snapshotProvider.preparationError)
+        let modeOrErrorChanged = lastPublishedSimulationSnapshot?.mode != snapshot.mode ||
+            lastPublishedSimulationSnapshot?.error != snapshot.error
+        guard force || modeOrErrorChanged || simulationClock.presentationTime - lastSimulationPublicationTime >= 1 else {
+            return
+        }
+        lastSimulationPublicationTime = simulationClock.presentationTime
+        lastPublishedSimulationSnapshot = snapshot
+        simulationDidChange(snapshot)
     }
 
     #if os(visionOS)
@@ -265,12 +296,20 @@ final class UniverseSceneCoordinator {
             return
         }
 
-        let activeDelta = discardNextFrameDelta ? 0 : deltaTime
+        let isResuming = discardNextFrameDelta
+        let activeDelta = isResuming ? 0 : deltaTime
         discardNextFrameDelta = false
         let delta = simulationClock.advance(by: activeDelta,
                                             transfer: navigationController.activeTransfer)
         snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
                                             presentationTime: Float(simulationClock.presentationTime))
+        publishSimulationTime(force: isResuming)
+        guard snapshotProvider.preparationError == nil else {
+            if navigationController.isNavigationActive {
+                navigationController.navigationRouteCoordinator.failForEphemeris()
+            }
+            return
+        }
         let snapshot = snapshotProvider.latestSnapshot
 
         transferOrbitController.update(snapshot: snapshot, delta: delta)
@@ -428,8 +467,9 @@ final class UniverseSceneCoordinator {
         guard let snapshot = frameState.snapshot else { return }
         for packet in snapshot.planets {
             guard let entities = bodyEntities[packet.planetName] else { continue }
-            entities.bodyRoot.position = -cameraSnapshot.sceneOrigin
-            entities.orbitTransform.transform = Transform(matrix: packet.orbitTransformMatrix)
+            entities.bodyRoot.position = EphemerisCoordinates.renderPosition(packet.preciseWorldPosition,
+                                                                             relativeTo: cameraSnapshot.resolvedSceneOrigin)
+            entities.orbitTransform.transform = .identity
             entities.rotationTransform.transform = Transform(matrix: packet.visualRotationMatrix)
             if bodyDescriptors[packet.planetName]?.usesSnapshotScale == true {
                 entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
@@ -468,8 +508,8 @@ final class UniverseSceneCoordinator {
               let bodyName = immersiveFocusState.bodyName,
               let bodySnapshot = snapshot.planet(named: bodyName),
               let transform = immersiveFocusState.transform(
-                  selectedBodyPositionAfterSceneOrigin: bodySnapshot.worldPosition
-                    - frameState.cameraSnapshot.sceneOrigin,
+                  selectedBodyPositionAfterSceneOrigin: EphemerisCoordinates.renderPosition(
+                    bodySnapshot.preciseWorldPosition, relativeTo: frameState.cameraSnapshot.resolvedSceneOrigin),
                   framingRadius: bodySnapshot.framingRadius
               ) else {
             return
@@ -502,6 +542,8 @@ final class UniverseSceneCoordinator {
 
     private func playConfiguredAnimations(for descriptor: CelestialAssetDescriptor,
                                           on assetRoot: Entity) {
+        // These declared clips animate atmospheric child layers (Clouds / White_Belts /
+        // Orange_Belts), not the body frame. Keep them independent of the IAU rotation.
         guard !descriptor.animations.isEmpty else { return }
         let availableAnimations = assetRoot.availableAnimations.reduce(
             into: [String: AnimationResource]()

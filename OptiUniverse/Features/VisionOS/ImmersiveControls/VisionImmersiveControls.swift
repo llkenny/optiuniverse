@@ -13,6 +13,7 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            SimulationTimeIndicatorView(snapshot: resources.simulationSnapshot)
             HStack(alignment: .center, spacing: 12) {
                 destinationSummary
                 Spacer(minLength: 18)
@@ -32,6 +33,7 @@ struct VisionImmersiveControls<Resources: UniverseModuleResourcesProtocol>: View
                 if let duration = preview.physicalFlightDuration {
                     Text("Two-body transfer · \(Int((duration / 86_400).rounded())) days · 30 s playback")
                 }
+                if preview.hasPartialOrbit { Text("Orbit arc · 2000–2100") }
                 Button("Close orbit") { resources.transferOrbit.clearTransferOrbit() }
             case .failed(let failure):
                 Text(failure.rawValue)

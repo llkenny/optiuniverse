@@ -8,7 +8,7 @@
             "modelToUniverseScale": 6.891089,
             "referenceRadius": 0.696,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.696,
             "framingRadius": 0.696,
             "surfaceRadius": 0.696
@@ -22,7 +22,7 @@
             "modelToUniverseScale": 0.024395,
             "referenceRadius": 0.0024395,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.0024395,
             "framingRadius": 0.0024395,
             "surfaceRadius": 0.0024395
@@ -36,7 +36,7 @@
             "modelToUniverseScale": 0.06052,
             "referenceRadius": 0.006052,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.006052,
             "framingRadius": 0.006052,
             "surfaceRadius": 0.006052
@@ -50,7 +50,7 @@
             "modelToUniverseScale": 0.06378,
             "referenceRadius": 0.006378,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.006378,
             "framingRadius": 0.00645,
             "surfaceRadius": 0.006378,
@@ -70,7 +70,7 @@
             "modelToUniverseScale": 0.017375,
             "referenceRadius": 0.0017375,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.0017375,
             "framingRadius": 0.0017375,
             "surfaceRadius": 0.0017375
@@ -84,7 +84,7 @@
             "modelToUniverseScale": 0.03396,
             "referenceRadius": 0.003396,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.003396,
             "framingRadius": 0.003396,
             "surfaceRadius": 0.003396
@@ -98,7 +98,7 @@
             "modelToUniverseScale": 0.71492,
             "referenceRadius": 0.071492,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.071492,
             "framingRadius": 0.0722,
             "surfaceRadius": 0.071492,
@@ -118,7 +118,7 @@
             "modelToUniverseScale": 0.60268,
             "referenceRadius": 0.060268,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.060268,
             "framingRadius": 0.060268,
             "surfaceRadius": 0.01928576
@@ -132,7 +132,7 @@
             "modelToUniverseScale": 0.25559,
             "referenceRadius": 0.025559,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 0.7071067812, "z": 0.7071067812, "w": 0 },
             "renderRadius": 0.025559,
             "framingRadius": 0.025559,
             "surfaceRadius": 0.01201273
@@ -146,7 +146,7 @@
             "modelToUniverseScale": 0.24764,
             "referenceRadius": 0.024764,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.024764,
             "framingRadius": 0.024764,
             "surfaceRadius": 0.024764
@@ -160,7 +160,7 @@
             "modelToUniverseScale": 0.011885,
             "referenceRadius": 0.0011885,
             "pivotCorrection": { "x": 0, "y": 0, "z": 0 },
-            "orientationCorrection": { "x": 0, "y": 0, "z": 0, "w": 1 },
+            "orientationCorrection": { "x": 0, "y": 1, "z": 0, "w": 0 },
             "renderRadius": 0.0011885,
             "framingRadius": 0.0011885,
             "surfaceRadius": 0.0011885

@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import RealityKit
+import Synchronization
 import Testing
 @testable import UniverseModule
 
@@ -122,7 +123,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sunLightFollowsRebasedSunPosition() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 390, height: 844))
     coordinator.update(deltaTime: 0.1)
@@ -197,6 +198,48 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     #expect(resources.sceneCoordinator.animationPlaybackControllers["Jupiter"]?.count == 1)
     #expect(Set(resources.sceneCoordinator.animationPlaybackControllers.keys)
             == ["Earth", "Jupiter"])
+}
+
+@MainActor
+@Test func ephemerisLoadingIsDeferredOffMainThreadAndSharedByPreparationCalls() async throws {
+    let loadCount = Mutex(0)
+    let repository = RealityAssetRepository { _ in makeCompleteAssetFixture() }
+    let resources = UniverseModuleResources(assetRepository: repository, stateProviderLoader: {
+        #expect(!Thread.isMainThread)
+        loadCount.withLock { $0 += 1 }
+        return try EphemerisArchive.bundled.get()
+    })
+    let date = Date(timeIntervalSince1970: 1_800_000_000)
+    #expect(loadCount.withLock { $0 } == 0)
+    #expect(throws: CelestialStateError.invalidData) {
+        try resources.celestialState(for: .earth, at: date)
+    }
+
+    async let first: Void = resources.prepare()
+    async let second: Void = resources.prepare()
+    _ = try await (first, second)
+    try await resources.prepare()
+
+    #expect(loadCount.withLock { $0 } == 1)
+    let expected = try EphemerisArchive.bundled.get().state(for: .earth, at: SimulationTime.tdbSeconds(for: date))
+    #expect(try resources.celestialState(for: .earth, at: date).positionKm == expected.positionKm)
+    resources.sceneSnapshotPipeline.requestPreparation(simulationTime: SimulationTime.tdbSeconds(for: date))
+    #expect(resources.sceneSnapshotPipeline.latestSnapshot?.planets.count == resources.planets.count)
+}
+
+@MainActor
+@Test func failedDeferredEphemerisLoadingPublishesNoBodiesAndPreservesError() async {
+    let resources = UniverseModuleResources(stateProviderLoader: { throw CelestialStateError.invalidData })
+
+    await #expect(throws: CelestialStateError.invalidData) {
+        try await resources.prepare()
+    }
+
+    #expect(resources.sceneCoordinator.realityKitOwnedBodyNames.isEmpty)
+    #expect(resources.sceneSnapshotPipeline.latestSnapshot == nil)
+    #expect(throws: CelestialStateError.invalidData) {
+        try resources.celestialState(for: .earth, at: Date(timeIntervalSince1970: 1_800_000_000))
+    }
 }
 
 @MainActor
@@ -513,7 +556,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     resources.sceneCoordinator.apply(frameState: frame)
 
     expectSceneMatrix(sun.orbitTransform.transform.matrix,
-                      equals: orbitTransform)
+                      equals: matrix_identity_float4x4)
     expectSceneMatrix(sun.rotationTransform.transform.matrix,
                       equals: visualRotation)
     #expect(sun.visualRoot.transform == visualTransform)
@@ -521,18 +564,21 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorAdvancesOneSharedFrameAtATime() throws {
-    let resources = UniverseModuleResources()
+    var date = Date(timeIntervalSince1970: 1_800_000_000)
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get(), now: { date })
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 390, height: 844))
 
+    date.addTimeInterval(0.25)
     coordinator.update(deltaTime: 0.25)
     let firstFrame = try #require(coordinator.latestFrameState)
+    date.addTimeInterval(0.5)
     coordinator.update(deltaTime: 0.5)
     let secondFrame = try #require(coordinator.latestFrameState)
 
     #expect(coordinator.updateCount == 2)
-    #expect(firstFrame.simulationTime == 0.25 * 86_400)
-    #expect(secondFrame.simulationTime == 0.75 * 86_400)
+    #expect(abs(secondFrame.simulationTime - firstFrame.simulationTime - 0.5) < 1e-6)
+    #expect(secondFrame.simulationTime == SimulationTime.tdbSeconds(for: date))
     #expect(firstFrame.cameraSnapshot.viewportSize == CGSize(width: 390, height: 844))
     #expect(secondFrame.cameraSnapshot.cameraRevision >= firstFrame.cameraSnapshot.cameraRevision)
 }
@@ -540,7 +586,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 @MainActor
 // swiftlint:disable:next function_body_length
 @Test func sceneCoordinatorAppliesSharedOriginAndProjectiveCamera() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
     resources.setObjectInfoOverlayFraming(isPresented: true,
@@ -570,9 +616,9 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     coordinator.apply(frameState: frame)
 
     let earth = try #require(coordinator.bodyEntities["Earth"])
-    #expect(earth.bodyRoot.position == -initialFrame.cameraSnapshot.sceneOrigin)
+    #expect(earth.bodyRoot.position == bodyPosition - initialFrame.cameraSnapshot.sceneOrigin)
     expectSceneMatrix(earth.orbitTransform.transform.matrix,
-                      equals: orbitTransformMatrix)
+                      equals: matrix_identity_float4x4)
     let cameraComponent = try #require(
         coordinator.virtualCamera.components[ProjectiveTransformCameraComponent.self]
     )
@@ -612,7 +658,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorStoresImmersiveFocusBeforeSnapshotAndAppliesAfterFrame() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
     coordinator.setImmersiveFocus(bodyName: "Earth")
@@ -650,7 +696,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func changingImmersiveFocusResetsZoomAndRotationOffsets() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
     coordinator.update(deltaTime: 0.1)
@@ -691,7 +737,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func clearingAndDismantlingImmersiveFocusResetTransform() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
     coordinator.update(deltaTime: 0.1)
@@ -732,7 +778,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func sceneCoordinatorPublishesCompleteSnapshotForEveryFrame() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
 
@@ -748,7 +794,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 
 @MainActor
 @Test func inactiveSceneCoordinatorDoesNotAdvanceHiddenPresentation() throws {
-    let resources = UniverseModuleResources()
+    let resources = UniverseModuleResources(stateProvider: try EphemerisArchive.bundled.get())
     let coordinator = resources.sceneCoordinator
     coordinator.setViewportSize(CGSize(width: 200, height: 100))
     coordinator.update(deltaTime: 0.1)

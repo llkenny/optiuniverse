@@ -37,6 +37,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
     public let waypointName: String?
     public let destinationName: String
     public let points: [SIMD3<Float>]
+    let precisePoints: [SIMD3<Double>]
     public let cumulativeDistances: [Float]
     public let totalDistance: Float
     public let estimatedDuration: TimeInterval
@@ -46,10 +47,12 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
     var hasMissionVehicles: Bool { starshipProfile != nil || crew13Profile != nil }
     var missionEarthCenter: SIMD3<Float>? { starshipProfile?.center ?? crew13Profile?.center }
+    var missionEarthPreciseCenter: SIMD3<Double>? { starshipProfile?.preciseCenter ?? crew13Profile?.preciseCenter }
     var missionEarthRadius: Float? { starshipProfile?.radius ?? crew13Profile?.radius }
     let transfer: TransferSolution?
     let overviewPaddingRadius: Float
     let overviewCenter: SIMD3<Float>
+    let preciseOverviewCenter: SIMD3<Double>
 
     init(id: UUID = UUID(),
          originName: String,
@@ -62,6 +65,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
          overviewPaddingRadius: Float = 0,
          overviewCenter: SIMD3<Float>? = nil,
          transfer: TransferSolution? = nil,
+         precisePoints: [SIMD3<Double>]? = nil,
+         preciseOverviewCenter: SIMD3<Double>? = nil,
          mission: MissionFlightPlan? = nil,
          starshipProfile: StarshipRouteProfile? = nil,
          crew13Profile: Crew13RouteProfile? = nil) {
@@ -74,11 +79,13 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         self.waypointName = waypointName
         self.destinationName = destinationName
         self.points = points
+        self.precisePoints = precisePoints ?? points.map { SIMD3<Double>($0) }
         self.cumulativeDistances = cumulativeDistances
         self.totalDistance = totalDistance
         self.estimatedDuration = estimatedDuration
         self.overviewPaddingRadius = overviewPaddingRadius
         self.overviewCenter = overviewCenter ?? points.first ?? .zero
+        self.preciseOverviewCenter = preciseOverviewCenter ?? SIMD3<Double>(self.overviewCenter)
     }
 
     public func point(at progress: Float) -> SIMD3<Float>? {
@@ -86,6 +93,40 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         if let starshipProfile { return starshipProfile.shipPosition(time: Double(progress) * 60) }
         if let transfer { return transfer.position(at: Double(progress)) }
         return point(atDistance: distance(at: progress))
+    }
+
+    func precisePoint(at progress: Float) -> SIMD3<Double>? {
+        if let crew13Profile { return crew13Profile.precisePosition(time: Double(progress) * estimatedDuration) }
+        if let starshipProfile { return starshipProfile.precisePosition(time: Double(progress) * estimatedDuration) }
+        if let transfer { return transfer.precisePosition(at: Double(progress)) }
+        guard precisePoints.count == cumulativeDistances.count, let first = precisePoints.first else { return nil }
+        let target = distance(at: progress)
+        guard target > 0, totalDistance > 0 else { return first }
+        guard let upper = cumulativeDistances.firstIndex(where: { $0 >= target }), upper > 0 else { return precisePoints.last }
+        let fraction = Double((target - cumulativeDistances[upper-1]) /
+                              max(cumulativeDistances[upper] - cumulativeDistances[upper-1], .leastNonzeroMagnitude))
+        return precisePoints[upper-1] + (precisePoints[upper] - precisePoints[upper-1]) * fraction
+    }
+
+    func preciseRenderPoints(through progress: Float) -> [SIMD3<Double>] {
+        var visibleProgress = progress
+        if ArtemisRouteProfile.isArtemisRoute(self) {
+            let opening = ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: estimatedDuration)
+            guard progress < opening else { return precisePoints }
+            visibleProgress = max(progress, ArtemisRouteProfile.easedOpeningProgress(routeProgress: progress,
+                                                                                     estimatedDuration: estimatedDuration))
+        } else if !hasMissionVehicles { return precisePoints }
+        guard precisePoints.count == cumulativeDistances.count, let first = precisePoints.first else { return [] }
+        guard visibleProgress > 0 else { return [first] }
+        guard visibleProgress < 1 else { return precisePoints }
+        let target = distance(at: visibleProgress)
+        var prefix = [first]
+        for upper in 1..<precisePoints.count {
+            if cumulativeDistances[upper] < target { prefix.append(precisePoints[upper]); continue }
+            if let point = precisePoint(at: visibleProgress) { prefix.append(point) }
+            break
+        }
+        return prefix
     }
 
     func distance(at progress: Float) -> Float {
@@ -213,13 +254,15 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         destinationName: destinationName, points: points,
                         cumulativeDistances: cumulativeDistances, totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration, overviewPaddingRadius: overviewPaddingRadius,
-                        overviewCenter: overviewCenter, transfer: transfer, mission: mission,
+                        overviewCenter: overviewCenter, transfer: transfer, precisePoints: precisePoints, preciseOverviewCenter: preciseOverviewCenter, mission: mission,
                         starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 
     func replacingPath(points: [SIMD3<Float>],
                        cumulativeDistances: [Float],
                        totalDistance: Float,
+                       precisePoints: [SIMD3<Double>]? = nil,
+                       preciseOverviewCenter: SIMD3<Double>? = nil,
                        overviewPaddingRadius: Float? = nil,
                        overviewCenter: SIMD3<Float>? = nil) -> NavigationRoute {
         NavigationRoute(id: id,
@@ -232,7 +275,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         estimatedDuration: estimatedDuration,
                         overviewPaddingRadius: overviewPaddingRadius ?? self.overviewPaddingRadius,
                         overviewCenter: overviewCenter ?? self.overviewCenter,
-                        transfer: transfer, mission: mission,
+                        transfer: transfer, precisePoints: precisePoints,
+                        preciseOverviewCenter: preciseOverviewCenter ?? self.preciseOverviewCenter, mission: mission,
                         starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 }

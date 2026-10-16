@@ -44,6 +44,7 @@ let package = Package(
                 .copy("Assets/Models/Pluto.usdz"),
                 .process("Assets/Models/celestial_assets.json"),
                 .process("Assets/Environment"),
+                .copy("Assets/Ephemeris"),
                 .process("Models/planets.json")
             ],
             plugins: [
@@ -53,6 +54,7 @@ let package = Package(
         .testTarget(
             name: "UniverseModuleTests",
             dependencies: ["UniverseModule"],
+            resources: [.process("Fixtures")],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")
             ]

@@ -18,6 +18,14 @@ extension NavigationController: UniverseNavigationControlling {
     }
 
     private func startRequest(_ request: NavigationRequest) {
+        navigationRouteCoordinator.cancel()
+        synchronizeLiveScene?()
+        guard snapshotProvider.preparationError == nil else {
+            pendingNavigationRequest = nil
+            isCameraAutoFramingEnabled = false
+            navigationRouteCoordinator.failForEphemeris()
+            return
+        }
         let originName = request.originName
         let waypointName = request.waypointName
         let destinationName = request.destinationName
@@ -50,6 +58,7 @@ extension NavigationController: UniverseNavigationControlling {
 
     func cancelNavigation() {
         navigationRouteCoordinator.cancel()
+        synchronizeLiveScene?()
         isCameraAutoFramingEnabled = false
         pendingNavigationRequest = nil
     }
@@ -63,6 +72,7 @@ extension NavigationController: UniverseNavigationControlling {
         let completedDestinationName = navigationSnapshot.destinationName
         let completedMission = navigationSnapshot.mission
         navigationRouteCoordinator.cancel()
+        synchronizeLiveScene?()
         isCameraAutoFramingEnabled = false
         pendingNavigationRequest = nil
         if let completedDestinationName {

@@ -5,7 +5,7 @@ OptiUniverse is an iOS 3D solar-system navigator built with SwiftUI and a techno
 ## Highlights
 
 - Real-time 3D solar-system rendering with RealityKit and `RealityView`.
-- Inclined Keplerian ellipses, variable orbital speed, and synchronized two-body interplanetary transfers.
+- Offline JPL ephemerides and IAU body orientation synchronized to the current UTC date, with separate accelerated transfer playback.
 - SwiftUI interface with a featured-object carousel, destination cards, category filtering, and shared app state through Observation.
 - Per-body USDZ model loading through RealityKit.
 - JSON-driven object metadata for destination lists, featured objects, and planet simulation parameters.
@@ -122,26 +122,50 @@ resolution diagnostic textures separately if culling alone does not resolve it.
 
 ## Content Model
 
-The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, and Neptune. Featured-object content is driven by JSON and backed by image assets for Jupiter, Saturn, and Moon Base.
+The app currently includes solar-system destinations for the Sun, Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto. Featured-object content is driven by JSON and backed by image assets for Jupiter, Saturn, and Moon Base.
 
 Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/Models/planets.json`, while UI destination content lives in `OptiUniverse/Resources/DestinationObjects.json` and `OptiUniverse/Resources/FeaturedObjects.json`.
 
 ## Orbital simulation and transfers
 
-The offline simulation starts at J2000 (JD 2451545.0 TDB) and advances one simulated day per active second. Each body uses fixed semi-major axis, eccentricity, inclination, ascending node, argument of periapsis, initial mean anomaly, and period. Solving Kepler’s equation gives faster motion at periapsis and slower motion at apoapsis. Positions and velocities use double precision in ecliptic km and km/s; rendering maps `(x, y, z)` to `(x, z, -y)` at 0.000001 scene units per km.
+The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date; camera transitions, atmospheric animation, and star effects advance only during active presentation. A compact UTC date and Live/Transfer preview indicator appears in iOS and visionOS.
 
-Data sources:
+All eleven bodies have offline geometric center positions and velocities from [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), relative to the Sun in the J2000 ecliptic frame, without light-time or aberration corrections. Earth uses its actual center (399), and Pluto uses its actual center (999), rather than their system barycenters. The Moon's state is heliocentric, including Earth's motion. The supported calendar range is January 1, 2000 through December 31, 2100 UTC. An extra data guard day supports UTC/TDB conversion at the upper boundary.
 
-- Mercury through Neptune: [JPL approximate planetary elements, Table 1](https://ssd.jpl.nasa.gov/planets/approx_pos.html), frozen at J2000, with [JPL sidereal orbital periods](https://ssd.jpl.nasa.gov/planets/phys_par.html) converted from Julian years of 365.25 days. Argument of periapsis is longitude of perihelion minus ascending node; initial mean anomaly is mean longitude minus longitude of perihelion.
-- Earth uses the Earth–Moon barycenter elements as an approximation. The Sun remains fixed; solar barycentric motion is omitted.
-- Moon: [JPL satellite mean elements](https://ssd.jpl.nasa.gov/sats/elem/), Earth-relative in the J2000 ecliptic frame, with a 27.322-day period. Lunar perturbations and precession are omitted.
-- Pluto: [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), Pluto-system barycenter (9) relative to the Sun (`500@10`), JD 2451545.0, `ELEMENTS`, `ECLIPTIC`, `ICRF`, `KM-S`; DE441 osculating elements retrieved September 25, 2026. The period comes from the same osculating solution.
+The approximately 36 MB archive is bundled with the app; there are no runtime network requests. Little-endian double-precision position/velocity records are interpolated with cubic Hermite polynomials. Generation checks every interval at its three quarter points, halves failing sampling steps, and requires errors below 1 km and 1 m/s relative to JPL. Independent checkpoints currently measure a maximum position residual below 0.48 km; the acceptance limit is 10 km relative to the source ephemeris, rather than an absolute prediction of future observations. The manifest records source solutions, request settings, coverage, and SHA-256 checksums. Invalid archives and uncovered dates produce explicit errors instead of falling back to the previous analytic model.
 
-Orbit previews show the actual ellipses, a calculated transfer, and an orange arrival-position marker. A zero-revolution prograde [Izzo Lambert solution](https://doi.org/10.1007/s10569-014-9587-y) connects Earth at departure with the destination at arrival. Flight duration is selected automatically using the conventional Hohmann-duration estimate; no launch-window optimization is performed. A universal-variable propagator supplies physical positions along the resulting conic. Invalid, unconverged, or Sun-intersecting transfers show an explicit failure with Retry/Close.
+Ephemeris time is physical seconds since J2000 TDB. UTC is converted through TAI and TT using the [NAIF leap-second table and DELTET model](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls). Future UTC dates use the last announced leap-second offset; rebuild the archive/time table when new leap seconds are announced. Absolute positions, camera targets, spacecraft poses, and scene origins retain double precision. Rendering subtracts the camera origin before converting to float scene units, mapping `(x, y, z)` to `(x, z, -y)` at 0.000001 scene units per km.
 
-Interplanetary navigation locks a fresh solution and plays it over 30 active seconds. All planetary motion accelerates by the same physical-time factor, so the spacecraft meets the destination. ETA shows playback time alongside physical flight duration. Cancel returns orbital time to one day per second from the reached epoch. Navigation has no pause/resume control; backgrounding suspends active time without a catch-up jump. Camera transitions, decorative body spin, and star effects retain their presentation timing. Lunar/Artemis journeys keep their cinematic paths and existing durations.
+Body poles and prime meridians follow the dated polynomial and periodic [IAU models in NAIF PCK](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc), evaluated in Swift. Surface latitude is planetocentric and positive longitude is east. A fixed 180° Y correction in the asset manifest aligns the imported sphere texture midpoint (initially -X) with the canonical +X prime meridian; Uranus additionally cancels its exported 90° X tilt before applying its IAU pole. Mesh UV tests verify zero longitude, east, and north for every model. These orientation models support visualization; high-accuracy Earth EOP, lunar binary PCK, ellipsoidal geodesy, and surveyed landing/launch coordinates are separate future work. Atmospheric cloud/belt animation in the Earth and Jupiter assets remains independent of the physical body orientation.
 
-This is a fixed-element Keplerian educational model, not a calendar-date ephemeris or an N-body simulation. Transfers are heliocentric intercepts, without launch/capture burns, fuel constraints, or gravity assists. Eccentricities and inclinations are not exaggerated; many real orbits look nearly circular.
+A zero-revolution prograde [Izzo Lambert solution](https://doi.org/10.1007/s10569-014-9587-y) connects the ephemeris state of Earth at departure to the destination at arrival. Flight duration still uses the conventional Hohmann estimate from the catalog's semi-major axes. A universal-variable two-body propagator supplies spacecraft positions. The catalog's fixed orbital elements remain metadata for duration estimates and explicit synthetic test collaborators; they do not drive the production scene. Transfers omit launch/capture burns, fuel constraints, gravity assists, and launch-window optimization.
+
+Starting interplanetary navigation captures a fresh current-date solution and plays its physical duration over 30 active seconds. Bodies and their orientation use the same accelerated epoch, meeting the spacecraft at arrival. The intercept epoch is held until the existing completion handoff. Cancel or Done restores a current-date snapshot before handing the camera back to body follow. Backgrounding pauses preview playback without advancing presentation time. ETA shows playback time alongside physical flight duration.
+
+Orbit guides sample ephemerides over one period when that period fits the archive, shifting the sampling window near coverage boundaries. Neptune and Pluto expose the available 2000–2100 arc instead of a complete orbit, marked **Orbit arc · 2000–2100**. This diagram limit does not block a transfer whose departure and arrival dates are covered. Out-of-range physical transfers remain unavailable with Retry/Close.
+
+Artemis, Starship Flight 14, and Crew-13 keep their cinematic paths and durations. They share the dated body states, captured launch orientation, and precise body-relative geometry, but are not historical spacecraft ephemerides. Future mission integration can query `UniverseModuleResources.celestialState(for:at:)` for position in km, velocity in km/s, and a body-fixed-to-ecliptic orientation matrix; `simulationSnapshot` exposes the displayed UTC date, mode, and data error.
+
+### Regenerating and verifying the archive
+
+Run from the repository root with Python 3 and curl:
+
+```sh
+python3 scripts/generate_ephemeris.py
+python3 scripts/generate_ephemeris.py --verify-only
+```
+
+Downloads are serial, retried, and resumable through `.cache/ephemeris/`; this cache and raw responses are ignored by Git. The generator initially samples planets daily and the Moon every six hours, then refines complete request blocks in batches to avoid thousands of individual API requests. `--body Mars` regenerates one body. Commit the complete archive and manifest together after verification; ordinary app builds do not regenerate data.
+
+Independent validation and reference-fixture regeneration also require `spiceypy==8.3.0` (CSPICE N0067):
+
+```sh
+python3 -m venv .cache/reference-validation
+.cache/reference-validation/bin/pip install spiceypy==8.3.0
+.cache/reference-validation/bin/python scripts/validate_ephemeris.py
+```
+
+Validation uses separate Horizons time-list requests plus SPICE orientation/time matrices, including leap-second boundaries, random epochs, and the end of 2100. It updates the committed test fixture in `UniverseModuleTests/Fixtures`; Swift unit tests consume that fixture offline. SPICE is not an application dependency.
 
 ## Why This Project Matters
 

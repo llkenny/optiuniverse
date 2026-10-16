@@ -9,17 +9,23 @@ import simd
 
 struct CameraTransition {
     struct Frame: Equatable {
-        let target: SIMD3<Float>
+        let preciseTarget: SIMD3<Double>
+        var target: SIMD3<Float> { SIMD3<Float>(preciseTarget) }
         let distance: Float
         let orientation: simd_quatf?
 
         init(target: SIMD3<Float>,
              distance: Float,
-             orientation: simd_quatf? = nil) {
-            self.target = target
+             orientation: simd_quatf? = nil,
+             preciseTarget: SIMD3<Double>? = nil) {
+            self.preciseTarget = preciseTarget ?? SIMD3<Double>(target)
             self.distance = distance
             self.orientation = orientation
         }
+    }
+
+    static func preservingPrecision(_ frame: Frame, target: SIMD3<Double>) -> Frame {
+        Frame(target: frame.target, distance: frame.distance, orientation: frame.orientation, preciseTarget: target)
     }
 
     enum Destination: Equatable {
@@ -72,7 +78,8 @@ struct CameraTransition {
             distance: start.distance + (end.distance - start.distance) * clampedProgress,
             orientation: interpolatedOrientation(from: start.orientation,
                                                  to: end.orientation,
-                                                 progress: clampedProgress)
+                                                 progress: clampedProgress),
+            preciseTarget: start.preciseTarget + (end.preciseTarget - start.preciseTarget) * Double(clampedProgress)
         )
     }
 

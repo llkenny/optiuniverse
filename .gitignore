@@ -10,5 +10,7 @@ RFC/DOT/*.png
 # Reality Composer Pro editor-local workspace state
 **/*.realitycomposerpro/WorkspaceData/
 .build
+.cache/
+__pycache__/
 
 PluginData
