@@ -130,8 +130,8 @@ enum SurfaceCoordinateMath {
 
     /// Solve in a body-relative frame before adding the heliocentric translation.
     static func preciseCenterRayIntersection(cameraWorldPosition: SIMD3<Double>,
-                                              cameraTarget: SIMD3<Double>,
-                                              planet: CelestialBodySnapshot) -> SIMD3<Double>? {
+                                             cameraTarget: SIMD3<Double>,
+                                             planet: CelestialBodySnapshot) -> SIMD3<Double>? {
         let directionInput = cameraTarget - cameraWorldPosition
         guard simd_length_squared(directionInput) > 1e-24, planet.surfaceRadius > 0 else { return nil }
         let direction = simd_normalize(directionInput)

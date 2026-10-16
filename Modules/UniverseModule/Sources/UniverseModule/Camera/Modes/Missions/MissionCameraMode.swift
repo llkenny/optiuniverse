@@ -27,10 +27,8 @@ final class MissionCameraMode {
 
     func makeDepartureFrame(route: NavigationRoute,
                             progress: Float,
-                            origin: SIMD3<Float>,
-                            originDistance: Float,
-                            overviewDistance: Float,
-                            overviewCenter: SIMD3<Float>) -> CameraTransition.Frame? {
+                            originFrame: CameraTransition.Frame,
+                            overviewFrame: CameraTransition.Frame) -> CameraTransition.Frame? {
         guard ArtemisRouteProfile.isArtemisRoute(route) else {
             return nil
         }
@@ -42,11 +40,11 @@ final class MissionCameraMode {
         return CameraTransition.Frame(
             target: makeArtemisOpeningTarget(route: route,
                                              progress: progress,
-                                             origin: origin,
-                                             overviewCenter: overviewCenter,
+                                             origin: originFrame.target,
+                                             overviewCenter: overviewFrame.target,
                                              phaseProgress: phaseProgress),
-            distance: interpolate(from: originDistance,
-                                  to: overviewDistance,
+            distance: interpolate(from: originFrame.distance,
+                                  to: overviewFrame.distance,
                                   progress: phaseProgress),
             orientation: OverviewCameraFraming.orientation
         )
@@ -92,6 +90,23 @@ final class MissionCameraMode {
             ? -asin(simd_clamp(markerOffset.y / markerDistance, -1, 1))
             : -.pi * 0.25
 
+        let orientation = makeFlybyOrientation(route: route, waypoint: waypoint,
+                                              progress: progress, closeUpProgress: closeUpProgress, pitch: pitch)
+
+        return CameraTransition.Frame(
+            target: interpolate(from: route.overviewCenter, to: waypoint, progress: closeUpProgress),
+            distance: interpolate(from: overviewDistance,
+                                  to: max(closeUpDistance, minimumDistance),
+                                  progress: closeUpProgress),
+            orientation: simd_normalize(orientation),
+            preciseTarget: route.preciseOverviewCenter +
+                ((snapshot?.planet(named: waypointName)?.preciseWorldPosition ?? SIMD3<Double>(waypoint))
+                 - route.preciseOverviewCenter) * Double(closeUpProgress)
+        )
+    }
+
+    private func makeFlybyOrientation(route: NavigationRoute, waypoint: SIMD3<Float>,
+                                      progress: Float, closeUpProgress: Float, pitch: Float) -> simd_quatf {
         // Unwrap the heading along the route instead of choosing a new shortest quaternion
         // arc every frame. Each blend retains its overview boundary's unwrapped heading
         // across refreshed geometry, so crossing the angle seam cannot reverse the blend.
@@ -108,16 +123,7 @@ final class MissionCameraMode {
                                             progress: closeUpProgress),
                          axis: SIMD3<Float>(1, 0, 0))
 
-        return CameraTransition.Frame(
-            target: interpolate(from: route.overviewCenter, to: waypoint, progress: closeUpProgress),
-            distance: interpolate(from: overviewDistance,
-                                  to: max(closeUpDistance, minimumDistance),
-                                  progress: closeUpProgress),
-            orientation: simd_normalize(orientation),
-            preciseTarget: route.preciseOverviewCenter +
-                ((snapshot?.planet(named: waypointName)?.preciseWorldPosition ?? SIMD3<Double>(waypoint))
-                 - route.preciseOverviewCenter) * Double(closeUpProgress)
-        )
+        return orientation
     }
 
     func minimumCameraDistance(state: NavigationRouteRenderState,

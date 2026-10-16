@@ -33,7 +33,8 @@ struct CelestialBodySnapshot: Sendable {
         self.visualRotationMatrix = visualRotationMatrix ?? float4x4(
             SIMD4(baseModelMatrix.columns.0.x, baseModelMatrix.columns.0.y, baseModelMatrix.columns.0.z, 0),
             SIMD4(baseModelMatrix.columns.1.x, baseModelMatrix.columns.1.y, baseModelMatrix.columns.1.z, 0),
-            SIMD4(baseModelMatrix.columns.2.x, baseModelMatrix.columns.2.y, baseModelMatrix.columns.2.z, 0), SIMD4(0, 0, 0, 1))
+            SIMD4(baseModelMatrix.columns.2.x, baseModelMatrix.columns.2.y, baseModelMatrix.columns.2.z, 0),
+                  SIMD4(0, 0, 0, 1))
         self.normalizedScale = normalizedScale
         self.framingRadius = framingRadius
         self.surfaceRadius = surfaceRadius

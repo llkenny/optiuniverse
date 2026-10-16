@@ -8,76 +8,6 @@
 import Foundation
 import simd
 
-/// Immutable input bundle for route path construction.
-///
-/// The builder needs positions and planet metadata from a prepared scene snapshot, but it should not own
-/// that snapshot or reach back into render systems. This value defines the complete data dependency for
-/// route geometry creation.
-struct RouteBuildInput {
-    let originName: String
-    let waypointName: String?
-    let destinationName: String
-    let planets: [Planet]
-    let originPosition: SIMD3<Float>?
-    let waypointPosition: SIMD3<Float>?
-    let originSurfaceRadius: Float
-    let waypointSurfaceRadius: Float
-    let destinationSurfaceRadius: Float
-    let earthSunDirection: SIMD3<Float>
-    let sunPosition: SIMD3<Float>
-    let destinationPosition: SIMD3<Float>?
-    let estimatedDuration: TimeInterval
-    var transfer: TransferSolution? = nil
-    let simulationTime: Double
-    let routeProgress: Float
-    let stateProvider: (any CelestialStateProviding)?
-
-    init(originName: String = "Earth",
-         waypointName: String? = nil,
-         destinationName: String,
-         planets: [Planet],
-         originPosition: SIMD3<Float>? = nil,
-         waypointPosition: SIMD3<Float>? = nil,
-         originSurfaceRadius: Float = 0,
-         waypointSurfaceRadius: Float = 0,
-         destinationSurfaceRadius: Float = 0,
-         earthSunDirection: SIMD3<Float>,
-         sunPosition: SIMD3<Float>,
-         destinationPosition: SIMD3<Float>?,
-         estimatedDuration: TimeInterval,
-         simulationTime: Double = 0,
-         transfer: TransferSolution? = nil,
-         stateProvider: (any CelestialStateProviding)? = nil,
-         routeProgress: Float = 0) {
-        self.originName = originName
-        self.waypointName = waypointName
-        self.destinationName = destinationName
-        self.planets = planets
-        self.originPosition = originPosition
-        self.waypointPosition = waypointPosition
-        self.originSurfaceRadius = originSurfaceRadius
-        self.waypointSurfaceRadius = waypointSurfaceRadius
-        self.destinationSurfaceRadius = destinationSurfaceRadius
-        self.earthSunDirection = earthSunDirection
-        self.sunPosition = sunPosition
-        self.destinationPosition = destinationPosition
-        self.estimatedDuration = estimatedDuration
-        self.transfer = transfer
-        self.simulationTime = simulationTime
-        self.routeProgress = routeProgress
-        self.stateProvider = stateProvider
-    }
-}
-
-/// Route geometry construction boundary.
-///
-/// `NavigationRouteCoordinator` depends on this protocol so route-building policy can vary independently
-/// from playback and state publication. The default implementation uses two-body transfer geometry, while
-/// tests can inject simpler deterministic builders.
-protocol RouteBuilding {
-    func makeRoute(input: RouteBuildInput) -> NavigationRoute?
-}
-
 /// Builds sampled route geometry for navigation playback and rendering.
 ///
 /// `RoutePathBuilder` is necessary because the user-facing route is not just the static transfer orbit:
@@ -89,8 +19,7 @@ protocol RouteBuilding {
 /// - Depends on `TransferSolution` for transfer-orbit geometry but does not own transfer preview
 ///   state or render state.
 /// - Returns immutable `NavigationRoute` values to `NavigationRouteCoordinator`.
-// swiftlint:disable:next type_body_length
-struct RoutePathBuilder: RouteBuilding {
+struct RoutePathBuilder: RouteBuilding { // swiftlint:disable:this type_body_length
     private let sampleCount: Int
 
     init(sampleCount: Int = 192) {
@@ -119,7 +48,8 @@ struct RoutePathBuilder: RouteBuilding {
                                points: transfer.points, cumulativeDistances: cumulativeDistances,
                                totalDistance: totalDistance,
                                estimatedDuration: TransferSolution.playbackDuration,
-                               overviewCenter: transfer.sunPosition, transfer: transfer, precisePoints: transfer.precisePoints)
+                               overviewCenter: transfer.sunPosition, transfer: transfer,
+                                   precisePoints: transfer.precisePoints)
     }
 
     private func makeCislunarLoopRoute(input: RouteBuildInput) -> NavigationRoute? {
@@ -138,7 +68,8 @@ struct RoutePathBuilder: RouteBuilding {
         }
         guard let origin = precisePosition(input.originName, fallback: originPosition),
               let waypoint = precisePosition(input.waypointName ?? "Moon", fallback: waypointPosition),
-              let destination = precisePosition(input.destinationName, fallback: destinationPosition) else { return nil }
+              let destination = precisePosition(input.destinationName,
+                                                fallback: destinationPosition) else { return nil }
         let samples = Self.makeCislunarLoopSamples(
             originPosition: .zero, waypointPosition: SIMD3<Float>(waypoint - origin),
             destinationPosition: SIMD3<Float>(destination - origin),
@@ -189,13 +120,13 @@ struct RoutePathBuilder: RouteBuilding {
 
     // swiftlint:disable:next function_body_length
     static func makeCislunarLoopSamples(originPosition: SIMD3<Float>,
-                                      waypointPosition: SIMD3<Float>,
-                                      destinationPosition: SIMD3<Float>? = nil,
-                                      originSurfaceRadius: Float = 0,
-                                      waypointSurfaceRadius: Float = 0,
-                                      destinationSurfaceRadius: Float = 0,
-                                      sampleCount: Int = 192,
-                                      estimatedDuration: TimeInterval = 16) -> ArtemisPathSamples {
+                                        waypointPosition: SIMD3<Float>,
+                                        destinationPosition: SIMD3<Float>? = nil,
+                                        originSurfaceRadius: Float = 0,
+                                        waypointSurfaceRadius: Float = 0,
+                                        destinationSurfaceRadius: Float = 0,
+                                        sampleCount: Int = 192,
+                                        estimatedDuration: TimeInterval = 16) -> ArtemisPathSamples {
         let fullMajorVector = waypointPosition - originPosition
         let fullMajorDistance = simd_length(fullMajorVector)
         let majorDirection = fullMajorDistance > 0.000_001
@@ -272,8 +203,7 @@ struct RoutePathBuilder: RouteBuilding {
             center: originPosition,
             axisA: earthLoopAxisA,
             axisB: earthLoopAxisB,
-            startAngle: 0,
-            endAngle: earthLoopEndAngle,
+            angles: (start: 0, end: earthLoopEndAngle),
             count: earthLoopCount
         )
         let earthLoopEnd = earthLoopPoints.last ?? earthLoopExit
@@ -370,143 +300,6 @@ struct RoutePathBuilder: RouteBuilding {
         }
 
         return distances
-    }
-
-    private static func cislunarLoopOverviewCenter(originPosition: SIMD3<Float>,
-                                                   waypointPosition: SIMD3<Float>,
-                                                   destinationPosition: SIMD3<Float>) -> SIMD3<Float> {
-        (originPosition + waypointPosition + destinationPosition) / 3
-    }
-
-    private static func makeCislunarMinorAxis(majorVector: SIMD3<Float>,
-                                              length: Float) -> SIMD3<Float> {
-        let epsilon: Float = 0.000_001
-        let sceneUp = SIMD3<Float>(0, 1, 0)
-        guard simd_length_squared(majorVector) > epsilon else {
-            return sceneUp * length
-        }
-
-        let horizontalMajor = SIMD3<Float>(majorVector.x, 0, majorVector.z)
-        if simd_length_squared(horizontalMajor) > epsilon {
-            let perpendicular = normalize(SIMD3<Float>(-horizontalMajor.z, 0, horizontalMajor.x))
-            return perpendicular * length
-        }
-
-        return sceneUp * length
-    }
-
-    private static func quadraticBezier(start: SIMD3<Float>,
-                                        control: SIMD3<Float>,
-                                        end: SIMD3<Float>,
-                                        progress: Float) -> SIMD3<Float> {
-        let clampedProgress = simd_clamp(progress, 0, 1)
-        let inverseProgress = 1 - clampedProgress
-        let startWeight = inverseProgress * inverseProgress
-        let controlWeight = 2 * inverseProgress * clampedProgress
-        let endWeight = clampedProgress * clampedProgress
-        return startWeight * start + controlWeight * control + endWeight * end
-    }
-
-    private static func cubicBezier(start: SIMD3<Float>,
-                                    controlA: SIMD3<Float>,
-                                    controlB: SIMD3<Float>,
-                                    end: SIMD3<Float>,
-                                    progress: Float) -> SIMD3<Float> {
-        let clampedProgress = simd_clamp(progress, 0, 1)
-        let inverseProgress = 1 - clampedProgress
-        return inverseProgress * inverseProgress * inverseProgress * start
-            + 3 * inverseProgress * inverseProgress * clampedProgress * controlA
-            + 3 * inverseProgress * clampedProgress * clampedProgress * controlB
-            + clampedProgress * clampedProgress * clampedProgress * end
-    }
-
-    private static func quadraticBezierPoints(start: SIMD3<Float>,
-                                              control: SIMD3<Float>,
-                                              end: SIMD3<Float>,
-                                              count: Int) -> [SIMD3<Float>] {
-        sampledPoints(count: count) { progress in
-            quadraticBezier(start: start,
-                            control: control,
-                            end: end,
-                            progress: progress)
-        }
-    }
-
-    private static func cubicBezierPoints(start: SIMD3<Float>,
-                                          controlA: SIMD3<Float>,
-                                          controlB: SIMD3<Float>,
-                                          end: SIMD3<Float>,
-                                          count: Int) -> [SIMD3<Float>] {
-        sampledPoints(count: count) { progress in
-            cubicBezier(start: start,
-                        controlA: controlA,
-                        controlB: controlB,
-                        end: end,
-                        progress: progress)
-        }
-    }
-
-    private static func ellipticalArcPoints(center: SIMD3<Float>,
-                                            axisA: SIMD3<Float>,
-                                            axisB: SIMD3<Float>,
-                                            startAngle: Float,
-                                            endAngle: Float,
-                                            count: Int) -> [SIMD3<Float>] {
-        sampledPoints(count: count) { progress in
-            let angle = startAngle + (endAngle - startAngle) * progress
-            return center + axisA * cos(angle) + axisB * sin(angle)
-        }
-    }
-
-    private static func sampledPoints(count: Int,
-                                      point: (Float) -> SIMD3<Float>) -> [SIMD3<Float>] {
-        let resolvedCount = max(count, 2)
-        return (0..<resolvedCount).map { index in
-            point(Float(index) / Float(resolvedCount - 1))
-        }
-    }
-
-    private static func predictionSimulationTime(targetProgress: Float,
-                                                 input: RouteBuildInput) -> Double {
-        let remainingProgress = max(simd_clamp(targetProgress, 0, 1)
-                                    - simd_clamp(input.routeProgress, 0, 1), 0)
-        return input.simulationTime + input.estimatedDuration * Double(remainingProgress)
-    }
-
-    private static func predictedWorldPosition(ofPlanetNamed planetName: String,
-                                               planets: [Planet],
-                                               stateProvider: (any CelestialStateProviding)?,
-                                               simulationTime: Double) -> SIMD3<Float>? {
-        if let stateProvider, let body = CelestialBodyID(rawValue: planetName) {
-            return (try? stateProvider.state(for: body, at: simulationTime)).map { SIMD3<Float>($0.scenePosition) }
-        }
-        var worldPositionsByName: [String: SIMD3<Float>] = [:]
-        for planet in planets {
-            let parentWorldPosition = planet.parentName.flatMap {
-                worldPositionsByName[$0]
-            }
-            let orbitTransformMatrix = planet.orbitTransformMatrix(
-                at: simulationTime,
-                parentWorldPosition: parentWorldPosition
-            )
-            let worldPosition4 = orbitTransformMatrix * SIMD4<Float>(0, 0, 0, 1)
-            let worldPosition = SIMD3<Float>(worldPosition4.x,
-                                             worldPosition4.y,
-                                             worldPosition4.z)
-            worldPositionsByName[planet.name] = worldPosition
-        }
-
-        return worldPositionsByName[planetName]
-    }
-
-    private static func normalizeOrFallback(_ vector: SIMD3<Float>,
-                                            fallback: SIMD3<Float>) -> SIMD3<Float> {
-        let epsilon: Float = 0.000_001
-        guard simd_length_squared(vector) > epsilon else {
-            return fallback
-        }
-
-        return normalize(vector)
     }
 
 }

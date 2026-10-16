@@ -6,15 +6,15 @@ struct TwoBodyTrajectory: Equatable, Sendable {
     static let solarMu = 132_712_440_041.27942
     let initialPosition: SIMD3<Double>
     let initialVelocity: SIMD3<Double>
-    let mu: Double
+    let gravitationalParameter: Double
 
     func state(after seconds: Double) throws -> OrbitalState {
         guard seconds.isFinite, seconds >= 0 else { throw TransferFailure.invalidGeometry }
         if seconds == 0 { return OrbitalState(position: initialPosition, velocity: initialVelocity) }
         let radius = simd_length(initialPosition)
-        let rootMu = sqrt(mu)
+        let rootMu = sqrt(gravitationalParameter)
         let radialProduct = simd_dot(initialPosition, initialVelocity) / rootMu
-        let alpha = 2 / radius - simd_length_squared(initialVelocity) / mu
+        let alpha = 2 / radius - simd_length_squared(initialVelocity) / gravitationalParameter
         func timeEquation(_ anomaly: Double) -> Double {
             let (cValue, sValue) = Self.stumpff(alpha * anomaly * anomaly)
             return radialProduct * anomaly * anomaly * cValue +
@@ -49,9 +49,10 @@ struct TwoBodyTrajectory: Equatable, Sendable {
     func minimumRadius(endingAt end: SIMD3<Double>) -> Double {
         let momentum = simd_cross(initialPosition, initialVelocity)
         let normal = simd_normalize(momentum)
-        let eccentricityVector = simd_cross(initialVelocity, momentum) / mu - simd_normalize(initialPosition)
+        let eccentricityVector = simd_cross(initialVelocity, momentum) / gravitationalParameter
+            - simd_normalize(initialPosition)
         let eccentricity = simd_length(eccentricityVector)
-        let periapsis = simd_length_squared(momentum) / (mu * (1 + eccentricity))
+        let periapsis = simd_length_squared(momentum) / (gravitationalParameter * (1 + eccentricity))
         if eccentricity < 1e-12 { return periapsis }
         func forwardAngle(to vector: SIMD3<Double>) -> Double {
             let angle = atan2(simd_dot(normal, simd_cross(initialPosition, vector)),

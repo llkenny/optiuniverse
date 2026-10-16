@@ -38,11 +38,16 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
         for planet in planets {
             guard let body = CelestialBodyID(rawValue: planet.name) else { preparationError = .unknownBody; return }
             let state: CelestialBodyState
-            do { state = try stateProvider.state(for: body, at: simulationTime) }
-            catch { preparationError = (error as? CelestialStateError) ?? .invalidData; return }
+            do {
+                state = try stateProvider.state(for: body, at: simulationTime)
+            } catch {
+                preparationError = (error as? CelestialStateError) ?? .invalidData
+                return
+            }
             let position = SIMD3<Float>(state.scenePosition)
             let orbitTransform = float4x4.makeTranslation(position)
-            let rotation = usesEphemerisOrientation ? state.sceneOrientation : planet.visualRotationMatrix(at: presentationTime)
+            let rotation = usesEphemerisOrientation
+                ? state.sceneOrientation : planet.visualRotationMatrix(at: presentationTime)
             guard let metrics = presentationMetricsByBodyName[planet.name] else { continue }
             packets.append(CelestialBodySnapshot(planetName: planet.name,
                                                   baseModelMatrix: orbitTransform * rotation,

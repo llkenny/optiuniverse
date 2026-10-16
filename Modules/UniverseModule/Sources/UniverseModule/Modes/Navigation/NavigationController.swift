@@ -25,7 +25,7 @@ final class NavigationController {
         let originName: String
         let waypointName: String?
         let destinationName: String
-        var mission: MissionFlightPlan? = nil
+        var mission: MissionFlightPlan?
     }
 
     let routeBuilder: RouteBuilding

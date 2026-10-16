@@ -39,17 +39,8 @@ final class NavigationCameraMode {
                                    viewportSize: CGSize,
                                    currentPose: CameraPose,
                                    arrivalRecovery: ArrivalRecovery? = nil) -> CameraState.Transaction? {
-        if state.route?.crew13Profile != nil {
-            guard state.isCameraAutoFramingEnabled,
-                  let frame = crew13CameraMode.frame(state: state, viewportSize: viewportSize,
-                                                     currentPose: currentPose) else { return nil }
-            return makeCameraTransaction(frame: frame)
-        }
-        if state.route?.starshipProfile != nil {
-            guard state.isCameraAutoFramingEnabled,
-                  let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize,
-                                                       currentPose: currentPose) else { return nil }
-            return makeCameraTransaction(frame: frame)
+        if state.route?.crew13Profile != nil || state.route?.starshipProfile != nil {
+            return makeVehicleTransaction(state: state, viewportSize: viewportSize, currentPose: currentPose)
         }
         guard let route = state.route,
               let originFallback = route.points.first,
@@ -80,29 +71,19 @@ final class NavigationCameraMode {
         }
 
         if progress < arrivalPhaseStart {
-            if let missionFrame = missionCameraMode.makeCruiseFrame(
-                route: route,
-                progress: progress,
-                snapshot: snapshot,
-                overviewDistance: departureContext.overviewDistance
-            ) {
-                return makeCameraTransaction(frame: missionFrame)
-            }
-
-            return makeCameraTransaction(
-                frame: makeOverviewFrame(center: route.overviewCenter,
-                                         distance: departureContext.overviewDistance, preciseCenter: route.preciseOverviewCenter)
-            )
+            return makeCameraTransaction(frame: makeCruiseFrame(route: route, progress: progress,
+                                                               snapshot: snapshot,
+                                                               overviewDistance: departureContext.overviewDistance))
         }
 
-        let arrivalFrame = makeArrivalFrame(progress: progress,
-                                            overviewCenter: route.overviewCenter,
-                                            overviewDistance: departureContext.overviewDistance,
-                                            destination: destination,
-                                            destinationDistance: destinationDistance,
-                                            preciseDestination: snapshot?.planet(named: route.destinationName)?.preciseWorldPosition
-                                                ?? route.precisePoints.last ?? SIMD3<Double>(destination),
-                                            preciseOverviewCenter: route.preciseOverviewCenter)
+        let arrivalFrame = makeArrivalFrame(
+            progress: progress,
+            overview: CameraTransition.Frame(target: route.overviewCenter,
+                                             distance: departureContext.overviewDistance,
+                                             preciseTarget: route.preciseOverviewCenter),
+            destination: makeDestinationFrame(route: route, snapshot: snapshot,
+                                              fallback: destination, distance: destinationDistance)
+        )
         if let arrivalRecovery {
             return makeCameraTransaction(
                 frame: makeArrivalRecoveryFrame(progress: progress,
@@ -135,6 +116,30 @@ final class NavigationCameraMode {
         let projection = simd_dot(relativePosition, backward)
         let exitDistance = -projection + sqrt(projection * projection + radius * radius - distanceSquared)
         return CameraState.Transaction(cameraDistance: currentPose.distance + exitDistance)
+    }
+
+    private func makeDestinationFrame(route: NavigationRoute, snapshot: UniverseSceneSnapshot?,
+                                      fallback: SIMD3<Float>, distance: Float) -> CameraTransition.Frame {
+        CameraTransition.Frame(target: fallback, distance: distance,
+                               preciseTarget: snapshot?.planet(named: route.destinationName)?.preciseWorldPosition
+                                   ?? route.precisePoints.last ?? SIMD3<Double>(fallback))
+    }
+
+    private func makeVehicleTransaction(state: NavigationRouteRenderState,
+                                        viewportSize: CGSize, currentPose: CameraPose) -> CameraState.Transaction? {
+        if state.route?.crew13Profile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = crew13CameraMode.frame(state: state, viewportSize: viewportSize,
+                                                     currentPose: currentPose) else { return nil }
+            return makeCameraTransaction(frame: frame)
+        }
+        if state.route?.starshipProfile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = starshipCameraMode.frame(state: state, viewportSize: viewportSize,
+                                                       currentPose: currentPose) else { return nil }
+            return makeCameraTransaction(frame: frame)
+        }
+        return nil
     }
 
     private func makeCameraTransaction(frame: CameraTransition.Frame) -> CameraState.Transaction {
@@ -174,10 +179,8 @@ final class NavigationCameraMode {
         if let missionFrame = missionCameraMode.makeDepartureFrame(
             route: route,
             progress: progress,
-            origin: context.origin,
-            originDistance: context.originDistance,
-            overviewDistance: context.overviewDistance,
-            overviewCenter: context.overviewCenter
+            originFrame: CameraTransition.Frame(target: context.origin, distance: context.originDistance),
+            overviewFrame: CameraTransition.Frame(target: context.overviewCenter, distance: context.overviewDistance)
         ) {
             let phase = ArtemisRouteProfile.easedOpeningProgress(routeProgress: progress,
                                                                   estimatedDuration: route.estimatedDuration)
@@ -225,12 +228,8 @@ final class NavigationCameraMode {
     }
 
     private func makeArrivalFrame(progress: Float,
-                                  overviewCenter: SIMD3<Float>,
-                                  overviewDistance: Float,
-                                  destination: SIMD3<Float>,
-                                  destinationDistance: Float,
-                                  preciseDestination: SIMD3<Double>,
-                                  preciseOverviewCenter: SIMD3<Double>) -> CameraTransition.Frame {
+                                  overview: CameraTransition.Frame,
+                                  destination: CameraTransition.Frame) -> CameraTransition.Frame {
         let phaseProgress = (progress - arrivalPhaseStart) / (1 - arrivalPhaseStart)
         let targetProgress = CameraTransition.easeInOutCubic(
             phaseProgress / arrivalTargetPhaseDuration
@@ -239,14 +238,15 @@ final class NavigationCameraMode {
             phaseProgress / arrivalDistancePhaseDuration
         )
         return CameraTransition.Frame(
-            target: interpolate(from: overviewCenter,
-                                to: destination,
+            target: interpolate(from: overview.target,
+                                to: destination.target,
                                 progress: targetProgress),
-            distance: interpolate(from: overviewDistance,
-                                  to: destinationDistance,
+            distance: interpolate(from: overview.distance,
+                                  to: destination.distance,
                                   progress: distanceProgress),
             orientation: OverviewCameraFraming.orientation,
-            preciseTarget: preciseOverviewCenter + (preciseDestination - preciseOverviewCenter) * Double(targetProgress)
+            preciseTarget: overview.preciseTarget + (destination.preciseTarget
+                - overview.preciseTarget) * Double(targetProgress)
         )
     }
 
@@ -263,6 +263,19 @@ final class NavigationCameraMode {
                                             progress: CameraTransition.easeInOutCubic(recoveryProgress))
     }
 
+}
+
+private extension NavigationCameraMode {
+    func makeCruiseFrame(route: NavigationRoute, progress: Float,
+                         snapshot: UniverseSceneSnapshot?, overviewDistance: Float) -> CameraTransition.Frame {
+        missionCameraMode.makeCruiseFrame(route: route, progress: progress,
+                                         snapshot: snapshot, overviewDistance: overviewDistance)
+            ?? makeOverviewFrame(center: route.overviewCenter, distance: overviewDistance,
+                                 preciseCenter: route.preciseOverviewCenter)
+    }
+}
+
+extension NavigationCameraMode {
     func maximumCameraDistance(state: NavigationRouteRenderState,
                                currentDistance: Float,
                                viewportSize: CGSize) -> Float? {

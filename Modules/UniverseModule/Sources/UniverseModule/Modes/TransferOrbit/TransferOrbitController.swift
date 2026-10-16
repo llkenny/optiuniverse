@@ -156,7 +156,8 @@ final class TransferOrbitController {
                                                             hasPartialOrbit: solution.hasPartialDestinationOrbit)
             case .failure(let error):
                 activeTransferOrbit = nil
-                previewSnapshot = TransferPreviewSnapshot(status: .failed((error as? TransferFailure) ?? .didNotConverge),
+                previewSnapshot = TransferPreviewSnapshot(
+                    status: .failed((error as? TransferFailure) ?? .didNotConverge),
                                                             destinationName: destination)
             }
             if needsFraming { frameOverview(); needsFraming = false }

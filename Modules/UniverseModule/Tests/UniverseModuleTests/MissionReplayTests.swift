@@ -11,7 +11,8 @@ private func missionDate(_ value: String) -> Date {
 @MainActor
 private func missionResources(stateProvider: (any CelestialStateProviding)? = nil,
                               now: @escaping () -> Date = Date.init) throws -> UniverseModuleResources {
-    let resources = UniverseModuleResources(stateProvider: try stateProvider ?? EphemerisArchive.bundled.get(), now: now)
+    let resources = UniverseModuleResources(stateProvider: try stateProvider ?? EphemerisArchive.bundled.get(),
+                                            now: now)
     resources.setViewportSize(CGSize(width: 402, height: 874))
     // Clock/navigation integration needs physical body metrics, not imported texture-heavy assets.
     resources.sceneSnapshotPipeline.setPresentationMetrics(Dictionary(uniqueKeysWithValues: resources.planets.map {
@@ -110,13 +111,7 @@ func missionSceneUsesDatedBodiesAndSharedTimeAcrossPauseRestartAndExit(mission: 
     let routeID = try #require(resources.navigationSnapshot.routeID)
     #expect(resources.simulationSnapshot.mode == .missionReplay)
     #expect(resources.simulationSnapshot.dateUTC == SimulationTime.date(forTDBSeconds: timeline.departureEpoch))
-    let launchEarth = try #require(resources.snapshotProvider.latestSnapshot?.planet(named: "Earth"))
-    let launchRoute = try #require(resources.navigationController.routeRenderState.route)
-    if mission == .crew13 {
-        #expect(launchRoute.crew13Profile == Crew13RouteProfile(earth: launchEarth))
-    } else if mission == .starshipFlight14 {
-        #expect(launchRoute.starshipProfile == StarshipRouteProfile(earth: launchEarth))
-    }
+    let launchRoute = try requireDatedMissionLaunch(resources: resources, mission: mission)
     resources.sceneCoordinator.update(deltaTime: 4)
     let epoch = try #require(resources.sceneCoordinator.latestFrameState?.simulationTime)
     #expect(epoch == timeline.epoch(at: 4))
@@ -200,7 +195,8 @@ func missionRejectsMissingLaunchOrFutureEphemerisAndRetries(anchorIndex: Int) th
     #expect(resources.navigationSnapshot.elapsedTime == 0)
     #expect(resources.navigationController.routeRenderState.starshipFlight == nil)
     resources.sceneCoordinator.update(deltaTime: 5)
-    #expect(resources.sceneCoordinator.latestFrameState?.simulationTime == MissionTimeline.forMission(.crew13).epoch(at: 5))
+    #expect(resources.sceneCoordinator.latestFrameState?.simulationTime
+            == MissionTimeline.forMission(.crew13).epoch(at: 5))
     resources.navigation.startNavigation(to: "Mars")
     let transfer = try #require(resources.navigationController.activeTransfer)
     #expect(abs(transfer.departureEpoch - SimulationTime.tdbSeconds(for: now)) < 1e-6)
@@ -285,7 +281,8 @@ func missionRejectsMissingLaunchOrFutureEphemerisAndRetries(anchorIndex: Int) th
     let now = missionDate("2026-10-16T10:00:00Z")
     let archive = try EphemerisArchive.bundled.get()
     let blocked = MissionTimeline.forMission(.crew13).epoch(at: 4)
-    let resources = try missionResources(stateProvider: MissionRestrictedProvider(archive: archive, blockedEpoch: blocked),
+    let resources = try missionResources(stateProvider: MissionRestrictedProvider(archive: archive,
+                                         blockedEpoch: blocked),
                                          now: { now })
     resources.navigation.startMission(.crew13)
     #expect(resources.navigationSnapshot.state == .running)
@@ -299,4 +296,17 @@ func missionRejectsMissingLaunchOrFutureEphemerisAndRetries(anchorIndex: Int) th
     #expect(resources.snapshotProvider.latestSnapshot?.simulationTime == SimulationTime.tdbSeconds(for: now))
     resources.sceneCoordinator.update(deltaTime: 0)
     #expect(resources.sceneCoordinator.latestFrameState?.routes.navigation.route == nil)
+}
+
+@MainActor
+private func requireDatedMissionLaunch(resources: UniverseModuleResources,
+                                       mission: MissionFlightPlan) throws -> NavigationRoute {
+    let launchEarth = try #require(resources.snapshotProvider.latestSnapshot?.planet(named: "Earth"))
+    let launchRoute = try #require(resources.navigationController.routeRenderState.route)
+    if mission == .crew13 {
+        #expect(launchRoute.crew13Profile == Crew13RouteProfile(earth: launchEarth))
+    } else if mission == .starshipFlight14 {
+        #expect(launchRoute.starshipProfile == StarshipRouteProfile(earth: launchEarth))
+    }
+    return launchRoute
 }

@@ -5,8 +5,9 @@ import Testing
 @testable import UniverseModule
 
 @Test func lambertMatchesESACircularReference() throws {
-    // ESA pykep Lambert documentation: r0=(1,0,0), r1=(0,1,0), dt=pi/2, mu=1.
-    let solution = try LambertSolver.solve(from: SIMD3(1, 0, 0), to: SIMD3(0, 1, 0), duration: .pi / 2, mu: 1)
+    // ESA pykep Lambert documentation: r0=(1,0,0), r1=(0,1,0), dt=pi/2, gravitationalParameter=1.
+    let solution = try LambertSolver.solve(
+        from: SIMD3(1, 0, 0), to: SIMD3(0, 1, 0), duration: .pi / 2, gravitationalParameter: 1)
     #expect(simd_distance(solution.departure, SIMD3(0, 1, 0)) < 1e-11)
     #expect(simd_distance(solution.arrival, SIMD3(-1, 0, 0)) < 1e-11)
 }
@@ -14,7 +15,7 @@ import Testing
 @Test func lambertMatchesIndependentValladoReference() throws {
     let start = SIMD3<Double>(5_000, 10_000, 2_100)
     let end = SIMD3<Double>(-14_600, 2_500, 7_000)
-    let solution = try LambertSolver.solve(from: start, to: end, duration: 3_600, mu: 398_600.4418)
+    let solution = try LambertSolver.solve(from: start, to: end, duration: 3_600, gravitationalParameter: 398_600.4418)
     #expect(simd_distance(solution.departure, SIMD3(-5.99249502, 1.92536671, 3.24563805)) < 1e-7)
     #expect(simd_distance(solution.arrival, SIMD3(-3.31245850, -4.19661901, -0.38528906)) < 1e-7)
 }
@@ -31,7 +32,8 @@ import Testing
         let momentum = simd_cross(start.position, start.velocity)
         for fraction in [0.1, 0.5, 0.9] {
             let state = try solution.trajectory.state(after: solution.flightDuration * fraction)
-            let currentEnergy = simd_length_squared(state.velocity) / 2 - TwoBodyTrajectory.solarMu / simd_length(state.position)
+            let currentEnergy = simd_length_squared(state.velocity) / 2
+                - TwoBodyTrajectory.solarMu / simd_length(state.position)
             #expect(abs(currentEnergy - energy) < 1e-7)
             #expect(simd_length(simd_cross(state.position, state.velocity) - momentum) / simd_length(momentum) < 1e-10)
         }
@@ -40,7 +42,7 @@ import Testing
 
 @Test func lambertRejectsDegenerateGeometry() {
     #expect(throws: TransferFailure.invalidGeometry) {
-        try LambertSolver.solve(from: SIMD3(1, 0, 0), to: SIMD3(-1, 0, 0), duration: 1, mu: 1)
+        try LambertSolver.solve(from: SIMD3(1, 0, 0), to: SIMD3(-1, 0, 0), duration: 1, gravitationalParameter: 1)
     }
     #expect(throws: TransferFailure.invalidGeometry) {
         try TransferSolution.make(destinationName: "Moon", planets: testPlanets, departureEpoch: 0)
@@ -119,9 +121,10 @@ import Testing
 @Test func hyperbolicAndNearParabolicLambertArcsPropagateCorrectly() throws {
     for duration in [0.1, 0.95, 0.9767170884383225, 1.0, 8.0] {
         let end = SIMD3<Double>(0, 1, 0)
-        let velocities = try LambertSolver.solve(from: SIMD3(1, 0, 0), to: end, duration: duration, mu: 1)
+        let velocities = try LambertSolver.solve(
+            from: SIMD3(1, 0, 0), to: end, duration: duration, gravitationalParameter: 1)
         let trajectory = TwoBodyTrajectory(initialPosition: SIMD3(1, 0, 0),
-                                            initialVelocity: velocities.departure, mu: 1)
+                                            initialVelocity: velocities.departure, gravitationalParameter: 1)
         let state = try trajectory.state(after: duration)
         #expect(simd_distance(state.position, end) < 1e-9)
         #expect(simd_distance(state.velocity, velocities.arrival) < 1e-9)
@@ -131,7 +134,7 @@ import Testing
 @Test func minimumRadiusIncludesPeriapsisBetweenSamples() {
     // Ellipse with a=1, e=0.8, from the negative-y minor-axis point to positive y, crossing periapsis.
     let trajectory = TwoBodyTrajectory(initialPosition: SIMD3(0, -0.36, 0),
-                                        initialVelocity: SIMD3(1 / 0.6, 0.8 / 0.6, 0), mu: 1)
+                                        initialVelocity: SIMD3(1 / 0.6, 0.8 / 0.6, 0), gravitationalParameter: 1)
     #expect(abs(trajectory.minimumRadius(endingAt: SIMD3(0, 0.36, 0)) - 0.2) < 1e-10)
 }
 
@@ -233,5 +236,6 @@ func completedTransferHoldsInterceptUntilHandoffOrCancellation(cancel: Bool) thr
     }
     #expect(resources.navigationController.activeTransfer == nil)
     resources.sceneCoordinator.update(deltaTime: 1)
-    #expect(try #require(resources.sceneCoordinator.latestFrameState).simulationTime == SimulationTime.tdbSeconds(for: date))
+    let frameState = try #require(resources.sceneCoordinator.latestFrameState)
+    #expect(frameState.simulationTime == SimulationTime.tdbSeconds(for: date))
 }

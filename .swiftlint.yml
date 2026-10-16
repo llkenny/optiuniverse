@@ -1,0 +1,10 @@
+included:
+  - OptiUniverse
+  - OptiUniverseTests
+  - Modules
+excluded:
+  - "**/.build"
+  - "**/build"
+  - "**/DerivedData"
+  - "**/.cache"
+  - "**/SourcePackages"

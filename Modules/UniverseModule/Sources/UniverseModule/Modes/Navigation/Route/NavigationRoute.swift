@@ -105,7 +105,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
         guard precisePoints.count == cumulativeDistances.count, let first = precisePoints.first else { return nil }
         let target = distance(at: progress)
         guard target > 0, totalDistance > 0 else { return first }
-        guard let upper = cumulativeDistances.firstIndex(where: { $0 >= target }), upper > 0 else { return precisePoints.last }
+        guard let upper = cumulativeDistances.firstIndex(where: { $0 >= target }),
+                                                         upper > 0 else { return precisePoints.last }
         let fraction = Double((target - cumulativeDistances[upper-1]) /
                               max(cumulativeDistances[upper] - cumulativeDistances[upper-1], .leastNonzeroMagnitude))
         return precisePoints[upper-1] + (precisePoints[upper] - precisePoints[upper-1]) * fraction
@@ -117,7 +118,7 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
             let opening = ArtemisRouteProfile.openingPhaseEnd(estimatedDuration: estimatedDuration)
             guard progress < opening else { return precisePoints }
             visibleProgress = max(progress, ArtemisRouteProfile.easedOpeningProgress(routeProgress: progress,
-                                                                                     estimatedDuration: estimatedDuration))
+                                                                 estimatedDuration: estimatedDuration))
         } else if !hasMissionVehicles { return precisePoints }
         guard precisePoints.count == cumulativeDistances.count, let first = precisePoints.first else { return [] }
         guard visibleProgress > 0 else { return [first] }
@@ -159,7 +160,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
 
     func motionDirection(at progress: Float) -> SIMD3<Float>? {
         if let transfer,
-           let state = try? transfer.trajectory.state(after: Double(min(1, max(0, progress))) * transfer.flightDuration) {
+           let state = try? transfer.trajectory.state(after: Double(min(1, max(0,
+                                                      progress))) * transfer.flightDuration) {
             return normalize(OrbitalState.scenePosition(state.velocity))
         }
         guard points.count >= 2,
@@ -267,7 +269,8 @@ public struct NavigationRoute: Sendable, Equatable, Identifiable {
                         cumulativeDistances: cumulativeDistances, totalDistance: totalDistance,
                         estimatedDuration: estimatedDuration, overviewPaddingRadius: overviewPaddingRadius,
                         overviewCenter: overviewCenter, transfer: transfer, precisePoints: precisePoints,
-                        sampleProgresses: sampleProgresses, preciseOverviewCenter: preciseOverviewCenter, mission: mission,
+                        sampleProgresses: sampleProgresses, preciseOverviewCenter: preciseOverviewCenter,
+                            mission: mission,
                         starshipProfile: starshipProfile, crew13Profile: crew13Profile)
     }
 

@@ -152,7 +152,8 @@ extension RootContainerView {
         switch snapshot.state {
         case .running:
             if let duration = snapshot.physicalFlightDuration {
-                return "\(Int((duration / 86_400).rounded())) day transfer · 30 s playback · ETA \(formatTime(snapshot.remainingTime))"
+                let days = Int((duration / 86_400).rounded())
+                return "\(days) day transfer · 30 s playback · ETA \(formatTime(snapshot.remainingTime))"
             }
             return "ETA \(formatTime(snapshot.remainingTime))"
         case .completed:
@@ -165,23 +166,10 @@ extension RootContainerView {
     }
 
     private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
-        if snapshot.mission == .crew13 {
+        if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14 {
             if snapshot.state == .failed { return "Mission unavailable" }
             guard let status = snapshot.missionStatus else { return "Preparing launch" }
-            return snapshot.state == .completed ? status.phase.rawValue
-                : "\(status.phase.rawValue) · ETA \(formatTime(snapshot.remainingTime))"
-        }
-        if snapshot.mission == .starshipFlight14 {
-            if snapshot.state == .failed { return "Mission unavailable" }
-            guard let status = snapshot.missionStatus else { return "Preparing launch" }
-            let phaseText: String
-            if status.phase == .orbit {
-                phaseText = "Orbit \(status.currentOrbit) of \(status.totalOrbits)"
-            } else if status.phase == .deployment {
-                phaseText = "Deploying Starlinks · \(status.deployedSatelliteCount)/26"
-            } else {
-                phaseText = status.phase.rawValue
-            }
+            let phaseText = snapshot.mission == .crew13 ? status.phase.rawValue : starshipPhaseText(status: status)
             return snapshot.state == .completed ? phaseText : "\(phaseText) · ETA \(formatTime(snapshot.remainingTime))"
         }
         let routeText = navigationRouteText(snapshot: snapshot)
@@ -198,6 +186,16 @@ extension RootContainerView {
         case .idle, .cancelled:
             return routeText
         }
+    }
+
+    private func starshipPhaseText(status: MissionNavigationStatus) -> String {
+        if status.phase == .orbit {
+            return "Orbit \(status.currentOrbit) of \(status.totalOrbits)"
+        }
+        if status.phase == .deployment {
+            return "Deploying Starlinks · \(status.deployedSatelliteCount)/26"
+        }
+        return status.phase.rawValue
     }
 
     private func navigationRouteText(snapshot: NavigationRouteSnapshot) -> String {

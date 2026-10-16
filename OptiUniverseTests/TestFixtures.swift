@@ -95,7 +95,36 @@ func decodeFeaturedObjectsFixture() throws -> [FeaturedObject] {
 }
 
 func decodeDestinationsFixture() throws -> [DestinationObject] {
-    try JSONDecoder().decode([DestinationObject].self, from: Data("""
+    try JSONDecoder().decode([DestinationObject].self, from: Data(destinationsFixtureJSON.utf8))
+}
+
+private enum FixtureError: Error {
+    case missingResource(String)
+}
+
+final class MockFeaturedObjectProvider: FeaturedObjectProviderProtocol {
+    let featuredObjects: [FeaturedObject]
+
+    init(featuredObjects: [FeaturedObject]) {
+        self.featuredObjects = featuredObjects
+    }
+
+    func fetch() {
+    }
+}
+
+final class MockDestinationsProvider: DestinationsProviderProtocol {
+    let destinations: [DestinationObject]
+
+    init(destinations: [DestinationObject]) {
+        self.destinations = destinations
+    }
+
+    func fetch() {
+    }
+}
+
+private let destinationsFixtureJSON = """
     [
       {
         "id": "BA41330B-C7FC-46B2-BAA9-E8CE85102A64",
@@ -180,31 +209,4 @@ func decodeDestinationsFixture() throws -> [DestinationObject] {
         ]
       }
     ]
-    """.utf8))
-}
-
-private enum FixtureError: Error {
-    case missingResource(String)
-}
-
-final class MockFeaturedObjectProvider: FeaturedObjectProviderProtocol {
-    let featuredObjects: [FeaturedObject]
-
-    init(featuredObjects: [FeaturedObject]) {
-        self.featuredObjects = featuredObjects
-    }
-
-    func fetch() {
-    }
-}
-
-final class MockDestinationsProvider: DestinationsProviderProtocol {
-    let destinations: [DestinationObject]
-
-    init(destinations: [DestinationObject]) {
-        self.destinations = destinations
-    }
-
-    func fetch() {
-    }
-}
+    """

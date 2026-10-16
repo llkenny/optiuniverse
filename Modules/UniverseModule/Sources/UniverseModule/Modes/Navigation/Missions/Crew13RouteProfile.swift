@@ -170,7 +170,8 @@ struct Crew13RouteProfile: Sendable, Equatable {
         return NavigationRoute(id: id, originName: "Earth", destinationName: "ISS", points: points,
                                cumulativeDistances: distances, totalDistance: distances.last ?? 0,
                                estimatedDuration: Self.duration, overviewPaddingRadius: radius * 1.9,
-                               overviewCenter: center, precisePoints: precisePoints, preciseOverviewCenter: preciseCenter, mission: .crew13, crew13Profile: self)
+                               overviewCenter: center, precisePoints: precisePoints,
+                                   preciseOverviewCenter: preciseCenter, mission: .crew13, crew13Profile: self)
     }
 
     private func direction(angle: Float) -> SIMD3<Float> {

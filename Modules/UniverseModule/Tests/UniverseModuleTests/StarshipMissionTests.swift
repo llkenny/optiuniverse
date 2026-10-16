@@ -136,7 +136,8 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
     var pose = CameraPose(target: .zero, distance: 5, orientation: simd_quatf())
     for time in stride(from: 0.0, through: 60.0, by: 0.125) {
         let state = NavigationRouteRenderState(route: route, progress: Float(time / 60), elapsedTime: time)
-        let frame = try #require(camera.frame(state: state, viewportSize: CGSize(width: 402, height: 874), currentPose: pose))
+        let frame = try #require(camera.frame(state: state, viewportSize: CGSize(width: 402, height: 874),
+                                 currentPose: pose))
         pose = CameraPose(target: frame.target, distance: frame.distance, orientation: try #require(frame.orientation))
         #expect(pose.distance.isFinite)
         #expect(pose.orientation.vector.x.isFinite)
@@ -157,7 +158,8 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
     #expect(!renderer.booster.isEnabled)
     renderer.update(state: .idle, sceneOrigin: .zero)
     #expect(!renderer.root.isEnabled)
-    renderer.update(state: NavigationRouteRenderState(route: profile.makeRoute(), progress: 0, elapsedTime: 0), sceneOrigin: .zero)
+    renderer.update(state: NavigationRouteRenderState(route: profile.makeRoute(), progress: 0, elapsedTime: 0),
+                    sceneOrigin: .zero)
     #expect(renderer.satellites.filter(\.isEnabled).isEmpty)
     #expect(renderer.booster.isEnabled)
     #expect(renderer.satellites.map(ObjectIdentifier.init) == identities)
@@ -178,7 +180,7 @@ private func starshipTestEarth(position: SIMD3<Float> = .zero,
     coordinator.update(simulationTime: 9_000_000, delta: 0)
     #expect(published.elapsedTime == 20)
     coordinator.refreshRoute(planets: [], snapshot: UniverseSceneSnapshot(frameID: 1, simulationTime: 9_000_000,
-                                                                         planets: [starshipTestEarth(position: SIMD3(10, 0, 0))]))
+                                                     planets: [starshipTestEarth(position: SIMD3(10, 0, 0))]))
     #expect(coordinator.route?.id == originalID)
     #expect(coordinator.route?.mission == .starshipFlight14)
     coordinator.update(missionElapsedTime: 60)

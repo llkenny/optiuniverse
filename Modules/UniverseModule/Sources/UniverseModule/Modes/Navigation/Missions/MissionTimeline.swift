@@ -46,7 +46,8 @@ struct MissionTimeline: Sendable, Equatable {
     // NASA recap: https://www.youtube.com/watch?v=_eeZQw9PBc0
     // Actual closest approach (19:00 EDT, not the planned 19:02):
     // https://www.nasa.gov/blogs/missions/2026/04/06/artemis-ii-flight-day-6-lunar-flyby-updates/
-    // Splashdown: https://ntrs.nasa.gov/api/citations/20260004348/downloads/Final%20-%20JANNAF%202026%20Presentation.pdf
+    // Splashdown reference:
+    // https://ntrs.nasa.gov/api/citations/20260004348/downloads/Final%20-%20JANNAF%202026%20Presentation.pdf
     // UTC anchors have minute precision; the playback mapping includes the existing close-up easing.
     private static let artemisII = Self(duration: 16, anchors: [
         Anchor(playbackTime: 0, epoch: epochUTC("2026-04-01T22:35:00Z")),
@@ -57,7 +58,7 @@ struct MissionTimeline: Sendable, Equatable {
     ])
 
     // Post-flight report, NOT the superseded planned ten-hour timeline:
-    // https://www.space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success
+    // space.com/space-exploration/launches-spacecraft/spacex-starship-megarocket-flight-14-orbital-launch-success
     // Launch ~12:48 UTC; deployment ~T+34...64 min, entry ~T+2h40m, splashdown ~T+3h08m.
     // All these historical anchors are approximate, to minute precision.
     private static let starshipFlight14: Self = {

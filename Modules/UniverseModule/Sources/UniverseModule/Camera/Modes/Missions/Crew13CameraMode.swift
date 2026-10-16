@@ -13,7 +13,8 @@ final class Crew13CameraMode {
               let flight = state.crew13Flight else { return nil }
         if routeID != route.id {
             routeID = route.id
-            openingFrame = CameraTransition.Frame(target: SIMD3<Float>(currentPose.preciseTarget - profile.preciseCenter),
+            openingFrame = CameraTransition.Frame(
+                target: SIMD3<Float>(currentPose.preciseTarget - profile.preciseCenter),
                                                    distance: currentPose.distance,
                                                    orientation: currentPose.orientation,
                                                    preciseTarget: currentPose.preciseTarget - profile.preciseCenter)
@@ -37,8 +38,10 @@ final class Crew13CameraMode {
                                                      viewportSize: viewportSize) * 1.65
         // The navigation panel occupies the lower portion of the scene. Compose the
         // subjects in its upper half and leave enough vertical space for the ISS arrays.
-        let composedTarget = target - SIMD3<Double>(cameraUp * cameraDistance * tan(CameraFit.verticalFieldOfView / 2) * 0.52)
-        let frame = CameraTransition.Frame(target: SIMD3<Float>(composedTarget), distance: cameraDistance, orientation: orientation, preciseTarget: composedTarget)
+        let composedTarget = target
+            - SIMD3<Double>(cameraUp * cameraDistance * tan(CameraFit.verticalFieldOfView / 2) * 0.52)
+        let frame = CameraTransition.Frame(target: SIMD3<Float>(composedTarget), distance: cameraDistance,
+                                           orientation: orientation, preciseTarget: composedTarget)
         guard state.elapsedTime < 2, let openingFrame else { return frame }
         return CameraTransition.interpolate(
             from: CameraTransition.Frame(target: SIMD3<Float>(openingFrame.preciseTarget + profile.preciseCenter),

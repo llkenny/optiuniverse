@@ -97,6 +97,9 @@ struct ReviewRequestCoordinatorTests {
         #expect(delay.durations.count == 1)
     }
 
+}
+
+extension ReviewRequestCoordinatorTests {
     @Test(arguments: ReviewBlocker.allCases)
     func unsafePresentationDefersRequest(blocker: ReviewBlocker) async throws {
         let fixture = ReviewFixture()

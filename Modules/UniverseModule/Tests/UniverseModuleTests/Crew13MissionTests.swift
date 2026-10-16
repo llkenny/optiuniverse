@@ -188,7 +188,8 @@ private func crew13TestEarth(position: SIMD3<Float> = .zero, radius: Float = 1,
     let renderer = RealityCrew13Mission()
     let identities = renderer.root.children.map(ObjectIdentifier.init)
     let sceneOrigin = SIMD3<Float>(4, -1, 2)
-    renderer.update(state: .init(route: profile.makeRoute(), progress: 1, elapsedTime: 60), sceneOrigin: SIMD3<Double>(sceneOrigin))
+    renderer.update(state: .init(route: profile.makeRoute(), progress: 1, elapsedTime: 60),
+                    sceneOrigin: SIMD3<Double>(sceneOrigin))
     #expect(renderer.root.isEnabled)
     #expect(!renderer.firstStage.isEnabled && !renderer.secondStage.isEnabled)
     let dragonPort = try #require(renderer.dragon.findEntity(named: "DragonDockingPort"))

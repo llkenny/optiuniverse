@@ -7,14 +7,7 @@ import simd
 // The coordinator intentionally centralizes atomic mutation of the canonical entity hierarchy.
 // swiftlint:disable:next type_body_length
 final class UniverseSceneCoordinator {
-    private static let realityKitCameraBasis = float4x4.makeRotationY(.pi)
-
-    struct BodyEntities {
-        let bodyRoot: Entity
-        let orbitTransform: Entity
-        let rotationTransform: Entity
-        let visualRoot: Entity
-    }
+    static let realityKitCameraBasis = float4x4.makeRotationY(.pi)
 
     let universeRoot = Entity()
     let environmentRoot = Entity()
@@ -28,31 +21,31 @@ final class UniverseSceneCoordinator {
     private(set) var bodyEntities: [String: BodyEntities] = [:]
     private(set) var realityKitOwnedBodyNames: Set<String> = []
     private(set) var isProceduralSceneContentPrepared = false
-    private(set) var animationPlaybackControllers: [String: [AnimationPlaybackController]] = [:]
+    var animationPlaybackControllers: [String: [AnimationPlaybackController]] = [:]
 
-    private let snapshotProvider: SnapshotProvider
-    private let cameraCoordinator: CameraCoordinator
+    let snapshotProvider: SnapshotProvider
+    let cameraCoordinator: CameraCoordinator
     private let objectInfoOverlayFramingState: ObjectInfoOverlayFramingState
-    private let navigationController: NavigationController
-    private let transferOrbitController: TransferOrbitController
+    let navigationController: NavigationController
+    let transferOrbitController: TransferOrbitController
     private let assetRepository: RealityAssetRepository
     private let occlusionCullingPolicy: CelestialOcclusionCullingPolicy
-    private let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
+    let surfaceCoordinateDebugLogger = SurfaceCoordinateDebugLogger()
     private var simulationClock: UniverseSimulationClock
     private let simulationDidChange: (SimulationSnapshot) -> Void
     private var lastPublishedSimulationSnapshot: SimulationSnapshot?
     private var lastSimulationPublicationTime = -Double.infinity
-    private var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
-    private var proceduralSceneContent: RealityProceduralSceneContent?
-    private var installationRoot: Entity?
-    private var immersiveFocusState = ImmersiveFocusState()
-    private var immersiveTransferOverviewState = ImmersiveTransferOverviewState()
+    var bodyDescriptors: [String: CelestialAssetDescriptor] = [:]
+    var proceduralSceneContent: RealityProceduralSceneContent?
+    var installationRoot: Entity?
+    var immersiveFocusState = ImmersiveFocusState()
+    var immersiveTransferOverviewState = ImmersiveTransferOverviewState()
     private(set) var activeInstallationID: UUID?
     private var updateSubscription: EventSubscription?
     private(set) var viewportSize: CGSize = .zero
     private(set) var latestFrameState: UniverseFrameState?
-    private(set) var immersiveFocusTransform: float4x4?
-    private(set) var immersiveTransferOverviewTransform: float4x4?
+    var immersiveFocusTransform: float4x4?
+    var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
     private var discardNextFrameDelta = false
@@ -107,7 +100,8 @@ final class UniverseSceneCoordinator {
                                           mode: simulationClock.mode, error: snapshotProvider.preparationError)
         let modeOrErrorChanged = lastPublishedSimulationSnapshot?.mode != snapshot.mode ||
             lastPublishedSimulationSnapshot?.error != snapshot.error
-        guard force || modeOrErrorChanged || simulationClock.presentationTime - lastSimulationPublicationTime >= 1 else {
+        guard force || modeOrErrorChanged
+                || simulationClock.presentationTime - lastSimulationPublicationTime >= 1 else {
             return
         }
         lastSimulationPublicationTime = simulationClock.presentationTime
@@ -211,53 +205,6 @@ final class UniverseSceneCoordinator {
         isPresentationActive = isActive
     }
 
-    var hasImmersiveFocus: Bool {
-        immersiveFocusState.hasFocus && !hasImmersiveTransferOverview
-    }
-
-    private var hasImmersiveTransferOverview: Bool {
-        transferOrbitController.isTransferPreviewActive ||
-        immersiveTransferOverviewState.hasPersistedTransform
-    }
-
-    func beginImmersiveTransferOverview() {
-        immersiveTransferOverviewState.begin()
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-    }
-
-    func clearImmersiveTransferOverview() {
-        immersiveTransferOverviewState.clear()
-        immersiveTransferOverviewTransform = nil
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-    }
-
-    func setImmersiveFocus(bodyName: String) {
-        immersiveFocusState.focus(on: bodyName)
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-    }
-
-    func clearImmersiveFocus() {
-        immersiveFocusState.clear()
-        immersiveTransferOverviewState.clear()
-        immersiveFocusTransform = nil
-        immersiveTransferOverviewTransform = nil
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-    }
-
-    func adjustImmersiveFocusRotation(translation: CGSize) -> Bool {
-        guard !hasImmersiveTransferOverview else { return false }
-        guard immersiveFocusState.rotate(translation: translation) else { return false }
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-        return true
-    }
-
-    func adjustImmersiveFocusScale(by scale: Float) -> Bool {
-        guard !hasImmersiveTransferOverview else { return false }
-        guard immersiveFocusState.scale(by: scale) else { return false }
-        applyImmersiveFocusIfPossible(frameState: latestFrameState)
-        return true
-    }
-
     func prepareCelestialBodies(from manifest: CelestialAssetManifest) async throws {
         let requestedBodyNames = Set(manifest.assets.map(\.displayName))
         guard requestedBodyNames != realityKitOwnedBodyNames || !isProceduralSceneContentPrepared else {
@@ -319,20 +266,17 @@ final class UniverseSceneCoordinator {
         } ?? false
         publishSimulationTime(force: isResuming || reachedMissionEnd)
         guard snapshotProvider.preparationError == nil else {
-            if navigationController.isNavigationActive || navigationController.pendingNavigationRequest != nil {
-                let pending = navigationController.pendingNavigationRequest
-                navigationController.navigationRouteCoordinator.failForEphemeris(mission: pending?.mission,
-                                                                                destinationName: pending?.destinationName)
-                navigationController.pendingNavigationRequest = nil
-                navigationController.requestedMissionReplay = nil
-                synchronizeLiveScene()
-            }
+            handleEphemerisFailure()
             return
         }
         transferOrbitController.update(snapshot: snapshotProvider.latestSnapshot, delta: delta)
         navigationController.update(snapshot: snapshotProvider.latestSnapshot, delta: delta,
                                     missionElapsedTime: simulationClock.mode == .missionReplay
                                         ? simulationClock.missionElapsedTime : nil)
+        updateCameraAndScene(delta: delta)
+    }
+
+    private func updateCameraAndScene(delta: Float) {
         // A pending start can fail preflight and restore Live synchronously during navigation update.
         let snapshot = snapshotProvider.latestSnapshot
         let modeState = makeCameraFrameModeState()
@@ -429,117 +373,6 @@ final class UniverseSceneCoordinator {
         }
     }
 
-    private func makeCameraFrameModeState() -> CameraFrameModeState {
-        CameraFrameModeState(
-            transferPreviewActive: transferOrbitController.isTransferPreviewActive,
-            transfer: transferOrbitController.cameraSnapshotDependency,
-            navigation: navigationController.routeRenderState
-        )
-    }
-
-    private func makeCameraProjection(
-        snapshot: UniverseSceneSnapshot?,
-        overlayAdjustment: ObjectInfoOverlayFramingState.ProjectionAdjustment,
-        modeState: CameraFrameModeState
-    ) -> CameraProjectionParameters {
-        let baseProjection = CameraProjectionParameters(
-            nearPlane: CameraFit.defaultNearPlane,
-            farPlane: CameraFit.defaultFarPlane,
-            verticalFieldOfView: overlayAdjustment.verticalFieldOfView,
-            verticalCenterOffset: overlayAdjustment.verticalCenterOffset
-        )
-        let followProjection = cameraCoordinator.followProjectionParameters(snapshot: snapshot,
-                                                                            baseProjection: baseProjection)
-        let navigationProjection = cameraCoordinator.navigationProjectionParameters(
-            modeState: modeState,
-            baseProjection: followProjection
-        )
-        return transferOrbitController.projectionParameters(snapshot: snapshot,
-                                                            baseProjection: navigationProjection)
-    }
-
-    private func makeCameraSnapshot(
-        snapshot: UniverseSceneSnapshot?,
-        projection: CameraProjectionParameters,
-        modeState: CameraFrameModeState
-    ) -> SnapshotProvider.CameraSnapshot {
-        let dependencies = cameraCoordinator.makeSnapshotDependencies(
-            snapshot: snapshot,
-            viewportSize: viewportSize,
-            projection: projection,
-            modeState: modeState
-        )
-        return snapshotProvider.makeCameraSnapshot(dependencies: dependencies)
-    }
-
-    func apply(frameState: UniverseFrameState) {
-        let cameraSnapshot = frameState.cameraSnapshot
-        let cameraTransform = simd_inverse(cameraSnapshot.renderViewMatrix)
-            * Self.realityKitCameraBasis
-        let projectionMatrix = Self.makeRealityKitProjection(from: cameraSnapshot)
-        virtualCamera.setTransformMatrix(cameraTransform,
-                                         relativeTo: universeRoot)
-        virtualCamera.components.set(
-            ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
-        )
-
-        proceduralSceneContent?.update(frameState: frameState)
-
-        guard let snapshot = frameState.snapshot else { return }
-        for packet in snapshot.planets {
-            guard let entities = bodyEntities[packet.planetName] else { continue }
-            entities.bodyRoot.position = EphemerisCoordinates.renderPosition(packet.preciseWorldPosition,
-                                                                             relativeTo: cameraSnapshot.resolvedSceneOrigin)
-            entities.orbitTransform.transform = .identity
-            entities.rotationTransform.transform = Transform(matrix: packet.visualRotationMatrix)
-            if bodyDescriptors[packet.planetName]?.usesSnapshotScale == true {
-                entities.visualRoot.scale = SIMD3<Float>(repeating: packet.normalizedScale)
-            }
-        }
-        applyImmersiveFocusIfPossible(frameState: frameState)
-    }
-
-    private func applyImmersiveFocusIfPossible(frameState: UniverseFrameState?) {
-        if transferOrbitController.isTransferPreviewActive,
-           let frameState,
-           let transform = immersiveTransferOverviewState.persist(
-                cameraPose: cameraCoordinator.currentCameraPose,
-                targetAfterSceneOrigin: cameraCoordinator.currentCameraPose.target
-                    - frameState.cameraSnapshot.sceneOrigin
-           ) {
-            immersiveTransferOverviewTransform = transform
-            installationRoot?.transform = Transform(matrix: transform)
-            return
-        }
-
-        if let transform = immersiveTransferOverviewState.persistedTransform {
-            immersiveTransferOverviewTransform = transform
-            installationRoot?.transform = Transform(matrix: transform)
-            return
-        }
-
-        immersiveTransferOverviewTransform = nil
-        guard immersiveFocusState.hasFocus else {
-            immersiveFocusTransform = nil
-            installationRoot?.transform = .identity
-            return
-        }
-        guard let frameState,
-              let snapshot = frameState.snapshot,
-              let bodyName = immersiveFocusState.bodyName,
-              let bodySnapshot = snapshot.planet(named: bodyName),
-              let transform = immersiveFocusState.transform(
-                  selectedBodyPositionAfterSceneOrigin: EphemerisCoordinates.renderPosition(
-                    bodySnapshot.preciseWorldPosition, relativeTo: frameState.cameraSnapshot.resolvedSceneOrigin),
-                  framingRadius: bodySnapshot.framingRadius
-              ) else {
-            return
-        }
-
-        immersiveFocusTransform = transform
-        installationRoot?.transform = Transform(matrix: transform)
-    }
-
     private func install(proceduralSceneContent: RealityProceduralSceneContent) {
         environmentRoot.children.removeAll()
         starFieldRoot.children.removeAll()
@@ -561,135 +394,4 @@ final class UniverseSceneCoordinator {
         self.proceduralSceneContent = proceduralSceneContent
     }
 
-    private func playConfiguredAnimations(for descriptor: CelestialAssetDescriptor,
-                                          on assetRoot: Entity) {
-        // These declared clips animate atmospheric child layers (Clouds / White_Belts /
-        // Orange_Belts), not the body frame. Keep them independent of the IAU rotation.
-        guard !descriptor.animations.isEmpty else { return }
-        let availableAnimations = assetRoot.availableAnimations.reduce(
-            into: [String: AnimationResource]()
-        ) { animationsByName, animation in
-            animationsByName[animation.name] = animationsByName[animation.name] ?? animation
-        }
-        var controllers: [AnimationPlaybackController] = []
-        controllers.reserveCapacity(descriptor.animations.count)
-        for configuredAnimation in descriptor.animations {
-            let animationOwnerAndResource = availableAnimations[configuredAnimation.name].map {
-                (assetRoot, $0)
-            } ?? animationResource(named: configuredAnimation.name, in: assetRoot)
-            guard let (animationOwner, animation) = animationOwnerAndResource else { continue }
-            let playbackAnimation = configuredAnimation.repeats ? animation.repeat() : animation
-            controllers.append(animationOwner.playAnimation(playbackAnimation))
-        }
-        if !controllers.isEmpty {
-            animationPlaybackControllers[descriptor.displayName] = controllers
-        }
-    }
-
-    func resumeConfiguredAnimationsIfNeeded() {
-        for (bodyName, descriptor) in bodyDescriptors where !descriptor.animations.isEmpty {
-            guard animationPlaybackControllers[bodyName]?.isEmpty != false,
-                  let assetRoot = bodyEntities[bodyName]?.visualRoot.children.first else {
-                continue
-            }
-            playConfiguredAnimations(for: descriptor, on: assetRoot)
-        }
-    }
-
-    private func stopAnimations(for bodyName: String) {
-        animationPlaybackControllers[bodyName]?.forEach { $0.stop() }
-        animationPlaybackControllers[bodyName] = nil
-    }
-
-    private func stopAllAnimations() {
-        animationPlaybackControllers.values.flatMap { $0 }.forEach { $0.stop() }
-        animationPlaybackControllers.removeAll()
-    }
-
-    private func animationResource(named name: String,
-                                   in entity: Entity) -> (Entity, AnimationResource)? {
-        if let animationLibrary = entity.components[AnimationLibraryComponent.self] {
-            if let animation = animationLibrary.animations[name] {
-                return (entity, animation)
-            }
-            if let animation = animationLibrary.animations.first(where: {
-                Self.animationKey($0.key, matches: name)
-            })?.value {
-                return (entity, animation)
-            }
-        }
-        for child in entity.children {
-            if let animation = animationResource(named: name, in: child) {
-                return animation
-            }
-        }
-        return nil
-    }
-
-    private static func animationKey(_ key: String, matches configuredName: String) -> Bool {
-        key.split(separator: "/").last.map(String.init) == configuredName
-    }
-
-    static func makeRealityKitProjection(
-        from cameraSnapshot: SnapshotProvider.CameraSnapshot
-    ) -> float4x4 {
-        let legacyProjection = cameraSnapshot.projectionMatrix
-        let near = cameraSnapshot.dependencies.projection.nearPlane
-        let far = cameraSnapshot.dependencies.projection.farPlane
-        let reverseDepthScale = near / (far - near)
-        let reverseDepthTranslation = far * reverseDepthScale
-
-        // ProjectiveTransformCameraComponent requires reverse depth. The camera basis
-        // converts the legacy +Z camera into RealityKit's -Z camera, and the projection
-        // keeps the app's intended screen-space left/right and up/down mapping.
-        return float4x4(
-            [legacyProjection[0][0], 0, 0, 0],
-            [0, legacyProjection[1][1], 0, 0],
-            [0, -legacyProjection[2][1], reverseDepthScale, -1],
-            [0, 0, reverseDepthTranslation, 0]
-        )
-    }
-
-    private func logSurfaceCoordinateDebug(snapshot: UniverseSceneSnapshot?,
-                                           cameraSnapshot: SnapshotProvider.CameraSnapshot,
-                                           modeState: CameraFrameModeState) {
-        guard let snapshot,
-              let bodyName = surfaceCoordinateDebugTargetName(cameraSnapshot: cameraSnapshot,
-                                                              modeState: modeState),
-              let planet = snapshot.planet(named: bodyName) else {
-            return
-        }
-
-        surfaceCoordinateDebugLogger.logIfNeeded(bodyName: bodyName,
-                                                 planet: planet,
-                                                 snapshot: snapshot,
-                                                 cameraSnapshot: cameraSnapshot)
-    }
-
-    private func surfaceCoordinateDebugTargetName(
-        cameraSnapshot: SnapshotProvider.CameraSnapshot,
-        modeState: CameraFrameModeState
-    ) -> String? {
-        return cameraSnapshot.dependencies.followedObject?.planetName
-    }
-}
-
-private extension CelestialAssetDescriptor {
-    var visualCorrectionTransform: Transform {
-        let renderScale = modelToUniverseScale * (renderRadius / referenceRadius)
-        return Transform(
-            scale: SIMD3<Float>(repeating: renderScale),
-            rotation: simd_quatf(
-                ix: orientationCorrection.xAxis,
-                iy: orientationCorrection.yAxis,
-                iz: orientationCorrection.zAxis,
-                r: orientationCorrection.real
-            ),
-            translation: SIMD3<Float>(
-                pivotCorrection.xAxis,
-                pivotCorrection.yAxis,
-                pivotCorrection.zAxis
-            )
-        )
-    }
 }

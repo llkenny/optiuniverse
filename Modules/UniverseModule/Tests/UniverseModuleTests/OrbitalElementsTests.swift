@@ -47,7 +47,7 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
 
 @Test func invalidOrbitalDataIsRejected() throws {
     let data = try JSONEncoder().encode(ellipse(eccentricity: 1.1))
-    let orbitJSON = String(decoding: data, as: UTF8.self)
+    let orbitJSON = try #require(String(data: data, encoding: .utf8))
     let json = """
     [{"name":"Earth","meshName":"Earth","diameterKm":12756,"rotationSpeedKmSec":0,"orbit":\(orbitJSON)}]
     """
@@ -63,7 +63,8 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
     let earth = try #require(snapshot.worldPosition(ofPlanetNamed: "Earth"))
     let moon = try #require(snapshot.worldPosition(ofPlanetNamed: "Moon"))
     let moonOrbit = try #require(testPlanets.first { $0.name == "Moon" }?.orbit)
-    #expect(simd_distance(moon - earth, OrbitalState.scenePosition(moonOrbit.state(at: snapshot.simulationTime).position)) < 1e-5)
+    #expect(simd_distance(moon - earth,
+            OrbitalState.scenePosition(moonOrbit.state(at: snapshot.simulationTime).position)) < 1e-5)
     let pipeline = UniverseSceneSnapshotPipeline(planets: testPlanets)
     pipeline.requestPreparation(simulationTime: 20)
     pipeline.requestPreparation(simulationTime: 10)
@@ -73,14 +74,27 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
 @Test func j2000StatesAgreeWithIndependentHorizonsReferencesWithinModelAccuracy() throws {
     // DE441 geometric J2000 ecliptic vectors, JPL Horizons, retrieved 2026-09-25.
     // Mean-element models intentionally have looser bounds than Pluto's osculating elements.
-    let references: [(String, SIMD3<Double>, Double)] = [
-        ("Mercury", SIMD3(-19_461_726.35585372, -66_913_275.263524, -3_679_854.343749542), 2_000),
-        ("Earth", SIMD3(-26_499_033.67743050, 144_697_296.7925493, -611.1494259536266), 10_000),
-        ("Moon", SIMD3(-291_608.3841877129, -274_979.7416731504, 36_271.19662699287), 5_000),
-        ("Pluto", SIMD3(-1_477_331_666.009064, -4_182_576_442.612421, 875_214_251.751896), 0.001)
+    struct Reference {
+        let name: String
+        let position: SIMD3<Double>
+        let toleranceKm: Double
+    }
+    let references: [Reference] = [
+        Reference(
+            name: "Mercury", position: SIMD3(-19_461_726.35585372, -66_913_275.263524, -3_679_854.343749542),
+            toleranceKm: 2_000),
+        Reference(
+            name: "Earth", position: SIMD3(-26_499_033.67743050, 144_697_296.7925493, -611.1494259536266),
+            toleranceKm: 10_000),
+        Reference(
+            name: "Moon", position: SIMD3(-291_608.3841877129, -274_979.7416731504, 36_271.19662699287),
+            toleranceKm: 5_000),
+        Reference(
+            name: "Pluto", position: SIMD3(-1_477_331_666.009064, -4_182_576_442.612421, 875_214_251.751896),
+            toleranceKm: 0.001)
     ]
-    for (name, expected, toleranceKm) in references {
-        let orbit = try #require(testPlanets.first { $0.name == name }?.orbit)
-        #expect(simd_distance(orbit.state(at: 0).position, expected) < toleranceKm)
+    for reference in references {
+        let orbit = try #require(testPlanets.first { $0.name == reference.name }?.orbit)
+        #expect(simd_distance(orbit.state(at: 0).position, reference.position) < reference.toleranceKm)
     }
 }
