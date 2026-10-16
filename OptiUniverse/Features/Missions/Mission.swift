@@ -4,14 +4,18 @@ import UniverseModule
 struct Mission: Equatable, Identifiable {
     let id: String
     let title: String
+    let goals: String
     let description: String
     let flightPlan: MissionFlightPlan
     let route: MissionRoute
 
+    var launchDate: Date { flightPlan.launchDate }
+
     static let artemisII = Mission(
         id: "artemis-ii",
         title: "Artemis II",
-        description: "Earth to Moon and return",
+        goals: "Fly around the Moon and return",
+        description: "Follow a crewed lunar flyby from Earth to the Moon and back through atmospheric entry.",
         flightPlan: .artemisII,
         route: MissionRoute(originName: "Earth",
                             waypointName: "Moon",
@@ -21,7 +25,9 @@ struct Mission: Equatable, Identifiable {
     static let starshipFlight14 = Mission(
         id: "starship-flight-14",
         title: "Starship Flight 14",
-        description: "Illustrative flight · compressed timing",
+        goals: "Test Starship and deploy Starlinks",
+        description: "Follow launch, satellite deployment, reentry and ocean splashdown "
+            + "in a compressed illustrative flight.",
         flightPlan: .starshipFlight14,
         route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "Earth")
     )
@@ -29,12 +35,19 @@ struct Mission: Equatable, Identifiable {
     static let crew13 = Mission(
         id: "crew-13",
         title: "Crew 13",
-        description: "Earth to ISS · 60 s illustrative flight",
+        goals: "Deliver crew to the ISS",
+        description: "Follow Falcon 9 and Crew Dragon from launch to docking with the International Space Station.",
         flightPlan: .crew13,
         route: MissionRoute(originName: "Earth", waypointName: nil, destinationName: "ISS")
     )
 
-    static let available: [Mission] = [.artemisII, .starshipFlight14, .crew13]
+    static let available = sortedByLaunchDate([.artemisII, .starshipFlight14, .crew13])
+
+    static func sortedByLaunchDate(_ missions: [Mission]) -> [Mission] {
+        missions.sorted {
+            $0.launchDate == $1.launchDate ? $0.id < $1.id : $0.launchDate > $1.launchDate
+        }
+    }
 }
 
 struct MissionRoute: Equatable, Identifiable {

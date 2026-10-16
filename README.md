@@ -22,7 +22,12 @@ a smooth approach to Earth's limb, and a short atmospheric descent to the surfac
 The return arc depicts direct entry without a complete Earth orbit; it is not a
 telemetry reconstruction or a geographically anchored splashdown track.
 
-The Missions carousel includes Artemis II, **Starship Flight 14**, and **Crew 13**. Starship plays a
+The home screen features one large **Missions** carousel in place of Featured Objects.
+Cards show the launch date (UTC, formatted for the device locale), name, goals, and a short
+description. Missions appear newest first: **Crew 13**, **Starship Flight 14**, then **Artemis II**.
+Swipe or use the page indicator to choose a card; tap it to start the mission.
+
+Starship plays a
 60-second illustrative flight: launch, separation, a Super Heavy splashdown cutaway,
 two complete visual Earth orbits, deployment of 26 Starlinks, and Starship reentry and
 controlled ocean splashdown. The overlay shows the current phase, orbit count,

@@ -5,6 +5,11 @@ public enum MissionFlightPlan: String, Sendable, Equatable {
     case artemisII = "artemis-ii"
     case starshipFlight14 = "starship-flight-14"
     case crew13 = "crew-13"
+
+    /// UTC launch instant shared with the mission replay's first historical anchor.
+    public var launchDate: Date {
+        SimulationTime.date(forTDBSeconds: MissionTimeline.forMission(self).departureEpoch)
+    }
 }
 
 public struct MissionNavigationStatus: Sendable, Equatable {

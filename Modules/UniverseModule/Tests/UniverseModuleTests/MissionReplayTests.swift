@@ -28,6 +28,12 @@ private func expectMissionDate(_ epoch: Double, _ date: String, sourceLocation: 
             sourceLocation: sourceLocation)
 }
 
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13])
+func publicLaunchDateMatchesReplayDeparture(mission: MissionFlightPlan) {
+    let timeline = MissionTimeline.forMission(mission)
+    #expect(mission.launchDate == SimulationTime.date(forTDBSeconds: timeline.departureEpoch))
+}
+
 @Test func missionTimelinesMatchPublishedUTCAnchorsAndInterpolate() {
     let artemis = MissionTimeline.forMission(.artemisII)
     expectMissionDate(artemis.epoch(at: 0), "2026-04-01T22:35:00Z")

@@ -1,61 +1,55 @@
 import Foundation
-import SwiftUI
 import Testing
+import UniverseModule
 @testable import OptiUniverse
 
 @MainActor
 struct HeroCarouselViewModelTests {
-    @Test func mapsFeaturedObjectsAndClampsIndexes() async throws {
-        let featuredObjects = try decodeFeaturedObjectsFixture()
-        let viewModel = HeroCarouselViewModel()
-        viewModel.featuredObjectProvider = MockFeaturedObjectProvider(featuredObjects: featuredObjects)
+    @Test func sortsMissionsAndInitiallySelectsNewest() {
+        let viewModel = HeroCarouselViewModel(missions: [.artemisII, .crew13, .starshipFlight14])
 
+        #expect(viewModel.totalCount == 3)
+        #expect(viewModel.cards.map(\.mission) == [.crew13, .starshipFlight14, .artemisII])
+        #expect(viewModel.activeCardID == Mission.crew13.id)
+        #expect(viewModel.currentIndex == 0)
+    }
+
+    @Test func indicatorSelectionAndScrollingStayInSync() {
+        let viewModel = HeroCarouselViewModel()
+        viewModel.currentIndex = 1
+        #expect(viewModel.activeCardID == Mission.starshipFlight14.id)
+        viewModel.activeCardID = Mission.artemisII.id
+        #expect(viewModel.currentIndex == 2)
+        #expect(viewModel.index(for: viewModel.cardID(for: 1)) == 1)
+    }
+
+    @Test func clampsOutOfRangeSelection() {
+        let viewModel = HeroCarouselViewModel()
+        viewModel.currentIndex = -1
+        #expect(viewModel.currentIndex == 0)
+        #expect(viewModel.activeCardID == Mission.crew13.id)
+        viewModel.currentIndex = 99
+        #expect(viewModel.currentIndex == 2)
+        #expect(viewModel.activeCardID == Mission.artemisII.id)
+        #expect(viewModel.index(for: "unknown-mission") == nil)
+        #expect(viewModel.index(for: nil) == nil)
+    }
+
+    @Test func emptyCatalogHasNoSelection() {
+        let viewModel = HeroCarouselViewModel(missions: [])
+        viewModel.currentIndex = 99
+        #expect(viewModel.totalCount == 0)
+        #expect(viewModel.cards.isEmpty)
+        #expect(viewModel.activeCardID == nil)
+        #expect(viewModel.currentIndex == 0)
         #expect(viewModel.clampedIndex(for: 0) == nil)
         #expect(viewModel.cardID(for: 0) == nil)
-        #expect(viewModel.index(for: nil) == nil)
-
-        await viewModel.loadCards()
-
-        #expect(viewModel.totalCount == 4)
-        #expect(viewModel.cards.map(\.title) == ["Moon Base", "Saturn", "Neptune", "Mars"])
-        #expect(viewModel.cards.map(\.subtitle) == [
-            "First lunar outpost",
-            "Ringed giant",
-            "Deep blue frontier",
-            "Red world"
-        ])
-        #expect(viewModel.clampedIndex(for: -1) == 0)
-        #expect(viewModel.clampedIndex(for: 99) == 3)
-
-        let secondID = try #require(viewModel.cardID(for: 1))
-        #expect(viewModel.index(for: secondID) == 1)
     }
 
-    @Test func featuredMoonBaseUsesDestinationID() async throws {
-        let viewModel = HeroCarouselViewModel()
-        viewModel.featuredObjectProvider = MockFeaturedObjectProvider(
-            featuredObjects: try decodeFeaturedObjectsFixture()
-        )
-
-        await viewModel.loadCards()
-
-        let card = try #require(viewModel.cards.first { $0.title == "Moon Base" })
-        let destination = try #require(try decodeDestinationsFixture().first { $0.title == "Moon Base" })
-
-        #expect(card.id == destination.id)
-    }
-
-    @Test func nonSurfaceHeroCardUsesDestinationID() async throws {
-        let viewModel = HeroCarouselViewModel()
-        viewModel.featuredObjectProvider = MockFeaturedObjectProvider(
-            featuredObjects: try decodeFeaturedObjectsFixture()
-        )
-
-        await viewModel.loadCards()
-
-        let card = try #require(viewModel.cards.first { $0.title == "Mars" })
-        let destination = try #require(try decodeDestinationsFixture().first { $0.title == "Mars" })
-
-        #expect(card.id == destination.id)
+    @Test func launchDateUsesRequestedLocaleAndUTC() {
+        let card = MissionCardModel(mission: .crew13)
+        #expect(card.formattedLaunchDate(locale: Locale(identifier: "en_US")) == "Oct 1, 2026")
+        #expect(card.formattedLaunchDate(locale: Locale(identifier: "en_GB")) == "1 Oct 2026")
+        #expect(card.mission.launchDate == card.mission.flightPlan.launchDate)
     }
 }

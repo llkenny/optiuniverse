@@ -6,7 +6,9 @@ import Testing
     let mission = Mission.artemisII
 
     #expect(mission.title == "Artemis II")
-    #expect(mission.description == "Earth to Moon and return")
+    #expect(mission.goals == "Fly around the Moon and return")
+    #expect(mission.description == "Follow a crewed lunar flyby from Earth to the Moon "
+            + "and back through atmospheric entry.")
     #expect(mission.route == MissionRoute(originName: "Earth",
                                           waypointName: "Moon",
                                           destinationName: "Earth"))
@@ -53,10 +55,11 @@ import Testing
 @MainActor
 @Test func starshipCatalogAndLaunchPlanUseExplicitMission() {
     let mission = Mission.starshipFlight14
-    #expect(Mission.available == [.artemisII, .starshipFlight14, .crew13])
+    #expect(Mission.available == [.crew13, .starshipFlight14, .artemisII])
     #expect(mission.id == "starship-flight-14")
     #expect(mission.flightPlan == .starshipFlight14)
-    #expect(mission.description == "Illustrative flight · compressed timing")
+    #expect(mission.goals == "Test Starship and deploy Starlinks")
+    #expect(!mission.description.isEmpty)
     let plan = MissionLaunchPlan(mission: mission)
     #expect(plan.flowState.mission == mission)
     #expect(plan.selectedPlanet == nil)
@@ -77,10 +80,11 @@ import Testing
 @MainActor
 @Test func crew13CatalogAndLaunchPlanUseISSRoute() {
     let mission = Mission.crew13
-    #expect(Mission.available.last == mission)
+    #expect(Mission.available.first == mission)
     #expect(mission.id == "crew-13")
     #expect(mission.title == "Crew 13")
-    #expect(mission.description == "Earth to ISS · 60 s illustrative flight")
+    #expect(mission.goals == "Deliver crew to the ISS")
+    #expect(!mission.description.isEmpty)
     #expect(mission.flightPlan == .crew13)
     let plan = MissionLaunchPlan(mission: mission)
     #expect(plan.flowState.mission == mission)
@@ -102,4 +106,13 @@ import Testing
                                             destinationName: "Earth", missionID: .crew13) == .noChange)
     #expect(state.handleCompletedNavigation(originName: "Earth", waypointName: nil,
                                             destinationName: "ISS", missionID: .crew13) == .complete)
+}
+
+@MainActor
+@Test func missionCatalogSortsEqualLaunchDatesByID() {
+    let earlierID = Mission(id: "a", title: "First", goals: "Test", description: "Test mission.",
+                            flightPlan: .crew13, route: Mission.crew13.route)
+    let laterID = Mission(id: "z", title: "Last", goals: "Test", description: "Test mission.",
+                          flightPlan: .crew13, route: Mission.crew13.route)
+    #expect(Mission.sortedByLaunchDate([laterID, .artemisII, earlierID]) == [earlierID, laterID, .artemisII])
 }
