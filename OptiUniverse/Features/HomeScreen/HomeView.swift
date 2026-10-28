@@ -17,25 +17,34 @@ struct HomeView: View {
     @State private var selectedTag: String?
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                HeroCarouselView(
-                    currentIndex: $currentCarouselIndex,
-                    totalCount: $totalCount,
-                    onMissionSelected: onMissionSelected
-                )
-                .padding(.bottom, 12)
-                PageIndicatorView(totalCount: totalCount,
-                                  currentIndex: $currentCarouselIndex)
-                .padding(.bottom, 16)
-                CategoryChipsView(selectedTag: $selectedTag)
-                    .padding(.horizontal)
-                    .padding(.bottom, 2)
-                DestinationListView(selectedTag: $selectedTag)
-                    .padding(.horizontal)
+        GeometryReader { geometry in
+            ScrollView(.vertical, showsIndicators: false) {
+                discoveryContent(width: geometry.size.width)
             }
         }
         .background(OptiColor.screenBackground.ignoresSafeArea())
+    }
+
+    private func discoveryContent(width: CGFloat) -> some View {
+        let isExpanded = AdaptiveLayoutPolicy.isExpandedDiscovery(width: width)
+        return VStack(spacing: 0) {
+            HeroCarouselView(
+                currentIndex: $currentCarouselIndex,
+                totalCount: $totalCount,
+                onMissionSelected: onMissionSelected,
+                availableWidth: width,
+                isExpanded: isExpanded
+            )
+            .padding(.bottom, 12)
+            PageIndicatorView(totalCount: totalCount,
+                              currentIndex: $currentCarouselIndex)
+            .padding(.bottom, 16)
+            CategoryChipsView(selectedTag: $selectedTag)
+                .padding(.horizontal)
+                .padding(.bottom, 2)
+            DestinationListView(selectedTag: $selectedTag, isExpanded: isExpanded)
+                .padding(.horizontal)
+        }
     }
 }
 

@@ -26,9 +26,9 @@ struct CameraGestureView: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ view: UIView, context: Context) {
-        resources.setViewportSize(view.bounds.size)
-    }
+    // UniverseView observes its laid-out geometry; UIKit can still have the previous
+    // bounds here during a resize and must not overwrite that authoritative size.
+    func updateUIView(_ view: UIView, context: Context) {}
 
     static func installGestureRecognizers(
         on view: UIView,

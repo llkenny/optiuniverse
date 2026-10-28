@@ -78,6 +78,36 @@ import Testing
     #expect(updatedProjection.verticalCenterOffset == projection.verticalCenterOffset)
 }
 
+@MainActor
+@Test func objectInfoOverlayFramingUpdatesWhenOnlyViewportHeightChanges() {
+    let state = ObjectInfoOverlayFramingState()
+    state.setPresentation(isPresented: true, bottomInset: 100, viewportHeight: 1_000)
+    let original = state.advance(delta: 1)
+
+    state.setPresentation(isPresented: true, bottomInset: 100, viewportHeight: 500)
+    let resized = state.advance(delta: 0)
+
+    #expect(resized.verticalCenterOffset < original.verticalCenterOffset)
+    #expect(resized.verticalFieldOfView > original.verticalFieldOfView)
+
+    state.setPresentation(isPresented: true, bottomInset: 100, viewportHeight: 1_000)
+    #expect(state.advance(delta: 0) == original)
+}
+
+@MainActor
+@Test func objectInfoOverlayFramingClearsWhenDetailsMoveToSidePanel() {
+    let state = ObjectInfoOverlayFramingState()
+    state.setPresentation(isPresented: true, bottomInset: 300, viewportHeight: 1_000)
+    #expect(state.advance(delta: 1) != .identity)
+
+    state.setPresentation(isPresented: false, bottomInset: 0, viewportHeight: 600)
+    #expect(state.advance(delta: 1) == .identity)
+
+    state.setPresentation(isPresented: true, bottomInset: 100, viewportHeight: 1_000)
+    let reopened = state.advance(delta: 1)
+    #expect(abs(reopened.verticalCenterOffset + 0.07) < 0.000_01)
+}
+
 private func project(_ point: SIMD4<Float>,
                      with matrix: float4x4) -> SIMD3<Float> {
     let clipPosition = matrix * point

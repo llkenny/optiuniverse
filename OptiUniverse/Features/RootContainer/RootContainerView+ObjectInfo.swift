@@ -20,70 +20,19 @@ extension RootContainerView {
                 .foregroundStyle(.neonTextPrimary)
                 .font(.system(size: 16))
         }
-        .frame(maxWidth: .infinity,
-               maxHeight: .infinity,
-               alignment: .bottomTrailing)
-        .padding(.trailing)
         .buttonStyle(NeonButtonStyle())
+        .accessibilityLabel("Object details")
     }
 
-    @ViewBuilder
-    func makeInfoOverlay(entity: ObjectInfoViewEntity) -> some View {
-        GeometryReader { containerProxy in
-            ZStack(alignment: .bottom) {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        hideObjectInfoOverlay(viewportHeight: containerProxy.size.height)
-                    }
-
-                ObjectInfoView(entity: entity)
-                    .offset(y: objectInfoDragOffset)
-                    .gesture(makeObjectInfoDismissGesture(viewportHeight: containerProxy.size.height))
-                    .onGeometryChange(for: CGSize.self) { proxy in
-                        proxy.size
-                    } action: { size in
-                        setObjectInfoOverlayFraming(
-                            overlayHeight: size.height,
-                            viewportHeight: containerProxy.size.height
-                        )
-                    }
-            }
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .animation(.default, value: objectInfoDragOffset)
-    }
-
-    private func setObjectInfoOverlayFraming(overlayHeight: CGFloat,
-                                             viewportHeight: CGFloat) {
-        universeResources.setObjectInfoOverlayFraming(isPresented: true,
-                                                   bottomInset: overlayHeight,
-                                                   viewportHeight: viewportHeight)
-    }
-
-    private func hideObjectInfoOverlay(viewportHeight: CGFloat) {
+    func clearObjectInfoFraming() {
         universeResources.setObjectInfoOverlayFraming(isPresented: false,
-                                                   bottomInset: 0,
-                                                   viewportHeight: viewportHeight)
-        objectsViewState = .raw
+                                                     bottomInset: 0,
+                                                     viewportHeight: 0)
     }
 
-    private func makeObjectInfoDismissGesture(viewportHeight: CGFloat) -> some Gesture {
-        DragGesture()
-            .updating($objectInfoDragOffset) { value, state, _ in
-                state = max(value.translation.height, 0)
-            }
-            .onEnded { value in
-                let translationThreshold: CGFloat = 80
-                let predictedTranslationThreshold: CGFloat = 140
-                let shouldDismiss = value.translation.height > translationThreshold ||
-                    value.predictedEndTranslation.height > predictedTranslationThreshold
-
-                if shouldDismiss {
-                    hideObjectInfoOverlay(viewportHeight: viewportHeight)
-                }
-            }
+    func hideObjectInfoOverlay() {
+        clearObjectInfoFraming()
+        objectsViewState = .raw
     }
 
     private func makeObjectInfo(selectedDestinationID: UUID) {
@@ -126,7 +75,6 @@ extension RootContainerView {
             universeResources.transferOrbit.showTransferOrbit(to: destination.object)
             objectsViewState = .orbit
         })
-        objectInfoOverlayPresentationID = UUID()
         objectsViewState = .info(entity)
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MissionCardView: View {
     let card: MissionCardModel
+    var width: CGFloat = 283
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .title) private var titleSize = 30
@@ -30,7 +31,7 @@ struct MissionCardView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(20)
-        .frame(width: 283, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .frame(minHeight: 360, maxHeight: .infinity, alignment: .bottomLeading)
         .background {
             GeometryReader { geometry in

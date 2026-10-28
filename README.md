@@ -228,9 +228,36 @@ The app waits until loading succeeds, navigation completes or is cancelled, and 
 
 ## Requirements
 
-- Xcode with iOS Simulator support
+- Xcode 27.1 with the iOS 27.1 SDK and iOS Simulator support
 - iOS 26.0 or newer deployment target
-- An iOS 26-capable simulator or device
+- An iOS 26-capable device, or an installed iOS 27.0/27.1 simulator runtime
+
+## Adaptive layouts and iPhone Duo
+
+OptiUniverse uses the current window's available space for layout. Below 600 points
+wide, discovery shows the mission carousel and horizontal destination row. Wider
+windows show multiple mission cards and an adaptive destination grid. Mission
+selection and category filters survive live resizing.
+
+Object details use a scrollable bottom panel up to 60% of the scene height. When
+the content area is at least 700 points wide and 400 points tall, details move to
+a trailing panel, reserving 320–380 points beside the scene. Close and Route remain
+outside the scrolling details; swipe down on the bottom panel's header to dismiss.
+The scene stays mounted during layout changes, preserving camera and playback state.
+Controls respect the current safe area, including asymmetric insets.
+
+Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
+[Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
+The deployment target remains iOS 26.0.
+
+To verify resizing in Device Hub, run on iPhone Duo (iOS 27.1) and open, close,
+rotate, and fold the device. Repeat in both Split View positions. Exercise each
+transition on discovery with a selected mission/filter, with object details open,
+during transfer preview, and during mission playback. Confirm the selected object,
+route, progress, and camera controls remain intact. Check large accessibility text,
+scrolling, reachable Close/Route/Cancel/Retry controls, and both asymmetric safe-area
+configurations. Also check ordinary iPhone portrait/landscape and extreme window
+sizes using the resizable simulator or iPhone Mirroring.
 
 ## Release 1 URLs
 
@@ -252,7 +279,7 @@ Or build from the command line:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
@@ -263,7 +290,7 @@ The repository includes a Swift Testing target. Run it with:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
   test CODE_SIGNING_ALLOWED=NO
 ```
 

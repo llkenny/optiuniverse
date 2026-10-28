@@ -31,8 +31,6 @@ struct RootContainerView: View {
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
-    @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
-    @GestureState var objectInfoDragOffset: CGFloat = 0
     let universeResources: UniverseModuleResources
 
     init(universeResources: UniverseModuleResources) {
@@ -51,43 +49,7 @@ struct RootContainerView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 16)
 
-                    ZStack {
-                        UniverseView(
-                            resources: universeResources,
-                            isActive: appEnvironment.currentScreen == .objects
-                        )
-                            .ignoresSafeArea(edges: .bottom)
-                            .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
-                            .allowsHitTesting(appEnvironment.currentScreen == .objects)
-
-                        switch appEnvironment.currentScreen {
-                        case .home:
-                            HomeView(onMissionSelected: startMission)
-                                .transition(.opacity)
-                        case .objects:
-                            SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            switch objectsViewState {
-                            case .raw:
-                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
-                                    makeInfoButton(selectedDestinationID: selectedDestinationID)
-                                }
-                            case .orbit:
-                                makeOrbitBackButton()
-                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
-                                    makeStartNavigationButton(destinationID: selectedDestinationID)
-                                }
-                            case .navigation:
-                                makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
-                            default:
-                                EmptyView()
-                            }
-                        }
-                    }
-                    .onAppear {
-                        objectsViewState = .raw
-                    }
+                    makeContent(onMissionSelected: startMission)
                 }
             case .loading:
                 LoadingScreenView()
@@ -107,6 +69,9 @@ struct RootContainerView: View {
             cancelObjectPresentationModes()
         }
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
+            // Mission launch clears the destination and sets navigation in the same update.
+            guard missionFlowState == nil else { return }
+            clearObjectInfoFraming()
             objectsViewState = .raw
         }
         .onChange(of: universeResources.navigation.navigationSnapshot) { _, snapshot in
@@ -137,14 +102,7 @@ struct RootContainerView: View {
                 loadingState = .failed(error.localizedDescription)
             }
         }
-        .overlay(alignment: .bottom) {
-            if case .info(let selectedObjectInfo) = objectsViewState {
-                makeInfoOverlay(entity: selectedObjectInfo)
-                    .id(objectInfoOverlayPresentationID)
-            }
-        }
         .animation(.default, value: objectsViewState)
-        .animation(.default, value: objectInfoOverlayPresentationID)
     }
 
     #if os(iOS)
