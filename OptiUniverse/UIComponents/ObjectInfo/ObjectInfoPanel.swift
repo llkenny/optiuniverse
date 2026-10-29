@@ -29,7 +29,7 @@ struct ObjectInfoPanel: View {
             }
         }
         .background(OptiColor.objectInfoSurface.opacity(0.96))
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
+        .clipShape(RoundedRectangle(cornerRadius: isSidePanel ? 0 : CornerRadius.panel))
         .offset(y: isSidePanel ? 0 : dragOffset)
         .animation(.default, value: dragOffset)
         .accessibilityIdentifier(isSidePanel ? "objectInfoSidePanel" : "objectInfoBottomPanel")
