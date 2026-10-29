@@ -12,6 +12,11 @@ extension RootContainerView {
                     ZStack {
                         UniverseView(resources: universeResources,
                                      isActive: appEnvironment.currentScreen == .objects)
+                            .onGeometryChange(for: CGRect.self) { proxy in
+                                proxy.frame(in: .named("universeContent"))
+                            } action: { universeViewportFrame = $0 }
+                            .ignoresSafeArea(.container,
+                                             edges: appEnvironment.currentScreen == .objects ? .all : [])
                             .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
                             .allowsHitTesting(appEnvironment.currentScreen == .objects)
 
@@ -34,16 +39,34 @@ extension RootContainerView {
                 if hasSidePanel, case .info(let entity) = objectsViewState {
                     ObjectInfoPanel(entity: entity, isSidePanel: true, onDismiss: hideObjectInfoOverlay)
                         .frame(width: AdaptiveLayoutPolicy.sidePanelWidth(availableWidth: container.size.width))
+                        .background {
+                            OptiColor.objectInfoSurface.ignoresSafeArea(.container)
+                        }
                         .onAppear { clearObjectInfoFraming() }
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 makeSceneControls(maxHeight: container.size.height * 0.45)
             }
+            .coordinateSpace(name: "universeContent")
+            .onChange(of: infoOverlayGeometry, initial: true) { _, _ in
+                updateCompactInfoFraming(hasSidePanel: hasSidePanel)
+            }
             .onChange(of: hasSidePanel) { _, isSidePanel in
                 if isSidePanel { clearObjectInfoFraming() }
             }
         }
+    }
+
+    private var infoOverlayGeometry: SceneOverlayGeometry {
+        SceneOverlayGeometry(sceneFrame: universeViewportFrame, panelFrame: objectInfoPanelFrame)
+    }
+
+    private func updateCompactInfoFraming(hasSidePanel: Bool) {
+        guard isObjectInfoPresented, !hasSidePanel else { return }
+        universeResources.setObjectInfoOverlayFraming(isPresented: true,
+                                                     bottomInset: infoOverlayGeometry.bottomInset,
+                                                     viewportHeight: infoOverlayGeometry.viewportHeight)
     }
 
     private var isObjectInfoPresented: Bool {
@@ -54,14 +77,10 @@ extension RootContainerView {
     private func makeCompactInfoPanel(entity: ObjectInfoViewEntity, viewport: CGSize) -> some View {
         ObjectInfoPanel(entity: entity, onDismiss: hideObjectInfoOverlay)
             .frame(height: AdaptiveLayoutPolicy.bottomPanelHeight(viewportHeight: viewport.height))
-            // Observe the viewport as well as panel height: a resize can leave the panel's size unchanged.
-            .onGeometryChange(for: ObjectInfoPanelMetrics.self) { panel in
-                ObjectInfoPanelMetrics(panelHeight: panel.size.height, viewportHeight: viewport.height)
-            } action: { metrics in
-                universeResources.setObjectInfoOverlayFraming(isPresented: true,
-                                                             bottomInset: metrics.panelHeight,
-                                                             viewportHeight: metrics.viewportHeight)
-            }
+            .onAppear { updateCompactInfoFraming(hasSidePanel: false) }
+            .onGeometryChange(for: CGRect.self) { panel in
+                panel.frame(in: .named("universeContent"))
+            } action: { objectInfoPanelFrame = $0 }
             .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -91,9 +110,4 @@ extension RootContainerView {
             .frame(maxWidth: .infinity)
         }
     }
-}
-
-private nonisolated struct ObjectInfoPanelMetrics: Equatable {
-    let panelHeight: CGFloat
-    let viewportHeight: CGFloat
 }

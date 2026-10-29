@@ -12,6 +12,7 @@ import UniverseModule
 extension RootContainerView {
 
     func clearObjectInfoFraming() {
+        objectInfoPanelFrame = .zero
         universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                      bottomInset: 0,
                                                      viewportHeight: 0)

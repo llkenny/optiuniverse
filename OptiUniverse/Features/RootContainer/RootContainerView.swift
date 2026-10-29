@@ -31,6 +31,8 @@ struct RootContainerView: View {
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
+    @State var universeViewportFrame: CGRect = .zero
+    @State var objectInfoPanelFrame: CGRect = .zero
     let universeResources: UniverseModuleResources
 
     init(universeResources: UniverseModuleResources) {
@@ -44,9 +46,12 @@ struct RootContainerView: View {
                 .navigationTitle(appEnvironment.location)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { navigationControls }
+                .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
+                .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
                 .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
                 .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
         }
+        .preferredColorScheme(isUniverseVisible ? .dark : nil)
         .sheet(isPresented: $isShowingLegalCredits) {
             LegalCreditsView()
         }
@@ -112,6 +117,10 @@ struct RootContainerView: View {
             }
         }
         .animation(.default, value: objectsViewState)
+    }
+
+    private var isUniverseVisible: Bool {
+        loadingState == .loaded && appEnvironment.currentScreen == .objects
     }
 
     private var showsObjectDetailsButton: Bool {

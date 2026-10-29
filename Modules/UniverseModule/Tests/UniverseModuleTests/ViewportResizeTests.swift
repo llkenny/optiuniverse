@@ -17,9 +17,11 @@ import Testing
     #expect(navigation.routeID != nil)
     var previousHorizontalScale: Float?
 
-    // Cover closing, unfolding, and reserving a side panel without a scene remount.
+    // Cover safe-area expansion, unfolding, and reserving a side panel without a scene remount.
     for size in [CGSize(width: 390, height: 800),
+                 CGSize(width: 390, height: 884),
                  CGSize(width: 950, height: 600),
+                 CGSize(width: 1_024, height: 700),
                  CGSize(width: 570, height: 600),
                  CGSize(width: 390, height: 800)] {
         resources.setViewportSize(size)

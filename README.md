@@ -247,7 +247,10 @@ The scene stays mounted during layout changes, preserving camera and playback st
 Home, Legal & Credits, and object details use native SwiftUI navigation toolbars.
 The location breadcrumb is the inline navigation title. iOS arranges the controls
 vertically in supported Duo poses and horizontally in other layouts, while the
-scene adapts to the resulting safe area. Route progress and detail-panel actions
+live RealityKit scene extends to the screen edges behind transparent native bars,
+status areas, and the home indicator. The scene's actual rendered bounds drive
+camera projection and compact-panel framing. Foreground controls stay inside the
+safe area. Route progress and detail-panel actions
 remain in their own containers. Controls respect asymmetric safe-area insets.
 
 Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
