@@ -89,15 +89,6 @@ extension RootContainerView {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
-        } else if appEnvironment.currentScreen == .objects,
-                  objectsViewState == .raw,
-                  let destinationID = appEnvironment.selectedDestinationID {
-            HStack {
-                Spacer()
-                makeInfoButton(selectedDestinationID: destinationID)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
         }
     }
 }

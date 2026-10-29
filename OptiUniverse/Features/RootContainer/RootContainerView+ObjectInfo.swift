@@ -11,19 +11,6 @@ import UniverseModule
 
 extension RootContainerView {
 
-    @ViewBuilder
-    func makeInfoButton(selectedDestinationID: UUID) -> some View {
-        Button {
-            makeObjectInfo(selectedDestinationID: selectedDestinationID)
-        } label: {
-            Text("🔭")
-                .foregroundStyle(.neonTextPrimary)
-                .font(.system(size: 16))
-        }
-        .buttonStyle(NeonButtonStyle())
-        .accessibilityLabel("Object details")
-    }
-
     func clearObjectInfoFraming() {
         universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                      bottomInset: 0,
@@ -35,7 +22,7 @@ extension RootContainerView {
         objectsViewState = .raw
     }
 
-    private func makeObjectInfo(selectedDestinationID: UUID) {
+    func makeObjectInfo(selectedDestinationID: UUID) {
         guard let destination = appEnvironment.destinationsProvider
             .destinations
             .first(where: {

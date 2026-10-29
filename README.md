@@ -244,7 +244,11 @@ the content area is at least 700 points wide and 400 points tall, details move t
 a trailing panel, reserving 320–380 points beside the scene. Close and Route remain
 outside the scrolling details; swipe down on the bottom panel's header to dismiss.
 The scene stays mounted during layout changes, preserving camera and playback state.
-Controls respect the current safe area, including asymmetric insets.
+Home, Legal & Credits, and object details use native SwiftUI navigation toolbars.
+The location breadcrumb is the inline navigation title. iOS arranges the controls
+vertically in supported Duo poses and horizontally in other layouts, while the
+scene adapts to the resulting safe area. Route progress and detail-panel actions
+remain in their own containers. Controls respect asymmetric safe-area insets.
 
 Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
 [Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).

@@ -35,7 +35,9 @@ import Testing
         #expect(resources.navigationSnapshot.state == .running)
         #expect(!resources.navigationController.routeRenderState.isCameraAutoFramingEnabled)
         let expectedAspect = Float(size.width / size.height)
-        #expect(abs(snapshot.projectionMatrix[1][1] / snapshot.projectionMatrix[0][0] - expectedAspect) < 0.000_01)
+        // The projection maps positive Y upward using a negative vertical scale.
+        let actualAspect = -snapshot.projectionMatrix[1][1] / snapshot.projectionMatrix[0][0]
+        #expect(abs(actualAspect - expectedAspect) < 0.000_01)
         if let previousHorizontalScale {
             #expect(snapshot.projectionMatrix[0][0] != previousHorizontalScale)
         }
