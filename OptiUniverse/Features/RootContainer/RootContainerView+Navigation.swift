@@ -29,10 +29,8 @@ extension RootContainerView {
                 .foregroundStyle(OptiColor.overlayTextPrimary)
                 .font(Typography.button)
         }
-        .frame(maxWidth: .infinity,
-               maxHeight: .infinity,
-               alignment: .bottom)
         .buttonStyle(NeonButtonStyle())
+        .accessibilityLabel("Start navigation")
     }
 
     @ViewBuilder
@@ -52,6 +50,7 @@ extension RootContainerView {
                 Spacer(minLength: 18)
 
                 Text("\(Int((snapshot.progress * 100).rounded()))%")
+                    .fixedSize()
                     .foregroundStyle(OptiColor.overlayTextPrimary)
                     .font(Typography.navigationMeta)
             }
@@ -78,11 +77,6 @@ extension RootContainerView {
             RoundedRectangle(cornerRadius: CornerRadius.panel)
                 .stroke(OptiColor.buttonBorder, lineWidth: 1)
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 18)
-        .frame(maxWidth: .infinity,
-               maxHeight: .infinity,
-               alignment: .bottom)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 

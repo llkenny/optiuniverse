@@ -22,40 +22,21 @@ struct ObjectInfoOrbitView: View {
 
     let model: Model
 
-    var body: some View {
-        HStack(alignment: .top) {
-            Image(.objectInfoOrbit)
-                .resizable()
-                .scaledToFit()
-                .frame(maxHeight: 140)
-                .padding(.trailing, 8)
-            VStack(alignment: .leading) {
-                Text("Orbit")
-                    .foregroundStyle(OptiColor.objectInfoTextPrimary)
-                    .font(Typography.overlayHeading)
-                    .padding(.bottom, 2)
-                Text(model.description)
-                    .foregroundStyle(OptiColor.objectInfoTextSecondary)
-                    .font(Typography.overlayBody)
-                    .padding(.bottom, 8)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var bodySize = 14
+    @ScaledMetric(relativeTo: .headline) private var headingSize = 16
 
-                VStack(spacing: 4) {
-                    ForEach(Array(orderedProperties.enumerated()), id: \.offset) { index, item in
-                        HStack {
-                            Text(item.key.rawValue)
-                                .font(Typography.overlayValue)
-                                .foregroundStyle(OptiColor.objectInfoTextSecondary)
-                            Spacer()
-                            Text(item.value)
-                                .font(Typography.overlayBody)
-                                .foregroundStyle(OptiColor.objectInfoTextSecondary)
-                        }
-                        if index < orderedProperties.count - 1 {
-                            Divider()
-                                .background(OptiColor.objectInfoBorder)
-                        }
-                    }
-                }
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 16) {
+                orbitImage
+                    .frame(width: 120)
+                orbitDescription
+                    .frame(minWidth: dynamicTypeSize.isAccessibilitySize ? 320 : 220)
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                orbitImage
+                orbitDescription
             }
         }
         .padding()
@@ -65,6 +46,46 @@ struct ObjectInfoOrbitView: View {
             RoundedRectangle(cornerRadius: CornerRadius.detailCard)
                 .stroke(OptiColor.objectInfoBorder, lineWidth: 1)
         )
+    }
+
+    private var orbitImage: some View {
+        Image(.objectInfoOrbit)
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: 140)
+            .accessibilityHidden(true)
+    }
+
+    private var orbitDescription: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Orbit")
+                .foregroundStyle(OptiColor.objectInfoTextPrimary)
+                .font(.system(size: headingSize))
+            Text(model.description)
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
+                .font(.system(size: bodySize))
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(Array(orderedProperties.enumerated()), id: \.offset) { index, item in
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        Text(item.key.rawValue)
+                        Spacer(minLength: 8)
+                        Text(item.value)
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.key.rawValue)
+                        Text(item.value)
+                    }
+                }
+                .font(.system(size: bodySize))
+                .foregroundStyle(OptiColor.objectInfoTextSecondary)
+                if index < orderedProperties.count - 1 {
+                    Divider().background(OptiColor.objectInfoBorder)
+                }
+            }
+        }
     }
 
     private var orderedProperties: [(key: Property, value: String)] {

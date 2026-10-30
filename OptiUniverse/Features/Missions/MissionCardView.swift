@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MissionCardView: View {
     let card: MissionCardModel
+    var width: CGFloat = 283
+    var height: CGFloat = 360
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .title) private var titleSize = 30
@@ -9,29 +11,19 @@ struct MissionCardView: View {
     @ScaledMetric(relativeTo: .caption) private var dateSize = 12
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Spacer(minLength: 72)
-
-            Text(card.formattedLaunchDate(locale: locale))
-                .font(.system(size: dateSize, weight: .semibold))
-                .foregroundStyle(OptiColor.onImageSecondary)
-
-            Text(card.mission.title)
-                .font(.system(size: titleSize, weight: .bold))
-                .foregroundStyle(OptiColor.onImagePrimary)
-
-            Text(card.mission.goals)
-                .font(.system(size: bodySize, weight: .semibold))
-                .foregroundStyle(OptiColor.onImagePrimary)
-
-            Text(card.mission.description)
-                .font(.system(size: bodySize))
-                .foregroundStyle(OptiColor.onImageSecondary)
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 0)
+            textContent
+                .fixedSize(horizontal: false, vertical: true)
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.preference(key: MissionCardMinimumHeightKey.self,
+                                               value: geometry.size.height + 40)
+                    }
+                }
         }
-        .fixedSize(horizontal: false, vertical: true)
         .padding(20)
-        .frame(width: 283, alignment: .leading)
-        .frame(minHeight: 360, maxHeight: .infinity, alignment: .bottomLeading)
+        .frame(width: width, height: height, alignment: .bottomLeading)
         .background {
             GeometryReader { geometry in
                 Image(card.imageResource)
@@ -52,6 +44,34 @@ struct MissionCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(card.formattedLaunchDate(locale: locale))
+                .font(.system(size: dateSize, weight: .semibold))
+                .foregroundStyle(OptiColor.onImageSecondary)
+
+            Text(card.mission.title)
+                .font(.system(size: titleSize, weight: .bold))
+                .foregroundStyle(OptiColor.onImagePrimary)
+
+            Text(card.mission.goals)
+                .font(.system(size: bodySize, weight: .semibold))
+                .foregroundStyle(OptiColor.onImagePrimary)
+
+            Text(card.mission.description)
+                .font(.system(size: bodySize))
+                .foregroundStyle(OptiColor.onImageSecondary)
+        }
+    }
+}
+
+nonisolated struct MissionCardMinimumHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

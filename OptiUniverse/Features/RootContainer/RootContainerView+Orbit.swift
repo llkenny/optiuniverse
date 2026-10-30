@@ -42,11 +42,11 @@ extension RootContainerView {
             } label: {
                 Image(systemName: "xmark")
                     .font(Typography.button)
+                    .accessibilityLabel("Close transfer preview")
             }
         }
         .foregroundStyle(OptiColor.overlayTextPrimary)
         .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .buttonStyle(NeonButtonStyle())
     }
 }

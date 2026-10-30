@@ -1,0 +1,113 @@
+import SwiftUI
+import BaseModule
+import UniverseModule
+
+extension RootContainerView {
+    func makeContent(onMissionSelected: @escaping (Mission) -> Void) -> some View {
+        GeometryReader { container in
+            let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(size: container.size)
+            HStack(spacing: 0) {
+                // This scene stays in the same structural position as the window and panels resize.
+                GeometryReader { viewport in
+                    ZStack {
+                        UniverseView(resources: universeResources,
+                                     isActive: appEnvironment.currentScreen == .objects)
+                            .onGeometryChange(for: CGRect.self) { proxy in
+                                proxy.frame(in: .named("universeContent"))
+                            } action: { universeViewportFrame = $0 }
+                            .ignoresSafeArea(.container,
+                                             edges: appEnvironment.currentScreen == .objects ? .all : [])
+                            .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
+                            .allowsHitTesting(appEnvironment.currentScreen == .objects)
+
+                        if appEnvironment.currentScreen == .home {
+                            HomeView(onMissionSelected: onMissionSelected)
+                                .transition(.opacity)
+                        } else {
+                            SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        }
+                    }
+                    .overlay(alignment: .bottom) {
+                        if !hasSidePanel, case .info(let entity) = objectsViewState {
+                            makeCompactInfoPanel(entity: entity, viewport: viewport.size)
+                        }
+                    }
+                }
+
+                if hasSidePanel, case .info(let entity) = objectsViewState {
+                    ObjectInfoPanel(entity: entity, isSidePanel: true, onDismiss: hideObjectInfoOverlay)
+                        .frame(width: AdaptiveLayoutPolicy.sidePanelWidth(availableWidth: container.size.width))
+                        .background {
+                            OptiColor.objectInfoSurface.ignoresSafeArea(.container)
+                        }
+                        .onAppear { clearObjectInfoFraming() }
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                makeSceneControls(maxHeight: container.size.height * 0.45)
+            }
+            .coordinateSpace(name: "universeContent")
+            .onChange(of: infoOverlayGeometry, initial: true) { _, _ in
+                updateCompactInfoFraming(hasSidePanel: hasSidePanel)
+            }
+            .onChange(of: hasSidePanel) { _, isSidePanel in
+                if isSidePanel { clearObjectInfoFraming() }
+            }
+        }
+    }
+
+    private var infoOverlayGeometry: SceneOverlayGeometry {
+        SceneOverlayGeometry(sceneFrame: universeViewportFrame, panelFrame: objectInfoPanelFrame)
+    }
+
+    private func updateCompactInfoFraming(hasSidePanel: Bool) {
+        guard isObjectInfoPresented, !hasSidePanel else { return }
+        universeResources.setObjectInfoOverlayFraming(isPresented: true,
+                                                     bottomInset: infoOverlayGeometry.bottomInset,
+                                                     viewportHeight: infoOverlayGeometry.viewportHeight)
+    }
+
+    private var isObjectInfoPresented: Bool {
+        if case .info = objectsViewState { return true }
+        return false
+    }
+
+    private func makeCompactInfoPanel(entity: ObjectInfoViewEntity, viewport: CGSize) -> some View {
+        ObjectInfoPanel(entity: entity, onDismiss: hideObjectInfoOverlay)
+            .frame(height: AdaptiveLayoutPolicy.bottomPanelHeight(viewportHeight: viewport.height))
+            .onAppear { updateCompactInfoFraming(hasSidePanel: false) }
+            .onGeometryChange(for: CGRect.self) { panel in
+                panel.frame(in: .named("universeContent"))
+            } action: { objectInfoPanelFrame = $0 }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    @ViewBuilder
+    private func makeSceneControls(maxHeight: CGFloat) -> some View {
+        if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
+            ScrollView {
+                switch objectsViewState {
+                case .navigation:
+                    makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
+                case .orbit:
+                    VStack(spacing: 8) {
+                        makeOrbitBackButton()
+                        if let destinationID = appEnvironment.selectedDestinationID {
+                            makeStartNavigationButton(destinationID: destinationID)
+                        }
+                    }
+                case .raw, .info:
+                    EmptyView()
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 640, maxHeight: max(0, maxHeight))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}

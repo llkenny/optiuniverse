@@ -228,9 +228,55 @@ The app waits until loading succeeds, navigation completes or is cancelled, and 
 
 ## Requirements
 
-- Xcode with iOS Simulator support
+- Xcode 27.1 with the iOS 27.1 SDK and iOS Simulator support
 - iOS 26.0 or newer deployment target
-- An iOS 26-capable simulator or device
+- An iOS 26-capable device, or an installed iOS 27.0/27.1 simulator runtime
+
+## Adaptive layouts and iPhone Duo
+
+OptiUniverse uses the current window's available space for layout. Below 600 points
+wide, discovery shows the mission carousel and horizontal destination row. Wider
+windows show multiple mission cards and an adaptive destination grid. Mission
+selection and category filters survive live resizing.
+Discovery budgets two thirds of the safe content height below the native toolbar
+for missions and their page indicators, and one third for category filters and
+objects. Compact destination cards shrink to fit. Wide destination cards also
+remain square, using the section's remaining height up to 240 points per side;
+the grid adds columns as cards shrink, with 16-point gaps. Its first row, including
+labels, fits inside the safe content area and later rows scroll within the section.
+Mission text is measured without truncation. Short
+windows and large text use page scrolling when either section needs more room;
+the grid then flows with the page.
+
+Object details use a scrollable bottom panel up to 60% of the scene height. When
+the content area is at least 700 points wide and 400 points tall, details move to
+a trailing panel, reserving 320–380 points beside the scene. Close and Route remain
+outside the scrolling details; swipe down on the bottom panel's header to dismiss.
+The scene stays mounted during layout changes, preserving camera and playback state.
+Home, Legal & Credits, and object details use native SwiftUI navigation toolbars.
+The location breadcrumb is the inline navigation title. iOS arranges the controls
+vertically in supported Duo poses and horizontally in other layouts, while the
+live RealityKit scene extends to the screen edges behind transparent native bars,
+status areas, and the home indicator. The scene's actual rendered bounds drive
+camera projection and compact-panel framing. Foreground controls stay inside the
+safe area. Route progress and detail-panel actions
+remain in their own containers. Controls respect asymmetric safe-area insets.
+
+Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
+[Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
+The deployment target remains iOS 26.0.
+
+To verify resizing in Device Hub, run on iPhone Duo (iOS 27.1) and open, close,
+rotate, and fold the device. Repeat in both Split View positions. Exercise each
+transition on discovery with a selected mission/filter, with object details open,
+during transfer preview, and during mission playback. Confirm the selected object,
+route, progress, and camera controls remain intact. Check large accessibility text,
+scrolling, reachable Close/Route/Cancel/Retry controls, and both asymmetric safe-area
+configurations. Also check ordinary iPhone portrait/landscape and extreme window
+sizes using the resizable simulator or iPhone Mirroring.
+On discovery, confirm missions and objects fit together at normal text sizes,
+all mission text and destinations remain reachable in the scrolling fallback,
+and selection survives transitions between the two layouts.
 
 ## Release 1 URLs
 
@@ -252,7 +298,7 @@ Or build from the command line:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
@@ -263,7 +309,7 @@ The repository includes a Swift Testing target. Run it with:
 ```bash
 xcodebuild -project OptiUniverse.xcodeproj \
   -scheme OptiUniverse \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
   test CODE_SIGNING_ALLOWED=NO
 ```
 

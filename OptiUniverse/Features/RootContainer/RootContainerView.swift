@@ -31,8 +31,8 @@ struct RootContainerView: View {
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
-    @State var objectInfoOverlayPresentationID = UUID() // Force makeInfoOverlay recreation for animation stability
-    @GestureState var objectInfoDragOffset: CGFloat = 0
+    @State var universeViewportFrame: CGRect = .zero
+    @State var objectInfoPanelFrame: CGRect = .zero
     let universeResources: UniverseModuleResources
 
     init(universeResources: UniverseModuleResources) {
@@ -40,55 +40,31 @@ struct RootContainerView: View {
     }
 
     var body: some View {
+        // Keep the navigation container and scene mounted as native bars change their axis.
+        NavigationStack {
+            content
+                .navigationTitle(appEnvironment.location)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { navigationControls }
+                .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
+                .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
+                .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
+                .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
+        }
+        .preferredColorScheme(isUniverseVisible ? .dark : nil)
+        .sheet(isPresented: $isShowingLegalCredits) {
+            LegalCreditsView()
+        }
+    }
+
+    private var content: some View {
         ZStack {
             OptiColor.screenBackground
                 .ignoresSafeArea()
 
             switch loadingState {
             case .loaded:
-                VStack(spacing: 0) {
-                    TopBarView(isShowingLegalCredits: $isShowingLegalCredits)
-                        .padding(.horizontal)
-                        .padding(.bottom, 16)
-
-                    ZStack {
-                        UniverseView(
-                            resources: universeResources,
-                            isActive: appEnvironment.currentScreen == .objects
-                        )
-                            .ignoresSafeArea(edges: .bottom)
-                            .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
-                            .allowsHitTesting(appEnvironment.currentScreen == .objects)
-
-                        switch appEnvironment.currentScreen {
-                        case .home:
-                            HomeView(onMissionSelected: startMission)
-                                .transition(.opacity)
-                        case .objects:
-                            SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            switch objectsViewState {
-                            case .raw:
-                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
-                                    makeInfoButton(selectedDestinationID: selectedDestinationID)
-                                }
-                            case .orbit:
-                                makeOrbitBackButton()
-                                if let selectedDestinationID = appEnvironment.selectedDestinationID {
-                                    makeStartNavigationButton(destinationID: selectedDestinationID)
-                                }
-                            case .navigation:
-                                makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
-                            default:
-                                EmptyView()
-                            }
-                        }
-                    }
-                    .onAppear {
-                        objectsViewState = .raw
-                    }
-                }
+                makeContent(onMissionSelected: startMission)
             case .loading:
                 LoadingScreenView()
             case .failed(let message):
@@ -107,6 +83,9 @@ struct RootContainerView: View {
             cancelObjectPresentationModes()
         }
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
+            // Mission launch clears the destination and sets navigation in the same update.
+            guard missionFlowState == nil else { return }
+            clearObjectInfoFraming()
             objectsViewState = .raw
         }
         .onChange(of: universeResources.navigation.navigationSnapshot) { _, snapshot in
@@ -137,14 +116,42 @@ struct RootContainerView: View {
                 loadingState = .failed(error.localizedDescription)
             }
         }
-        .overlay(alignment: .bottom) {
-            if case .info(let selectedObjectInfo) = objectsViewState {
-                makeInfoOverlay(entity: selectedObjectInfo)
-                    .id(objectInfoOverlayPresentationID)
+        .animation(.default, value: objectsViewState)
+    }
+
+    private var isUniverseVisible: Bool {
+        loadingState == .loaded && appEnvironment.currentScreen == .objects
+    }
+
+    private var showsObjectDetailsButton: Bool {
+        loadingState == .loaded && appEnvironment.currentScreen == .objects &&
+            objectsViewState == .raw && appEnvironment.selectedDestinationID != nil
+    }
+
+    @ToolbarContentBuilder
+    private var navigationControls: some ToolbarContent {
+        if loadingState == .loaded {
+            if appEnvironment.currentScreen != .home {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Home", systemImage: "line.3.horizontal.decrease") {
+                        appEnvironment.currentScreen = .home
+                    }
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Legal and credits", systemImage: "info.circle") {
+                    isShowingLegalCredits = true
+                }
+            }
+            if showsObjectDetailsButton, let destinationID = appEnvironment.selectedDestinationID {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Spacer()
+                    Button("Object details", systemImage: "binoculars") {
+                        makeObjectInfo(selectedDestinationID: destinationID)
+                    }
+                }
             }
         }
-        .animation(.default, value: objectsViewState)
-        .animation(.default, value: objectInfoOverlayPresentationID)
     }
 
     #if os(iOS)

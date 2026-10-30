@@ -11,40 +11,68 @@ struct HeroCarouselView: View {
     @Binding var currentIndex: Int
     @Binding var totalCount: Int
     let onMissionSelected: (Mission) -> Void
+    let availableWidth: CGFloat
+    let isExpanded: Bool
+    let cardHeight: CGFloat
+    let onMinimumCardHeightChange: (CGFloat) -> Void
 
     @State private var viewModel: HeroCarouselViewModel
-    @State private var viewportWidth: CGFloat = 315
 
     init(viewModel: HeroCarouselViewModel = .init(),
          currentIndex: Binding<Int>,
          totalCount: Binding<Int>,
-         onMissionSelected: @escaping (Mission) -> Void) {
+         onMissionSelected: @escaping (Mission) -> Void,
+         availableWidth: CGFloat = 315,
+         isExpanded: Bool = false,
+         cardHeight: CGFloat = 360,
+         onMinimumCardHeightChange: @escaping (CGFloat) -> Void = { _ in }) {
         self._viewModel = State(initialValue: viewModel)
         self._currentIndex = currentIndex
         self._totalCount = totalCount
         self.onMissionSelected = onMissionSelected
+        self.availableWidth = availableWidth
+        self.isExpanded = isExpanded
+        self.cardHeight = cardHeight
+        self.onMinimumCardHeightChange = onMinimumCardHeightChange
     }
 
     var body: some View {
+        ScrollViewReader { reader in
+            carousel
+                .task(id: CGSize(width: availableWidth, height: cardHeight)) {
+                    // Reapply the stable selection after the new card geometry has been laid out.
+                    let selectedID = viewModel.cardID(for: currentIndex)
+                    await Task.yield()
+                    guard !Task.isCancelled, let selectedID else { return }
+                    reader.scrollTo(selectedID, anchor: isExpanded ? .leading : .center)
+                }
+        }
+    }
+
+    private var cardWidth: CGFloat {
+        AdaptiveLayoutPolicy.missionCardWidth(availableWidth: availableWidth)
+    }
+
+    private var carousel: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 16) {
                 ForEach(viewModel.cards) { card in
                     Button {
                         onMissionSelected(card.mission)
                     } label: {
-                        MissionCardView(card: card)
+                        MissionCardView(card: card, width: cardWidth, height: cardHeight)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Start mission")
                     .scrollTransition(axis: .horizontal) { content, phase in
                         let direction = phase.value
                         return content
-                            .scaleEffect(phase.isIdentity ? 1 : 0.88)
-                            .opacity(phase.isIdentity ? 1 : 0.2)
-                            .offset(y: phase.isIdentity ? 0 : 16)
-                            .offset(x: direction * -24)
+                            .scaleEffect((isExpanded || phase.isIdentity) ? 1 : 0.88)
+                            .opacity((isExpanded || phase.isIdentity) ? 1 : 0.2)
+                            .offset(y: (isExpanded || phase.isIdentity) ? 0 : 16)
+                            .offset(x: isExpanded ? 0 : direction * -24)
                             .rotation3DEffect(
-                                .degrees(direction * -30),
+                                .degrees(isExpanded ? 0 : direction * -30),
                                 axis: (x: 0, y: 1, z: 0),
                                 perspective: 0.6
                             )
@@ -52,16 +80,15 @@ struct HeroCarouselView: View {
                     .id(card.id)
                 }
             }
-            // Measure the tallest card at its full text height, including Dynamic Type.
-            .fixedSize(horizontal: false, vertical: true)
             .scrollTargetLayout()
-            .padding(.vertical, 16)
+            .padding(.vertical, DiscoveryLayoutSizing.carouselPadding)
         }
-        .safeAreaPadding(.horizontal, max(0, (viewportWidth - 283) / 2))
+        .frame(height: cardHeight + DiscoveryLayoutSizing.carouselPadding * 2)
+        .onPreferenceChange(MissionCardMinimumHeightKey.self, perform: onMinimumCardHeightChange)
+        .safeAreaPadding(.horizontal, isExpanded ? 16 : max(0, (availableWidth - cardWidth) / 2))
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $viewModel.activeCardID, anchor: .center)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewportWidth = $0 }
+        .scrollPosition(id: $viewModel.activeCardID, anchor: isExpanded ? .leading : .center)
         .onAppear {
             syncSelectionToCurrentIndex()
         }

@@ -9,20 +9,20 @@ import SwiftUI
 
 struct ObjectInfoView: View {
     let entity: ObjectInfoViewEntity
+    var availableWidth: CGFloat = 380
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var bodySize = 14
+    @ScaledMetric(relativeTo: .headline) private var headingSize = 16
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(entity.title)
-                .foregroundStyle(OptiColor.objectInfoTextPrimary)
-                .font(Typography.overlayTitle)
-                .padding(.bottom, 2)
-
             Text(entity.subtitle)
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
-                .font(Typography.overlayBody)
+                .font(.system(size: bodySize))
                 .padding(.bottom, 12)
 
-            HStack {
+            LazyVGrid(columns: detailColumns, spacing: 8) {
                 ForEach(entity.details, id: \.title) { detail in
                     ObjectInfoDetailCardView(entity: detail)
                 }
@@ -32,12 +32,12 @@ struct ObjectInfoView: View {
 
             Text("About \(entity.title)")
                 .foregroundStyle(OptiColor.objectInfoTextPrimary)
-                .font(Typography.overlayHeading)
+                .font(.system(size: headingSize))
                 .padding(.bottom, 2)
 
             Text(entity.description)
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
-                .font(Typography.overlayBody)
+                .font(.system(size: bodySize))
                 .padding(.bottom, 8)
 
             if let orbitInfo = entity.orbitInfo {
@@ -48,23 +48,21 @@ struct ObjectInfoView: View {
             if let imageName = entity.imageName {
                 Image(imageName)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
                     .frame(maxHeight: 200)
                     .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
             }
 
-            if entity.isNavigable {
-                Button(action: entity.navigationButtonAction) {
-                    NeonButtonView(title: entity.navigationButtonTitle)
-                }
-                .buttonStyle(NeonButtonStyle())
-                .frame(maxWidth: .infinity)
-            }
         }
         .padding(.horizontal)
-        .padding(.top)
+        .padding(.vertical, 12)
         .background(LinearGradient(colors: [.clear, OptiColor.objectInfoSurface],
                                    startPoint: .top, endPoint: .bottom))
+    }
+
+    private var detailColumns: [GridItem] {
+        if dynamicTypeSize.isAccessibilitySize { return [GridItem(.flexible())] }
+        return [GridItem(.adaptive(minimum: min(130, max(1, availableWidth - 32))), alignment: .top)]
     }
 }
 
@@ -95,7 +93,7 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                       navigationButtonAction: {
         print("Navigate to Mercury")
     })
-    ObjectInfoView(entity: entity)
+    ObjectInfoPanel(entity: entity, onDismiss: {})
         .background(.black)
 }
 
@@ -119,6 +117,6 @@ It has a rocky surface covered in craters and experiences extreme temperature va
                                       navigationButtonAction: {
         print("Navigate to Mercury")
     })
-    ObjectInfoView(entity: entity)
+    ObjectInfoPanel(entity: entity, onDismiss: {})
         .background(.black)
 }

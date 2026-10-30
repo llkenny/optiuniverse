@@ -23,7 +23,8 @@ struct CategoryChipsView: View {
                         isActive: selectedTag == tag,
                         title: tag
                     )
-                    .padding(.bottom, 20)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         if selectedTag == tag {
                             selectedTag = nil

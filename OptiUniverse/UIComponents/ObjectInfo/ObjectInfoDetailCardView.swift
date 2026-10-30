@@ -16,19 +16,22 @@ struct ObjectInfoDetailCardEntity {
 struct ObjectInfoDetailCardView: View {
     let entity: ObjectInfoDetailCardEntity
 
+    @ScaledMetric(relativeTo: .caption2) private var captionSize = 8
+    @ScaledMetric(relativeTo: .caption) private var valueSize = 10
+
     var body: some View {
         VStack {
             Text(entity.title.uppercased())
-                .font(Typography.overlayCaption)
+                .font(.system(size: captionSize))
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
             Text(entity.value.uppercased())
-                .font(Typography.overlayValue)
+                .font(.system(size: valueSize))
                 .foregroundStyle(OptiColor.objectInfoTextPrimary)
             Text(entity.dimension.uppercased())
-                .font(Typography.overlayCaption)
+                .font(.system(size: captionSize))
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
         }
-        .frame(maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(OptiColor.objectInfoSurface.opacity(0.5))
