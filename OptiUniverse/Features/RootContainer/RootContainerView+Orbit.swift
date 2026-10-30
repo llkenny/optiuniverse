@@ -11,8 +11,17 @@ import BaseModule
 
 extension RootContainerView {
 
+    var isOrbitPreview: Bool {
+        appEnvironment.currentScreen == .objects && objectsViewState == .orbit
+    }
+
+    func closeTransferPreview() {
+        universeResources.transferOrbit.clearTransferOrbit()
+        objectsViewState = .raw
+    }
+
     @ViewBuilder
-    func makeOrbitBackButton() -> some View {
+    func makeTransferPreviewDetails() -> some View {
         VStack(alignment: .trailing, spacing: 12) {
             let preview = universeResources.transferPreviewSnapshot
             switch preview.status {
@@ -35,14 +44,6 @@ extension RootContainerView {
                 }
             case .inactive:
                 EmptyView()
-            }
-            Button {
-                universeResources.transferOrbit.clearTransferOrbit()
-                objectsViewState = .raw
-            } label: {
-                Image(systemName: "xmark")
-                    .font(Typography.button)
-                    .accessibilityLabel("Close transfer preview")
             }
         }
         .foregroundStyle(OptiColor.overlayTextPrimary)

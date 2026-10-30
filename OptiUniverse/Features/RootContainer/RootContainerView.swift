@@ -42,17 +42,19 @@ struct RootContainerView: View {
     var body: some View {
         // Keep the navigation container and scene mounted as native bars change their axis.
         NavigationStack {
-            content
-                .navigationTitle(navigationBarTitle)
-                #if os(iOS)
-                .navigationSubtitle(navigationBarSubtitle)
-                #endif
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { navigationControls }
-                .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
-                .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
-                .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
-                .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
+            ToolbarLayoutReader { usesVerticalToolbar in
+                content(usesVerticalToolbar: usesVerticalToolbar)
+                    .navigationTitle(navigationBarTitle)
+                    #if os(iOS)
+                    .navigationSubtitle(navigationBarSubtitle)
+                    #endif
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { navigationControls(usesVerticalToolbar: usesVerticalToolbar) }
+                    .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
+                    .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
+                    .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
+                    .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
+            }
         }
         .preferredColorScheme(isUniverseVisible ? .dark : nil)
         .sheet(isPresented: $isShowingLegalCredits) {
@@ -60,23 +62,8 @@ struct RootContainerView: View {
         }
     }
 
-    private var content: some View {
-        ZStack {
-            OptiColor.screenBackground
-                .ignoresSafeArea()
-
-            switch loadingState {
-            case .loaded:
-                makeContent(onMissionSelected: startMission)
-            case .loading:
-                LoadingScreenView()
-            case .failed(let message):
-                UniverseLoadingFailureView(message: message) {
-                    loadingState = .loading
-                    loadingAttempt += 1
-                }
-            }
-        }
+    private func content(usesVerticalToolbar: Bool) -> some View {
+        screenContent(usesVerticalToolbar: usesVerticalToolbar)
         .animation(.default, value: loadingState)
         .animation(.default, value: appEnvironment.currentScreen)
         .animation(.default, value: universeResources.navigation.navigationSnapshot)
@@ -122,6 +109,25 @@ struct RootContainerView: View {
         .animation(.default, value: objectsViewState)
     }
 
+    private func screenContent(usesVerticalToolbar: Bool) -> some View {
+        ZStack {
+            OptiColor.screenBackground
+                .ignoresSafeArea()
+
+            switch loadingState {
+            case .loaded:
+                makeContent(usesVerticalToolbar: usesVerticalToolbar, onMissionSelected: startMission)
+            case .loading:
+                LoadingScreenView()
+            case .failed(let message):
+                UniverseLoadingFailureView(message: message) {
+                    loadingState = .loading
+                    loadingAttempt += 1
+                }
+            }
+        }
+    }
+
     private var isUniverseVisible: Bool {
         loadingState == .loaded && appEnvironment.currentScreen == .objects
     }
@@ -147,7 +153,7 @@ struct RootContainerView: View {
     }
 
     @ToolbarContentBuilder
-    private var navigationControls: some ToolbarContent {
+    private func navigationControls(usesVerticalToolbar: Bool) -> some ToolbarContent {
         if loadingState == .loaded {
             if appEnvironment.currentScreen != .home {
                 ToolbarItem(placement: .cancellationAction) {
@@ -156,10 +162,21 @@ struct RootContainerView: View {
                     }
                 }
             }
+            if isOrbitPreview, usesVerticalToolbar, let destinationID = appEnvironment.selectedDestinationID {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Start navigation", systemImage: "paperplane") {
+                        startNavigation(destinationID: destinationID)
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if isNavigation {
                     Button(isMissionNavigation ? "Cancel mission" : "Cancel navigation", systemImage: "xmark") {
                         cancelNavigationAndDismissOverlays()
+                    }
+                } else if isOrbitPreview {
+                    Button("Close transfer preview", systemImage: "xmark") {
+                        closeTransferPreview()
                     }
                 } else {
                     Button("Legal and credits", systemImage: "info.circle") {

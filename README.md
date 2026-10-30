@@ -266,6 +266,14 @@ height and scroll when they exceed 45% of the available safe content height.
 Detail-panel actions remain in their own container. Controls respect asymmetric
 safe-area insets.
 
+Transfer previews place Close in the native navigation bar in place of Legal &
+Credits, matching route and mission cancellation. Start navigation stays centered
+at the bottom with the existing neon styling when bars are horizontal. When iOS
+provides a vertical bar on iPhone Duo, Start navigation moves into the native bar
+before Close. It returns to the bottom when bars become horizontal. Transfer
+details, calculation progress, errors, and Retry remain in the bottom overlay;
+changing bar layout preserves the scene and transfer preview.
+
 Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
 [Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
 The deployment target remains iOS 26.0.
