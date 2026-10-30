@@ -13,6 +13,8 @@ struct HeroCarouselView: View {
     let onMissionSelected: (Mission) -> Void
     let availableWidth: CGFloat
     let isExpanded: Bool
+    let cardHeight: CGFloat
+    let onMinimumCardHeightChange: (CGFloat) -> Void
 
     @State private var viewModel: HeroCarouselViewModel
 
@@ -21,19 +23,23 @@ struct HeroCarouselView: View {
          totalCount: Binding<Int>,
          onMissionSelected: @escaping (Mission) -> Void,
          availableWidth: CGFloat = 315,
-         isExpanded: Bool = false) {
+         isExpanded: Bool = false,
+         cardHeight: CGFloat = 360,
+         onMinimumCardHeightChange: @escaping (CGFloat) -> Void = { _ in }) {
         self._viewModel = State(initialValue: viewModel)
         self._currentIndex = currentIndex
         self._totalCount = totalCount
         self.onMissionSelected = onMissionSelected
         self.availableWidth = availableWidth
         self.isExpanded = isExpanded
+        self.cardHeight = cardHeight
+        self.onMinimumCardHeightChange = onMinimumCardHeightChange
     }
 
     var body: some View {
         ScrollViewReader { reader in
             carousel
-                .task(id: availableWidth) {
+                .task(id: CGSize(width: availableWidth, height: cardHeight)) {
                     // Reapply the stable selection after the new card geometry has been laid out.
                     let selectedID = viewModel.cardID(for: currentIndex)
                     await Task.yield()
@@ -54,7 +60,7 @@ struct HeroCarouselView: View {
                     Button {
                         onMissionSelected(card.mission)
                     } label: {
-                        MissionCardView(card: card, width: cardWidth)
+                        MissionCardView(card: card, width: cardWidth, height: cardHeight)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Start mission")
@@ -74,11 +80,11 @@ struct HeroCarouselView: View {
                     .id(card.id)
                 }
             }
-            // Measure the tallest card at its full text height, including Dynamic Type.
-            .fixedSize(horizontal: false, vertical: true)
             .scrollTargetLayout()
-            .padding(.vertical, 16)
+            .padding(.vertical, DiscoveryLayoutSizing.carouselPadding)
         }
+        .frame(height: cardHeight + DiscoveryLayoutSizing.carouselPadding * 2)
+        .onPreferenceChange(MissionCardMinimumHeightKey.self, perform: onMinimumCardHeightChange)
         .safeAreaPadding(.horizontal, isExpanded ? 16 : max(0, (availableWidth - cardWidth) / 2))
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.viewAligned)

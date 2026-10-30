@@ -238,6 +238,15 @@ OptiUniverse uses the current window's available space for layout. Below 600 poi
 wide, discovery shows the mission carousel and horizontal destination row. Wider
 windows show multiple mission cards and an adaptive destination grid. Mission
 selection and category filters survive live resizing.
+Discovery budgets two thirds of the safe content height below the native toolbar
+for missions and their page indicators, and one third for category filters and
+objects. Compact destination cards shrink to fit. Wide destination cards also
+remain square, using the section's remaining height up to 240 points per side;
+the grid adds columns as cards shrink, with 16-point gaps. Its first row, including
+labels, fits inside the safe content area and later rows scroll within the section.
+Mission text is measured without truncation. Short
+windows and large text use page scrolling when either section needs more room;
+the grid then flows with the page.
 
 Object details use a scrollable bottom panel up to 60% of the scene height. When
 the content area is at least 700 points wide and 400 points tall, details move to
@@ -265,6 +274,9 @@ route, progress, and camera controls remain intact. Check large accessibility te
 scrolling, reachable Close/Route/Cancel/Retry controls, and both asymmetric safe-area
 configurations. Also check ordinary iPhone portrait/landscape and extreme window
 sizes using the resizable simulator or iPhone Mirroring.
+On discovery, confirm missions and objects fit together at normal text sizes,
+all mission text and destinations remain reachable in the scrolling fallback,
+and selection survives transitions between the two layouts.
 
 ## Release 1 URLs
 

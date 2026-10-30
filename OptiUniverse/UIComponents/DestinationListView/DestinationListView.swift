@@ -14,20 +14,28 @@ struct DestinationListView: View {
 
     @Binding var selectedTag: String?
     var isExpanded = false
+    var cardSide: CGFloat = 174
+    var gridColumnCount: Int = 1
+    var gridViewportHeight: CGFloat?
     @State private var viewModel: DestinationListViewModel = .init()
 
     var body: some View {
         Group {
             if isExpanded {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 174, maximum: 240))], spacing: 16) {
-                    destinationCards
+                if let gridViewportHeight {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        destinationGrid
+                    }
+                    .frame(height: gridViewportHeight)
+                } else {
+                    destinationGrid
                 }
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack {
                         destinationCards
                     }
-                    .frame(height: 174)
+                    .frame(height: cardSide)
                 }
             }
         }
@@ -36,6 +44,15 @@ struct DestinationListView: View {
             viewModel.loadCards()
         }
         .animation(.easeInOut, value: selectedTag)
+    }
+
+    private var destinationGrid: some View {
+        let columns = Array(repeating: GridItem(.fixed(cardSide), spacing: DiscoveryLayoutSizing.destinationSpacing),
+                            count: max(1, gridColumnCount))
+        return LazyVGrid(columns: columns, alignment: .leading, spacing: DiscoveryLayoutSizing.destinationSpacing) {
+            destinationCards
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var destinationCards: some View {
@@ -48,7 +65,7 @@ struct DestinationListView: View {
                 DestinationCardView(model: model)
             }
             .buttonStyle(.plain)
-            .frame(width: isExpanded ? nil : 174, height: isExpanded ? nil : 174)
+            .frame(width: cardSide, height: cardSide)
         }
     }
 }
