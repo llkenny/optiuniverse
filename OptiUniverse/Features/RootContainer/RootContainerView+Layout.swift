@@ -16,12 +16,9 @@ extension RootContainerView {
                             if appEnvironment.currentScreen == .home {
                                 HomeView(onMissionSelected: onMissionSelected)
                                     .transition(.opacity)
-                            } else {
-                                SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
-                                    .padding(12)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                             }
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .overlay(alignment: .bottom) {
                             if !hasSidePanel, case .info(let entity) = objectsViewState {
                                 makeCompactInfoPanel(entity: entity, viewport: viewport.size)
@@ -96,27 +93,32 @@ extension RootContainerView {
     @ViewBuilder
     private func makeSceneControls(maxHeight: CGFloat) -> some View {
         if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
-            if isMissionNavigation {
-                missionEpilogue
-                    .frame(maxWidth: 640)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .allowsHitTesting(false)
-            } else {
-                ViewThatFits(in: .vertical) {
-                    sceneControlContent
-                        .fixedSize(horizontal: false, vertical: true)
-                    ScrollView {
+            VStack(spacing: 8) {
+                if isMissionNavigation {
+                    missionEpilogue
+                        .allowsHitTesting(false)
+                } else {
+                    ViewThatFits(in: .vertical) {
                         sceneControlContent
+                            .fixedSize(horizontal: false, vertical: true)
+                        ScrollView {
+                            sceneControlContent
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
-                    .scrollBounceBehavior(.basedOnSize)
+                    .frame(maxHeight: max(0, maxHeight), alignment: .bottom)
                 }
-                .frame(maxWidth: 640, maxHeight: max(0, maxHeight), alignment: .bottom)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity)
+
+                if objectsViewState == .navigation,
+                   universeResources.simulationSnapshot.mode == .missionReplay ||
+                    universeResources.simulationSnapshot.mode == .transferPreview {
+                    SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
+                }
             }
+            .frame(maxWidth: 640)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
         }
     }
 
