@@ -8,32 +8,29 @@ extension RootContainerView {
             let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(size: container.size)
             HStack(spacing: 0) {
                 // This scene stays in the same structural position as the window and panels resize.
-                GeometryReader { viewport in
-                    ZStack {
-                        UniverseView(resources: universeResources,
-                                     isActive: appEnvironment.currentScreen == .objects)
-                            .onGeometryChange(for: CGRect.self) { proxy in
-                                proxy.frame(in: .named("universeContent"))
-                            } action: { universeViewportFrame = $0 }
-                            .ignoresSafeArea(.container,
-                                             edges: appEnvironment.currentScreen == .objects ? .all : [])
-                            .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
-                            .allowsHitTesting(appEnvironment.currentScreen == .objects)
+                ZStack {
+                    universeScene
 
-                        if appEnvironment.currentScreen == .home {
-                            HomeView(onMissionSelected: onMissionSelected)
-                                .transition(.opacity)
-                        } else {
-                            SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    GeometryReader { viewport in
+                        ZStack {
+                            if appEnvironment.currentScreen == .home {
+                                HomeView(onMissionSelected: onMissionSelected)
+                                    .transition(.opacity)
+                            } else {
+                                SimulationTimeIndicatorView(snapshot: universeResources.simulationSnapshot)
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            if !hasSidePanel, case .info(let entity) = objectsViewState {
+                                makeCompactInfoPanel(entity: entity, viewport: viewport.size)
+                            }
                         }
                     }
-                    .overlay(alignment: .bottom) {
-                        if !hasSidePanel, case .info(let entity) = objectsViewState {
-                            makeCompactInfoPanel(entity: entity, viewport: viewport.size)
-                        }
-                    }
+                }
+                .overlay(alignment: .bottom) {
+                    makeSceneControls(maxHeight: container.size.height * 0.45)
                 }
 
                 if hasSidePanel, case .info(let entity) = objectsViewState {
@@ -45,9 +42,6 @@ extension RootContainerView {
                         .onAppear { clearObjectInfoFraming() }
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                makeSceneControls(maxHeight: container.size.height * 0.45)
-            }
             .coordinateSpace(name: "universeContent")
             .onChange(of: infoOverlayGeometry, initial: true) { _, _ in
                 updateCompactInfoFraming(hasSidePanel: hasSidePanel)
@@ -56,6 +50,21 @@ extension RootContainerView {
                 if isSidePanel { clearObjectInfoFraming() }
             }
         }
+    }
+
+    private var universeScene: some View {
+        // Expand the layout container as well as the renderer so projection uses the full scene.
+        GeometryReader { _ in
+            UniverseView(resources: universeResources,
+                         isActive: appEnvironment.currentScreen == .objects)
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .named("universeContent"))
+                } action: { universeViewportFrame = $0 }
+                .opacity(appEnvironment.currentScreen == .objects ? 1 : 0)
+                .allowsHitTesting(appEnvironment.currentScreen == .objects)
+        }
+        .ignoresSafeArea(.container,
+                         edges: appEnvironment.currentScreen == .objects ? .all : [])
     }
 
     private var infoOverlayGeometry: SceneOverlayGeometry {
@@ -87,27 +96,35 @@ extension RootContainerView {
     @ViewBuilder
     private func makeSceneControls(maxHeight: CGFloat) -> some View {
         if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
-            ScrollView {
-                switch objectsViewState {
-                case .navigation:
-                    makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
-                case .orbit:
-                    VStack(spacing: 8) {
-                        makeOrbitBackButton()
-                        if let destinationID = appEnvironment.selectedDestinationID {
-                            makeStartNavigationButton(destinationID: destinationID)
-                        }
-                    }
-                case .raw, .info:
-                    EmptyView()
+            ViewThatFits(in: .vertical) {
+                sceneControlContent
+                    .fixedSize(horizontal: false, vertical: true)
+                ScrollView {
+                    sceneControlContent
                 }
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: 640, maxHeight: max(0, maxHeight))
+            .frame(maxWidth: 640, maxHeight: max(0, maxHeight), alignment: .bottom)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var sceneControlContent: some View {
+        switch objectsViewState {
+        case .navigation:
+            makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
+        case .orbit:
+            VStack(spacing: 8) {
+                makeOrbitBackButton()
+                if let destinationID = appEnvironment.selectedDestinationID {
+                    makeStartNavigationButton(destinationID: destinationID)
+                }
+            }
+        case .raw, .info:
+            EmptyView()
         }
     }
 }

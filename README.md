@@ -258,9 +258,13 @@ The location breadcrumb is the inline navigation title. iOS arranges the control
 vertically in supported Duo poses and horizontally in other layouts, while the
 live RealityKit scene extends to the screen edges behind transparent native bars,
 status areas, and the home indicator. The scene's actual rendered bounds drive
-camera projection and compact-panel framing. Foreground controls stay inside the
-safe area. Route progress and detail-panel actions
-remain in their own containers. Controls respect asymmetric safe-area insets.
+camera projection and compact-panel framing, keeping the selected object centered
+in the full screen when details are closed. Foreground controls stay inside the
+safe area. Route and mission controls overlay the scene 8 points above the bottom
+safe-area boundary without reducing the rendered viewport. They use their content
+height and scroll when they exceed 45% of the available safe content height.
+Detail-panel actions remain in their own container. Controls respect asymmetric
+safe-area insets.
 
 Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described in
 [Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
