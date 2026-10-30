@@ -11,6 +11,10 @@ import BaseModule
 
 extension RootContainerView {
 
+    var isMissionNavigation: Bool {
+        appEnvironment.currentScreen == .objects && objectsViewState == .navigation && missionFlowState != nil
+    }
+
     @ViewBuilder
     func makeStartNavigationButton(destinationID: UUID) -> some View {
         Button {
@@ -58,18 +62,8 @@ extension RootContainerView {
             ProgressView(value: Double(snapshot.progress))
                 .tint(OptiColor.overlayTextPrimary)
 
-            if let epilogue = snapshot.missionStatus?.epilogueText {
-                Text(epilogue)
-                    .font(Typography.navigationSubtitle)
-                    .foregroundStyle(OptiColor.overlayTextPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("voyagerEpilogue")
-                    .transition(.opacity)
-            }
-
             navigationActionControls(snapshot: snapshot)
         }
-        .animation(.easeInOut(duration: 1.2), value: snapshot.missionStatus?.epilogueText)
         .padding(14)
         .background(OptiColor.overlaySurface.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
@@ -114,7 +108,7 @@ extension RootContainerView {
         .buttonStyle(NeonButtonStyle())
     }
 
-    private func cancelNavigationAndDismissOverlays() {
+    func cancelNavigationAndDismissOverlays() {
         universeResources.navigation.cancelNavigation()
         missionFlowState = nil
         pendingMissionAdvance = nil
@@ -169,7 +163,7 @@ extension RootContainerView {
         }
     }
 
-    private func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+    func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
         if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14 || snapshot.mission == .voyager1 {
             if snapshot.state == .failed { return "Mission unavailable" }
             guard let status = snapshot.missionStatus else { return "Preparing launch" }
