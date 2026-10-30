@@ -11,30 +11,12 @@ struct SimulationTimeIndicatorView: View {
         return formatter
     }()
 
-    private var modeLabel: String {
-        switch snapshot.mode {
-        case .live: "Live · 1×"
-        case .transferPreview: "Transfer preview"
-        case .missionReplay: "Mission replay"
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(modeLabel)
-            Text(Self.formatter.string(from: snapshot.dateUTC))
-                .monospacedDigit()
-            if let error = snapshot.error {
-                Text(error.localizedDescription)
-                    .foregroundStyle(.orange)
-            }
-        }
-        .font(Typography.navigationMeta)
-        .foregroundStyle(OptiColor.overlayTextSecondary)
-        .padding(10)
-        .background(OptiColor.overlaySurface.opacity(0.85))
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
-        .accessibilityElement(children: .combine)
-        .allowsHitTesting(false)
+        Text(Self.formatter.string(from: snapshot.dateUTC))
+            .monospacedDigit()
+            .font(Typography.navigationMeta)
+            .foregroundStyle(OptiColor.overlayTextSecondary)
+            .accessibilityIdentifier("simulationTimeIndicator")
+            .allowsHitTesting(false)
     }
 }
