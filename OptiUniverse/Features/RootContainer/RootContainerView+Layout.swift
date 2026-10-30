@@ -3,7 +3,7 @@ import BaseModule
 import UniverseModule
 
 extension RootContainerView {
-    func makeContent(onMissionSelected: @escaping (Mission) -> Void) -> some View {
+    func makeContent(usesVerticalToolbar: Bool, onMissionSelected: @escaping (Mission) -> Void) -> some View {
         GeometryReader { container in
             let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(size: container.size)
             HStack(spacing: 0) {
@@ -27,7 +27,8 @@ extension RootContainerView {
                     }
                 }
                 .overlay(alignment: .bottom) {
-                    makeSceneControls(maxHeight: container.size.height * 0.45)
+                    makeSceneControls(maxHeight: container.size.height * 0.45,
+                                      usesVerticalToolbar: usesVerticalToolbar)
                 }
 
                 if hasSidePanel, case .info(let entity) = objectsViewState {
@@ -91,7 +92,7 @@ extension RootContainerView {
     }
 
     @ViewBuilder
-    private func makeSceneControls(maxHeight: CGFloat) -> some View {
+    private func makeSceneControls(maxHeight: CGFloat, usesVerticalToolbar: Bool) -> some View {
         if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
             VStack(spacing: 8) {
                 if isNavigation {
@@ -103,10 +104,10 @@ extension RootContainerView {
                     }
                 } else {
                     ViewThatFits(in: .vertical) {
-                        sceneControlContent
+                        sceneControlContent(usesVerticalToolbar: usesVerticalToolbar)
                             .fixedSize(horizontal: false, vertical: true)
                         ScrollView {
-                            sceneControlContent
+                            sceneControlContent(usesVerticalToolbar: usesVerticalToolbar)
                         }
                         .scrollBounceBehavior(.basedOnSize)
                     }
@@ -143,12 +144,12 @@ extension RootContainerView {
     }
 
     @ViewBuilder
-    private var sceneControlContent: some View {
+    private func sceneControlContent(usesVerticalToolbar: Bool) -> some View {
         switch objectsViewState {
         case .orbit:
             VStack(spacing: 8) {
-                makeOrbitBackButton()
-                if let destinationID = appEnvironment.selectedDestinationID {
+                makeTransferPreviewDetails()
+                if !usesVerticalToolbar, let destinationID = appEnvironment.selectedDestinationID {
                     makeStartNavigationButton(destinationID: destinationID)
                 }
             }

@@ -22,16 +22,7 @@ extension RootContainerView {
     @ViewBuilder
     func makeStartNavigationButton(destinationID: UUID) -> some View {
         Button {
-            guard let destination = appEnvironment.destinationsProvider
-                .destinations
-                .first(where: { $0.id == destinationID }) else {
-                return
-            }
-
-            universeResources.navigation.startNavigation(to: destination.object)
-            missionFlowState = nil
-            pendingMissionAdvance = nil
-            objectsViewState = .navigation
+            startNavigation(destinationID: destinationID)
         } label: {
             Image(systemName: "paperplane")
                 .foregroundStyle(OptiColor.overlayTextPrimary)
@@ -39,6 +30,19 @@ extension RootContainerView {
         }
         .buttonStyle(NeonButtonStyle())
         .accessibilityLabel("Start navigation")
+    }
+
+    func startNavigation(destinationID: UUID) {
+        guard let destination = appEnvironment.destinationsProvider
+            .destinations
+            .first(where: { $0.id == destinationID }) else {
+            return
+        }
+
+        universeResources.navigation.startNavigation(to: destination.object)
+        missionFlowState = nil
+        pendingMissionAdvance = nil
+        objectsViewState = .navigation
     }
 
     @ViewBuilder
