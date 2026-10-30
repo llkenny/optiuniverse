@@ -11,8 +11,12 @@ import BaseModule
 
 extension RootContainerView {
 
+    var isNavigation: Bool {
+        appEnvironment.currentScreen == .objects && objectsViewState == .navigation
+    }
+
     var isMissionNavigation: Bool {
-        appEnvironment.currentScreen == .objects && objectsViewState == .navigation && missionFlowState != nil
+        isNavigation && missionFlowState != nil
     }
 
     @ViewBuilder
@@ -38,74 +42,20 @@ extension RootContainerView {
     }
 
     @ViewBuilder
-    func makeNavigationControls(snapshot: NavigationRouteSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(navigationTitle(snapshot: snapshot))
-                        .foregroundStyle(OptiColor.overlayTextPrimary)
-                        .font(Typography.navigationTitle)
-
-                    Text(navigationSubtitle(snapshot: snapshot))
-                        .foregroundStyle(OptiColor.overlayTextSecondary)
-                        .font(Typography.navigationSubtitle)
+    func makeNavigationRetryButton(snapshot: NavigationRouteSnapshot) -> some View {
+        if snapshot.state == .failed {
+            Button {
+                if let destination = snapshot.destinationName {
+                    universeResources.navigation.startNavigation(to: destination)
                 }
-
-                Spacer(minLength: 18)
-
-                Text("\(Int((snapshot.progress * 100).rounded()))%")
-                    .fixedSize()
+            } label: {
+                Text("Retry")
                     .foregroundStyle(OptiColor.overlayTextPrimary)
-                    .font(Typography.navigationMeta)
+                    .font(Typography.navigationControl)
+                    .frame(maxWidth: .infinity)
             }
-
-            ProgressView(value: Double(snapshot.progress))
-                .tint(OptiColor.overlayTextPrimary)
-
-            navigationActionControls(snapshot: snapshot)
+            .buttonStyle(NeonButtonStyle())
         }
-        .padding(14)
-        .background(OptiColor.overlaySurface.opacity(0.94))
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.panel))
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.panel)
-                .stroke(OptiColor.buttonBorder, lineWidth: 1)
-        )
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-    }
-
-    @ViewBuilder
-    private func navigationActionControls(snapshot: NavigationRouteSnapshot) -> some View {
-        HStack(spacing: 10) {
-            switch snapshot.state {
-            case .running:
-                navigationControlButton(title: "Cancel") {
-                    cancelNavigationAndDismissOverlays()
-                }
-            case .failed:
-                navigationControlButton(title: "Retry") {
-                    if let mission = snapshot.mission ?? missionFlowState?.mission.flightPlan {
-                        universeResources.navigation.startMission(mission)
-                    } else if let destination = snapshot.destinationName {
-                        universeResources.navigation.startNavigation(to: destination)
-                    }
-                }
-                navigationControlButton(title: "Close") { cancelNavigationAndDismissOverlays() }
-            case .idle, .preparing, .completed, .cancelled:
-                EmptyView()
-            }
-        }
-    }
-
-    private func navigationControlButton(title: String,
-                                         action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .foregroundStyle(OptiColor.overlayTextPrimary)
-                .font(Typography.navigationControl)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(NeonButtonStyle())
     }
 
     func cancelNavigationAndDismissOverlays() {
@@ -115,15 +65,7 @@ extension RootContainerView {
         objectsViewState = .raw
     }
 
-    private func navigationTitle(snapshot: NavigationRouteSnapshot) -> String {
-        if let missionFlowState {
-            if snapshot.state == .completed {
-                return "\(missionFlowState.mission.title) complete"
-            }
-
-            return missionFlowState.mission.title
-        }
-
+    func navigationTitle(snapshot: NavigationRouteSnapshot) -> String {
         if snapshot.state == .completed {
             return "Arrived"
         }
@@ -142,7 +84,7 @@ extension RootContainerView {
         return "Navigating to \(snapshot.destinationName ?? "destination")"
     }
 
-    private func navigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
+    func navigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
         if missionFlowState != nil {
             return missionNavigationSubtitle(snapshot: snapshot)
         }
