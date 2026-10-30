@@ -130,12 +130,15 @@ struct RootContainerView: View {
         if isMissionNavigation, let missionFlowState {
             return missionFlowState.mission.title
         }
+        if isNavigation {
+            return navigationTitle(snapshot: universeResources.navigation.navigationSnapshot)
+        }
         return appEnvironment.location
     }
 
     private var navigationBarSubtitle: String {
-        guard isMissionNavigation else { return "" }
-        return missionNavigationSubtitle(snapshot: universeResources.navigation.navigationSnapshot)
+        guard isNavigation else { return "" }
+        return navigationSubtitle(snapshot: universeResources.navigation.navigationSnapshot)
     }
 
     private var showsObjectDetailsButton: Bool {
@@ -154,8 +157,8 @@ struct RootContainerView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if isMissionNavigation {
-                    Button("Cancel mission", systemImage: "xmark") {
+                if isNavigation {
+                    Button(isMissionNavigation ? "Cancel mission" : "Cancel navigation", systemImage: "xmark") {
                         cancelNavigationAndDismissOverlays()
                     }
                 } else {

@@ -94,9 +94,13 @@ extension RootContainerView {
     private func makeSceneControls(maxHeight: CGFloat) -> some View {
         if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
             VStack(spacing: 8) {
-                if isMissionNavigation {
-                    missionEpilogue
-                        .allowsHitTesting(false)
+                if isNavigation {
+                    if isMissionNavigation {
+                        missionEpilogue
+                            .allowsHitTesting(false)
+                    } else {
+                        makeNavigationRetryButton(snapshot: universeResources.navigation.navigationSnapshot)
+                    }
                 } else {
                     ViewThatFits(in: .vertical) {
                         sceneControlContent
@@ -141,8 +145,6 @@ extension RootContainerView {
     @ViewBuilder
     private var sceneControlContent: some View {
         switch objectsViewState {
-        case .navigation:
-            makeNavigationControls(snapshot: universeResources.navigation.navigationSnapshot)
         case .orbit:
             VStack(spacing: 8) {
                 makeOrbitBackButton()
@@ -150,7 +152,7 @@ extension RootContainerView {
                     makeStartNavigationButton(destinationID: destinationID)
                 }
             }
-        case .raw, .info:
+        case .raw, .info, .navigation:
             EmptyView()
         }
     }
