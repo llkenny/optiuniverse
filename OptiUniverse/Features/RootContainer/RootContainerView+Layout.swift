@@ -96,19 +96,44 @@ extension RootContainerView {
     @ViewBuilder
     private func makeSceneControls(maxHeight: CGFloat) -> some View {
         if appEnvironment.currentScreen == .objects, objectsViewState != .raw, !isObjectInfoPresented {
-            ViewThatFits(in: .vertical) {
-                sceneControlContent
-                    .fixedSize(horizontal: false, vertical: true)
-                ScrollView {
+            if isMissionNavigation {
+                missionEpilogue
+                    .frame(maxWidth: 640)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .allowsHitTesting(false)
+            } else {
+                ViewThatFits(in: .vertical) {
                     sceneControlContent
+                        .fixedSize(horizontal: false, vertical: true)
+                    ScrollView {
+                        sceneControlContent
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .scrollBounceBehavior(.basedOnSize)
+                .frame(maxWidth: 640, maxHeight: max(0, maxHeight), alignment: .bottom)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: 640, maxHeight: max(0, maxHeight), alignment: .bottom)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
         }
+    }
+
+    private var missionEpilogue: some View {
+        let epilogue = universeResources.navigation.navigationSnapshot.missionStatus?.epilogueText
+        return VStack {
+            if let epilogue {
+                Text(epilogue)
+                    .font(Typography.navigationSubtitle)
+                    .foregroundStyle(OptiColor.overlayTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("voyagerEpilogue")
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 1.2), value: epilogue)
     }
 
     @ViewBuilder

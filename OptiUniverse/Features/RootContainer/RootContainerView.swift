@@ -43,7 +43,10 @@ struct RootContainerView: View {
         // Keep the navigation container and scene mounted as native bars change their axis.
         NavigationStack {
             content
-                .navigationTitle(appEnvironment.location)
+                .navigationTitle(navigationBarTitle)
+                #if os(iOS)
+                .navigationSubtitle(navigationBarSubtitle)
+                #endif
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { navigationControls }
                 .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
@@ -123,6 +126,18 @@ struct RootContainerView: View {
         loadingState == .loaded && appEnvironment.currentScreen == .objects
     }
 
+    private var navigationBarTitle: String {
+        if isMissionNavigation, let missionFlowState {
+            return missionFlowState.mission.title
+        }
+        return appEnvironment.location
+    }
+
+    private var navigationBarSubtitle: String {
+        guard isMissionNavigation else { return "" }
+        return missionNavigationSubtitle(snapshot: universeResources.navigation.navigationSnapshot)
+    }
+
     private var showsObjectDetailsButton: Bool {
         loadingState == .loaded && appEnvironment.currentScreen == .objects &&
             objectsViewState == .raw && appEnvironment.selectedDestinationID != nil
@@ -139,8 +154,14 @@ struct RootContainerView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Legal and credits", systemImage: "info.circle") {
-                    isShowingLegalCredits = true
+                if isMissionNavigation {
+                    Button("Cancel mission", systemImage: "xmark") {
+                        cancelNavigationAndDismissOverlays()
+                    }
+                } else {
+                    Button("Legal and credits", systemImage: "info.circle") {
+                        isShowingLegalCredits = true
+                    }
                 }
             }
             if showsObjectDetailsButton, let destinationID = appEnvironment.selectedDestinationID {
