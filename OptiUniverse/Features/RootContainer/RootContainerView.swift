@@ -133,6 +133,9 @@ struct RootContainerView: View {
     }
 
     private var navigationBarTitle: String {
+        if appEnvironment.currentScreen == .home {
+            return appEnvironment.selectedPlanet ?? "Unknown"
+        }
         if isMissionNavigation, let missionFlowState {
             return missionFlowState.mission.title
         }
@@ -143,6 +146,9 @@ struct RootContainerView: View {
     }
 
     private var navigationBarSubtitle: String {
+        if appEnvironment.currentScreen == .home {
+            return "Solar System, Milky Way"
+        }
         guard isNavigation else { return "" }
         return navigationSubtitle(snapshot: universeResources.navigation.navigationSnapshot)
     }

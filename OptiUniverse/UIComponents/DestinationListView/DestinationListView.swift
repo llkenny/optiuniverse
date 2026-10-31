@@ -37,6 +37,7 @@ struct DestinationListView: View {
                     }
                     .frame(height: cardSide)
                 }
+                .scrollClipDisabled()
             }
         }
         .task {
