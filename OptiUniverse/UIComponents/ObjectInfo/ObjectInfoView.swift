@@ -12,19 +12,30 @@ struct ObjectInfoView: View {
     var availableWidth: CGFloat = 380
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title2) private var titleSize = 27
     @ScaledMetric(relativeTo: .body) private var bodySize = 14
     @ScaledMetric(relativeTo: .headline) private var headingSize = 16
 
     var body: some View {
         VStack(alignment: .leading) {
+            Text(entity.title)
+                .foregroundStyle(OptiColor.objectInfoTextPrimary)
+                .font(.system(size: titleSize))
+                .padding(.bottom, 2)
+
             Text(entity.subtitle)
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
                 .font(.system(size: bodySize))
                 .padding(.bottom, 12)
 
-            LazyVGrid(columns: detailColumns, spacing: 8) {
-                ForEach(entity.details, id: \.title) { detail in
-                    ObjectInfoDetailCardView(entity: detail)
+            // Eager measurement keeps the overlay's natural height accurate before scrolling.
+            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(0..<detailRowCount, id: \.self) { row in
+                    GridRow {
+                        ForEach(detailRange(row: row), id: \.self) { index in
+                            ObjectInfoDetailCardView(entity: entity.details[index])
+                        }
+                    }
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -41,7 +52,7 @@ struct ObjectInfoView: View {
                 .padding(.bottom, 8)
 
             if let orbitInfo = entity.orbitInfo {
-                ObjectInfoOrbitView(model: orbitInfo)
+                ObjectInfoOrbitView(model: orbitInfo, availableWidth: max(0, availableWidth - 32))
                     .padding(.bottom, 8)
             }
 
@@ -53,16 +64,33 @@ struct ObjectInfoView: View {
                     .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
             }
 
+            if entity.isNavigable {
+                Button(action: entity.navigationButtonAction) {
+                    NeonButtonView(title: entity.navigationButtonTitle)
+                }
+                .buttonStyle(NeonButtonStyle())
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+            }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(LinearGradient(colors: [.clear, OptiColor.objectInfoSurface],
                                    startPoint: .top, endPoint: .bottom))
     }
 
-    private var detailColumns: [GridItem] {
-        if dynamicTypeSize.isAccessibilitySize { return [GridItem(.flexible())] }
-        return [GridItem(.adaptive(minimum: min(130, max(1, availableWidth - 32))), alignment: .top)]
+    private var detailColumnCount: Int {
+        AdaptiveLayoutPolicy.infoDetailColumnCount(availableWidth: availableWidth,
+                                                  isAccessibilitySize: dynamicTypeSize.isAccessibilitySize)
+    }
+
+    private var detailRowCount: Int {
+        (entity.details.count + detailColumnCount - 1) / detailColumnCount
+    }
+
+    private func detailRange(row: Int) -> Range<Int> {
+        let start = row * detailColumnCount
+        return start..<min(start + detailColumnCount, entity.details.count)
     }
 }
 

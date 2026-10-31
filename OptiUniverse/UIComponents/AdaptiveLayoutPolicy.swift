@@ -20,8 +20,17 @@ nonisolated enum AdaptiveLayoutPolicy {
         return min(availableWidth, min(max(availableWidth * 0.4, 320), 380))
     }
 
-    static func bottomPanelHeight(viewportHeight: CGFloat) -> CGFloat {
-        guard viewportHeight.isFinite else { return 0 }
-        return max(0, viewportHeight * 0.6)
+    static func bottomPanelHeight(contentHeight: CGFloat, viewportHeight: CGFloat) -> CGFloat {
+        guard contentHeight.isFinite, viewportHeight.isFinite else { return 0 }
+        return max(0, min(contentHeight, viewportHeight))
+    }
+
+    static func infoDetailColumnCount(availableWidth: CGFloat, isAccessibilitySize: Bool) -> Int {
+        guard !isAccessibilitySize, availableWidth.isFinite, availableWidth > 0 else { return 1 }
+        return availableWidth >= 320 ? 4 : 2
+    }
+
+    static func usesHorizontalInfoOrbit(cardWidth: CGFloat, isAccessibilitySize: Bool) -> Bool {
+        !isAccessibilitySize && cardWidth.isFinite && cardWidth >= 288
     }
 }

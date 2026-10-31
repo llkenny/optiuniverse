@@ -6,39 +6,23 @@ extension RootContainerView {
     func makeContent(usesVerticalToolbar: Bool, onMissionSelected: @escaping (Mission) -> Void) -> some View {
         GeometryReader { container in
             let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(size: container.size)
-            HStack(spacing: 0) {
-                // This scene stays in the same structural position as the window and panels resize.
-                ZStack {
-                    universeScene
-
-                    GeometryReader { viewport in
-                        ZStack {
-                            if appEnvironment.currentScreen == .home {
-                                HomeView(onMissionSelected: onMissionSelected)
-                                    .transition(.opacity)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .overlay(alignment: .bottom) {
-                            if !hasSidePanel, case .info(let entity) = objectsViewState {
-                                makeCompactInfoPanel(entity: entity, viewport: viewport.size)
-                            }
-                        }
-                    }
+            // The renderer and Info scroll view keep their identity as the window resizes.
+            ZStack {
+                universeScene
+                if appEnvironment.currentScreen == .home {
+                    HomeView(onMissionSelected: onMissionSelected)
+                        .transition(.opacity)
                 }
-                .overlay(alignment: .bottom) {
-                    makeSceneControls(maxHeight: container.size.height * 0.45,
-                                      usesVerticalToolbar: usesVerticalToolbar)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                if case .info(let entity) = objectsViewState {
+                    makeInfoOverlay(entity: entity, viewport: container.size, hasSidePanel: hasSidePanel)
                 }
-
-                if hasSidePanel, case .info(let entity) = objectsViewState {
-                    ObjectInfoPanel(entity: entity, isSidePanel: true, onDismiss: hideObjectInfoOverlay)
-                        .frame(width: AdaptiveLayoutPolicy.sidePanelWidth(availableWidth: container.size.width))
-                        .background {
-                            OptiColor.objectInfoSurface.ignoresSafeArea(.container)
-                        }
-                        .onAppear { clearObjectInfoFraming() }
-                }
+            }
+            .overlay(alignment: .bottom) {
+                makeSceneControls(maxHeight: container.size.height * 0.45,
+                                  usesVerticalToolbar: usesVerticalToolbar)
             }
             .coordinateSpace(name: "universeContent")
             .onChange(of: infoOverlayGeometry, initial: true) { _, _ in
@@ -81,14 +65,27 @@ extension RootContainerView {
         return false
     }
 
-    private func makeCompactInfoPanel(entity: ObjectInfoViewEntity, viewport: CGSize) -> some View {
-        ObjectInfoPanel(entity: entity, onDismiss: hideObjectInfoOverlay)
-            .frame(height: AdaptiveLayoutPolicy.bottomPanelHeight(viewportHeight: viewport.height))
-            .onAppear { updateCompactInfoFraming(hasSidePanel: false) }
-            .onGeometryChange(for: CGRect.self) { panel in
-                panel.frame(in: .named("universeContent"))
-            } action: { objectInfoPanelFrame = $0 }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+    private func makeInfoOverlay(entity: ObjectInfoViewEntity, viewport: CGSize,
+                                 hasSidePanel: Bool) -> some View {
+        ZStack(alignment: hasSidePanel ? .topTrailing : .bottom) {
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea(.container)
+                .onTapGesture(perform: hideObjectInfoOverlay)
+                .accessibilityHidden(true)
+
+            ObjectInfoPanel(entity: entity,
+                            availableWidth: hasSidePanel
+                                ? AdaptiveLayoutPolicy.sidePanelWidth(availableWidth: viewport.width) : viewport.width,
+                            availableHeight: viewport.height,
+                            isSidePanel: hasSidePanel,
+                            onDismiss: hideObjectInfoOverlay)
+                .id(entity.id)
+                .onGeometryChange(for: CGRect.self) { panel in
+                    panel.frame(in: .named("universeContent"))
+                } action: { objectInfoPanelFrame = hasSidePanel ? .zero : $0 }
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     @ViewBuilder

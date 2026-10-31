@@ -219,7 +219,7 @@ private struct VisionObjectInfoSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                ObjectInfoView(entity: entity)
+                ObjectInfoView(entity: entity, availableWidth: 520)
                     .padding(.bottom, 20)
             }
             .frame(width: 520, height: 640)
