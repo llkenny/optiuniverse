@@ -35,6 +35,7 @@ struct CategoryChipsView: View {
                 }
             }
         }
+        .scrollClipDisabled()
         .task {
             viewModel.destinationsProvider = appEnvironment.destinationsProvider
             viewModel.loadTags()
