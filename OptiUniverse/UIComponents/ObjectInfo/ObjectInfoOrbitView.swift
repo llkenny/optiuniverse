@@ -21,22 +21,27 @@ struct ObjectInfoOrbitView: View {
     }
 
     let model: Model
+    var availableWidth: CGFloat = 348
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var bodySize = 14
     @ScaledMetric(relativeTo: .headline) private var headingSize = 16
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 16) {
-                orbitImage
-                    .frame(width: 120)
-                orbitDescription
-                    .frame(minWidth: dynamicTypeSize.isAccessibilitySize ? 320 : 220)
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                orbitImage
-                orbitDescription
+        Group {
+            if AdaptiveLayoutPolicy.usesHorizontalInfoOrbit(cardWidth: availableWidth,
+                                                            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize) {
+                HStack(alignment: .top, spacing: 12) {
+                    orbitImage
+                        .frame(width: 96)
+                    orbitDescription
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    orbitImage
+                        .frame(maxWidth: .infinity)
+                    orbitDescription
+                }
             }
         }
         .padding()
@@ -52,7 +57,7 @@ struct ObjectInfoOrbitView: View {
         Image(.objectInfoOrbit)
             .resizable()
             .scaledToFit()
-            .frame(maxHeight: 140)
+            .frame(height: 140)
             .accessibilityHidden(true)
     }
 
@@ -70,10 +75,13 @@ struct ObjectInfoOrbitView: View {
                 ViewThatFits(in: .horizontal) {
                     HStack {
                         Text(item.key.rawValue)
+                            .font(.system(size: bodySize * 5 / 7))
+                            .fixedSize()
                         Spacer(minLength: 8)
                         Text(item.value)
+                            .fixedSize()
                     }
-                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.key.rawValue)
                         Text(item.value)

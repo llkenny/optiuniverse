@@ -98,7 +98,7 @@ struct UniverseImmersiveView<Resources: UniverseModuleResourcesProtocol, Univers
             .padding(.top, 12)
 
             ScrollView {
-                ObjectInfoView(entity: entity)
+                ObjectInfoView(entity: entity, availableWidth: 440)
                     .padding(.bottom, 16)
             }
         }

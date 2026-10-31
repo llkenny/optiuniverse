@@ -28,7 +28,7 @@ struct SceneOverlayGeometryTests {
         #expect(original.bottomInset - moved.bottomInset == 100)
     }
 
-    @Test func reservedSidePanelDoesNotCoverScene() {
+    @Test func nonoverlappingPanelDoesNotCoverScene() {
         let geometry = SceneOverlayGeometry(sceneFrame: CGRect(x: -20, y: -60, width: 600, height: 900),
                                             panelFrame: CGRect(x: 600, y: 0, width: 320, height: 800))
         #expect(geometry.bottomInset == 0)

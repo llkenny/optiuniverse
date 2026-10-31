@@ -248,12 +248,19 @@ Mission text is measured without truncation. Short
 windows and large text use page scrolling when either section needs more room;
 the grid then flows with the page.
 
-Object details use a scrollable bottom panel up to 60% of the scene height. When
-the content area is at least 700 points wide and 400 points tall, details move to
-a trailing panel, reserving 320–380 points beside the scene. Close and Route remain
-outside the scrolling details; swipe down on the bottom panel's header to dismiss.
-The scene stays mounted during layout changes, preserving camera and playback state.
-Home, Legal & Credits, and object details use native SwiftUI navigation toolbars.
+Object details use a transparent, content-sized bottom overlay. Details scroll when
+they exceed the safe content height, with the title, statistics, description, and
+Route action in one flow. At normal text sizes, statistics use four columns from
+320 points wide and two below that; accessibility text uses one column. Orbit
+cards keep the illustration beside the text from 288 points wide and stack it
+above the text in narrower cards or at accessibility text sizes.
+When the content area is at least 700 points wide and 400 points tall, details move
+to a transparent, 320–380-point trailing overlay. The universe extends behind both
+presentations. Tap outside or swipe down from the top of the scrolling details to
+dismiss; an accessibility escape action is also available. The scene and Info
+scroll view stay mounted during layout changes, preserving camera, playback, and
+reading position. Home, Legal & Credits, and object details use native SwiftUI
+navigation toolbars.
 The location breadcrumb is the inline navigation title. iOS arranges the controls
 vertically in supported Duo poses and horizontally in other layouts, while the
 live RealityKit scene extends to the screen edges behind transparent native bars,
@@ -263,8 +270,7 @@ in the full screen when details are closed. Foreground controls stay inside the
 safe area. Route and mission controls overlay the scene 8 points above the bottom
 safe-area boundary without reducing the rendered viewport. They use their content
 height and scroll when they exceed 45% of the available safe content height.
-Detail-panel actions remain in their own container. Controls respect asymmetric
-safe-area insets.
+Controls respect asymmetric safe-area insets.
 
 Transfer previews place Close in the native navigation bar in place of Legal &
 Credits, matching route and mission cancellation. Start navigation stays centered
@@ -283,8 +289,8 @@ rotate, and fold the device. Repeat in both Split View positions. Exercise each
 transition on discovery with a selected mission/filter, with object details open,
 during transfer preview, and during mission playback. Confirm the selected object,
 route, progress, and camera controls remain intact. Check large accessibility text,
-scrolling, reachable Close/Route/Cancel/Retry controls, and both asymmetric safe-area
-configurations. Also check ordinary iPhone portrait/landscape and extreme window
+scrolling, Info dismissal, reachable Route/Close/Cancel/Retry controls, and both
+asymmetric safe-area configurations. Also check ordinary iPhone portrait/landscape and extreme window
 sizes using the resizable simulator or iPhone Mirroring.
 On discovery, confirm missions and objects fit together at normal text sizes,
 all mission text and destinations remain reachable in the scrolling fallback,

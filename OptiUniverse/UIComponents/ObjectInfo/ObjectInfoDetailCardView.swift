@@ -32,8 +32,9 @@ struct ObjectInfoDetailCardView: View {
                 .foregroundStyle(OptiColor.objectInfoTextSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 6)
         .padding(.vertical, 8)
+        .multilineTextAlignment(.center)
         .background(OptiColor.objectInfoSurface.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.detailCard))
         .overlay(
