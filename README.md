@@ -301,7 +301,7 @@ and selection survives transitions between the two layouts.
 - Marketing URL: https://llkenny.github.io/optiuniverse/
 - Support URL: https://llkenny.github.io/optiuniverse/support/
 
-The [App Store 1.9 release package](AppStore/1.9/en-US/README.md) contains English metadata, product-page header and search-results artwork, and screenshots with upload instructions.
+The [App Store 1.10 release package](AppStore/1.10/en-US/README.md) contains English metadata, product-page header and search-results artwork, and updated iPhone and iPhone Duo screenshots with upload instructions.
 
 ## Build
 

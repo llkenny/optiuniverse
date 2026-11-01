@@ -1,3 +1,9 @@
-- Complete the RealityKit universe renderer migration
-- Verify cinematic PostFX and Milky Way environment
-- Check VisionOS
+OptiUniverse 1.10 (28)
+
+- Explore on iPhone Duo using both displays in portrait and landscape. Fold, unfold, and rotate during discovery, object details, transfer previews, and mission playback.
+- Confirm mission selection, category filters, the selected object, camera position, and playback survive layout changes.
+- Check the compact mission carousel and the expanded mission cards and destination grid. Verify all content remains reachable with larger text.
+- Read and scroll object information in the bottom and side panels. Check dismissal and the Route action.
+- Check native navigation controls, location titles, transfer information, mission status, and simulation time. Verify controls remain reachable beside asymmetric safe areas.
+- Replay Crew 13, Voyager 1, Artemis II, and Starship Flight 14. Mission replays are compressed, illustrative visualizations, not live spacecraft tracking.
+- Check ordinary iPhone portrait and landscape layouts for regressions.

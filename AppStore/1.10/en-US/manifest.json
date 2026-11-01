@@ -1,0 +1,424 @@
+{
+  "app": "OptiUniverse",
+  "version": "1.10",
+  "build": "28",
+  "locale": "en-US",
+  "prepared_date": "2026-10-31",
+  "checkout_commit": "39153f7d9116308a2e57618bf2d4d97abcc8c6f7",
+  "capture_source": {
+    "new_app_build_performed": true,
+    "build_tool": "Xcode 27.1 (27A9275)",
+    "sdk": "iOS Simulator 27.1",
+    "status_bar_time": "09:41",
+    "appearance": "dark",
+    "launch_locale": "en_US",
+    "app_version": "1.10",
+    "app_build": "28",
+    "app_code_file": "OptiUniverse.debug.dylib",
+    "app_code_sha256": "e899baee4c8e09bbc9848c643ab8ed2a7801efe168b32a80cb7848a68bc17a91",
+    "installed_app_code_matches_built_product": true
+  },
+  "exports": [
+    {
+      "path": "screenshots/1320x2868/01-saturn.png",
+      "sha256": "fd2e2409ae51aa2ad35268e51f0913ceebf327fdb9db6c18448444a525c5b6a0",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1320x2868/02-jupiter.png",
+      "sha256": "3a4e2e0090e18be1dac4857ec7272083e2c056c013dda548e36a5e51b4ec7755",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1320x2868/03-orbits.png",
+      "sha256": "2284a8288a6388e7b1d3c7e7148e8389d47739429a74f4506ddf2c459917cd53",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1320x2868/04-earth.png",
+      "sha256": "ffdf863e5e65b92b8a10c6b93c41dce24464234eef024f599ef93160e42dda62",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1320x2868/05-home.png",
+      "sha256": "a508cc9e4a960abdfdb17565b0186d06411307782a28fd4544b790e5b5a10c8d",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1320x2868/06-crew13.png",
+      "sha256": "1b5b99b65790194f4f9bda832e05c424e4bc8618ce1855b84c20e45cc37cf433",
+      "width": 1320,
+      "height": 2868,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/01-saturn.png",
+      "sha256": "b1410a8f44576a3cdb208d9e56b9b1a59d8e47f959528554148a394b6d58dca9",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/02-jupiter.png",
+      "sha256": "0048fbd0730e743a822018520c3a359ad98d83d40289c1a1caf2b34f1e07e565",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/03-orbits.png",
+      "sha256": "b98174ef678b0ed48ad91c997ecd5f574ef6ef5d846b750c69707ee05672ecc6",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/04-earth.png",
+      "sha256": "982cc771c2fad7814a2039d774b12c7e664f182720c6c39117c981b5bdddd17e",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/05-home.png",
+      "sha256": "fc5a769761e98b701012a5c20b8bba126bdcb72aeee657d88bba906b0db52fbe",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/1206x2622/06-crew13.png",
+      "sha256": "9a847e7fef44d91b8ff53554535ac2dc2c7f021df66989c158e78f35eb72ca15",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/1398x2034/01-outer-portrait-saturn.png",
+      "sha256": "a92b099e2a0388de6f28b5f1b0aeafc258b2d15edcc56ebff1d041ac72842959",
+      "width": 1398,
+      "height": 2034,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/1398x2034/02-outer-portrait-crew13.png",
+      "sha256": "33dc4dfb1d7fec1e23b3321719a3450a2c1ca38d97ab250f58b41fa284fcf7d8",
+      "width": 1398,
+      "height": 2034,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2034x1398/03-outer-landscape-earth.png",
+      "sha256": "2959a52ab69f9aaea0dacef0a2b1263591fc06c984e49e78c2ce78b60da374ac",
+      "width": 2034,
+      "height": 1398,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2034x1398/04-outer-landscape-orbits.png",
+      "sha256": "a8425b841ced761c75dc25f8e157483bafeb7180763dfb399cef673a1aa4d64d",
+      "width": 2034,
+      "height": 1398,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2007x2853/05-inner-portrait-home.png",
+      "sha256": "27d351206e496f270542a3e0962dd9e8364c49203d11c9e634f487e30b734c0b",
+      "width": 2007,
+      "height": 2853,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2007x2853/06-inner-portrait-jupiter.png",
+      "sha256": "428e819d895e9469b74d707fec2c33aaa82ef42f5db6125ede386cf0e07c00d9",
+      "width": 2007,
+      "height": 2853,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2853x2007/07-inner-landscape-jupiter.png",
+      "sha256": "c132bc15a071e04381391e68a2d1fb0ed6f8bc4d7cfece1884b601b5201f5caf",
+      "width": 2853,
+      "height": 2007,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "screenshots/duo/2853x2007/08-inner-landscape-crew13.png",
+      "sha256": "d10c58045cdf964563eb5defeee0f974672de08dcd3c59f57b6eedec7b5ca1bd",
+      "width": 2853,
+      "height": 2007,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "creative/header-3840x1646.png",
+      "sha256": "86283ec831f701c0403adc7f56464f460946def0a0b540c79c8750f2d59efbd7",
+      "width": 3840,
+      "height": 1646,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    },
+    {
+      "path": "creative/search-results-3840x2560.png",
+      "sha256": "04dc79a7e25574799389e4e6ef7861576779bed305a596f5dd0a010850e1ddae",
+      "width": 3840,
+      "height": 2560,
+      "format": "PNG",
+      "color_space": "sRGB",
+      "alpha": false
+    }
+  ],
+  "metadata": [
+    {
+      "path": "metadata/description.txt",
+      "sha256": "c7ca3823b7d2cf34af113a1dbf98e8e1b3728f4dcbccf57ff8bb082401a264eb",
+      "characters": 1958,
+      "limit": 4000
+    },
+    {
+      "path": "metadata/keywords.txt",
+      "sha256": "0b2242e019da64f71df60d4673126ff24faf20d5ab212a9824f79d1f9672f454",
+      "characters": 91,
+      "limit": 100
+    },
+    {
+      "path": "metadata/marketing_url.txt",
+      "sha256": "3aedf5e333dc34f7bf2a1f8cfc6ba44d5e2892e2daf97195e65685888311a6b0"
+    },
+    {
+      "path": "metadata/privacy_url.txt",
+      "sha256": "3db973d0b4af0ad6ad3f9118aef22f0d2f092a47cf2d6a5fad838e96563063e8"
+    },
+    {
+      "path": "metadata/promotional_text.txt",
+      "sha256": "c39e28fa53110da0f52dc4ceb52a016befaefc678d1ef2460fa6f247142056dd",
+      "characters": 159,
+      "limit": 170
+    },
+    {
+      "path": "metadata/release_notes.txt",
+      "sha256": "f27f6836166d1a647428c8219e7aca4c8ddcff37ca645b6e1c1de40396bbe83f",
+      "characters": 595,
+      "limit": 4000
+    },
+    {
+      "path": "metadata/support_url.txt",
+      "sha256": "7bb227957290a938b9a8b27686e829bb4813e3204c3f9d484f332f3d3a37a0c3"
+    }
+  ],
+  "captures": [
+    {
+      "path": "sources/captures/iphone17/01-saturn.png",
+      "sha256": "26eb417c7f257d60cec830aa96456141f62234318a079a13ce2070174c87ec39",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/iphone17/02-jupiter.png",
+      "sha256": "143284285ec1063313cbc9108a6db99e35079b8070d94f4b37b9c95447e97f2e",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/iphone17/03-orbits.png",
+      "sha256": "fe889b3fbf5c9825efe523ea2362e1f46237c6432aba45ef6057b2b5a9fc880a",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/iphone17/04-earth.png",
+      "sha256": "ed79faa15e083ee697905abbc7cd6eeb38ec3d4dd2b35c21d35abaa1179e42ce",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/iphone17/05-home.png",
+      "sha256": "0809041ce69f92be0db7660692c9c15b9578761b8eb9e20d9e0948304e65ac42",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/iphone17/06-crew13.png",
+      "sha256": "6bdba9337ea50ede3bbf90fb1372f753cadd7ee7a185850fc686dba7288c0d5a",
+      "width": 1206,
+      "height": 2622,
+      "format": "PNG",
+      "device": "iPhone 17",
+      "runtime": "iOS 27.0",
+      "display": "built-in",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/duo/01-outer-portrait-saturn.png",
+      "sha256": "f7df8abffc3109a5dfc1111461b4903ec19667db14dd4002fa46476368316848",
+      "width": 1398,
+      "height": 2034,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "outer",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/duo/02-outer-portrait-crew13.png",
+      "sha256": "f7785a28a942404406eca89594062067a1642e36fa586ac58ab83a33412cf975",
+      "width": 1398,
+      "height": 2034,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "outer",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/duo/03-outer-landscape-earth.png",
+      "sha256": "6148eb0c33041f735f0c393d74a1f0b98f557b8e90b3c43e71158ffa19a69896",
+      "width": 2034,
+      "height": 1398,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "outer",
+      "orientation": "landscape"
+    },
+    {
+      "path": "sources/captures/duo/04-outer-landscape-orbits.png",
+      "sha256": "781e6f70a94ff4c8d463d04802d60f7cb8402253793b66676caacc97f0199420",
+      "width": 2034,
+      "height": 1398,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "outer",
+      "orientation": "landscape"
+    },
+    {
+      "path": "sources/captures/duo/05-inner-portrait-home.png",
+      "sha256": "ddf3c2bafe36bb40c661dff2487f2c40d138354652f7fc354ce1477966ff5862",
+      "width": 2007,
+      "height": 2853,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "inner",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/duo/06-inner-portrait-jupiter.png",
+      "sha256": "419ef4ef5dfac6aa8d95b281f68952274969d5476309a5b54443825dd52a2dd7",
+      "width": 2007,
+      "height": 2853,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "inner",
+      "orientation": "portrait"
+    },
+    {
+      "path": "sources/captures/duo/07-inner-landscape-jupiter.png",
+      "sha256": "c4129c413d7dde155a9e90d0a4c2b7e40897c9231371ba865624fd6e60787fc8",
+      "width": 2853,
+      "height": 2007,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "inner",
+      "orientation": "landscape"
+    },
+    {
+      "path": "sources/captures/duo/08-inner-landscape-crew13.png",
+      "sha256": "c7a2018561657c75794f953b809b97cbe1279c973c321dd08cc0bd190910cf3f",
+      "width": 2853,
+      "height": 2007,
+      "format": "PNG",
+      "device": "iPhone Duo",
+      "runtime": "iOS 27.1",
+      "display": "inner",
+      "orientation": "landscape"
+    }
+  ],
+  "overview": {
+    "path": "preview.png",
+    "sha256": "d75d16292e3a3da8e407409dd392b52478b651f60cb1e245e4dec7e36e08de49",
+    "width": 2200,
+    "height": 2200,
+    "format": "PNG",
+    "color_space": "sRGB",
+    "alpha": false
+  }
+}
