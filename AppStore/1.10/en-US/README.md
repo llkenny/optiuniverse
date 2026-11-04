@@ -13,7 +13,7 @@ Prepared on October 31, 2026. Version **1.10**, build **28**. This local package
 | iPhone Duo | [Duo screenshots](screenshots/duo) | Eight screenshots across both displays and orientations, 01–08 |
 | Product page Header | [Header](creative/header-3840x1646.png) | 3840 × 1646 PNG, reused unchanged from 1.9 |
 | Search Results | [Search Results](creative/search-results-3840x2560.png) | 3840 × 2560 PNG, refreshed app foreground |
-| English (U.S.) metadata | [Text files](metadata) | Seven UTF-8 files matching fastlane |
+| English (U.S.) metadata | [Text files](metadata) | Seven UTF-8 files for manual entry in App Store Connect |
 
 All upload PNGs are opaque 8-bit RGB in sRGB. The overview and files under `sources` are for review and regeneration, not direct upload.
 
