@@ -58,7 +58,7 @@ final class NavigationController {
     private(set) var navigationSnapshot: NavigationRouteSnapshot = .idle {
         didSet {
             navigationSnapshotDidChange?(navigationSnapshot)
-            if navigationSnapshot.state == .completed {
+            if navigationSnapshot.state == .completed, navigationSnapshot.mission != .vostok1 {
                 scheduleDoneNavigation()
             } else {
                 pendingDoneNavigationTask?.cancel()

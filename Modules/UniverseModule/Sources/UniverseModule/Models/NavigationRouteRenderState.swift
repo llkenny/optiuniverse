@@ -15,11 +15,12 @@ struct NavigationRouteRenderState: Equatable {
     let starshipFlight: StarshipFlightState?
     let crew13Flight: Crew13FlightState?
     let voyagerFlight: VoyagerFlightState?
+    let vostokFlight: VostokFlightState?
 
     /// Camera tracking and visible vehicles must share the exact elapsed-time sample, not a Float progress round-trip.
     var preciseMarkerPosition: SIMD3<Double>? {
         voyagerFlight?.probe.precisePosition ?? crew13Flight?.dragon.precisePosition
-            ?? starshipFlight?.ship.precisePosition
+            ?? starshipFlight?.ship.precisePosition ?? vostokFlight?.capsule.precisePosition
             ?? route?.precisePoint(at: progress)
     }
 
@@ -35,6 +36,7 @@ struct NavigationRouteRenderState: Equatable {
         starshipFlight = route?.starshipProfile?.sample(time: elapsedTime)
         crew13Flight = route?.crew13Profile?.sample(time: elapsedTime)
         voyagerFlight = route?.voyagerProfile?.sample(time: elapsedTime)
+        vostokFlight = route?.vostokProfile?.sample(time: elapsedTime)
         self.route = route
         self.progress = progress
         self.elapsedTime = elapsedTime

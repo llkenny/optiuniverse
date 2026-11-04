@@ -109,7 +109,7 @@ public final class UniverseModuleResources {
                 cameraCoordinator.followCameraOwner.showSolarSystemOverview(viewportSize: viewportSize)
             } else if mission == .crew13 {
                 cameraCoordinator.followNavigationDestination(named: "Earth", viewportSize: viewportSize)
-            } else if mission == .starshipFlight14 {
+            } else if mission == .starshipFlight14 || mission == .vostok1 {
                 // Surface close-ups finish away from the body's center. Animate back out
                 // instead of adopting an Earth-centered pivot at the close-up distance.
                 cameraCoordinator.followNavigationDestination(named: name, viewportSize: viewportSize)
@@ -188,8 +188,8 @@ public final class UniverseModuleResources {
 
     /// Shared physical state for future dated mission trajectories, independent of playback mode.
     public func celestialState(for body: CelestialBodyID, at date: Date) throws -> CelestialBodyState {
-        guard date >= Date(timeIntervalSince1970: 946_684_800),
-              date < Date(timeIntervalSince1970: 4_133_980_800) else { throw CelestialStateError.outsideCoverage }
+        guard date >= SimulationTime.calendarStartUTC,
+              date < SimulationTime.calendarEndUTC else { throw CelestialStateError.outsideCoverage }
         return try sceneSnapshotPipeline.stateProvider.state(for: body, at: SimulationTime.tdbSeconds(for: date))
     }
 

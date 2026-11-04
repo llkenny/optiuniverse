@@ -112,6 +112,8 @@ extension UniverseSceneCoordinator {
             ProjectiveTransformCameraComponent(projectionMatrix: projectionMatrix)
         )
 
+        let navigation = frameState.routes.navigation
+        updateVostokCloudLayers(navigation: navigation)
         proceduralSceneContent?.update(frameState: frameState)
 
         guard let snapshot = frameState.snapshot else { return }
@@ -126,6 +128,23 @@ extension UniverseSceneCoordinator {
             }
         }
         applyImmersiveFocusIfPossible(frameState: frameState)
+    }
+
+    private func updateVostokCloudLayers(navigation: NavigationRouteRenderState) {
+        // The decorative cloud spheres sit above the solid surface. Fade them out as
+        // the two parachutes approach the ground, then restore them on exit.
+        let fade = Float(navigation.elapsedTime - VostokFlightCue.ejection.rawValue + 0.5)
+        let opacity = navigation.vostokFlight == nil ? 1 : 1 - Crew13RouteProfile.smooth(fade)
+        guard opacity != vostokCloudOpacity, let earth = bodyEntities["Earth"] else { return }
+        vostokCloudOpacity = opacity
+        for name in ["Clouds", "Clouds_External"] {
+            guard let layer = earth.visualRoot.findEntity(named: name) else { continue }
+            if opacity == 1 {
+                layer.components.remove(OpacityComponent.self)
+            } else {
+                layer.components.set(OpacityComponent(opacity: opacity))
+            }
+        }
     }
 
     func applyImmersiveFocusIfPossible(frameState: UniverseFrameState?) {

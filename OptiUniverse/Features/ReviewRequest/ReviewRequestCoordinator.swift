@@ -13,9 +13,11 @@ final class ReviewRequestCoordinator {
         var navigationState: NavigationRouteState = .idle
         var isLegalSheetPresented = false
         var isObjectInfoPresented = false
+        var isMissionEpiloguePresented = false
 
         var isSafe: Bool {
             isLoaded && isSceneActive && !isLegalSheetPresented && !isObjectInfoPresented
+                && !isMissionEpiloguePresented
                 && navigationState != .preparing
                 && navigationState != .running
                 && navigationState != .failed

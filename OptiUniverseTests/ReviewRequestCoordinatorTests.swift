@@ -291,7 +291,7 @@ extension ReviewRequestCoordinatorTests {
 }
 
 enum ReviewBlocker: CaseIterable, Sendable {
-    case loading, inactive, preparing, running, failed, legalSheet, objectInfo
+    case loading, inactive, preparing, running, failed, legalSheet, objectInfo, missionEpilogue
 
     @MainActor var context: ReviewRequestCoordinator.PresentationContext {
         var context = ReviewRequestCoordinator.PresentationContext(isLoaded: true, isSceneActive: true)
@@ -303,6 +303,9 @@ enum ReviewBlocker: CaseIterable, Sendable {
         case .failed: context.navigationState = .failed
         case .legalSheet: context.isLegalSheetPresented = true
         case .objectInfo: context.isObjectInfoPresented = true
+        case .missionEpilogue:
+            context.navigationState = .completed
+            context.isMissionEpiloguePresented = true
         }
         return context
     }

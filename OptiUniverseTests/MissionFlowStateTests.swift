@@ -56,7 +56,7 @@ import Testing
 @MainActor
 @Test func starshipCatalogAndLaunchPlanUseExplicitMission() {
     let mission = Mission.starshipFlight14
-    #expect(Mission.available == [.crew13, .starshipFlight14, .artemisII, .voyager1])
+    #expect(Mission.available == [.crew13, .starshipFlight14, .artemisII, .voyager1, .vostok1])
     #expect(mission.id == "starship-flight-14")
     #expect(mission.flightPlan == .starshipFlight14)
     #expect(mission.goals == "Test Starship and deploy Starlinks")
@@ -121,7 +121,7 @@ import Testing
 @MainActor
 @Test func voyagerCatalogAndCompletionUseMissionIdentityWithoutACelestialDestination() {
     let mission = Mission.voyager1
-    #expect(Mission.available.last == mission)
+    #expect(Mission.available.contains(mission))
     #expect(mission.id == "voyager-1")
     #expect(mission.flightPlan == .voyager1)
     #expect(MissionCardModel(mission: mission).imageResource == .dstSaturn)
@@ -134,4 +134,23 @@ import Testing
                                                      destinationName: "Interstellar space") == .noChange)
     #expect(plan.flowState.handleCompletedNavigation(originName: "Earth", waypointName: nil,
                             destinationName: "Interstellar space", missionID: .voyager1) == .complete)
+}
+
+@MainActor
+@Test func vostokCardLaunchesAndCompletesOnlyItsOwnEarthRoute() {
+    let mission = Mission.vostok1
+    let card = MissionCardModel(mission: mission)
+    let launch = MissionLaunchPlan(mission: mission)
+    #expect(Mission.available.last == mission)
+    #expect(mission.id == "vostok-1")
+    #expect(mission.flightPlan == .vostok1)
+    #expect(card.imageResource == .dstEarth)
+    #expect(card.formattedLaunchDate(locale: Locale(identifier: "en_US")) == "Apr 12, 1961")
+    #expect(launch.screen == .objects)
+    #expect(launch.objectsViewState == .navigation)
+    #expect(launch.route == MissionRoute(originName: "Earth", waypointName: nil, destinationName: "Earth"))
+    #expect(launch.flowState.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+        destinationName: "Earth", missionID: .starshipFlight14) == .noChange)
+    #expect(launch.flowState.handleCompletedNavigation(originName: "Earth", waypointName: nil,
+        destinationName: "Earth", missionID: .vostok1) == .complete)
 }

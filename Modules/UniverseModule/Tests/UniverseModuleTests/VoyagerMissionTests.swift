@@ -33,9 +33,9 @@ private func voyagerResources(provider: (any CelestialStateProviding)? = nil) th
     }
     let archive = try EphemerisArchive.bundled.get()
     try timeline.validateEphemeris(archive)
-    #expect(archive.coverageYears == 1977...2100)
+    #expect(archive.coverageYears == 1961...2100)
     let preview = TransferPreviewSnapshot(hasPartialOrbit: true, orbitCoverageYears: archive.coverageYears)
-    #expect(preview.partialOrbitLabel == "Orbit arc · 1977–2100")
+    #expect(preview.partialOrbitLabel == "Orbit arc · 1961–2100")
     let before = try #require(ISO8601DateFormatter().date(from: "1977-12-31T23:59:59Z"))
     let after = try #require(ISO8601DateFormatter().date(from: "1978-01-01T00:00:00Z"))
     #expect(abs(SimulationTime.tdbSeconds(for: after) - SimulationTime.tdbSeconds(for: before) - 2) < 0.0001)

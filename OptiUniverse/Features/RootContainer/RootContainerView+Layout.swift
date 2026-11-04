@@ -20,6 +20,11 @@ extension RootContainerView {
                     makeInfoOverlay(entity: entity, viewport: container.size, hasSidePanel: hasSidePanel)
                 }
             }
+            .overlay {
+                if isMissionNavigation, missionFlowState?.mission.flightPlan == .vostok1 {
+                    vostokControlBackdrop
+                }
+            }
             .overlay(alignment: .bottom) {
                 makeSceneControls(maxHeight: container.size.height * 0.45,
                                   usesVerticalToolbar: usesVerticalToolbar)
@@ -32,6 +37,19 @@ extension RootContainerView {
                 if isSidePanel { clearObjectInfoFraming() }
             }
         }
+    }
+
+    private var vostokControlBackdrop: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [.black.opacity(0.82), .clear], startPoint: .top, endPoint: .bottom)
+                .frame(height: 155)
+            Spacer(minLength: 0)
+            LinearGradient(colors: [.clear, .black.opacity(0.86)], startPoint: .top, endPoint: .bottom)
+                .frame(height: 175)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var universeScene: some View {
@@ -96,6 +114,16 @@ extension RootContainerView {
                     if isMissionNavigation {
                         missionEpilogue
                             .allowsHitTesting(false)
+                        let snapshot = universeResources.navigation.navigationSnapshot
+                        if snapshot.mission == .vostok1 {
+                            makeNavigationRetryButton(snapshot: snapshot)
+                            if snapshot.state == .completed {
+                                Button("Done", systemImage: "checkmark") {
+                                    universeResources.navigation.doneNavigation()
+                                }
+                                .buttonStyle(NeonButtonStyle())
+                            }
+                        }
                     } else {
                         makeNavigationRetryButton(snapshot: universeResources.navigation.navigationSnapshot)
                     }
@@ -125,7 +153,8 @@ extension RootContainerView {
     }
 
     private var missionEpilogue: some View {
-        let epilogue = universeResources.navigation.navigationSnapshot.missionStatus?.epilogueText
+        let status = universeResources.navigation.navigationSnapshot.missionStatus
+        let epilogue = status?.epilogueText
         return VStack {
             if let epilogue {
                 Text(epilogue)
@@ -133,7 +162,7 @@ extension RootContainerView {
                     .foregroundStyle(OptiColor.overlayTextPrimary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("voyagerEpilogue")
+                    .accessibilityIdentifier(status?.mission == .vostok1 ? "vostokEpilogue" : "voyagerEpilogue")
                     .transition(.opacity)
             }
         }

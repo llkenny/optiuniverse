@@ -19,6 +19,7 @@ final class UniverseSceneCoordinator {
     let virtualCamera = Entity()
     let sunLight = Entity()
     private(set) var bodyEntities: [String: BodyEntities] = [:]
+    var vostokCloudOpacity: Float = 1
     private(set) var realityKitOwnedBodyNames: Set<String> = []
     private(set) var isProceduralSceneContentPrepared = false
     var animationPlaybackControllers: [String: [AnimationPlaybackController]] = [:]
@@ -261,10 +262,9 @@ final class UniverseSceneCoordinator {
                                             mission: replay)
         snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
                                             presentationTime: Float(simulationClock.presentationTime))
-        let reachedMissionEnd = replay.map {
-            previousMissionTime < $0.timeline.duration && simulationClock.missionElapsedTime >= $0.timeline.duration
-        } ?? false
-        publishSimulationTime(force: isResuming || reachedMissionEnd)
+        let crossedCue = replay?.crossedPublicationCue(from: previousMissionTime,
+                                                        to: simulationClock.missionElapsedTime) ?? false
+        publishSimulationTime(force: isResuming || crossedCue)
         guard snapshotProvider.preparationError == nil else {
             handleEphemerisFailure()
             return
@@ -392,6 +392,7 @@ final class UniverseSceneCoordinator {
         navigationMarkerRoot.addChild(proceduralSceneContent.starshipMission.root)
         navigationMarkerRoot.addChild(proceduralSceneContent.crew13Mission.root)
         navigationMarkerRoot.addChild(proceduralSceneContent.voyagerMission.root)
+        navigationMarkerRoot.addChild(proceduralSceneContent.vostokMission.root)
         self.proceduralSceneContent = proceduralSceneContent
     }
 

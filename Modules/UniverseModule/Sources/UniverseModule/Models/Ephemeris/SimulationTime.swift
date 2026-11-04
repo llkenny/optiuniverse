@@ -3,6 +3,34 @@ import Foundation
 /// Ephemeris epochs are SI seconds since 2000-01-01 12:00 TDB, not UTC.
 enum SimulationTime {
     static let utcJ2000 = Date(timeIntervalSince1970: 946_728_000)
+    static let calendarStartUTC = Date(timeIntervalSince1970: -283_996_800)
+    static let calendarEndUTC = Date(timeIntervalSince1970: 4_133_980_800)
+
+    // IERS TAI−UTC table, in MJD. Before 1972 the offset also drifted within each interval.
+    private struct HistoricalOffset {
+        let start: Double
+        let offset: Double
+        let reference: Double
+        let drift: Double
+
+        init(_ start: Double, _ offset: Double, _ reference: Double, _ drift: Double) {
+            self.start = start
+            self.offset = offset
+            self.reference = reference
+            self.drift = drift
+        }
+    }
+
+    private static let historicalOffsets: [HistoricalOffset] = [
+        .init(37_300, 1.422818, 37_300, 0.001296), .init(37_512, 1.372818, 37_300, 0.001296),
+        .init(37_665, 1.845858, 37_665, 0.0011232), .init(38_334, 1.945858, 37_665, 0.0011232),
+        .init(38_395, 3.240130, 38_761, 0.001296), .init(38_486, 3.340130, 38_761, 0.001296),
+        .init(38_639, 3.440130, 38_761, 0.001296), .init(38_761, 3.540130, 38_761, 0.001296),
+        .init(38_820, 3.640130, 38_761, 0.001296), .init(38_942, 3.740130, 38_761, 0.001296),
+        .init(39_004, 3.840130, 38_761, 0.001296), .init(39_126, 4.313170, 39_126, 0.002592),
+        .init(39_887, 4.213170, 39_126, 0.002592)
+    ]
+
     // NAIF naif0012.tls. Future UTC uses the last announced leap second.
     private static let leaps: [(Double, Double)] = [
         (63_072_000, 10), (78_796_800, 11), (94_694_400, 12), (126_230_400, 13),
@@ -16,7 +44,14 @@ enum SimulationTime {
 
     static func tdbSeconds(for date: Date) -> Double {
         let utc = date.timeIntervalSince1970
-        let atomicOffset = leaps.last { utc >= $0.0 }?.1 ?? 10
+        let atomicOffset: Double
+        if let leap = leaps.last(where: { utc >= $0.0 }) {
+            atomicOffset = leap.1
+        } else {
+            let mjd = 40_587 + utc / 86_400
+            let era = historicalOffsets.last { mjd >= $0.start } ?? historicalOffsets[0]
+            atomicOffset = era.offset + (mjd - era.reference) * era.drift
+        }
         let terrestrialTime = date.timeIntervalSince(utcJ2000) + atomicOffset + 32.184
         return terrestrialTime + tdbMinusTT(terrestrialTime)
     }

@@ -20,6 +20,7 @@ final class RealityProceduralSceneContent {
     let starshipMission = RealityStarshipMission()
     let crew13Mission = RealityCrew13Mission()
     let voyagerMission = RealityVoyagerMission()
+    let vostokMission = RealityVostokMission()
 
     static let navigationRouteColor = SIMD4<Float>(0.2, 0.82, 1, 0.45)
 
@@ -86,6 +87,7 @@ final class RealityProceduralSceneContent {
         starshipMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         crew13Mission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         voyagerMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
+        vostokMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         updateNavigation(state: frameState.routes.navigation, context: context,
                          elapsedTime: frameState.routes.navigation.elapsedTime)
     }
@@ -164,7 +166,11 @@ final class RealityProceduralSceneContent {
             return
         }
 
-        let visiblePoints = route.preciseRenderPoints(through: state.progress).map {
+        var path = route.preciseRenderPoints(through: state.progress)
+        if state.vostokFlight != nil, !path.isEmpty {
+            path[path.count - 1] = markerPosition
+        }
+        let visiblePoints = path.map {
             EphemerisCoordinates.renderPosition($0, relativeTo: context.sceneOrigin)
         }
         if visiblePoints.count >= 2 {

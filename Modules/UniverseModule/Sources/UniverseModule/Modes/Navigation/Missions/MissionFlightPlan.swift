@@ -6,6 +6,7 @@ public enum MissionFlightPlan: String, Sendable, Equatable {
     case starshipFlight14 = "starship-flight-14"
     case crew13 = "crew-13"
     case voyager1 = "voyager-1"
+    case vostok1 = "vostok-1"
 
     /// UTC launch instant shared with the mission replay's first historical anchor.
     public var launchDate: Date {
@@ -34,12 +35,24 @@ public struct MissionNavigationStatus: Sendable, Equatable {
         case saturnFlyby = "Saturn flyby"
         case interstellarCruise = "Journey to the heliopause"
         case interstellarSpace = "Interstellar space"
+        case boosterSeparation = "Booster separation"
+        case fairingSeparation = "Fairing separation"
+        case ejection = "Gagarin ejects"
+        case parachuteDescent = "Parachute descent"
+        case capsuleLanded = "Capsule landed"
+        case vostokLanded = "Gagarin landed"
     }
 
     /// Shared by iOS and visionOS; tied to mission time, so backgrounding cannot dismiss it.
     public var epilogueText: String? {
-        guard mission == .voyager1, phase == .interstellarSpace else { return nil }
-        return "Voyager 1 has left the heliosphere and continues its journey through interstellar space."
+        switch (mission, phase) {
+        case (.voyager1, .interstellarSpace):
+            "Voyager 1 has left the heliosphere and continues its journey through interstellar space."
+        case (.vostok1, .vostokLanded):
+            "Yuri Gagarin landed near Smelovka after the first human spaceflight."
+        default:
+            nil
+        }
     }
 
     public let mission: MissionFlightPlan
