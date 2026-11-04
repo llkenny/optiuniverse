@@ -28,6 +28,7 @@ struct RootContainerView: View {
     @State private var isShowingLegalCredits = false
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
+    @State var windowSize: CGSize = .zero
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
@@ -54,6 +55,14 @@ struct RootContainerView: View {
                     .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
                     .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
                     .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
+            }
+        }
+        .background {
+            if isPad {
+                // Measure the window outside the navigation bars and system safe areas.
+                Color.clear
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { windowSize = $0 }
+                    .ignoresSafeArea(.container)
             }
         }
         .preferredColorScheme(isUniverseVisible ? .dark : nil)

@@ -3,6 +3,46 @@ import Testing
 @testable import OptiUniverse
 
 struct AdaptiveLayoutPolicyTests {
+    @Test(arguments: [CGSize(width: 820, height: 1_180), CGSize(width: 820, height: 820)])
+    func tallAndSquareIPadWindowsUseCompactLayouts(windowSize: CGSize) {
+        let allowsExpanded = AdaptiveLayoutPolicy.allowsExpandedLayout(windowSize: windowSize, isPad: true)
+        #expect(!AdaptiveLayoutPolicy.isExpandedDiscovery(width: 820, allowsExpandedLayout: allowsExpanded))
+        #expect(!AdaptiveLayoutPolicy.usesSidePanel(size: CGSize(width: 820, height: 750),
+                                                    allowsExpandedLayout: allowsExpanded))
+    }
+
+    @Test(arguments: [true, false])
+    func wideWindowsUseExistingContentBreakpoints(isPad: Bool) {
+        let allowsExpanded = AdaptiveLayoutPolicy.allowsExpandedLayout(
+            windowSize: CGSize(width: 1_180, height: 820), isPad: isPad
+        )
+        #expect(AdaptiveLayoutPolicy.isExpandedDiscovery(width: 600, allowsExpandedLayout: allowsExpanded))
+        #expect(!AdaptiveLayoutPolicy.isExpandedDiscovery(width: 599, allowsExpandedLayout: allowsExpanded))
+        #expect(AdaptiveLayoutPolicy.usesSidePanel(size: CGSize(width: 700, height: 400),
+                                                   allowsExpandedLayout: allowsExpanded))
+        #expect(!AdaptiveLayoutPolicy.usesSidePanel(size: CGSize(width: 699, height: 400),
+                                                    allowsExpandedLayout: allowsExpanded))
+        #expect(!AdaptiveLayoutPolicy.usesSidePanel(size: CGSize(width: 700, height: 399),
+                                                    allowsExpandedLayout: allowsExpanded))
+    }
+
+    @Test func narrowWideIPadWindowStillUsesCompactLayouts() {
+        let windowSize = CGSize(width: 580, height: 480)
+        let allowsExpanded = AdaptiveLayoutPolicy.allowsExpandedLayout(windowSize: windowSize, isPad: true)
+        #expect(allowsExpanded)
+        #expect(!AdaptiveLayoutPolicy.isExpandedDiscovery(width: windowSize.width,
+                                                           allowsExpandedLayout: allowsExpanded))
+        #expect(!AdaptiveLayoutPolicy.usesSidePanel(size: windowSize, allowsExpandedLayout: allowsExpanded))
+    }
+
+    @Test func tallDuoWindowStillUsesContentBreakpoints() {
+        let windowSize = CGSize(width: 820, height: 1_180)
+        let allowsExpanded = AdaptiveLayoutPolicy.allowsExpandedLayout(windowSize: windowSize, isPad: false)
+        #expect(AdaptiveLayoutPolicy.isExpandedDiscovery(width: 820, allowsExpandedLayout: allowsExpanded))
+        #expect(AdaptiveLayoutPolicy.usesSidePanel(size: CGSize(width: 820, height: 1_100),
+                                                   allowsExpandedLayout: allowsExpanded))
+    }
+
     @Test func discoveryChangesAtContentBreakpoint() {
         #expect(!AdaptiveLayoutPolicy.isExpandedDiscovery(width: 599))
         #expect(AdaptiveLayoutPolicy.isExpandedDiscovery(width: 600))

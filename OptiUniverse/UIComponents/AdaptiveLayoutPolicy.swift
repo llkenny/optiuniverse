@@ -1,9 +1,15 @@
 import CoreGraphics
 
-/// Content breakpoints use the space offered to the view, independent of the device or pose.
+/// Content breakpoints use the space offered to the view.
 nonisolated enum AdaptiveLayoutPolicy {
-    static func isExpandedDiscovery(width: CGFloat) -> Bool {
-        width.isFinite && width >= 600
+    static func allowsExpandedLayout(windowSize: CGSize, isPad: Bool) -> Bool {
+        guard isPad else { return true }
+        return windowSize.width.isFinite && windowSize.height.isFinite &&
+            windowSize.height > 0 && windowSize.width > windowSize.height
+    }
+
+    static func isExpandedDiscovery(width: CGFloat, allowsExpandedLayout: Bool = true) -> Bool {
+        allowsExpandedLayout && width.isFinite && width >= 600
     }
 
     static func missionCardWidth(availableWidth: CGFloat) -> CGFloat {
@@ -11,8 +17,8 @@ nonisolated enum AdaptiveLayoutPolicy {
         return min(283, max(0, availableWidth - 32))
     }
 
-    static func usesSidePanel(size: CGSize) -> Bool {
-        size.width.isFinite && size.height.isFinite && size.width >= 700 && size.height >= 400
+    static func usesSidePanel(size: CGSize, allowsExpandedLayout: Bool = true) -> Bool {
+        allowsExpandedLayout && size.width.isFinite && size.height.isFinite && size.width >= 700 && size.height >= 400
     }
 
     static func sidePanelWidth(availableWidth: CGFloat) -> CGFloat {

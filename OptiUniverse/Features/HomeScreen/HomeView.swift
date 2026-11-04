@@ -11,6 +11,7 @@ import BaseModule
 struct HomeView: View {
 
     let onMissionSelected: (Mission) -> Void
+    var allowsExpandedLayout = true
 
     @State private var currentCarouselIndex: Int = 0
     @State private var totalCount: Int = 0
@@ -21,7 +22,9 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let isExpanded = AdaptiveLayoutPolicy.isExpandedDiscovery(width: geometry.size.width)
+            let isExpanded = AdaptiveLayoutPolicy.isExpandedDiscovery(
+                width: geometry.size.width, allowsExpandedLayout: allowsExpandedLayout
+            )
             let sizing = DiscoveryLayoutSizing(
                 availableHeight: geometry.size.height,
                 minimumMissionCardHeight: minimumMissionCardHeight,

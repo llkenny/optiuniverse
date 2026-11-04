@@ -5,6 +5,7 @@ This repository hosts **OptiUniverse**, an iOS 3D universe navigator focused on 
 
 ## Development Guidelines
 - Use Swift for app code and MetalKit/Metal Shading Language for rendering work.
+- OptiUniverse supports iPhone, both displays of iPhone Duo, and iPad. Account for all of them in new UI work. Check portrait, landscape, and window resizing where supported.
 - Prioritise visual fidelity and performance when rendering 3D objects.
 - Keep code modular, readable, and documented where the rendering logic is not obvious.
 - Preserve the existing project structure unless there is a strong reason to reorganise it.
