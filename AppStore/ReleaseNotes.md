@@ -21,3 +21,15 @@ Realistic planet orbits.
 Mission replays are compressed, illustrative visualizations, not live spacecraft tracking.
 
 Release assets and English metadata: [App Store 1.9 package](1.9/en-US/README.md).
+
+# Version 1.10
+
+- Explore on iPhone Duo with layouts that adapt to the outer and inner displays, portrait, and landscape.
+- Browse multiple mission cards and a destination grid on wider screens.
+- Read improved object details in a bottom or side panel that fits your available space.
+- Enjoy an edge-to-edge universe with native navigation controls and clearer location and transfer information.
+- Follow mission status in the navigation bar and see simulation time beside the scene controls.
+
+Mission replays are compressed, illustrative visualizations, not live spacecraft tracking.
+
+Release assets and English metadata: [App Store 1.10 package](1.10/en-US/README.md).

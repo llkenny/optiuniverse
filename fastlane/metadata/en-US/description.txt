@@ -5,14 +5,20 @@ OptiUniverse brings planets, moons, and spacecraft journeys together in an inter
 EXPLORE PLANETS AND ORBITS
 - Discover planets, moons, and distant worlds with detailed 3D materials, atmospheres, and rings.
 - Pan, pinch, and rotate to find your own perspective, or follow a celestial object.
-- Inspect object facts and visualize orbital paths and supported transfer routes.
+- Read object facts and orbital information in panels that adapt to the available space.
+- Preview supported transfer routes and follow navigation progress in the top bar.
 - Explore a solar-system simulation synchronized to the current date using offline planetary ephemerides.
+
+MADE FOR IPHONE DUO
+- Explore on the outer and inner displays, in portrait and landscape.
+- Browse a mission carousel on compact screens or multiple mission cards and a destination grid on wider screens.
+- Keep exploring as the layout changes, with native navigation controls and a scene that extends to the screen edges.
 
 REPLAY SPACE MISSIONS
 - Follow Voyager 1 from launch through its Jupiter and Saturn flybys to its journey beyond the heliosphere.
 - Watch Crew 13 travel from Earth to docking with the International Space Station.
 - Explore Artemis II's Earth-Moon-Earth journey and Starship Flight 14's launch, deployment, and return.
-- Choose missions from the home-screen carousel, ordered by launch date.
+- See mission status in the navigation bar and simulation time alongside the scene controls.
 
 Mission replays are compressed, illustrative visualizations. Spacecraft sizes, trajectories, and timing are adapted for clarity; they are not live spacecraft tracking or telemetry reconstructions.
 
