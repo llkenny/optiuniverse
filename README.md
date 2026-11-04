@@ -235,7 +235,7 @@ The app waits until loading succeeds, navigation completes or is cancelled, and 
 - iOS 26.0 or newer deployment target
 - An iOS 26-capable device, or an installed iOS 27.0/27.1 simulator runtime
 
-## Adaptive layouts and iPhone Duo
+## Adaptive layouts on iPhone, iPhone Duo, and iPad
 
 OptiUniverse uses the current window's available space for layout. Below 600 points
 wide, discovery shows the mission carousel and horizontal destination row. Wider
@@ -275,6 +275,11 @@ safe-area boundary without reducing the rendered viewport. They use their conten
 height and scroll when they exceed 45% of the available safe content height.
 Controls respect asymmetric safe-area insets.
 
+iPad uses the compact iPhone discovery layout and bottom details panel in tall
+or square windows. Wider-than-tall iPad windows use the same content breakpoints
+as iPhone Duo for the expanded discovery layout and trailing details panel.
+The layout follows the shape of the app window during multitasking.
+
 Transfer previews place Close in the native navigation bar in place of Legal &
 Credits, matching route and mission cancellation. Start navigation stays centered
 at the bottom with the existing neon styling when bars are horizontal. When iOS
@@ -298,6 +303,12 @@ sizes using the resizable simulator or iPhone Mirroring.
 On discovery, confirm missions and objects fit together at normal text sizes,
 all mission text and destinations remain reachable in the scrolling fallback,
 and selection survives transitions between the two layouts.
+
+For iPad, run on iPad (A16, 11-inch). Verify portrait and landscape, then resize
+the window across the layout breakpoints on discovery and with object details
+open. Check that the mission and filter selection, selected object, and details
+scroll position survive the change. Verify that the details can be dismissed
+and the Route action is reachable in both presentations.
 
 ## Release 1 URLs
 

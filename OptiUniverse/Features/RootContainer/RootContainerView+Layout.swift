@@ -1,16 +1,30 @@
 import SwiftUI
 import BaseModule
 import UniverseModule
+#if os(iOS)
+import UIKit
+#endif
 
 extension RootContainerView {
+    var isPad: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .pad
+        #else
+        false
+        #endif
+    }
+
     func makeContent(usesVerticalToolbar: Bool, onMissionSelected: @escaping (Mission) -> Void) -> some View {
         GeometryReader { container in
-            let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(size: container.size)
+            let allowsExpandedLayout = AdaptiveLayoutPolicy.allowsExpandedLayout(windowSize: windowSize, isPad: isPad)
+            let hasSidePanel = isObjectInfoPresented && AdaptiveLayoutPolicy.usesSidePanel(
+                size: container.size, allowsExpandedLayout: allowsExpandedLayout
+            )
             // The renderer and Info scroll view keep their identity as the window resizes.
             ZStack {
                 universeScene
                 if appEnvironment.currentScreen == .home {
-                    HomeView(onMissionSelected: onMissionSelected)
+                    HomeView(onMissionSelected: onMissionSelected, allowsExpandedLayout: allowsExpandedLayout)
                         .transition(.opacity)
                 }
             }
