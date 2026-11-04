@@ -49,7 +49,9 @@ extension RootContainerView {
     func makeNavigationRetryButton(snapshot: NavigationRouteSnapshot) -> some View {
         if snapshot.state == .failed {
             Button {
-                if let destination = snapshot.destinationName {
+                if let mission = snapshot.mission {
+                    universeResources.navigation.startMission(mission)
+                } else if let destination = snapshot.destinationName {
                     universeResources.navigation.startNavigation(to: destination)
                 }
             } label: {
@@ -110,7 +112,8 @@ extension RootContainerView {
     }
 
     func missionNavigationSubtitle(snapshot: NavigationRouteSnapshot) -> String {
-        if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14 || snapshot.mission == .voyager1 {
+        if snapshot.mission == .crew13 || snapshot.mission == .starshipFlight14
+            || snapshot.mission == .voyager1 || snapshot.mission == .vostok1 {
             if snapshot.state == .failed { return "Mission unavailable" }
             guard let status = snapshot.missionStatus else { return "Preparing launch" }
             let phaseText = snapshot.mission == .starshipFlight14

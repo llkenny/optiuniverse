@@ -34,6 +34,7 @@ final class NavigationCameraMode {
     private let starshipCameraMode = StarshipCameraMode()
     private let crew13CameraMode = Crew13CameraMode()
     private let voyagerCameraMode = VoyagerCameraMode()
+    private let vostokCameraMode = VostokCameraMode()
 
     func makeNavigationTransaction(state: NavigationRouteRenderState,
                                    snapshot: UniverseSceneSnapshot?,
@@ -129,6 +130,12 @@ final class NavigationCameraMode {
 
     private func makeVehicleTransaction(state: NavigationRouteRenderState,
                                         viewportSize: CGSize, currentPose: CameraPose) -> CameraState.Transaction? {
+        if state.route?.vostokProfile != nil {
+            guard state.isCameraAutoFramingEnabled,
+                  let frame = vostokCameraMode.frame(state: state, viewportSize: viewportSize,
+                                                      currentPose: currentPose) else { return nil }
+            return makeCameraTransaction(frame: frame)
+        }
         if state.route?.voyagerProfile != nil {
             guard state.isCameraAutoFramingEnabled,
                   let frame = voyagerCameraMode.frame(state: state, viewportSize: viewportSize,

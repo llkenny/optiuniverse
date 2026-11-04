@@ -41,6 +41,7 @@ struct MissionTimeline: Sendable, Equatable {
         case .starshipFlight14: starshipFlight14
         case .crew13: crew13
         case .voyager1: voyager1
+        case .vostok1: vostok1
         }
     }
 
@@ -101,6 +102,18 @@ struct MissionTimeline: Sendable, Equatable {
         ])
     }()
 
+    // ESA launch sequence and the published landing chronology in the Gagarin museum and IKI RAS accounts.
+    private static let vostok1 = Self(duration: VostokFlightCue.end.rawValue, anchors: [
+        vostokAnchor(.launch, "06:07"), vostokAnchor(.boosters, "06:09"), vostokAnchor(.fairing, "06:10"),
+        vostokAnchor(.core, "06:12"), vostokAnchor(.orbit, "06:18"), vostokAnchor(.retrofire, "07:25"),
+        vostokAnchor(.entry, "07:36"), vostokAnchor(.ejection, "07:42"), vostokAnchor(.capsuleLanded, "07:48"),
+        vostokAnchor(.pilotLanded, "07:55"), vostokAnchor(.end, "07:55")
+    ])
+
+    private static func vostokAnchor(_ cue: VostokFlightCue, _ hourAndMinute: String) -> Anchor {
+        Anchor(playbackTime: cue.rawValue, epoch: epochUTC("1961-04-12T\(hourAndMinute):00Z"))
+    }
+
     private static func epochUTC(_ value: String) -> Double {
         // Fixed, bundled ISO-8601 UTC literals; independent of device calendar and timezone.
         guard let date = ISO8601DateFormatter().date(from: value) else { preconditionFailure("Invalid mission date") }
@@ -115,4 +128,11 @@ struct MissionReplay: Sendable, Equatable {
     var isPreparing = false
 
     var timeline: MissionTimeline { .forMission(mission) }
+
+    func crossedPublicationCue(from previousTime: TimeInterval, to time: TimeInterval) -> Bool {
+        if mission == .vostok1 {
+            return timeline.anchors.contains { previousTime < $0.playbackTime && time >= $0.playbackTime }
+        }
+        return previousTime < timeline.duration && time >= timeline.duration
+    }
 }

@@ -28,7 +28,7 @@ private func expectMissionDate(_ epoch: Double, _ date: String, sourceLocation: 
             sourceLocation: sourceLocation)
 }
 
-@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1])
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1, .vostok1])
 func publicLaunchDateMatchesReplayDeparture(mission: MissionFlightPlan) {
     let timeline = MissionTimeline.forMission(mission)
     #expect(mission.launchDate == SimulationTime.date(forTDBSeconds: timeline.departureEpoch))
@@ -61,7 +61,7 @@ func publicLaunchDateMatchesReplayDeparture(mission: MissionFlightPlan) {
     }
 }
 
-@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1])
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .voyager1, .vostok1])
 func missionClockIsIndependentOfFramePartitionAndHoldsCompletion(mission: MissionFlightPlan) {
     let replay = MissionReplay(id: UUID(), mission: mission)
     let now = missionDate("2026-10-16T10:00:00Z")
@@ -108,7 +108,7 @@ func missionClockIsIndependentOfFramePartitionAndHoldsCompletion(mission: Missio
 }
 
 @MainActor
-@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13])
+@Test(arguments: [MissionFlightPlan.artemisII, .starshipFlight14, .crew13, .vostok1])
 func missionSceneUsesDatedBodiesAndSharedTimeAcrossPauseRestartAndExit(mission: MissionFlightPlan) throws {
     var wallDate = missionDate("2026-10-16T10:00:00Z")
     let resources = try missionResources(now: { wallDate })
@@ -131,6 +131,7 @@ func missionSceneUsesDatedBodiesAndSharedTimeAcrossPauseRestartAndExit(mission: 
         #expect(route.missionEarthPreciseCenter == earth.preciseWorldPosition)
         #expect(route.crew13Profile?.normal == launchRoute.crew13Profile?.normal)
         #expect(route.starshipProfile?.normal == launchRoute.starshipProfile?.normal)
+        #expect(route.vostokProfile?.normal == launchRoute.vostokProfile?.normal)
     }
     resources.navigationController.beginManualCameraControl()
     resources.sceneCoordinator.setPresentationActive(false)
@@ -171,21 +172,21 @@ private struct MissionRestrictedProvider: CelestialStateProviding {
 }
 
 @MainActor
-@Test(arguments: [0, 1])
-func missionRejectsMissingLaunchOrFutureEphemerisAndRetries(anchorIndex: Int) throws {
+@Test(arguments: [MissionFlightPlan.artemisII, .vostok1], [0, 1])
+func missionRejectsMissingLaunchOrFutureEphemerisAndRetries(mission: MissionFlightPlan, anchorIndex: Int) throws {
     let archive = try EphemerisArchive.bundled.get()
-    let timeline = MissionTimeline.forMission(.artemisII)
+    let timeline = MissionTimeline.forMission(mission)
     let provider = MissionRestrictedProvider(archive: archive, blockedEpoch: timeline.anchors[anchorIndex].epoch)
     let now = missionDate("2026-10-16T10:00:00Z")
     let resources = try missionResources(stateProvider: provider, now: { now })
-    resources.navigation.startMission(.artemisII)
+    resources.navigation.startMission(mission)
     #expect(resources.navigationSnapshot.state == .failed)
     #expect(resources.navigationSnapshot.failure == .ephemerisUnavailable)
-    #expect(resources.navigationSnapshot.mission == .artemisII)
+    #expect(resources.navigationSnapshot.mission == mission)
     #expect(resources.navigationController.activeMissionReplay == nil)
     #expect(resources.simulationSnapshot.mode == .live)
     resources.sceneSnapshotPipeline.setStateProvider(archive)
-    resources.navigation.startMission(.artemisII)
+    resources.navigation.startMission(mission)
     #expect(resources.navigationSnapshot.state == .running)
     #expect(resources.simulationSnapshot.mode == .missionReplay)
     resources.navigation.cancelNavigation()

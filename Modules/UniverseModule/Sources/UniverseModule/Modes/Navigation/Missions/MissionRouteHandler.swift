@@ -91,7 +91,8 @@ struct MissionRouteHandler: NavigationRouteMissionHandling {
                                preciseOverviewCenter: earth.preciseWorldPosition, mission: route.mission,
                                starshipProfile: route.starshipProfile?.translatedPrecisely(
                                 to: earth.preciseWorldPosition),
-                               crew13Profile: route.crew13Profile?.translatedPrecisely(to: earth.preciseWorldPosition))
+                               crew13Profile: route.crew13Profile?.translatedPrecisely(to: earth.preciseWorldPosition),
+                               vostokProfile: route.vostokProfile?.translatedPrecisely(to: earth.preciseWorldPosition))
     }
 
     func routeProgress(linearProgress: Float,

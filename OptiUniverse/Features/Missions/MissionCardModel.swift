@@ -17,6 +17,7 @@ struct MissionCardModel: Identifiable, Equatable {
         case .starshipFlight14: [.orange, .red]
         case .crew13: [.blue, .cyan]
         case .voyager1: [.teal, .indigo]
+        case .vostok1: [.red, .indigo]
         }
     }
 

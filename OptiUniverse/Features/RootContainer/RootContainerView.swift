@@ -201,22 +201,6 @@ struct RootContainerView: View {
         }
     }
 
-    #if os(iOS)
-    private var reviewPresentationContext: ReviewRequestCoordinator.PresentationContext {
-        let isObjectInfoPresented: Bool
-        if case .info = objectsViewState {
-            isObjectInfoPresented = true
-        } else {
-            isObjectInfoPresented = false
-        }
-        return .init(isLoaded: loadingState == .loaded,
-                     isSceneActive: scenePhase == .active,
-                     navigationState: universeResources.navigation.navigationSnapshot.state,
-                     isLegalSheetPresented: isShowingLegalCredits,
-                     isObjectInfoPresented: isObjectInfoPresented)
-    }
-    #endif
-
     private func cancelObjectPresentationModes() {
         universeResources.setObjectInfoOverlayFraming(isPresented: false,
                                                    bottomInset: 0,
@@ -325,3 +309,25 @@ private struct UniverseLoadingFailureView: View {
         .environment(AppEnvironment())
         .environment(ReviewRequestCoordinator(defaults: UserDefaults(suiteName: "OptiUniverse.ReviewPreview")!))
 }
+
+#if os(iOS)
+extension RootContainerView {
+    private var reviewPresentationContext: ReviewRequestCoordinator.PresentationContext {
+        let isObjectInfoPresented: Bool
+        if case .info = objectsViewState {
+            isObjectInfoPresented = true
+        } else {
+            isObjectInfoPresented = false
+        }
+        let snapshot = universeResources.navigation.navigationSnapshot
+        let holdsEpilogue = isMissionNavigation && snapshot.mission == .vostok1
+            && snapshot.missionStatus?.epilogueText != nil
+        return .init(isLoaded: loadingState == .loaded,
+                     isSceneActive: scenePhase == .active,
+                     navigationState: snapshot.state,
+                     isLegalSheetPresented: isShowingLegalCredits,
+                     isObjectInfoPresented: isObjectInfoPresented,
+                     isMissionEpiloguePresented: holdsEpilogue)
+    }
+}
+#endif

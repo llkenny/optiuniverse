@@ -25,7 +25,8 @@ extension UniverseModuleResources: UniverseNavigationControlling {
 
     public func cancelNavigation() {
         let wasVoyager = navigationSnapshot.mission == .voyager1
-        let wasEarthMission = (navigationSnapshot.mission == .starshipFlight14 || navigationSnapshot.mission == .crew13)
+        let mission = navigationSnapshot.mission
+        let wasEarthMission = (mission == .starshipFlight14 || mission == .crew13 || mission == .vostok1)
             && navigationController.isNavigationActive
         navigationController.cancelNavigation()
         if wasVoyager {

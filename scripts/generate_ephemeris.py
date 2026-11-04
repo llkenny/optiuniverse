@@ -26,7 +26,7 @@ BODIES = {"Mercury": 199, "Venus": 299, "Earth": 399, "Moon": 301,
           "Mars": 499, "Jupiter": 599, "Saturn": 699, "Uranus": 799,
           "Neptune": 899, "Pluto": 999}
 J2000 = 2451545.0
-START = (dt.datetime(1977, 1, 1) - dt.datetime(2000, 1, 1, 12)).total_seconds()
+START = (dt.datetime(1961, 1, 1) - dt.datetime(2000, 1, 1, 12)).total_seconds()
 # One guard day includes the UTC/TDB offset at the very end of calendar year 2100.
 END = (dt.datetime(2101, 1, 2) - dt.datetime(2000, 1, 1, 12)).total_seconds()
 

@@ -63,7 +63,7 @@ final class NavigationRouteCoordinator {
             }
         }
         if mission == .voyager1 { return startVoyagerMission(snapshot: snapshot) }
-        if mission == .starshipFlight14 || mission == .crew13 {
+        if let mission, mission == .starshipFlight14 || mission == .crew13 || mission == .vostok1 {
             return startEarthMission(mission: mission, snapshot: snapshot)
         }
         var transfer: TransferSolution?
@@ -226,10 +226,25 @@ extension NavigationRouteCoordinator {
         }
     }
 
-    private func startEarthMission(mission: MissionFlightPlan?, snapshot: UniverseSceneSnapshot) -> Bool {
-        let missionRoute = snapshot.planet(named: "Earth").flatMap { earth in
-            mission == .crew13 ? Crew13RouteProfile(earth: earth)?.makeRoute()
-                : StarshipRouteProfile(earth: earth)?.makeRoute()
+    private func startEarthMission(mission: MissionFlightPlan, snapshot: UniverseSceneSnapshot) -> Bool {
+        let missionRoute: NavigationRoute?
+        do {
+            missionRoute = try snapshot.planet(named: "Earth").flatMap { earth in
+                switch mission {
+                case .crew13:
+                    return Crew13RouteProfile(earth: earth)?.makeRoute()
+                case .vostok1:
+                    let end = MissionTimeline.forMission(.vostok1).arrivalEpoch
+                    let orientation = try snapshot.stateProvider?.state(for: .earth, at: end).sceneOrientation
+                    return VostokRouteProfile(earth: earth, arrivalOrientation: orientation
+                                              ?? earth.visualRotationMatrix)?.makeRoute()
+                default:
+                    return StarshipRouteProfile(earth: earth)?.makeRoute()
+                }
+            }
+        } catch {
+            failForEphemeris()
+            return false
         }
         guard let missionRoute else {
             route = nil
@@ -350,7 +365,8 @@ extension NavigationRouteCoordinator {
                                        mission: route.mission,
                                        missionStatus: route.voyagerProfile?.status(time: elapsedTime)
                                         ?? route.crew13Profile?.status(time: elapsedTime)
-                                        ?? route.starshipProfile?.status(time: elapsedTime),
+                                        ?? route.starshipProfile?.status(time: elapsedTime)
+                                        ?? route.vostokProfile?.status(time: elapsedTime),
                                        physicalFlightDuration: route.transfer?.flightDuration)
     }
 }
