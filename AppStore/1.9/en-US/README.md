@@ -35,7 +35,7 @@ These steps follow Apple's [asset-management guide](https://developer.apple.com/
 | `metadata/support_url.txt` | Support URL | Existing URL |
 | `metadata/privacy_url.txt` | Privacy Policy URL, in App Privacy | Existing URL |
 
-The text copies match `fastlane/metadata/en-US`. Counts exclude the final newline. App name and other account-level settings retain their current values.
+Counts exclude the final newline. App name and other account-level settings retain their current values.
 
 ## Screenshot sequence and provenance
 

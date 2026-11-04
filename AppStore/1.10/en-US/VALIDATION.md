@@ -8,7 +8,7 @@
 - Complete captures are fitted proportionally inside each layout. No app UI, text, or planet rendering was repainted, generated, or retouched. Native viewport clipping of rings, planets, and orbital paths remains visible where the app produces it.
 - Visual inspection covered the overview, all fourteen source captures, and the final portrait and landscape layouts. Headlines, subtitles, and controls fit. Duo portrait headline sizes were adjusted to prevent overlap. No loading indicators or window-switcher overlays remain in the selected captures.
 - The Header matches the approved 1.9 export byte for byte. Search Results uses the unchanged advertising background with a fresh 1.10 foreground capture.
-- Seven English US metadata files match fastlane byte for byte. Character counts excluding the final newline: Description 1958/4000; Promotional Text 159/170; Keywords 91/100; What's New 595/4000.
+- The package contains seven English US metadata files. Character counts excluding the final newline: Description 1958/4000; Promotional Text 159/170; Keywords 91/100; What's New 595/4000.
 - Manifest hashes cover upload assets, metadata, original captures, and the overview. The capture commit is preserved across later asset-only commits and validation runs.
 - English upload instructions, release notes, TestFlight instructions, capture provenance, and reproducible composition/validation sources are included.
 - The text scan found no private-key blocks, common credential-token patterns, Cyrillic text, absolute user-home paths, or simulator container paths in the new package and updated metadata/TestFlight text. `git diff --check` passed.

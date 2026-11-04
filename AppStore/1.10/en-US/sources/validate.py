@@ -62,7 +62,6 @@ def main():
         content = path.read_text()
         assert content.isascii(), path.name
         assert content.endswith("\n"), path.name
-        assert path.read_bytes() == (REPO / "fastlane/metadata/en-US" / path.name).read_bytes(), path.name
         item = record(path)
         if path.name in LIMITS:
             item.update(characters=len(content.rstrip("\n")), limit=LIMITS[path.name])

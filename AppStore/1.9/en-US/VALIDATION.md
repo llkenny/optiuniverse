@@ -8,7 +8,6 @@
 - Visual inspection of the creative placements and screenshot overviews: headlines fit; app frames, descriptions, and bottom controls remain inside the exported canvas. The original Saturn app view intentionally clips part of the rings.
 - Screenshot 05 shows the actual mission-focused home screen with Crew 13 first and destination cards below. Screenshot 06 shows the Crew 13 replay near ISS.
 - Description: 1525 / 4000 characters. What's New: 635 / 4000. Promotional text: 151 / 170. Keywords: 97 / 100. Counts exclude the final newline.
-- All seven metadata files match their fastlane copies byte for byte.
 - All six supplied attachments match their source files byte for byte and are separated from upload assets.
 - SHA-256 hashes recorded in `manifest.json` for final upload assets, metadata, and app captures.
 - Text scan found no private-key blocks, common credential token patterns, absolute user-home paths, or Simulator device-container paths in the new package and updated metadata/docs.
