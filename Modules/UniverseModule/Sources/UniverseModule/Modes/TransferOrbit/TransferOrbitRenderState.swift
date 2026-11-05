@@ -27,5 +27,6 @@ struct TransferOrbitRenderState: Equatable {
     var destinationOrbitPoints: [SIMD3<Float>] = []
     var preciseEarthOrbitPoints: [SIMD3<Double>] = []
     var preciseDestinationOrbitPoints: [SIMD3<Double>] = []
+    var destinationName: String?
     static let inactive = TransferOrbitRenderState(transferOrbit: nil)
 }

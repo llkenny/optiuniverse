@@ -11,6 +11,7 @@ struct UniverseSceneSnapshot: Sendable {
     let simulationTime: Double
     let planets: [CelestialBodySnapshot]
     var stateProvider: (any CelestialStateProviding)?
+    var orbits: [CelestialOrbitSnapshot] = []
 
     nonisolated func planet(named name: String) -> CelestialBodySnapshot? {
         planets.first { $0.planetName == name }

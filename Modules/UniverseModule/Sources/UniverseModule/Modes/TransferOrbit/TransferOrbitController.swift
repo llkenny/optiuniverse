@@ -49,7 +49,8 @@ final class TransferOrbitController {
         TransferOrbitRenderState(transferOrbit: activeTransferOrbit,
                                  earthOrbitPoints: earthPoints, destinationOrbitPoints: destinationPoints,
                                  preciseEarthOrbitPoints: preciseEarthPoints,
-                                 preciseDestinationOrbitPoints: preciseDestinationPoints)
+                                 preciseDestinationOrbitPoints: preciseDestinationPoints,
+                                 destinationName: activeDestinationName)
     }
 
     func showTransferOrbit(to destinationName: String) {

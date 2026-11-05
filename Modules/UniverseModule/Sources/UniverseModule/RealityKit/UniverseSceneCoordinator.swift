@@ -13,6 +13,7 @@ final class UniverseSceneCoordinator {
     let environmentRoot = Entity()
     let starFieldRoot = Entity()
     let celestialSystemRoot = Entity()
+    let orbitLinesRoot = Entity()
     let transferOrbitRoot = Entity()
     let navigationRouteRoot = Entity()
     let navigationMarkerRoot = Entity()
@@ -49,6 +50,7 @@ final class UniverseSceneCoordinator {
     var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
+    private(set) var areOrbitLinesVisible = false
     private var discardNextFrameDelta = false
 
     enum PreparationError: Error, Equatable {
@@ -201,6 +203,12 @@ final class UniverseSceneCoordinator {
         viewportSize = size
     }
 
+    func setOrbitLinesVisible(_ isVisible: Bool) {
+        areOrbitLinesVisible = isVisible
+        orbitLinesRoot.isEnabled = isVisible
+        proceduralSceneContent?.orbitLines.setVisible(isVisible)
+    }
+
     func setPresentationActive(_ isActive: Bool) {
         if isActive && !isPresentationActive { discardNextFrameDelta = true }
         isPresentationActive = isActive
@@ -334,6 +342,8 @@ final class UniverseSceneCoordinator {
         environmentRoot.name = "Environment"
         starFieldRoot.name = "StarField"
         celestialSystemRoot.name = "CelestialSystemRoot"
+        orbitLinesRoot.name = "OrbitLines"
+        orbitLinesRoot.isEnabled = areOrbitLinesVisible
         transferOrbitRoot.name = "TransferOrbit"
         navigationRouteRoot.name = "NavigationRoute"
         navigationMarkerRoot.name = "NavigationMarker"
@@ -344,6 +354,7 @@ final class UniverseSceneCoordinator {
         universeRoot.addChild(environmentRoot)
         universeRoot.addChild(starFieldRoot)
         universeRoot.addChild(celestialSystemRoot)
+        universeRoot.addChild(orbitLinesRoot)
         universeRoot.addChild(transferOrbitRoot)
         universeRoot.addChild(navigationRouteRoot)
         navigationRouteRoot.addChild(navigationMarkerRoot)
@@ -372,28 +383,4 @@ final class UniverseSceneCoordinator {
                                                      visualRoot: visualRoot)
         }
     }
-
-    private func install(proceduralSceneContent: RealityProceduralSceneContent) {
-        environmentRoot.children.removeAll()
-        starFieldRoot.children.removeAll()
-        transferOrbitRoot.children.removeAll()
-        navigationRouteRoot.children.removeAll()
-        navigationMarkerRoot.children.removeAll()
-
-        environmentRoot.addChild(proceduralSceneContent.environmentEntity)
-        starFieldRoot.addChild(proceduralSceneContent.starField.entity)
-        transferOrbitRoot.addChild(proceduralSceneContent.transferEarthOrbit.entity)
-        transferOrbitRoot.addChild(proceduralSceneContent.transferDestinationOrbit.entity)
-        transferOrbitRoot.addChild(proceduralSceneContent.transferPath.entity)
-        transferOrbitRoot.addChild(proceduralSceneContent.transferArrivalMarker)
-        navigationRouteRoot.addChild(proceduralSceneContent.navigationPath.entity)
-        navigationRouteRoot.addChild(navigationMarkerRoot)
-        navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)
-        navigationMarkerRoot.addChild(proceduralSceneContent.starshipMission.root)
-        navigationMarkerRoot.addChild(proceduralSceneContent.crew13Mission.root)
-        navigationMarkerRoot.addChild(proceduralSceneContent.voyagerMission.root)
-        navigationMarkerRoot.addChild(proceduralSceneContent.vostokMission.root)
-        self.proceduralSceneContent = proceduralSceneContent
-    }
-
 }

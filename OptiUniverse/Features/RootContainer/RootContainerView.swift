@@ -52,7 +52,7 @@ struct RootContainerView: View {
                     .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
                     .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
                     .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
-                    .toolbarVisibility(showsObjectDetailsButton ? .visible : .hidden, for: .bottomBar)
+                    .toolbarVisibility(isUniverseVisible ? .visible : .hidden, for: .bottomBar)
             }
         }
         .background {
@@ -196,10 +196,11 @@ struct RootContainerView: View {
                     }
                 }
             }
-            if showsObjectDetailsButton, let destinationID = appEnvironment.selectedDestinationID {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Spacer()
-                    Button("Object details", systemImage: "binoculars") {
+            if isUniverseVisible {
+                OrbitSceneToolbar(resources: universeResources,
+                                  usesVerticalToolbar: usesVerticalToolbar,
+                                  showsObjectDetails: showsObjectDetailsButton) {
+                    if let destinationID = appEnvironment.selectedDestinationID {
                         makeObjectInfo(selectedDestinationID: destinationID)
                     }
                 }
