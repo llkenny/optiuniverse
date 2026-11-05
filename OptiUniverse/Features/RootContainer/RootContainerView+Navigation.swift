@@ -19,19 +19,6 @@ extension RootContainerView {
         isNavigation && missionFlowState != nil
     }
 
-    @ViewBuilder
-    func makeStartNavigationButton(destinationID: UUID) -> some View {
-        Button {
-            startNavigation(destinationID: destinationID)
-        } label: {
-            Image(systemName: "paperplane")
-                .foregroundStyle(OptiColor.overlayTextPrimary)
-                .font(Typography.button)
-        }
-        .buttonStyle(NeonButtonStyle())
-        .accessibilityLabel("Start navigation")
-    }
-
     func startNavigation(destinationID: UUID) {
         guard let destination = appEnvironment.destinationsProvider
             .destinations
@@ -45,22 +32,12 @@ extension RootContainerView {
         objectsViewState = .navigation
     }
 
-    @ViewBuilder
-    func makeNavigationRetryButton(snapshot: NavigationRouteSnapshot) -> some View {
-        if snapshot.state == .failed {
-            Button {
-                if let mission = snapshot.mission {
-                    universeResources.navigation.startMission(mission)
-                } else if let destination = snapshot.destinationName {
-                    universeResources.navigation.startNavigation(to: destination)
-                }
-            } label: {
-                Text("Retry")
-                    .foregroundStyle(OptiColor.overlayTextPrimary)
-                    .font(Typography.navigationControl)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(NeonButtonStyle())
+    func retryNavigation() {
+        let snapshot = universeResources.navigation.navigationSnapshot
+        if let mission = snapshot.mission {
+            universeResources.navigation.startMission(mission)
+        } else if let destination = snapshot.destinationName {
+            universeResources.navigation.startNavigation(to: destination)
         }
     }
 

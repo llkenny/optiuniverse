@@ -5,6 +5,7 @@
 //  Created by max on 11.05.2026.
 //
 
+import BaseModule
 import Foundation
 
 struct ObjectInfoViewEntity: Identifiable {
@@ -18,4 +19,28 @@ struct ObjectInfoViewEntity: Identifiable {
     let isNavigable: Bool
     let orbitInfo: ObjectInfoOrbitView.Model?
     let navigationButtonAction: () -> Void
+}
+
+extension ObjectInfoViewEntity {
+    init(destination: DestinationObject, onRoute: @escaping () -> Void) {
+        self.init(
+            id: destination.id,
+            imageName: destination.infoImageName,
+            title: destination.title,
+            subtitle: destination.subtitle,
+            description: destination.description,
+            details: destination.details.map {
+                ObjectInfoDetailCardEntity(title: $0.title, value: $0.value, dimension: $0.dimension)
+            },
+            navigationButtonTitle: "🎯 Route",
+            isNavigable: destination.isNavigable,
+            orbitInfo: destination.orbitInfo.map {
+                ObjectInfoOrbitView.Model(description: $0.description,
+                                         properties: [.axis: $0.properties.axis,
+                                                      .eccentricity: $0.properties.eccentricity,
+                                                      .inclination: $0.properties.inclination])
+            },
+            navigationButtonAction: onRoute
+        )
+    }
 }

@@ -292,6 +292,13 @@ Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described
 [Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
 The deployment target remains iOS 26.0.
 
+For direct Xcode previews, open `Features/Objects/ObjectsViewPreview.swift` and choose
+**Objects · Scene**, **Objects · Details**, or **Objects · Transfer route**. Each preview
+loads the bundled Mars destination and prepares its own real universe resources,
+without visiting Home. Details and route controls are interactive. Change the
+preview device or orientation to inspect iPhone and both Duo displays; resize iPad
+windows to check bottom/trailing details and native toolbar placement.
+
 ## Release QA
 
 Before each release, create a GitHub QA issue for the candidate version and build.

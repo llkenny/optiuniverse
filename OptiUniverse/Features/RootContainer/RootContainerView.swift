@@ -32,8 +32,6 @@ struct RootContainerView: View {
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
     @State var objectsViewState: ObjectsViewState = .raw
-    @State var universeViewportFrame: CGRect = .zero
-    @State var objectInfoPanelFrame: CGRect = .zero
     let universeResources: UniverseModuleResources
 
     init(universeResources: UniverseModuleResources) {
@@ -84,7 +82,6 @@ struct RootContainerView: View {
         .onChange(of: appEnvironment.selectedDestinationID) { _, _ in
             // Mission launch clears the destination and sets navigation in the same update.
             guard missionFlowState == nil else { return }
-            clearObjectInfoFraming()
             objectsViewState = .raw
         }
         .onChange(of: universeResources.navigation.navigationSnapshot) { _, snapshot in
