@@ -158,7 +158,7 @@ Planet simulation data lives in `Modules/UniverseModule/Sources/UniverseModule/M
 
 ## Orbital simulation and transfers
 
-The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date; camera transitions, atmospheric animation, and star effects advance only during active presentation. A compact UTC date and Live/Transfer preview/Mission replay indicator appears in iOS and visionOS.
+The normal scene follows the device's current UTC date at 1×. Returning from the background or reopening the scene synchronizes planetary positions to the current date. Camera transitions, atmospheric animation, and star effects advance only during active presentation. iOS shows the UTC date during accelerated transfer and mission playback. The visionOS immersive controls show the UTC date whenever the controls are visible.
 
 All eleven bodies have offline geometric center positions and velocities from [JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html), relative to the Sun in the J2000 ecliptic frame, without light-time or aberration corrections. Earth uses its actual center (399), and Pluto uses its actual center (999), rather than their system barycenters. The Moon's state is heliocentric, including Earth's motion. The supported calendar range is January 1, 1961 through December 31, 2100 UTC. An extra data guard day supports UTC/TDB conversion at the upper boundary.
 
@@ -292,23 +292,13 @@ Build with the iOS 27.1 SDK for the native iPhone Duo display behavior described
 [Apple's preparation guide](https://developer.apple.com/iphone-duo/prepare/).
 The deployment target remains iOS 26.0.
 
-To verify resizing in Device Hub, run on iPhone Duo (iOS 27.1) and open, close,
-rotate, and fold the device. Repeat in both Split View positions. Exercise each
-transition on discovery with a selected mission/filter, with object details open,
-during transfer preview, and during mission playback. Confirm the selected object,
-route, progress, and camera controls remain intact. Check large accessibility text,
-scrolling, Info dismissal, reachable Route/Close/Cancel/Retry controls, and both
-asymmetric safe-area configurations. Also check ordinary iPhone portrait/landscape and extreme window
-sizes using the resizable simulator or iPhone Mirroring.
-On discovery, confirm missions and objects fit together at normal text sizes,
-all mission text and destinations remain reachable in the scrolling fallback,
-and selection survives transitions between the two layouts.
+## Release QA
 
-For iPad, run on iPad (A16, 11-inch). Verify portrait and landscape, then resize
-the window across the layout breakpoints on discovery and with object details
-open. Check that the mission and filter selection, selected object, and details
-scroll position survive the change. Verify that the details can be dismissed
-and the Route action is reachable in both presentations.
+Before each release, copy the [QA report template](AppStore/QA/ReleaseChecklist.template.md)
+to `AppStore/<version>/QA-<build>.md` and follow the [manual QA scenarios](AppStore/QA/Scenarios.md).
+The matrix combines a full iPhone run, required rendering checks on a physical iPhone,
+and targeted coverage on both iPhone Duo displays and iPad. Link the completed report
+from the release PR and track defects in GitHub Issues.
 
 ## Release 1 URLs
 
