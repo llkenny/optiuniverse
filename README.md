@@ -82,6 +82,21 @@ and current spacecraft tracking are outside this scenario.
 References: [NASA mission dates and launch vehicle](https://science.nasa.gov/mission/voyager/voyager-1/),
 [NASA historical overview and heliopause crossing](https://www.nasa.gov/history/45-years-ago-voyager-1-begins-its-epic-journey-to-the-outer-planets-and-beyond/).
 
+## Loading experience
+
+On iPhone and iPad, an archival photograph of the N1 1M1 test vehicle becomes a layered launch scene.
+Local vapor and exhaust effects continue while resources prepare; readiness triggers a short lift and
+fade lasting about 1.73 seconds of foreground presentation time. The home screen is mounted underneath,
+with interaction, navigation controls and review requests held until the transition completes.
+Reduce Motion uses a static photograph and a 0.2-second fade. Backgrounding pauses presentation;
+loading errors retain the retry screen. visionOS retains the existing loading view.
+
+The rocket is extracted from the source photograph with AI-assisted base retouching; the empty pad and peripheral scenery are reconstructed,
+and the vapor/exhaust textures are generated. See `THIRD_PARTY_NOTICES.md` for attribution and
+`vfx_scripts/n1_launch_prompts.json` for the built-in ImageGen prompts. This is an illustrative scene,
+not a reconstruction of an actual flight. Set `OPTI_LAUNCH_PREVIEW=1` in a Debug run to view a
+three-second wait followed by launch without preparing the universe. QA: `AppStore/QA/LaunchScene.md`.
+
 ## Video and screenshots
 
 <img width="200" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />

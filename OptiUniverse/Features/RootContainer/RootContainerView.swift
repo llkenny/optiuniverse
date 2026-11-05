@@ -28,6 +28,7 @@ struct RootContainerView: View {
     @State private var isShowingLegalCredits = false
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
+    @State private var didFinishLaunch = false
     @State var windowSize: CGSize = .zero
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
@@ -51,7 +52,7 @@ struct RootContainerView: View {
                     .toolbar { navigationControls(usesVerticalToolbar: usesVerticalToolbar) }
                     .toolbarBackground(isUniverseVisible ? .hidden : .automatic, for: .navigationBar, .bottomBar)
                     .toolbarColorScheme(isUniverseVisible ? .dark : nil, for: .navigationBar, .bottomBar)
-                    .toolbarVisibility(loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
+                    .toolbarVisibility(isAppPresented ? .visible : .hidden, for: .navigationBar)
                     .toolbarVisibility(isUniverseVisible ? .visible : .hidden, for: .bottomBar)
             }
         }
@@ -71,7 +72,6 @@ struct RootContainerView: View {
 
     private func content(usesVerticalToolbar: Bool) -> some View {
         screenContent(usesVerticalToolbar: usesVerticalToolbar)
-        .animation(.default, value: loadingState)
         .animation(.default, value: appEnvironment.currentScreen)
         .animation(.default, value: universeResources.navigation.navigationSnapshot)
         .onChange(of: appEnvironment.currentScreen) { _, newScreen in
@@ -115,27 +115,8 @@ struct RootContainerView: View {
         .animation(.default, value: objectsViewState)
     }
 
-    private func screenContent(usesVerticalToolbar: Bool) -> some View {
-        ZStack {
-            OptiColor.screenBackground
-                .ignoresSafeArea()
-
-            switch loadingState {
-            case .loaded:
-                makeContent(usesVerticalToolbar: usesVerticalToolbar, onMissionSelected: startMission)
-            case .loading:
-                LoadingScreenView()
-            case .failed(let message):
-                UniverseLoadingFailureView(message: message) {
-                    loadingState = .loading
-                    loadingAttempt += 1
-                }
-            }
-        }
-    }
-
     private var isUniverseVisible: Bool {
-        loadingState == .loaded && appEnvironment.currentScreen == .objects
+        isAppPresented && appEnvironment.currentScreen == .objects
     }
 
     private var navigationBarTitle: String {
@@ -160,13 +141,13 @@ struct RootContainerView: View {
     }
 
     private var showsObjectDetailsButton: Bool {
-        loadingState == .loaded && appEnvironment.currentScreen == .objects &&
+        isAppPresented && appEnvironment.currentScreen == .objects &&
             objectsViewState == .raw && appEnvironment.selectedDestinationID != nil
     }
 
     @ToolbarContentBuilder
     private func navigationControls(usesVerticalToolbar: Bool) -> some ToolbarContent {
-        if loadingState == .loaded {
+        if isAppPresented {
             if appEnvironment.currentScreen != .home {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Home", systemImage: "line.3.horizontal.decrease") {
@@ -279,6 +260,47 @@ struct RootContainerView: View {
     }
 }
 
+extension RootContainerView {
+    private func screenContent(usesVerticalToolbar: Bool) -> some View {
+        ZStack {
+            OptiColor.screenBackground
+                .ignoresSafeArea()
+
+            switch loadingState {
+            case .loaded:
+                makeContent(usesVerticalToolbar: usesVerticalToolbar, onMissionSelected: startMission)
+                    .allowsHitTesting(isAppPresented)
+                    .accessibilityHidden(!isAppPresented)
+            case .loading:
+                Color.clear
+            case .failed(let message):
+                UniverseLoadingFailureView(message: message) {
+                    didFinishLaunch = false
+                    loadingState = .loading
+                    loadingAttempt += 1
+                }
+            }
+
+            if loadingState == .loading || (loadingState == .loaded && !didFinishLaunch) {
+                #if os(iOS)
+                N1LoadingScreenView(isReady: loadingState == .loaded) {
+                    didFinishLaunch = true
+                }
+                .id(loadingAttempt)
+                .zIndex(1)
+                #else
+                LoadingScreenView()
+                #endif
+            }
+        }
+    }
+
+    private var isAppPresented: Bool {
+        loadingState == .loaded && didFinishLaunch
+    }
+
+}
+
 private struct UniverseLoadingFailureView: View {
     let message: String
     let retry: () -> Void
@@ -329,7 +351,7 @@ extension RootContainerView {
         let snapshot = universeResources.navigation.navigationSnapshot
         let holdsEpilogue = isMissionNavigation && snapshot.mission == .vostok1
             && snapshot.missionStatus?.epilogueText != nil
-        return .init(isLoaded: loadingState == .loaded,
+        return .init(isLoaded: isAppPresented,
                      isSceneActive: scenePhase == .active,
                      navigationState: snapshot.state,
                      isLegalSheetPresented: isShowingLegalCredits,
