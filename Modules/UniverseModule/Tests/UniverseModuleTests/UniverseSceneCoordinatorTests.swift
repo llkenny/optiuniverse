@@ -17,6 +17,7 @@ import Testing
     #expect(coordinator.environmentRoot.parent == coordinator.universeRoot)
     #expect(coordinator.starFieldRoot.parent == coordinator.universeRoot)
     #expect(coordinator.celestialSystemRoot.parent == coordinator.universeRoot)
+    #expect(coordinator.orbitLinesRoot.parent == coordinator.universeRoot)
     #expect(coordinator.transferOrbitRoot.parent == coordinator.universeRoot)
     #expect(coordinator.navigationRouteRoot.parent == coordinator.universeRoot)
     #expect(coordinator.navigationMarkerRoot.parent == coordinator.navigationRouteRoot)
@@ -165,6 +166,7 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
     #expect(resources.sceneCoordinator.isProceduralSceneContentPrepared)
     #expect(resources.sceneCoordinator.environmentRoot.children.count == 1)
     #expect(resources.sceneCoordinator.starFieldRoot.children.count == 1)
+    #expect(resources.sceneCoordinator.orbitLinesRoot.children.first?.children.count == 10)
     #expect(resources.sceneCoordinator.transferOrbitRoot.children.count == 4)
     #expect(resources.sceneCoordinator.navigationRouteRoot.children.count == 2)
     #expect(resources.sceneCoordinator.navigationMarkerRoot.parent

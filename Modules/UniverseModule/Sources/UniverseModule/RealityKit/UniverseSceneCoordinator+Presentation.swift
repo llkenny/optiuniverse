@@ -232,6 +232,7 @@ extension UniverseSceneCoordinator {
     }
 
     func handleEphemerisFailure() {
+        proceduralSceneContent?.orbitLines.hide()
         if navigationController.isNavigationActive || navigationController.pendingNavigationRequest != nil {
             let pending = navigationController.pendingNavigationRequest
             navigationController.navigationRouteCoordinator.failForEphemeris(mission: pending?.mission,
@@ -240,5 +241,30 @@ extension UniverseSceneCoordinator {
             navigationController.requestedMissionReplay = nil
             synchronizeLiveScene()
         }
+    }
+
+    func install(proceduralSceneContent: RealityProceduralSceneContent) {
+        environmentRoot.children.removeAll()
+        starFieldRoot.children.removeAll()
+        orbitLinesRoot.children.removeAll()
+        transferOrbitRoot.children.removeAll()
+        navigationRouteRoot.children.removeAll()
+        navigationMarkerRoot.children.removeAll()
+
+        environmentRoot.addChild(proceduralSceneContent.environmentEntity)
+        starFieldRoot.addChild(proceduralSceneContent.starField.entity)
+        orbitLinesRoot.addChild(proceduralSceneContent.orbitLines.root)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferEarthOrbit.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferDestinationOrbit.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferPath.entity)
+        transferOrbitRoot.addChild(proceduralSceneContent.transferArrivalMarker)
+        navigationRouteRoot.addChild(proceduralSceneContent.navigationPath.entity)
+        navigationRouteRoot.addChild(navigationMarkerRoot)
+        navigationMarkerRoot.addChild(proceduralSceneContent.navigationMarker)
+        navigationMarkerRoot.addChild(proceduralSceneContent.starshipMission.root)
+        navigationMarkerRoot.addChild(proceduralSceneContent.crew13Mission.root)
+        navigationMarkerRoot.addChild(proceduralSceneContent.voyagerMission.root)
+        navigationMarkerRoot.addChild(proceduralSceneContent.vostokMission.root)
+        self.proceduralSceneContent = proceduralSceneContent
     }
 }

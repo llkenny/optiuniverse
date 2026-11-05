@@ -11,6 +11,7 @@ final class RealityProceduralSceneContent {
 
     let environmentEntity: ModelEntity
     let starField: RealityStarField
+    let orbitLines: RealityOrbitLines
     let transferEarthOrbit: RealityRibbon
     let transferDestinationOrbit: RealityRibbon
     let transferArrivalMarker: Entity
@@ -32,6 +33,7 @@ final class RealityProceduralSceneContent {
     private init(environmentEntity: ModelEntity) throws {
         self.environmentEntity = environmentEntity
         starField = try RealityStarField()
+        orbitLines = try RealityOrbitLines()
         transferEarthOrbit = try RealityRibbon(maximumSegmentCount: 512)
         transferDestinationOrbit = try RealityRibbon(maximumSegmentCount: 512)
         transferPath = try RealityRibbon(maximumSegmentCount: 512)
@@ -41,7 +43,7 @@ final class RealityProceduralSceneContent {
         transferArrivalMarker.name = "TransferArrivalPosition"
     }
 
-    private struct RenderContext {
+    struct RenderContext {
         let sceneOrigin: SIMD3<Double>
         let cameraPosition: SIMD3<Float>
         let cameraUp: SIMD3<Float>
@@ -84,6 +86,7 @@ final class RealityProceduralSceneContent {
                                     verticalFieldOfView: camera.dependencies.projection.verticalFieldOfView,
                                     viewportHeight: Float(camera.viewportSize.height))
         updateTransfer(state: frameState.routes.transfer, context: context)
+        orbitLines.update(snapshot: frameState.snapshot, transfer: frameState.routes.transfer, context: context)
         starshipMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         crew13Mission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
         voyagerMission.update(state: frameState.routes.navigation, sceneOrigin: camera.resolvedSceneOrigin)
@@ -280,10 +283,12 @@ final class RealityRibbon {
     let entity: ModelEntity
     private let mesh: LowLevelMesh
     private let maximumSegmentCount: Int
+    private let uniformColor: Bool
     private var currentColor: SIMD4<Float>?
 
-    init(maximumSegmentCount: Int) throws {
+    init(maximumSegmentCount: Int, uniformColor: Bool = false) throws {
         self.maximumSegmentCount = maximumSegmentCount
+        self.uniformColor = uniformColor
         let descriptor = LowLevelMesh.Descriptor(
             vertexCapacity: maximumSegmentCount * 4,
             vertexAttributes: [
@@ -302,6 +307,7 @@ final class RealityRibbon {
         mesh = try LowLevelMesh(descriptor: descriptor)
         var material = UnlitMaterial(color: .white, applyPostProcessToneMap: false)
         material.blending = .transparent(opacity: .init(scale: 1))
+        if uniformColor { material.faceCulling = .none }
         entity = ModelEntity(mesh: try MeshResource(from: mesh),
                              materials: [material])
         entity.isEnabled = false
@@ -336,6 +342,10 @@ final class RealityRibbon {
         var bounds = BoundingBox()
         vertices.reserveCapacity((points.count - 1) * 4)
         indices.reserveCapacity((points.count - 1) * 6)
+        let inverseView = simd_inverse(renderViewMatrix)
+        let halfWidthAtUnitDepth = Self.halfWidth(cameraSpaceDepth: 1,
+                                                  verticalFieldOfView: verticalFieldOfView,
+                                                  viewportHeight: viewportHeight, lineWidth: lineWidth)
 
         for index in 0..<(points.count - 1) {
             let progress = Float(index) / Float(max(points.count - 1, 1))
@@ -366,9 +376,14 @@ final class RealityRibbon {
                                            color.z * pulse,
                                            color.w)
             let baseIndex = UInt32(vertices.count)
-            let positions = [start - offset, start + offset, end - offset, end + offset]
+            let positions = uniformColor
+                ? OrbitLineGeometry.positions(start: start, end: end, view: renderViewMatrix,
+                                               inverseView: inverseView, halfWidthAtUnitDepth: halfWidthAtUnitDepth)
+                : [start - offset, start + offset, end - offset, end + offset]
+            guard positions.count == 4 else { continue }
             for position in positions {
-                vertices.append(RealityProceduralVertex(position: position, color: vertexColor))
+                vertices.append(RealityProceduralVertex(position: position,
+                                                        color: uniformColor ? SIMD4(repeating: 1) : vertexColor))
                 bounds.formUnion(position)
             }
             indices.append(contentsOf: [baseIndex, baseIndex + 1, baseIndex + 2,
@@ -419,9 +434,10 @@ final class RealityRibbon {
         let uiColor = UIColor(red: CGFloat(color.x),
                               green: CGFloat(color.y),
                               blue: CGFloat(color.z),
-                              alpha: CGFloat(color.w))
+                              alpha: uniformColor ? 1 : CGFloat(color.w))
         var material = UnlitMaterial(color: uiColor, applyPostProcessToneMap: false)
         material.blending = .transparent(opacity: .init(scale: color.w))
+        if uniformColor { material.faceCulling = .none }
         guard var model = entity.components[ModelComponent.self] else { return }
         model.materials = [material]
         entity.components.set(model)

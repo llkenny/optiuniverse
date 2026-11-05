@@ -1,7 +1,6 @@
 import simd
 
-/// Eleven analytic body states are inexpensive to prepare synchronously. Publishing the whole
-/// snapshot before consumers run keeps bodies, route progress and cameras on one simulation epoch.
+/// Publishing the whole snapshot before consumers run keeps bodies, route progress and cameras on one simulation epoch.
 @MainActor
 final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private let planets: [Planet]
@@ -10,6 +9,7 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private(set) var preparationError: CelestialStateError?
     private var nextFrameID: UInt64 = 0
     private var presentationTime: Float = 0
+    private var orbitCache = CelestialOrbitCache()
     private var presentationMetricsByBodyName: [String: CelestialBodyPresentationMetrics] = [:]
     var hasPresentationMetrics: Bool { !presentationMetricsByBodyName.isEmpty }
     private(set) var latestSnapshot: UniverseSceneSnapshot?
@@ -24,6 +24,7 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
 
     func setStateProvider(_ provider: any CelestialStateProviding) {
         stateProvider = provider
+        orbitCache = CelestialOrbitCache()
         latestSnapshot = nil
         preparationError = nil
     }
@@ -60,8 +61,11 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
                                                   preciseWorldPosition: state.scenePosition))
         }
         preparationError = nil
+        let visibleNames = Set(packets.map(\.planetName))
+        let orbits = orbitCache.snapshots(for: planets.filter { visibleNames.contains($0.name) },
+                                          at: simulationTime, provider: stateProvider)
         latestSnapshot = UniverseSceneSnapshot(frameID: nextFrameID, simulationTime: simulationTime, planets: packets,
-                                               stateProvider: stateProvider)
+                                               stateProvider: stateProvider, orbits: orbits)
         nextFrameID += 1
     }
 }
