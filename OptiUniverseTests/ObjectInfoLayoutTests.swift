@@ -65,19 +65,6 @@ final class ObjectInfoLayoutTests: XCTestCase {
     private func makeEntity(named name: String) throws -> ObjectInfoViewEntity {
         let destinations: [DestinationObject] = try loadMainBundleJSON(named: "DestinationObjects")
         let destination = try XCTUnwrap(destinations.first { $0.title == name })
-        return ObjectInfoViewEntity(
-            id: destination.id, imageName: destination.infoImageName,
-            title: destination.title, subtitle: destination.subtitle, description: destination.description,
-            details: destination.details.map {
-                ObjectInfoDetailCardEntity(title: $0.title, value: $0.value, dimension: $0.dimension)
-            },
-            navigationButtonTitle: "🎯 Route", isNavigable: destination.isNavigable,
-            orbitInfo: destination.orbitInfo.map {
-                ObjectInfoOrbitView.Model(description: $0.description,
-                                          properties: [.axis: $0.properties.axis,
-                                                       .eccentricity: $0.properties.eccentricity,
-                                                       .inclination: $0.properties.inclination])
-            }, navigationButtonAction: {}
-        )
+        return ObjectInfoViewEntity(destination: destination, onRoute: {})
     }
 }
