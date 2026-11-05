@@ -4,8 +4,53 @@ import Testing
 @testable import UniverseModule
 
 @MainActor
+@Test func orbitLinesStartHiddenAndSkipMeshUpdatesUntilEnabled() throws {
+    let presenter = try RealityOrbitLines()
+    let earth = try #require(presenter.ribbons[.earth]?.entity)
+    let mesh = try #require(earth.model?.mesh.lowLevelMesh)
+    presenter.update(snapshot: orbitLineScene(), transfer: .inactive, context: orbitLineContext())
+    #expect(!presenter.root.isEnabled)
+    #expect(!earth.isEnabled)
+    #expect(mesh.parts.isEmpty)
+
+    presenter.setVisible(true)
+    presenter.update(snapshot: orbitLineScene(), transfer: .inactive, context: orbitLineContext())
+    let originalVertex = try firstOrbitVertex(in: earth)
+    #expect(presenter.root.isEnabled && earth.isEnabled)
+
+    presenter.setVisible(false)
+    var changedScene = orbitLineScene()
+    changedScene.orbits = changedScene.orbits.map { orbit in
+        CelestialOrbitSnapshot(body: orbit.body, parent: orbit.parent,
+                               samples: orbit.samples.map {
+                                   .init(epoch: $0.epoch, position: $0.position + SIMD3(5, 0, 0))
+                               })
+    }
+    presenter.update(snapshot: changedScene, transfer: .inactive, context: orbitLineContext())
+    #expect(!earth.isEnabled)
+    #expect(try firstOrbitVertex(in: earth) == originalVertex)
+
+    presenter.setVisible(true)
+    presenter.update(snapshot: changedScene, transfer: .inactive, context: orbitLineContext())
+    #expect(earth.isEnabled)
+    #expect(try firstOrbitVertex(in: earth) != originalVertex)
+    #expect(presenter.ribbons[.earth]?.entity === earth)
+}
+
+@MainActor
+private func firstOrbitVertex(in entity: ModelEntity) throws -> SIMD3<Float> {
+    let mesh = try #require(entity.model?.mesh.lowLevelMesh)
+    var position = SIMD3<Float>.zero
+    mesh.withUnsafeBytes(bufferIndex: 0) { buffer in
+        position = buffer.load(as: SIMD3<Float>.self)
+    }
+    return position
+}
+
+@MainActor
 @Test func orbitLinesReuseEntitiesAndSuppressOnlyVisibleTransferGuides() throws {
     let presenter = try RealityOrbitLines()
+    presenter.setVisible(true)
     let scene = orbitLineScene()
     let context = orbitLineContext()
     presenter.update(snapshot: scene, transfer: .inactive, context: context)
@@ -37,6 +82,7 @@ import Testing
 @MainActor
 @Test func orbitLinesHideMissingAndInvalidGeometryInsteadOfRetainingOldMeshes() throws {
     let presenter = try RealityOrbitLines()
+    presenter.setVisible(true)
     var scene = orbitLineScene()
     presenter.update(snapshot: scene, transfer: .inactive, context: orbitLineContext())
     #expect(presenter.ribbons[.earth]?.entity.isEnabled == true)
@@ -49,17 +95,18 @@ import Testing
 }
 
 @MainActor
-@Test func orbitLineMaterialUsesBodyColorAtExactlyFiftyFivePercentOpacity() throws {
+@Test func orbitLineMaterialUsesBodyColorAtTwentySevenPointFivePercentOpacity() throws {
     let presenter = try RealityOrbitLines()
+    presenter.setVisible(true)
     presenter.update(snapshot: orbitLineScene(), transfer: .inactive, context: orbitLineContext())
     let earth = try #require(presenter.ribbons[.earth]?.entity)
     let material = try #require(earth.model?.materials.first as? UnlitMaterial)
     let color = RealityOrbitLines.color(for: .earth)
     #expect(color.z > color.x)
-    #expect(color.w == 0.55)
+    #expect(color.w == 0.275)
     #expect(material.color.tint.cgColor.alpha == 1)
     if case let .transparent(opacity) = material.blending {
-        #expect(opacity.scale == 0.55)
+        #expect(opacity.scale == 0.275)
     } else {
         Issue.record("Orbit lines must use transparent blending")
     }

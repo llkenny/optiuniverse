@@ -50,6 +50,7 @@ final class UniverseSceneCoordinator {
     var immersiveTransferOverviewTransform: float4x4?
     private(set) var updateCount: UInt64 = 0
     private(set) var isPresentationActive = true
+    private(set) var areOrbitLinesVisible = false
     private var discardNextFrameDelta = false
 
     enum PreparationError: Error, Equatable {
@@ -202,6 +203,12 @@ final class UniverseSceneCoordinator {
         viewportSize = size
     }
 
+    func setOrbitLinesVisible(_ isVisible: Bool) {
+        areOrbitLinesVisible = isVisible
+        orbitLinesRoot.isEnabled = isVisible
+        proceduralSceneContent?.orbitLines.setVisible(isVisible)
+    }
+
     func setPresentationActive(_ isActive: Bool) {
         if isActive && !isPresentationActive { discardNextFrameDelta = true }
         isPresentationActive = isActive
@@ -336,6 +343,7 @@ final class UniverseSceneCoordinator {
         starFieldRoot.name = "StarField"
         celestialSystemRoot.name = "CelestialSystemRoot"
         orbitLinesRoot.name = "OrbitLines"
+        orbitLinesRoot.isEnabled = areOrbitLinesVisible
         transferOrbitRoot.name = "TransferOrbit"
         navigationRouteRoot.name = "NavigationRoute"
         navigationMarkerRoot.name = "NavigationMarker"

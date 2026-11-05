@@ -305,6 +305,10 @@ extension UniverseModuleResources {
         sceneCoordinator.adjustImmersiveFocusScale(by: scale)
     }
 
+    public func setOrbitLinesVisible(_ isVisible: Bool) {
+        sceneCoordinator.setOrbitLinesVisible(isVisible)
+    }
+
     public func setObjectInfoOverlayFraming(isPresented: Bool,
                                             bottomInset: CGFloat,
                                             viewportHeight: CGFloat) {

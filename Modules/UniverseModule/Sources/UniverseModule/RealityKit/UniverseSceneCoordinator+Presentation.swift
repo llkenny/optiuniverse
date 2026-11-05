@@ -254,6 +254,7 @@ extension UniverseSceneCoordinator {
         environmentRoot.addChild(proceduralSceneContent.environmentEntity)
         starFieldRoot.addChild(proceduralSceneContent.starField.entity)
         orbitLinesRoot.addChild(proceduralSceneContent.orbitLines.root)
+        proceduralSceneContent.orbitLines.setVisible(areOrbitLinesVisible)
         transferOrbitRoot.addChild(proceduralSceneContent.transferEarthOrbit.entity)
         transferOrbitRoot.addChild(proceduralSceneContent.transferDestinationOrbit.entity)
         transferOrbitRoot.addChild(proceduralSceneContent.transferPath.entity)

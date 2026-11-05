@@ -8,6 +8,7 @@ final class RealityOrbitLines {
 
     init() throws {
         root.name = "CelestialOrbitLines"
+        root.isEnabled = false
         for body in CelestialBodyID.allCases where body != .sun {
             let ribbon = try RealityRibbon(maximumSegmentCount: 257, uniformColor: true)
             ribbon.entity.name = "\(body.rawValue).OrbitLine"
@@ -16,12 +17,18 @@ final class RealityOrbitLines {
         }
     }
 
+    func setVisible(_ isVisible: Bool) {
+        root.isEnabled = isVisible
+        if !isVisible { hide() }
+    }
+
     func hide() {
         for ribbon in ribbons.values { ribbon.hide() }
     }
 
     func update(snapshot: UniverseSceneSnapshot?, transfer: TransferOrbitRenderState,
                 context: RealityProceduralSceneContent.RenderContext) {
+        guard root.isEnabled else { return }
         // Hide first: missing/invalid packets and failed ribbon updates must never
         // leave a previous epoch's trajectory visible.
         hide()
@@ -71,6 +78,6 @@ final class RealityOrbitLines {
         case .neptune: rgb = SIMD3(0.24, 0.36, 0.90)
         case .pluto: rgb = SIMD3(0.64, 0.48, 0.39)
         }
-        return SIMD4(rgb, 0.55)
+        return SIMD4(rgb, 0.275)
     }
 }

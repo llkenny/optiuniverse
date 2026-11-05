@@ -29,7 +29,7 @@ struct ObjectsPreviewHost: View {
                     .toolbar { controls(usesVerticalToolbar: usesVerticalToolbar) }
                     .toolbarBackground(.hidden, for: .navigationBar, .bottomBar)
                     .toolbarVisibility(model.loadingState == .loaded ? .visible : .hidden, for: .navigationBar)
-                    .toolbarVisibility(model.objectsViewState == .raw ? .visible : .hidden, for: .bottomBar)
+                    .toolbarVisibility(model.loadingState == .loaded ? .visible : .hidden, for: .bottomBar)
             }
         }
         .background {
@@ -111,12 +111,11 @@ struct ObjectsPreviewHost: View {
                         Button("Cancel navigation", systemImage: "xmark", action: model.cancelNavigation)
                     }
                 }
-            } else if model.objectsViewState == .raw {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Spacer()
-                    Button("Object details", systemImage: "binoculars", action: model.showDetails)
-                }
             }
+            OrbitSceneToolbar(resources: model.resources,
+                              usesVerticalToolbar: usesVerticalToolbar,
+                              showsObjectDetails: model.objectsViewState == .raw,
+                              onShowDetails: model.showDetails)
         }
     }
 }
