@@ -52,6 +52,7 @@ class ChecklistTests(unittest.TestCase):
         self.assertIn("- [ ] **QA-PREVIEW-ERROR", body)
         self.assertNotIn("- [ ] **QA-LOAD-ERROR", body)
         self.assertEqual(metadata["diagnostics"], ["QA-PREVIEW-ERROR"])
+        self.assertIn("** — DIAG · Preview, orbit coverage", body)
         with self.assertRaisesRegex(ValueError, "Unknown diagnostic"):
             self.render(["QA-INSTALL"])
 

@@ -81,7 +81,8 @@ def parse_matrix(text, scenarios):
             raise ValueError(f"Incorrect diagnostic group for {scenario_id}")
         if not cells[1] or cells[2] or cells[3]:
             raise ValueError(f"Matrix must contain a configuration and empty results for {scenario_id}")
-        runs.append(Run(scenario_id, title, cells[1], group, conditional))
+        configuration = f"DIAG · {cells[1]}" if conditional else cells[1]
+        runs.append(Run(scenario_id, title, configuration, group, conditional))
     if {run.scenario_id for run in runs} != set(scenarios):
         raise ValueError("Matrix must cover every catalog scenario")
     identities = [(run.scenario_id, run.configuration) for run in runs]
