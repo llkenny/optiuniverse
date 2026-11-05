@@ -1,0 +1,57 @@
+name: Create release QA issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version, for example 1.11
+        required: true
+        type: string
+      build:
+        description: Candidate build number, for example 29
+        required: true
+        type: string
+      candidate_ref:
+        description: Candidate commit, branch or tag (empty uses the selected workflow commit)
+        required: false
+        type: string
+      diagnostics:
+        description: Optional comma-separated IDs (QA-LOAD-ERROR,QA-PREVIEW-ERROR,QA-FLIGHT-ERROR)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: release-qa-${{ inputs.version }}-${{ inputs.build }}
+  cancel-in-progress: false
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create or find QA issue
+        id: qa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QA_VERSION: ${{ inputs.version }}
+          QA_BUILD: ${{ inputs.build }}
+          QA_REF: ${{ inputs.candidate_ref || github.sha }}
+          QA_DIAGNOSTICS: ${{ inputs.diagnostics }}
+        run: |
+          python3 scripts/create_qa_issue.py \
+            --version "$QA_VERSION" \
+            --build "$QA_BUILD" \
+            --ref "$QA_REF" \
+            --diagnostics "$QA_DIAGNOSTICS"
+      - name: Link QA issue
+        env:
+          QA_ISSUE_URL: ${{ steps.qa.outputs.issue_url }}
+        run: |
+          echo "[Open the release QA checklist]($QA_ISSUE_URL)" >> "$GITHUB_STEP_SUMMARY"
