@@ -1,6 +1,8 @@
 # OptiUniverse release QA
 
-Copy this file to `AppStore/<version>/QA-<build>.md` for each release candidate. Keep it in the version directory so the scenario links resolve. Complete the report for the exact build you plan to ship and link it from the release PR. Start a new report for a new build. Documentation changes alone can use the report for the same build.
+The primary execution UI is the generated GitHub QA issue. Follow the [Release QA instructions](../../README.md#release-qa) to create it. The scenario rows below are the source matrix for the generator.
+
+For a file-based fallback, copy this file to `AppStore/<version>/QA-<build>.md`. Keep it in the version directory so the scenario links resolve. Complete the report for the exact build you plan to ship and link it from the release PR. Start a new report for a new build. Documentation changes alone can use the report for the same build.
 
 ## Candidate
 

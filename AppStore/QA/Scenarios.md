@@ -1,6 +1,6 @@
 # OptiUniverse manual release QA scenarios
 
-Use the [release checklist template](ReleaseChecklist.template.md) to assign and record runs. Scenario IDs are stable. Update the scenario and its checklist rows together when a feature or supported configuration changes.
+Generate the release QA issue using the [Release QA instructions](../../README.md#release-qa) to assign and record runs. The [release checklist template](ReleaseChecklist.template.md) supplies its configuration matrix and remains available for a file-based report. Scenario IDs are stable. Update the scenario and its checklist rows together when a feature or supported configuration changes.
 
 ## Run conventions
 

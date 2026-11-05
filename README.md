@@ -294,11 +294,65 @@ The deployment target remains iOS 26.0.
 
 ## Release QA
 
-Before each release, copy the [QA report template](AppStore/QA/ReleaseChecklist.template.md)
-to `AppStore/<version>/QA-<build>.md` and follow the [manual QA scenarios](AppStore/QA/Scenarios.md).
-The matrix combines a full iPhone run, required rendering checks on a physical iPhone,
-and targeted coverage on both iPhone Duo displays and iPad. Link the completed report
-from the release PR and track defects in GitHub Issues.
+Before each release, create a GitHub QA issue for the candidate version and build.
+The [Create release QA issue workflow](.github/workflows/release-qa.yml) generates
+interactive checkboxes and expandable steps from the [manual scenarios](AppStore/QA/Scenarios.md)
+and the [configuration matrix](AppStore/QA/ReleaseChecklist.template.md). It covers
+a full iPhone run, rendering on a physical iPhone, and both iPhone Duo displays and iPad.
+
+In GitHub, open **Actions → Create release QA issue → Run workflow**. Use `main`
+as the workflow branch, enter the candidate version and build, and supply its published
+commit, branch or tag as `candidate_ref`. Leaving it empty uses the selected workflow
+commit. The workflow becomes available after it is merged into `main`.
+Alternatively, dispatch it with GitHub CLI using your authenticated account.
+
+```sh
+gh workflow run release-qa.yml --repo llkenny/optiuniverse --ref main \
+  -f version=1.11 -f build=29 -f candidate_ref=YOUR_PUBLISHED_COMMIT_SHA
+```
+
+The default checklist has 38 required runs. Add a comma-separated `diagnostics` input
+when their triggers apply. The available IDs are `QA-LOAD-ERROR`, `QA-PREVIEW-ERROR`
+and `QA-FLIGHT-ERROR`. For example, append
+`-f diagnostics=QA-PREVIEW-ERROR,QA-FLIGHT-ERROR` for transfer error handling changes.
+Unselected diagnostics are listed with their triggers for confirmation before sign-off.
+
+Wait for the workflow run to finish and open the issue link in its job summary.
+Link it from the release PR. Check a box after its assigned configuration passes.
+Leave failed, blocked and unfinished runs unchecked. File bugs as separate issues and
+link them in the QA issue's **Found defects** table with the scenario ID and configuration.
+Record a retest before checking a previously failed run. Fill in the actual devices
+and automated evidence, then record the release decision manually.
+
+Rerunning with the same version, build, commit and diagnostic selection returns the
+existing issue, including a closed issue, while preserving checks and discussion.
+A mismatched commit or selection reports an error. Each new build gets a new issue.
+When asking Codex to prepare a release, this dispatch and the resulting issue link
+are part of the preparation instructions in `AGENTS.md`.
+
+For local preview or initial review before the workflow is on `main`, use the same
+generator. It reads the catalog and matrix at the committed `--ref`, so commit the
+intended QA changes first. Preview needs Python 3.10 or later and Git.
+
+```sh
+python3 scripts/create_qa_issue.py --repository llkenny/optiuniverse \
+  --version 1.11 --build 29 --ref HEAD --dry-run > /tmp/optiuniverse-qa-preview.md
+```
+
+To create an issue locally, publish the candidate commit and run the command without
+`--dry-run`, with `GITHUB_TOKEN` or `GH_TOKEN` available in the environment. The token
+needs repository contents read and issues write access. For an implementation demo,
+add `--test`, all three diagnostic IDs through `--diagnostics`, and
+`--release-pr https://github.com/llkenny/optiuniverse/pull/NUMBER`.
+Demo issues have a `[TEST]` title and a separate identity from release runs.
+Local creation should run one instance at a time. The Action serializes runs for
+the same version and build. GitHub API errors fail the command. If the response to
+creation was interrupted, rerun with the same inputs to find any issue already created.
+
+Run the generator's offline regression checks with
+`python3 -m unittest discover -s scripts/tests -v`.
+For a file-based fallback, copy the matrix to `AppStore/<version>/QA-<build>.md`
+and link the completed report from the release PR.
 
 ## Release 1 URLs
 
