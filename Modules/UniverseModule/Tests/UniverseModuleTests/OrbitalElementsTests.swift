@@ -49,7 +49,7 @@ private func ellipse(eccentricity: Double = 0.3, inclination: Double = 0,
     let data = try JSONEncoder().encode(ellipse(eccentricity: 1.1))
     let orbitJSON = try #require(String(data: data, encoding: .utf8))
     let json = """
-    [{"name":"Earth","meshName":"Earth","diameterKm":12756,"rotationSpeedKmSec":0,"orbit":\(orbitJSON)}]
+    [{"name":"Earth","meshName":"Earth","diameterKm":12756,"orbit":\(orbitJSON)}]
     """
     #expect(throws: UniverseModulePreparationError.self) {
         try SolarSystemLoader.decodePlanets(from: Data(json.utf8))

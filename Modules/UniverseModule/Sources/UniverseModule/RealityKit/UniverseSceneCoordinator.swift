@@ -83,8 +83,7 @@ final class UniverseSceneCoordinator {
     func synchronizeLiveScene() {
         simulationClock.synchronizeLive()
         if snapshotProvider.hasPresentationMetrics {
-            snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
-                                                presentationTime: Float(simulationClock.presentationTime))
+            snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
         }
         publishSimulationTime(force: true)
     }
@@ -92,8 +91,7 @@ final class UniverseSceneCoordinator {
     /// Capture liftoff orientation before constructing any Earth-relative mission geometry.
     func prepareMissionScene(_ replay: MissionReplay) {
         simulationClock.prepareMission(replay)
-        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
-                                            presentationTime: Float(simulationClock.presentationTime))
+        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
         publishSimulationTime(force: true)
     }
 
@@ -268,8 +266,7 @@ final class UniverseSceneCoordinator {
         let delta = simulationClock.advance(by: activeDelta,
                                             transfer: navigationController.activeTransfer,
                                             mission: replay)
-        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime,
-                                            presentationTime: Float(simulationClock.presentationTime))
+        snapshotProvider.requestPreparation(simulationTime: simulationClock.currentTime)
         let crossedCue = replay?.crossedPublicationCue(from: previousMissionTime,
                                                         to: simulationClock.missionElapsedTime) ?? false
         publishSimulationTime(force: isResuming || crossedCue)

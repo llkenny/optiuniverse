@@ -7,7 +7,7 @@ let testPlanets: [Planet] = (try? SolarSystemLoader.loadPlanets(from: "planets")
 // legacy distance/angular-speed initializer; these units belong only to those test scenarios.
 extension Planet {
     init(name: String, meshName: String, parentName: String?, radius: Float,
-         distance: Float, orbitSpeed: Float, rotationSpeedKmSec: Float) {
+         distance: Float, orbitSpeed: Float) {
         self.init(name: name, meshName: meshName, parentName: parentName, radius: radius,
                   orbit: distance > 0 ? OrbitalElements(
                     semiMajorAxisKm: Double(distance) / OrbitalElements.sceneUnitsPerKm,
@@ -15,7 +15,7 @@ extension Planet {
                     argumentOfPeriapsisDegrees: 0, meanAnomalyDegrees: 0,
                     epochJulianDay: OrbitalElements.j2000,
                     periodSeconds: orbitSpeed == 0 ? 1e30 : 2 * .pi / Double(orbitSpeed)
-                  ) : nil, rotationSpeedKmSec: rotationSpeedKmSec)
+                  ) : nil)
     }
 
     var distance: Float { Float((orbit?.semiMajorAxisKm ?? 0) * OrbitalElements.sceneUnitsPerKm) }

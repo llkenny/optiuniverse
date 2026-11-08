@@ -24,7 +24,7 @@ Move only pure value helpers out of `MainActor`:
 - `PreparedRenderSnapshot.planet(named:)`
 - `PreparedRenderSnapshot.framingRadius(ofPlanetNamed:)`
 - `PreparedRenderSnapshot.worldPosition(ofPlanetNamed:)`
-- `Planet.modelMatrix(at:)`
+- `Planet.orbitTransformMatrix(at:)`
 - pure `float4x4` matrix factory helpers
 
 These helpers are marked `nonisolated` because they only read immutable value data or perform matrix math. They do not touch UIKit, `MTLRenderCommandEncoder`, mutable renderer state, the mesh cache, or actor-isolated loader state.

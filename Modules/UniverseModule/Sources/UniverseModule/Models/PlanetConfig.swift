@@ -4,5 +4,4 @@ struct PlanetConfig: Decodable {
     let diameterKm: Float
     let parentName: String?
     let orbit: OrbitalElements?
-    let rotationSpeedKmSec: Float
 }
