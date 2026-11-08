@@ -241,22 +241,19 @@ private func artemisTestPlanets(earthOrbitSpeed: Float = 0,
                parentName: nil,
                radius: 1,
                distance: 0,
-               orbitSpeed: 0,
-               rotationSpeedKmSec: 0),
+               orbitSpeed: 0),
         Planet(name: "Earth",
                meshName: "Earth",
                parentName: nil,
                radius: 1,
                distance: 1,
-               orbitSpeed: earthOrbitSpeed,
-               rotationSpeedKmSec: 0),
+               orbitSpeed: earthOrbitSpeed),
         Planet(name: "Moon",
                meshName: "Moon",
                parentName: "Earth",
                radius: 1,
                distance: 0.2,
-               orbitSpeed: moonOrbitSpeed,
-               rotationSpeedKmSec: 0)
+               orbitSpeed: moonOrbitSpeed)
     ]
 }
 

@@ -5,10 +5,8 @@ import simd
 final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     private let planets: [Planet]
     private(set) var stateProvider: any CelestialStateProviding
-    private let usesEphemerisOrientation: Bool
     private(set) var preparationError: CelestialStateError?
     private var nextFrameID: UInt64 = 0
-    private var presentationTime: Float = 0
     private var orbitCache = CelestialOrbitCache()
     private var presentationMetricsByBodyName: [String: CelestialBodyPresentationMetrics] = [:]
     var hasPresentationMetrics: Bool { !presentationMetricsByBodyName.isEmpty }
@@ -17,10 +15,7 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
     init(planets: [Planet], stateProvider: (any CelestialStateProviding)? = nil) {
         self.planets = planets
         self.stateProvider = stateProvider ?? KeplerCelestialStateProvider(planets: planets)
-        usesEphemerisOrientation = stateProvider != nil
     }
-
-    func setPresentationTime(_ time: Float) { presentationTime = time }
 
     func setStateProvider(_ provider: any CelestialStateProviding) {
         stateProvider = provider
@@ -47,8 +42,7 @@ final class UniverseSceneSnapshotPipeline: UniverseSceneSnapshotProviding {
             }
             let position = SIMD3<Float>(state.scenePosition)
             let orbitTransform = float4x4.makeTranslation(position)
-            let rotation = usesEphemerisOrientation
-                ? state.sceneOrientation : planet.visualRotationMatrix(at: presentationTime)
+            let rotation = state.sceneOrientation
             guard let metrics = presentationMetricsByBodyName[planet.name] else { continue }
             packets.append(CelestialBodySnapshot(planetName: planet.name,
                                                   baseModelMatrix: orbitTransform * rotation,

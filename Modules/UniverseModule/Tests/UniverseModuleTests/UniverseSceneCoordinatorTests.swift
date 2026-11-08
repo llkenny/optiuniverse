@@ -411,91 +411,19 @@ private func containsModelComponent(_ entity: Entity) -> Bool {
 }
 
 @MainActor
-@Test func sceneSnapshotPipelineEmitsVisualSelfRotation() async throws {
-    let planet = Planet(name: "Sun",
-                        meshName: "Sun",
-                        parentName: nil,
-                        radius: 1,
-                        distance: 2,
-                        orbitSpeed: 0.25,
-                        rotationSpeedKmSec: 0.5)
-    let pipeline = UniverseSceneSnapshotPipeline(planets: [planet])
-    pipeline.setPresentationMetrics([
-        planet.name: CelestialBodyPresentationMetrics(renderRadius: 1,
-                                                      framingRadius: 1,
-                                                      surfaceRadius: 1)
-    ])
-
-    pipeline.setPresentationTime(2)
-    pipeline.requestPreparation(simulationTime: 2)
-    while pipeline.latestSnapshot == nil {
-        await Task.yield()
-    }
-
-    let packet = try #require(pipeline.latestSnapshot?.planet(named: planet.name))
-    let expectedVisualRotation = float4x4.makeRotationY(1)
-    let expectedOrbitTransform = planet.orbitTransformMatrix(at: 2)
-    let expectedBaseModelMatrix = planet.modelMatrix(at: 2, presentationTime: 2)
-    expectSceneMatrix(packet.orbitTransformMatrix,
-                      equals: expectedOrbitTransform)
-    expectSceneMatrix(packet.visualRotationMatrix,
-                      equals: expectedVisualRotation)
-    expectSceneMatrix(packet.baseModelMatrix,
-                      equals: expectedBaseModelMatrix)
-    #expect(abs(packet.visualRotationMatrix[0][0] - 1) > 0.00001)
-}
-
-@MainActor
-@Test func sceneSnapshotPipelineSpinsVisibleBodiesAroundRealityKitUpAxis() async throws {
-    let bodyNames = Set(["Mercury", "Earth", "Jupiter", "Saturn", "Neptune"])
-    let planets = try SolarSystemLoader.loadPlanets(from: "planets")
-        .filter { bodyNames.contains($0.name) }
-    let pipeline = UniverseSceneSnapshotPipeline(planets: planets)
-    pipeline.setPresentationMetrics(
-        Dictionary(uniqueKeysWithValues: planets.map {
-            ($0.name, CelestialBodyPresentationMetrics(renderRadius: 1,
-                                                       framingRadius: 1,
-                                                       surfaceRadius: 1))
-        })
-    )
-    let simulationTime: Double = 100_000
-
-    pipeline.setPresentationTime(10)
-    pipeline.requestPreparation(simulationTime: simulationTime)
-    while pipeline.latestSnapshot == nil {
-        await Task.yield()
-    }
-
-    let snapshot = try #require(pipeline.latestSnapshot)
-    for planet in planets {
-        let packet = try #require(snapshot.planet(named: planet.name))
-        let expectedRotation = float4x4.makeRotationY(10 * planet.rotationSpeedKmSec)
-        expectSceneMatrix(packet.visualRotationMatrix,
-                          equals: expectedRotation)
-        #expect(abs(packet.visualRotationMatrix[1][1] - 1) <= 0.00001)
-        #expect(abs(packet.visualRotationMatrix[0][1]) <= 0.00001)
-        #expect(abs(packet.visualRotationMatrix[1][0]) <= 0.00001)
-        #expect(abs(packet.visualRotationMatrix[1][2]) <= 0.00001)
-        #expect(abs(packet.visualRotationMatrix[2][1]) <= 0.00001)
-    }
-}
-
-@MainActor
 @Test func sceneSnapshotPipelineEmitsParentRelativeOrbitMotion() async throws {
     let earth = Planet(name: "Earth",
                        meshName: "Earth",
                        parentName: nil,
                        radius: 1,
                        distance: 10,
-                       orbitSpeed: 0,
-                       rotationSpeedKmSec: 0)
+                       orbitSpeed: 0)
     let moon = Planet(name: "Moon",
                       meshName: "Moon",
                       parentName: "Earth",
                       radius: 1,
                       distance: 2,
-                      orbitSpeed: 0.5,
-                      rotationSpeedKmSec: 0)
+                      orbitSpeed: 0.5)
     let pipeline = UniverseSceneSnapshotPipeline(planets: [earth, moon])
     pipeline.setPresentationMetrics([
         earth.name: CelestialBodyPresentationMetrics(renderRadius: 1,
