@@ -5,7 +5,7 @@
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>N1LaunchSky</string>
+		<string>LaunchBackground</string>
 	</dict>
 	<key>LSSupportsGameMode</key>
 	<true/>

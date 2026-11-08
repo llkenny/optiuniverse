@@ -35,7 +35,7 @@ struct LegalCreditsView: View {
 
 enum LegalCreditsCatalog {
     static let sections: [LegalCreditSection] = [
-        n1Launch,
+        launchDiorama,
         LegalCreditSection(
             title: "Solar System Textures",
             body: """

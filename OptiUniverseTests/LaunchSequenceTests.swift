@@ -13,7 +13,6 @@ struct LaunchSequenceTests {
         #expect(sequence.phase == .waiting)
         #expect(sequence.liftProgress == 0)
         #expect(sequence.opacity == 1)
-        #expect(sequence.ignition > 0)
     }
 
     @Test(arguments: [0.0, 0.01, 20.0, 300.0])
@@ -24,7 +23,7 @@ struct LaunchSequenceTests {
         sequence.resourcesReady(reduceMotion: false)
         #expect(sequence.readyAt == wait)
         #expect(sequence.phase == .waiting)
-        #expect(!sequence.advance(by: LaunchSequence.ignitionDuration + 0.1))
+        #expect(!sequence.advance(by: LaunchSequence.releaseDuration + 0.1))
         #expect(sequence.phase == .lifting)
         #expect(sequence.liftProgress > 0)
         #expect(sequence.opacity == 1)
@@ -43,7 +42,7 @@ struct LaunchSequenceTests {
         let sequence = LaunchSequence()
         sequence.resourcesReady(reduceMotion: true)
         #expect(sequence.phase == .dissolving)
-        #expect(sequence.ignition == 0)
+        #expect(sequence.usesReducedMotion)
         #expect(!sequence.advance(by: 0.1))
         #expect(sequence.liftProgress == 0)
         #expect(abs(sequence.opacity - 0.5) < 0.001)
@@ -57,6 +56,18 @@ struct LaunchSequenceTests {
         sequence.reduceMotionEnabled()
         #expect(sequence.liftProgress == 0)
         #expect(sequence.advance(by: 0.21))
+    }
+
+    @Test func enablingReducedMotionDuringDissolveDoesNotIncreaseOpacity() {
+        let sequence = LaunchSequence()
+        sequence.resourcesReady(reduceMotion: false)
+        sequence.advance(by: 1.55)
+        let opacity = sequence.opacity
+        sequence.reduceMotionEnabled()
+        #expect(abs(sequence.opacity - opacity) < 0.001)
+        sequence.advance(by: 0.1)
+        #expect(sequence.opacity < opacity)
+        #expect(sequence.advance(by: 0.11))
     }
 
     @Test func cancellationSuppressesCompletionAndRetryResetsEverything() {
@@ -88,36 +99,58 @@ struct LaunchSequenceTests {
         #expect(sequence.phase == .waiting)
     }
 
-    @Test func bundledImagesLoadAndMissingBundleFailsSafely() throws {
-        let assets = try #require(N1LaunchAssets.load())
-        let alpha = try #require(assets.rocket.cgImage).alphaInfo
-        #expect([CGImageAlphaInfo.first, .last, .premultipliedFirst, .premultipliedLast].contains(alpha))
-        #expect(assets.rocket.size.height > assets.rocket.size.width)
-        let vaporAlpha = try #require(assets.vapor.cgImage).alphaInfo
-        #expect([CGImageAlphaInfo.first, .last, .premultipliedFirst, .premultipliedLast].contains(vaporAlpha))
-        #expect(N1LaunchAssets.load(bundle: Bundle(for: LaunchBundleMarker.self)) == nil)
+    @Test func dioramaFlameAndReleaseFollowTheirRespectiveTriggers() {
+        let waiting = LaunchDioramaFrame(elapsed: 0.44, readyAt: nil, liftProgress: 0)
+        #expect(waiting.flameStrength == 0)
+        #expect(waiting.release == 0)
+        let burning = LaunchDioramaFrame(elapsed: 2, readyAt: nil, liftProgress: 0)
+        #expect(burning.flameStrength == 1)
+        #expect(burning.release == 0)
+        let fastReady = LaunchDioramaFrame(elapsed: 0.18, readyAt: 0, liftProgress: 0)
+        #expect(fastReady.flameStrength == 1)
+        #expect(fastReady.release == 1)
     }
 
-    @Test(arguments: [
-        CGSize(width: 320, height: 874), CGSize(width: 402, height: 874),
-        CGSize(width: 874, height: 402), CGSize(width: 640, height: 960),
-        CGSize(width: 1024, height: 1366), CGSize(width: 1366, height: 1024),
-        CGSize(width: 500, height: 500), CGSize(width: 1100, height: 320)
-    ])
-    func photographKeepsWholeRocketVisible(size: CGSize) {
-        let layout = N1LaunchLayout(size: size)
-        let top = layout.point(x: 329, y: 0)
-        let baseLeft = layout.point(x: 132, y: 1465)
-        let baseRight = layout.point(x: 498, y: 1465)
-        #expect(top.y >= 0)
-        #expect(baseLeft.x >= 0)
-        #expect(baseRight.x <= size.width)
-        #expect(baseLeft.y < size.height)
-        #expect(layout.engine.y - layout.liftDistance(progress: 1) < 0)
-        #expect(layout.backgroundOrigin.x <= 0)
-        #expect(layout.backgroundOrigin.x + layout.backgroundSize.width >= size.width)
-        #expect(abs(layout.backgroundOrigin.y + layout.backgroundSize.height - size.height) < 0.001)
+    @Test func dioramaImagesAreBundledAndDecodedAtBoundedResolution() throws {
+        let assets = try #require(LaunchDioramaAssets.load())
+        for (image, limit) in [(assets.closedPad, 1536), (assets.openPad, 1536),
+                               (assets.rocket, 1024), (assets.smoke, 1024), (assets.flame, 1024)] {
+            #expect(max(image.width, image.height) <= limit)
+            #expect([CGImageAlphaInfo.first, .last, .premultipliedFirst, .premultipliedLast].contains(image.alphaInfo))
+        }
+        #expect(assets.closedPad.width == assets.openPad.width)
+        #expect(assets.closedPad.height == assets.openPad.height)
+        #expect(LaunchDioramaAssets.load(bundle: Bundle(for: LaunchBundleMarker.self)) == nil)
     }
+
+    @Test(arguments: LaunchReviewSizes.all)
+    func dioramaStaysCenteredAndNozzleTracksRocket(size: CGSize) {
+        let layout = LaunchDioramaLayout(size: size)
+        #expect(abs(layout.diameter - min(size.width, size.height) * 4 / 9) < 0.001)
+        #expect(abs(layout.padRect.midX - size.width / 2) < 0.001)
+        for progress in [0.0, 0.5, 1.0] {
+            let rocket = layout.rocketRect(liftProgress: progress)
+            let flame = layout.flameRect(liftProgress: progress, strength: 1, pulse: 1)
+            let engine = layout.engine(liftProgress: progress)
+            #expect(rocket.minY > 0 && rocket.maxY < size.height)
+            #expect(abs(rocket.minY + rocket.height * 0.877 - engine.y) < 0.001)
+            #expect(abs(flame.minY + flame.height * 0.12 - engine.y) < 0.001)
+        }
+    }
+
 }
 
 private final class LaunchBundleMarker: NSObject {}
+
+/// Point sizes cover both native Duo displays and the supported window shapes.
+enum LaunchReviewSizes {
+    static let all: [CGSize] = [
+        CGSize(width: 402, height: 874), CGSize(width: 874, height: 402),
+        CGSize(width: 466, height: 678), CGSize(width: 678, height: 466),
+        CGSize(width: 669, height: 951), CGSize(width: 951, height: 669),
+        CGSize(width: 820, height: 1180), CGSize(width: 1180, height: 820),
+        CGSize(width: 1024, height: 1366), CGSize(width: 1366, height: 1024),
+        CGSize(width: 320, height: 900), CGSize(width: 500, height: 500),
+        CGSize(width: 1100, height: 320)
+    ]
+}

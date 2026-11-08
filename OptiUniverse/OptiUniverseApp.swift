@@ -44,7 +44,7 @@ struct OptiUniverseApp: App {
         WindowGroup {
             #if DEBUG && os(iOS)
             if ProcessInfo.processInfo.environment["OPTI_LAUNCH_PREVIEW"] == "1" {
-                N1LaunchPreviewHost()
+                LaunchDioramaPreviewHost()
             } else {
                 appRoot
             }

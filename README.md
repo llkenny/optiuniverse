@@ -84,18 +84,27 @@ References: [NASA mission dates and launch vehicle](https://science.nasa.gov/mis
 
 ## Loading experience
 
-On iPhone and iPad, an archival photograph of the N1 1M1 test vehicle becomes a layered launch scene.
-Local vapor and exhaust effects continue while resources prepare; readiness triggers a short lift and
-fade lasting about 1.73 seconds of foreground presentation time. The home screen is mounted underneath,
-with interaction, navigation controls and review requests held until the transition completes.
-Reduce Motion uses a static photograph and a 0.2-second fade. Backgrounding pauses presentation;
-loading errors retain the retry screen. visionOS retains the existing loading view.
+On iPhone, both iPhone Duo displays and iPad, a fictional illustrated launch diorama stays centered
+at 4/9 of the window's short edge. Smoke drifts while resources prepare; flame appears after
+0.45 seconds. Readiness releases the clamps (0.18 s), lifts the rocket (1.2 s) and fades the
+scene (0.35 s). In short windows, ascent is limited to keep the rocket visible. Rotation and
+window resizing update the geometry without restarting the sequence.
 
-The rocket is extracted from the source photograph with AI-assisted base retouching; the empty pad and peripheral scenery are reconstructed,
-and the vapor/exhaust textures are generated. See `THIRD_PARTY_NOTICES.md` for attribution and
-`vfx_scripts/n1_launch_prompts.json` for the built-in ImageGen prompts. This is an illustrative scene,
-not a reconstruction of an actual flight. Set `OPTI_LAUNCH_PREVIEW=1` in a Debug run to view a
-three-second wait followed by launch without preparing the universe. QA: `AppStore/QA/LaunchScene.md`.
+The prepared interface and navigation bars sit underneath the overlay. Interaction, accessibility
+of the underlying interface and review requests remain gated until completion. Presentation pauses
+while inactive. Errors show the retry screen; retry creates a fresh sequence. Reduce Motion freezes
+the illustration and uses a 0.2-second fade. Missing, unreadable or late artwork cannot delay the
+prepared app: a fallback indicator fades out. Decoding and animation tasks are cancelled and image
+ownership released on dismissal. visionOS retains its existing loading view.
+
+Five local transparent PNGs live in `OptiUniverse/Resources/LaunchDiorama/`. The platform artwork was
+supplied by the project owner; its open variant, rocket, smoke and flame were generated with ImageGen.
+Provenance, processing and file hashes are in `vfx_scripts/illustrated_launch_assets.json` and
+`THIRD_PARTY_NOTICES.md`. No historical vehicle or flight is represented.
+
+Set `OPTI_LAUNCH_PREVIEW=1` in a Debug run for a three-second wait and launch without preparing the
+universe; add `OPTI_LAUNCH_PREVIEW_TIME=2` for waiting or `4.1` for ascent. Remove these settings for
+normal startup. QA, device coverage and measurement results: `AppStore/QA/LaunchScene.md`.
 
 ## Video and screenshots
 

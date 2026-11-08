@@ -2,17 +2,20 @@
 
 This file tracks attribution and release-review source material for assets bundled with OptiUniverse. Keep it in sync with the in-app Legal & Credits screen before each release.
 
-## N1 Loading Scene
+## Illustrated Launch Diorama
 
-- Original asset: `OptiUniverse/Resources/LaunchScene/n1-original.jpg` (916 × 1500, unmodified download).
-- Title: N1 1M1 mockup on the launch pad at the Baikonur Cosmodrome in late 1967.
-- Credit: National Reconnaissance Office, via NASA and Wikimedia Commons, as identified by those sources.
-- File/source and usage information: https://commons.wikimedia.org/wiki/File:N1_1M1_mockup_on_the_launch_pad_at_the_Baikonur_Cosmodrome_in_late_1967.jpg
-- Historical context: https://www.nasa.gov/history/50-years-ago-soviets-moon-rockets-rollout-to-pad-affects-apollo-plans/
-- Status: Wikimedia Commons identifies this specific file as released into the public domain in the United States under its PD-US-NRO notice. This records the source's statement, not a blanket claim about Soviet imagery or worldwide status.
-- Changes: `n1-rocket.png` is a transparent photo-derived cutout with AI-assisted extraction and removal of people at the base. `vfx_scripts/n1_launch_reference/n1-clean-pad.png` reconstructs the area behind the rocket; `n1-surroundings.png` extends that plate into the single continuous runtime background. The source photograph remains unmodified; the derived layers are retouched interpretations. The derived images are not newly recovered historical detail. `n1-vapor.png` and `n1-exhaust.png` are generated transparent textures, downsampled for runtime use.
-- Generation: Built-in ImageGen; prompts are saved in `vfx_scripts/n1_launch_prompts.json`. No runtime network access or generated machine-specific paths are required.
-- App use: Illustrative startup animation of the test vehicle lifting off; not footage or a factual reconstruction of a historical flight. No endorsement is implied.
+- Assets: `OptiUniverse/Resources/LaunchDiorama/launch-diorama-*.png`, five local RGBA layers.
+- Original platform: project-owner supplied artwork named `Futuristic Industrial Docking Platform.png`.
+  The closed platform preserves that supplied PNG byte-for-byte. Its external author and license were
+  not supplied; this record makes no public-domain or open-license claim for it.
+- Generated artwork: fictional rocket, smoke, flame and articulated open-platform variant created
+  using OpenAI ImageGen for this project.
+- Processing: alpha compositing and alignment of the open jaws to the original platform. The lower
+  deck retains the original pixels, preventing the base from shifting during release. Runtime decode
+  caps are 1536 pixels for platforms and 1024 for other sprites; originals remain local PNGs.
+- Provenance: prompts, compositing notes and SHA-256 hashes are in
+  `vfx_scripts/illustrated_launch_assets.json`; no local user paths are needed at runtime.
+- App use: fictional startup illustration, with no claim to represent a real vehicle or launch.
 
 ## Solar System Textures
 
