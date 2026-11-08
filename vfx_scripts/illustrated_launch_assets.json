@@ -1,0 +1,41 @@
+{
+  "tool": "Built-in ImageGen",
+  "references": {
+    "pad-open.png": "User-provided pad-closed.png; an intermediate open-jaw study was used to correct the angle."
+  },
+  "compositing": {
+    "pad-open.png": "Generated open-jaw image aligned to the original 1535 × 1024 canvas. Upper moving region is taken from the ImageGen edit. Rows 325–434 blend into the original. From row 435 down the source deck is retained; decoded rows 480–1023 match exactly.",
+    "frames": "Five layers share fixed anchors. Rocket and attached flame rise together in the third frame. Pad footprint is about one third of the short screen edge.",
+    "runtime": "Uniform diameter = 4/9 of the short window edge. Fixed pad; common nozzle anchors for rocket and flame. Short windows limit ascent to keep the rocket visible."
+  },
+  "prompts": {
+    "pad-closed.png": "User-provided original PNG, copied byte-for-byte.",
+    "pad-open.png": "Use case: precise-object-edit. Input 1 is the original chosen CLOSED industrial docking platform, input 2 is an OPEN variant whose clamp tips were raised too high and clipped at the top edge. Create the corrected OPEN state. Keep the ORIGINAL canvas, perspective, size and all fixed hardware of input 1 exactly. Rotate only the upper two jaws to a modest open angle about 20 degrees above horizontal: each yellow jaw tip should be fully visible and its top should be roughly 75 to 100 pixels BELOW the top of the 1024-pixel image. Left yellow tip around x=625, y=100, right yellow tip around x=910, y=100. Open the jaws enough that there is a noticeably wider central passage, but DO NOT raise any tip to the canvas boundary. Retain a clear transparent margin above every part of the clamps. Retain all attached hoses and piston rods, adjusting only articulation. Entire circular deck, lower clamp roots, lights, diagonal yellow safety stripes, socket, scratches and rim must remain identical to input 1, in their original pixel positions. Do not change lighting, colors, framing, scale or crop, do not add anything. Genuine transparent background. The result must be the SAME user-provided platform, with only its upper jaws released; all parts fully within the image.",
+    "rocket.png": "Use case: compositing. Asset type: single reusable transparent rocket sprite for a premium space-app loading diorama. A small fictional retro-future uncrewed orbital courier rocket with a warmly lit ivory ceramic-metal body, one restrained saffron-orange lower band, a tiny dark charcoal inset panel with no lettering, a simple graphite engine bell visible below the skirt and three compact swept fins. The nose is a short rounded taper, silhouette slender but sturdy, about 3.1 times as tall as the widest fins. Believable designed object with restrained seams and solid weight; timeless friendly 3D animated-film realism, matte materials, tactile bevels. Near-orthographic fixed slightly elevated front three-quarter camera, subtle side depth and a dead vertical central axis; the same camera would look downward 23 degrees at a circular launch pad beneath it. Warm ivory key from upper left, subtle cool slate blue right fill, highlights only from scene lighting. Carefully preserve a clear straight vertical axis with the exhaust centered at the base. Entire rocket with generous margins top and bottom, no tilt, in a tall portrait transparent canvas. No stand, no smoke, no exhaust or glow, no background, no floor, no shadow plane, no numbers or text, no real mission references. True alpha.",
+    "smoke.png": "Use case: compositing. Asset type: one ground-hugging vapor sprite for a high-end stylized 3D animated-film rocket launch diorama, on a truly transparent canvas. Show one continuous LOW wide layer of gently curling pearl blue-grey exhaust vapor, spread left and right with a shallow lower center and rounded billows towards the sides. Rich soft volumetric form with warm ivory key upper left, slight slate-blue shadows, translucent wisps and soft alpha edges. It feels like 3D animated-film realism, plush sculpted volumes with credible atmospheric scattering. Make the overall profile about 4 times wider than tall. Keep the smoke legible at tiny UI size with a few large billows and a little trailing wisp, subtle values. Top and lower edges taper into full transparency, no flat edge. A front slightly elevated camera near orthographic. No smoke column, no sparks, no soot, no platform, no rocket, no floor, no separate shadows, no glow in the empty canvas, no background or writing. Entire visible sprite inside generous transparent margins. True alpha.",
+    "flame.png": "Use case: compositing. Asset type: one tapered downward engine exhaust sprite for a high-end stylized 3D animated-film miniature rocket launch, truly transparent background. Single short substantial rocket jet with a narrow flat mouth at TOP CENTER, creamy white-hot core widening slightly under the nozzle then tapering into a tapered point below with a few rounded tumbling orange and pale saffron tongues. A believable contained rocket flame interpreted in the restrained stylized volumetric look of a premium animated film, physical inner light, thick elegant shape readable at tiny UI sizes, soft luminous translucent edges. Strong lengthwise gradient from white and honey to amber-orange. Keep bright silhouette localized, no broad blurry halo outside the sprite, no sparks, no multiple separate jets or tail streaks, no smoke, no rocket or nozzle hardware, no background or writing. Entire flame including its tip fits inside generous transparent margins. Vertical canvas and true alpha."
+  },
+  "source": "User-provided Futuristic Industrial Docking Platform.png",
+  "files": {
+    "launch-diorama-flame.png": {
+      "sha256": "4841cfba91f3742d13e222211c13b1721979fb9f05048d77a9cb9a5e56800502",
+      "origin": "ImageGen; open pad additionally aligned and composited with supplied original"
+    },
+    "launch-diorama-pad-closed.png": {
+      "sha256": "3f85a79f5fa323eea04acd385e85f6af7ad34fb0c69bb9e0f6472f164be76ef8",
+      "origin": "User-supplied original"
+    },
+    "launch-diorama-pad-open.png": {
+      "sha256": "a7dbcb3588cd95109854af35c971aeacd18d0c568030c2a2c2a9e130aa2522e4",
+      "origin": "ImageGen; open pad additionally aligned and composited with supplied original"
+    },
+    "launch-diorama-rocket.png": {
+      "sha256": "e0f9611f7a6e756c0a4023afdc55a158cc7daa3b10764b2c5f7b8ea67e4fc553",
+      "origin": "ImageGen; open pad additionally aligned and composited with supplied original"
+    },
+    "launch-diorama-smoke.png": {
+      "sha256": "0c528f4f503f8c3cd11b4e822ea0e0ea62428c0aa6edca281e9dca220f4f1f78",
+      "origin": "ImageGen; open pad additionally aligned and composited with supplied original"
+    }
+  }
+}

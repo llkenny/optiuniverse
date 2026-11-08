@@ -82,6 +82,30 @@ and current spacecraft tracking are outside this scenario.
 References: [NASA mission dates and launch vehicle](https://science.nasa.gov/mission/voyager/voyager-1/),
 [NASA historical overview and heliopause crossing](https://www.nasa.gov/history/45-years-ago-voyager-1-begins-its-epic-journey-to-the-outer-planets-and-beyond/).
 
+## Loading experience
+
+On iPhone, both iPhone Duo displays and iPad, a fictional illustrated launch diorama stays centered
+at 4/9 of the window's short edge. Smoke drifts while resources prepare; flame appears after
+0.45 seconds. Readiness releases the clamps (0.18 s), lifts the rocket (1.2 s) and fades the
+scene (0.35 s). In short windows, ascent is limited to keep the rocket visible. Rotation and
+window resizing update the geometry without restarting the sequence.
+
+The prepared interface and navigation bars sit underneath the overlay. Interaction, accessibility
+of the underlying interface and review requests remain gated until completion. Presentation pauses
+while inactive. Errors show the retry screen; retry creates a fresh sequence. Reduce Motion freezes
+the illustration and uses a 0.2-second fade. Missing, unreadable or late artwork cannot delay the
+prepared app: a fallback indicator fades out. Decoding and animation tasks are cancelled and image
+ownership released on dismissal. visionOS retains its existing loading view.
+
+Five local transparent PNGs live in `OptiUniverse/Resources/LaunchDiorama/`. The platform artwork was
+supplied by the project owner; its open variant, rocket, smoke and flame were generated with ImageGen.
+Provenance, processing and file hashes are in `vfx_scripts/illustrated_launch_assets.json` and
+`THIRD_PARTY_NOTICES.md`. No historical vehicle or flight is represented.
+
+Set `OPTI_LAUNCH_PREVIEW=1` in a Debug run for a three-second wait and launch without preparing the
+universe; add `OPTI_LAUNCH_PREVIEW_TIME=2` for waiting or `4.1` for ascent. Remove these settings for
+normal startup. QA, device coverage and measurement results: `AppStore/QA/LaunchScene.md`.
+
 ## Video and screenshots
 
 <img width="200" alt="" src="https://github.com/user-attachments/assets/f9d963d4-5d6c-48dd-adef-a4ccb3a98a40" />

@@ -2,6 +2,21 @@
 
 This file tracks attribution and release-review source material for assets bundled with OptiUniverse. Keep it in sync with the in-app Legal & Credits screen before each release.
 
+## Illustrated Launch Diorama
+
+- Assets: `OptiUniverse/Resources/LaunchDiorama/launch-diorama-*.png`, five local RGBA layers.
+- Original platform: project-owner supplied artwork named `Futuristic Industrial Docking Platform.png`.
+  The closed platform preserves that supplied PNG byte-for-byte. Its external author and license were
+  not supplied; this record makes no public-domain or open-license claim for it.
+- Generated artwork: fictional rocket, smoke, flame and articulated open-platform variant created
+  using OpenAI ImageGen for this project.
+- Processing: alpha compositing and alignment of the open jaws to the original platform. The lower
+  deck retains the original pixels, preventing the base from shifting during release. Runtime decode
+  caps are 1536 pixels for platforms and 1024 for other sprites; originals remain local PNGs.
+- Provenance: prompts, compositing notes and SHA-256 hashes are in
+  `vfx_scripts/illustrated_launch_assets.json`; no local user paths are needed at runtime.
+- App use: fictional startup illustration, with no claim to represent a real vehicle or launch.
+
 ## Solar System Textures
 
 - Asset: `Modules/UniverseModule/Sources/UniverseModule/Assets/Models/*.usdz`

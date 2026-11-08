@@ -10,6 +10,7 @@ import UniverseModule
 import BaseModule
 import Foundation
 import StoreKit
+import os
 
 struct RootContainerView: View {
 
@@ -28,6 +29,7 @@ struct RootContainerView: View {
     @State private var isShowingLegalCredits = false
     @State private var loadingState: LoadingState = .loading
     @State private var loadingAttempt = 0
+    @State private var didFinishLaunch = false
     @State var windowSize: CGSize = .zero
     @State var missionFlowState: MissionFlowState?
     @State var pendingMissionAdvance: MissionFlowAdvance?
@@ -40,6 +42,24 @@ struct RootContainerView: View {
 
     var body: some View {
         // Keep the navigation container and scene mounted as native bars change their axis.
+        ZStack {
+            navigationContent
+            launchOverlay
+        }
+        .task(id: isAppPresented) {
+            guard isAppPresented else { return }
+            await Task.yield()
+            #if os(iOS)
+            if !Task.isCancelled { UIAccessibility.post(notification: .screenChanged, argument: nil) }
+            #endif
+        }
+        .preferredColorScheme(isUniverseVisible ? .dark : nil)
+        .sheet(isPresented: $isShowingLegalCredits) {
+            LegalCreditsView()
+        }
+    }
+
+    private var navigationContent: some View {
         NavigationStack {
             ToolbarLayoutReader { usesVerticalToolbar in
                 content(usesVerticalToolbar: usesVerticalToolbar)
@@ -63,15 +83,12 @@ struct RootContainerView: View {
                     .ignoresSafeArea(.container)
             }
         }
-        .preferredColorScheme(isUniverseVisible ? .dark : nil)
-        .sheet(isPresented: $isShowingLegalCredits) {
-            LegalCreditsView()
-        }
+        .allowsHitTesting(isAppPresented || isLoadingFailure)
+        .accessibilityHidden(!isAppPresented && !isLoadingFailure)
     }
 
     private func content(usesVerticalToolbar: Bool) -> some View {
         screenContent(usesVerticalToolbar: usesVerticalToolbar)
-        .animation(.default, value: loadingState)
         .animation(.default, value: appEnvironment.currentScreen)
         .animation(.default, value: universeResources.navigation.navigationSnapshot)
         .onChange(of: appEnvironment.currentScreen) { _, newScreen in
@@ -100,6 +117,9 @@ struct RootContainerView: View {
         }
         #endif
         .task(id: loadingAttempt) {
+            let interval = LaunchDiagnostics.signposter.beginInterval(
+                "Resource preparation", id: LaunchDiagnostics.signposter.makeSignpostID())
+            defer { LaunchDiagnostics.signposter.endInterval("Resource preparation", interval) }
             do {
                 try await universeResources.prepare()
                 try Task.checkCancellation()
@@ -115,27 +135,8 @@ struct RootContainerView: View {
         .animation(.default, value: objectsViewState)
     }
 
-    private func screenContent(usesVerticalToolbar: Bool) -> some View {
-        ZStack {
-            OptiColor.screenBackground
-                .ignoresSafeArea()
-
-            switch loadingState {
-            case .loaded:
-                makeContent(usesVerticalToolbar: usesVerticalToolbar, onMissionSelected: startMission)
-            case .loading:
-                LoadingScreenView()
-            case .failed(let message):
-                UniverseLoadingFailureView(message: message) {
-                    loadingState = .loading
-                    loadingAttempt += 1
-                }
-            }
-        }
-    }
-
     private var isUniverseVisible: Bool {
-        loadingState == .loaded && appEnvironment.currentScreen == .objects
+        isAppPresented && appEnvironment.currentScreen == .objects
     }
 
     private var navigationBarTitle: String {
@@ -160,7 +161,7 @@ struct RootContainerView: View {
     }
 
     private var showsObjectDetailsButton: Bool {
-        loadingState == .loaded && appEnvironment.currentScreen == .objects &&
+        isAppPresented && appEnvironment.currentScreen == .objects &&
             objectsViewState == .raw && appEnvironment.selectedDestinationID != nil
     }
 
@@ -279,9 +280,56 @@ struct RootContainerView: View {
     }
 }
 
+extension RootContainerView {
+    private var isLoadingFailure: Bool {
+        if case .failed = loadingState { return true }
+        return false
+    }
+
+    @ViewBuilder private var launchOverlay: some View {
+        if loadingState == .loading || (loadingState == .loaded && !didFinishLaunch) {
+            #if os(iOS)
+            LaunchLoadingScreenView(isReady: loadingState == .loaded) { didFinishLaunch = true }
+                .id(loadingAttempt)
+                .zIndex(1)
+            #else
+            LoadingScreenView()
+            #endif
+        }
+    }
+
+    private func screenContent(usesVerticalToolbar: Bool) -> some View {
+        ZStack {
+            OptiColor.screenBackground
+                .ignoresSafeArea()
+
+            switch loadingState {
+            case .loaded:
+                makeContent(usesVerticalToolbar: usesVerticalToolbar, onMissionSelected: startMission)
+                    .allowsHitTesting(isAppPresented)
+                    .accessibilityHidden(!isAppPresented)
+            case .loading:
+                Color.clear
+            case .failed(let message):
+                UniverseLoadingFailureView(message: message) {
+                    didFinishLaunch = false
+                    loadingState = .loading
+                    loadingAttempt += 1
+                }
+            }
+        }
+    }
+
+    private var isAppPresented: Bool {
+        loadingState == .loaded && didFinishLaunch
+    }
+
+}
+
 private struct UniverseLoadingFailureView: View {
     let message: String
     let retry: () -> Void
+    @AccessibilityFocusState private var failureFocused: Bool
 
     var body: some View {
         VStack(spacing: 20) {
@@ -291,6 +339,7 @@ private struct UniverseLoadingFailureView: View {
 
             VStack(spacing: 8) {
                 Text("Unable to Load Universe")
+                    .accessibilityFocused($failureFocused)
                     .font(Typography.screenTitle)
                     .foregroundStyle(OptiColor.textPrimary)
                 Text(message)
@@ -308,6 +357,7 @@ private struct UniverseLoadingFailureView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(OptiColor.screenBackground)
         .accessibilityElement(children: .contain)
+        .onAppear { failureFocused = true }
     }
 }
 
@@ -329,7 +379,7 @@ extension RootContainerView {
         let snapshot = universeResources.navigation.navigationSnapshot
         let holdsEpilogue = isMissionNavigation && snapshot.mission == .vostok1
             && snapshot.missionStatus?.epilogueText != nil
-        return .init(isLoaded: loadingState == .loaded,
+        return .init(isLoaded: isAppPresented,
                      isSceneActive: scenePhase == .active,
                      navigationState: snapshot.state,
                      isLegalSheetPresented: isShowingLegalCredits,

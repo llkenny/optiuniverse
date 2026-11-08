@@ -18,6 +18,16 @@ struct OptiUniverseApp: App {
     @State private var reviewCoordinator = ReviewRequestCoordinator()
     #endif
 
+    #if !os(visionOS)
+    private var appRoot: some View {
+        RootContainerView(universeResources: universeResources)
+            .environment(appEnvironment)
+            #if os(iOS)
+            .environment(reviewCoordinator)
+            #endif
+    }
+    #endif
+
     var body: some Scene {
         #if os(visionOS)
         WindowGroup {
@@ -32,11 +42,15 @@ struct OptiUniverseApp: App {
         }
         #else
         WindowGroup {
-            RootContainerView(universeResources: universeResources)
-                .environment(appEnvironment)
-                #if os(iOS)
-                .environment(reviewCoordinator)
-                #endif
+            #if DEBUG && os(iOS)
+            if ProcessInfo.processInfo.environment["OPTI_LAUNCH_PREVIEW"] == "1" {
+                LaunchDioramaPreviewHost()
+            } else {
+                appRoot
+            }
+            #else
+            appRoot
+            #endif
         }
         #if os(iOS)
         .onChange(of: scenePhase, initial: true) { _, phase in
